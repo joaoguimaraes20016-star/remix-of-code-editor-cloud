@@ -1,242 +1,359 @@
 
-# Funnel Builder: Selection IDs, Font Sizing, Duplicate Constant & Perspective Cards Fixes
+# Page Context Menu: Move Up/Down & Duplicate Fixes
 
 ## Executive Summary
 
-This plan addresses **4 distinct issues** in the funnel builder that cause broken behaviors, build failures, and missing features:
+This plan fixes **2 critical bugs** in the funnel builder's page context menu:
 
-1. **Selection ID mismatch** - Click-to-edit doesn't focus the right sidebar field
-2. **Mobile font sizing inconsistency** - Live preview uses smaller fonts on mobile than published funnels
-3. **Duplicate constant declaration** - TypeScript build error from duplicate `OPTION_HOVER_OPTIONS`
-4. **Missing perspective cards** - Image-based multi-choice cards aren't available in flow-canvas
+1. **Move Up/Move Down are no-ops** - The menu items exist but do nothing
+2. **Duplicate creates a blank page** - Instead of cloning content with regenerated IDs
 
----
-
-## Issue 1: Selection ID Mismatch
-
-### Problem
-When a user clicks elements in `StepPreview`, the selection ID doesn't match what `StepContentEditor` expects, so the sidebar doesn't auto-focus the right input field.
-
-| Element Clicked | StepPreview sends | StepContentEditor expects |
-|-----------------|-------------------|---------------------------|
-| CTA Button | `"button"` | `"button_text"` |
-| Input field | `"input"` | `"placeholder"` |
-| Submit button | `"submit_button"` | (no mapping) |
-
-**Root Cause**: 
-- `StepPreview.tsx:616-617` - Button selection uses `elementId` which is `"button"`
-- `StepContentEditor.tsx:114-115` - Auto-focus expects `"button_text"` and `"placeholder"`
-
-### Fix
-Update `StepPreview.tsx` to send the correct IDs that match what the sidebar expects:
-
-```typescript
-// Button at line ~617: Change elementId to 'button_text'
-onSelect={() => onSelectElement('button_text')}
-isSelected={selectedElementId === 'button_text'}
-
-// Input placeholder area: Change to 'placeholder'
-onSelect={() => onSelectElement('placeholder')}
-isSelected={selectedElementId === 'placeholder'}
-```
-
-Also update `EditorSidebar.tsx:132-133` label mappings to handle both IDs gracefully:
-```typescript
-if (selectedElementId === 'button' || selectedElementId === 'button_text') return 'Button';
-if (selectedElementId === 'input' || selectedElementId === 'placeholder') return 'Input Field';
-```
-
-**Files to modify:**
-- `src/components/funnel-builder/StepPreview.tsx` (~6 lines)
-- `src/components/funnel-builder/EditorSidebar.tsx` (~4 lines)
+These issues affect **both builder versions** (`builder_v2` and `flow-canvas`).
 
 ---
 
-## Issue 2: Live Preview Font Sizing Mismatch
+## Issue 1: Move Up/Move Down Does Nothing
 
-### Problem
-`LivePreviewMode.tsx:232` passes `isPreview={device === 'mobile'}` to `DynamicElementRenderer`, which then selects a smaller font map (`PREVIEW_FONT_SIZE_MAP`) only for mobile.
+### Root Cause Analysis
 
-This means:
-- **Mobile preview**: Uses small "editor" fonts
-- **Tablet/Desktop preview**: Uses large "public" fonts
-- **Actual published funnel (all devices)**: Uses large "public" fonts
-
-The mobile preview looks wrong compared to what users will actually see.
-
-**Root Cause**: The conditional `isPreview={device === 'mobile'}` is backwards logic from when previews needed smaller fonts in a constrained space. Now the live preview should match public rendering exactly.
-
-### Fix
-Change `LivePreviewMode.tsx:232` to always use public font sizing:
-
+**builder_v2/EditorShell.tsx (lines 247-261):**
 ```typescript
-// BEFORE (broken):
-isPreview={device === 'mobile'}
-
-// AFTER (consistent):
-isPreview={false}  // Always use public font sizing in live preview
+const handleMovePageUp = (pageId: string) => {
+  const pageIndex = pages.findIndex(p => p.id === pageId);
+  if (pageIndex > 0) {
+    // Empty - just a comment saying "rely on DnD"
+  }
+};
 ```
 
-Alternatively, remove the `isPreview` prop entirely since `false` is the default.
+The handlers find the page index but never call `reorderPages()` which already exists and works correctly (used by DnD).
 
-**Files to modify:**
-- `src/components/funnel-builder/LivePreviewMode.tsx` (~1 line)
+**flow-canvas/LeftPanel.tsx (lines 245-279):**
+The context menu has Rename, Duplicate, Delete - but no Move Up/Move Down options at all.
 
----
+### Solution
 
-## Issue 3: Duplicate Constant Declaration
+#### builder_v2/EditorShell.tsx
 
-### Problem
-`DesignEditor.tsx` declares `OPTION_HOVER_OPTIONS` twice at lines 91-96 and 98-103:
+Implement the handlers using the existing `reorderPages` action:
 
 ```typescript
-// Line 91-96:
-const OPTION_HOVER_OPTIONS = [
-  { value: 'none', label: 'None' },
-  { value: 'scale', label: 'Scale' },
-  { value: 'glow', label: 'Glow' },
-  { value: 'lift', label: 'Lift' },
-];
+const handleMovePageUp = (pageId: string) => {
+  const pageIndex = pages.findIndex(p => p.id === pageId);
+  if (pageIndex > 0) {
+    // Swap with previous page using existing reorderPages action
+    const newOrder = [...pages.map(p => p.id)];
+    [newOrder[pageIndex - 1], newOrder[pageIndex]] = [newOrder[pageIndex], newOrder[pageIndex - 1]];
+    reorderPages(newOrder);
+  }
+};
 
-// Line 98-103 (DUPLICATE):
-const OPTION_HOVER_OPTIONS = [
-  { value: 'none', label: 'None' },
-  { value: 'scale', label: 'Scale' },
-  { value: 'glow', label: 'Glow' },
-  { value: 'lift', label: 'Lift' },
-];
+const handleMovePageDown = (pageId: string) => {
+  const pageIndex = pages.findIndex(p => p.id === pageId);
+  if (pageIndex >= 0 && pageIndex < pages.length - 1) {
+    // Swap with next page
+    const newOrder = [...pages.map(p => p.id)];
+    [newOrder[pageIndex], newOrder[pageIndex + 1]] = [newOrder[pageIndex + 1], newOrder[pageIndex]];
+    reorderPages(newOrder);
+  }
+};
 ```
 
-This causes TypeScript error: `Cannot redeclare block-scoped variable 'OPTION_HOVER_OPTIONS'`
+#### flow-canvas/LeftPanel.tsx
 
-### Fix
-Delete lines 98-103 (the duplicate declaration).
-
-**Files to modify:**
-- `src/components/funnel-builder/DesignEditor.tsx` (delete 6 lines)
-
----
-
-## Issue 4: Missing Perspective-Style Multi-Choice Cards
-
-### Problem
-The `builder_v2` system has image-based "perspective" cards for multi-choice questions, but the active `flow-canvas` funnel builder only renders simple text buttons without image support.
-
-**Schema Support**: The schema already supports images!
-- `CaptureNodeChoice.imageUrl` exists in `src/flow-canvas/types/captureFlow.ts:56`
-- The legacy adapter maps `imageUrl` correctly
-
-**Missing**: The renderers (`SingleChoiceNode.tsx`, `MultiChoiceNode.tsx`) don't use `choice.imageUrl`.
-
-### Fix
-Update `SingleChoiceNode.tsx` and `MultiChoiceNode.tsx` to:
-1. Detect if any choices have images: `const hasImages = choices.some(c => c.imageUrl);`
-2. Apply perspective grid layout when images exist
-3. Render image cards with the image on top and label below
-
-**Updated SingleChoiceNode rendering logic:**
+Add Move Up/Move Down to the context menu and wire to `onReorderSteps`:
 
 ```tsx
-// Detect image layout mode
-const hasImages = choices.some(c => c.imageUrl);
+// Add props to SortablePageItemProps:
+onMoveUp?: (stepId: string) => void;
+onMoveDown?: (stepId: string) => void;
+canMoveUp?: boolean;
+canMoveDown?: boolean;
 
-return (
-  <div className={cn(
-    "w-full",
-    hasImages ? "grid grid-cols-2 gap-4" : "flex flex-col gap-2"
-  )}>
-    {choices.map((choice) => (
-      <button
-        key={choice.id}
-        className={cn(
-          'transition-all text-left',
-          hasImages && choice.imageUrl
-            ? 'flex flex-col rounded-xl overflow-hidden border border-border'
-            : 'flex items-center gap-3 p-4 rounded-lg border',
-          // ... selection styles
-        )}
-      >
-        {/* Image card layout */}
-        {hasImages && choice.imageUrl && (
-          <div 
-            className="w-full aspect-[4/3] bg-cover bg-center"
-            style={{ backgroundImage: `url(${choice.imageUrl})` }}
-          />
-        )}
-        
-        {/* Label area */}
-        <div className={cn(
-          hasImages && choice.imageUrl 
-            ? "p-3 bg-primary text-primary-foreground"
-            : "flex items-center gap-3"
-        )}>
-          {!hasImages && choice.emoji && (
-            <span className="text-lg">{choice.emoji}</span>
-          )}
-          <span className="text-sm font-medium">{choice.label}</span>
-        </div>
-      </button>
-    ))}
-  </div>
+// Add menu items in DropdownMenuContent:
+<DropdownMenuItem 
+  onClick={() => onMoveUp?.(step.id)}
+  disabled={!canMoveUp}
+>
+  Move Up
+</DropdownMenuItem>
+<DropdownMenuItem 
+  onClick={() => onMoveDown?.(step.id)}
+  disabled={!canMoveDown}
+>
+  Move Down
+</DropdownMenuItem>
+```
+
+#### flow-canvas/EditorShell.tsx
+
+Add handlers that use the existing `handleReorderSteps`:
+
+```typescript
+const handleMoveStepUp = useCallback((stepId: string) => {
+  const index = page.steps.findIndex(s => s.id === stepId);
+  if (index > 0) {
+    handleReorderSteps(index, index - 1);
+  }
+}, [page.steps, handleReorderSteps]);
+
+const handleMoveStepDown = useCallback((stepId: string) => {
+  const index = page.steps.findIndex(s => s.id === stepId);
+  if (index >= 0 && index < page.steps.length - 1) {
+    handleReorderSteps(index, index + 1);
+  }
+}, [page.steps, handleReorderSteps]);
+```
+
+---
+
+## Issue 2: Duplicate Creates Blank Page Instead of Clone
+
+### Root Cause Analysis
+
+**builder_v2/EditorShell.tsx (lines 238-245):**
+```typescript
+const handleDuplicatePage = (pageId: string) => {
+  const pageToDuplicate = pages.find(p => p.id === pageId);
+  if (pageToDuplicate) {
+    addPage(pageToDuplicate.type);  // WRONG: Creates fresh default page
+  }
+};
+```
+
+This calls `addPage()` which creates a brand new page with default content, ignoring the original page's `canvasRoot`, props, and styling.
+
+**flow-canvas already has correct implementation (lines 463-487):**
+```typescript
+const handleDuplicateStep = useCallback((stepId: string) => {
+  const stepToDuplicate = page.steps.find(s => s.id === stepId);
+  if (!stepToDuplicate) return;
+
+  const duplicatedStep = deepClone(stepToDuplicate);
+  duplicatedStep.id = generateId();
+  duplicatedStep.name = `${stepToDuplicate.name} (Copy)`;
+  
+  // Recursively regenerate all nested IDs
+  const regenerateIds = (obj: any) => { ... };
+  regenerateIds(duplicatedStep.frames);
+  
+  // Insert after original
+  updatedPage.steps.splice(stepIndex + 1, 0, duplicatedStep);
+});
+```
+
+### Solution for builder_v2
+
+**Option A: Add DUPLICATE_PAGE action to editorStore** (recommended for undo/redo support)
+
+1. Add action type to `BaseEditorAction`:
+```typescript
+| { type: 'DUPLICATE_PAGE'; pageId: string }
+```
+
+2. Add to `historyTrackedActions`:
+```typescript
+const historyTrackedActions = new Set([
+  // ...existing
+  'DUPLICATE_PAGE',
+]);
+```
+
+3. Implement reducer case:
+```typescript
+case 'DUPLICATE_PAGE': {
+  const pageToDuplicate = state.pages.find(p => p.id === action.pageId);
+  if (!pageToDuplicate) return state;
+
+  // Deep clone with ID regeneration
+  const clonedPage = JSON.parse(JSON.stringify(pageToDuplicate)) as Page;
+  
+  // Regenerate all IDs in the tree
+  const regenerateIds = (node: CanvasNode): CanvasNode => ({
+    ...node,
+    id: generateNodeId(node.type.split('_')[0]),
+    children: node.children.map(regenerateIds),
+  });
+  
+  const newPage: Page = {
+    ...clonedPage,
+    id: generateNodeId('page'),
+    name: `${pageToDuplicate.name} (Copy)`,
+    canvasRoot: regenerateIds(clonedPage.canvasRoot),
+  };
+
+  // Insert after original
+  const pageIndex = state.pages.findIndex(p => p.id === action.pageId);
+  const nextPages = [...state.pages];
+  nextPages.splice(pageIndex + 1, 0, newPage);
+
+  return {
+    ...state,
+    pages: nextPages,
+    activePageId: newPage.id,
+    selectedNodeId: null,
+  };
+}
+```
+
+4. Add context action:
+```typescript
+// In EditorStoreContextValue interface:
+duplicatePage: (pageId: string) => void;
+
+// In EditorProvider:
+const duplicatePage = useCallback(
+  (pageId: string) => wrappedDispatch({ type: 'DUPLICATE_PAGE', pageId }),
+  [wrappedDispatch],
 );
 ```
 
-**Also add CSS for perspective cards** (in `mobile.css` or as Tailwind classes):
+5. Update EditorShell.tsx handler:
+```typescript
+const handleDuplicatePage = (pageId: string) => {
+  duplicatePage(pageId);
+};
+```
 
-```css
-/* Perspective card grid */
-.choice-grid--perspective {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
+---
 
-.choice-card--image {
-  flex-direction: column;
-  padding: 0;
-  overflow: hidden;
-  border-radius: 14px;
+## Files to Modify
+
+| File | Changes | Priority |
+|------|---------|----------|
+| `src/builder_v2/EditorShell.tsx` | Implement move handlers, update duplicate to use new action | High |
+| `src/builder_v2/state/editorStore.tsx` | Add DUPLICATE_PAGE action + reducer + context method | High |
+| `src/flow-canvas/builder/components/LeftPanel.tsx` | Add Move Up/Down menu items | Medium |
+| `src/flow-canvas/builder/components/EditorShell.tsx` | Add move handlers, pass to LeftPanel | Medium |
+
+---
+
+## Technical Implementation Details
+
+### builder_v2/state/editorStore.tsx Changes
+
+**Lines to modify:**
+
+1. **Line ~580** - Add action type:
+```typescript
+| { type: 'DUPLICATE_PAGE'; pageId: string }
+```
+
+2. **Line ~669** - Add to history tracking:
+```typescript
+'DUPLICATE_PAGE',
+```
+
+3. **After line ~837** (after REORDER_PAGES case) - Add reducer:
+```typescript
+case 'DUPLICATE_PAGE': {
+  // Implementation as described above
 }
 ```
 
-**Files to modify:**
-- `src/flow-canvas/builder/components/capture-flow/nodes/SingleChoiceNode.tsx` (~40 lines)
-- `src/flow-canvas/builder/components/capture-flow/nodes/MultiChoiceNode.tsx` (~40 lines)
-- Add image URL field to choice inspector if not present
+4. **Line ~631** - Add to context interface:
+```typescript
+duplicatePage: (pageId: string) => void;
+```
 
----
+5. **After line ~1427** - Add callback:
+```typescript
+const duplicatePage = useCallback(
+  (pageId: string) => wrappedDispatch({ type: 'DUPLICATE_PAGE', pageId }),
+  [wrappedDispatch],
+);
+```
 
-## Implementation Priority
+6. **Line ~1504** - Add to context value:
+```typescript
+duplicatePage,
+```
 
-| Issue | Priority | Risk | Effort |
-|-------|----------|------|--------|
-| 3 - Duplicate constant | **P0** | Build breaking | 2 min |
-| 2 - Font sizing | **P1** | User confusion | 5 min |
-| 1 - Selection IDs | **P1** | Poor UX | 15 min |
-| 4 - Perspective cards | **P2** | Missing feature | 45 min |
+### builder_v2/EditorShell.tsx Changes
 
----
+**Lines 181-184** - Destructure new method:
+```typescript
+const {
+  // ...existing
+  duplicatePage,
+} = useEditorStore();
+```
 
-## Files Summary
+**Lines 238-261** - Replace handlers:
+```typescript
+const handleDuplicatePage = (pageId: string) => {
+  duplicatePage(pageId);
+};
 
-| File | Changes |
-|------|---------|
-| `src/components/funnel-builder/DesignEditor.tsx` | Delete duplicate lines 98-103 |
-| `src/components/funnel-builder/LivePreviewMode.tsx` | Change `isPreview={device === 'mobile'}` to `isPreview={false}` |
-| `src/components/funnel-builder/StepPreview.tsx` | Update selection IDs for button and input |
-| `src/components/funnel-builder/EditorSidebar.tsx` | Update label mapping to handle both ID formats |
-| `src/flow-canvas/builder/components/capture-flow/nodes/SingleChoiceNode.tsx` | Add image card layout |
-| `src/flow-canvas/builder/components/capture-flow/nodes/MultiChoiceNode.tsx` | Add image card layout |
+const handleMovePageUp = (pageId: string) => {
+  const pageIndex = pages.findIndex(p => p.id === pageId);
+  if (pageIndex > 0) {
+    const newOrder = pages.map(p => p.id);
+    [newOrder[pageIndex - 1], newOrder[pageIndex]] = [newOrder[pageIndex], newOrder[pageIndex - 1]];
+    reorderPages(newOrder);
+  }
+};
+
+const handleMovePageDown = (pageId: string) => {
+  const pageIndex = pages.findIndex(p => p.id === pageId);
+  if (pageIndex >= 0 && pageIndex < pages.length - 1) {
+    const newOrder = pages.map(p => p.id);
+    [newOrder[pageIndex], newOrder[pageIndex + 1]] = [newOrder[pageIndex + 1], newOrder[pageIndex]];
+    reorderPages(newOrder);
+  }
+};
+```
+
+### flow-canvas/LeftPanel.tsx Changes
+
+**Lines 121-130** - Add props to SortablePageItemProps:
+```typescript
+onMoveUp?: (stepId: string) => void;
+onMoveDown?: (stepId: string) => void;
+canMoveUp?: boolean;
+canMoveDown?: boolean;
+```
+
+**Lines 265-277** - Add menu items before Delete:
+```tsx
+<DropdownMenuItem 
+  onClick={() => onMoveUp?.(step.id)}
+  disabled={!canMoveUp}
+  className="text-builder-text hover:bg-builder-surface-hover"
+>
+  <ChevronUp className="w-3.5 h-3.5 mr-2" />
+  Move Up
+</DropdownMenuItem>
+<DropdownMenuItem 
+  onClick={() => onMoveDown?.(step.id)}
+  disabled={!canMoveDown}
+  className="text-builder-text hover:bg-builder-surface-hover"
+>
+  <ChevronDown className="w-3.5 h-3.5 mr-2" />
+  Move Down
+</DropdownMenuItem>
+<DropdownMenuSeparator className="bg-builder-border-subtle" />
+```
 
 ---
 
 ## Testing Checklist
 
 After implementation:
-- [ ] Build succeeds without TypeScript errors
-- [ ] Clicking CTA button in preview focuses sidebar "Button Text" field
-- [ ] Clicking input placeholder focuses sidebar "Placeholder" field
-- [ ] Mobile live preview shows same font sizes as tablet/desktop
-- [ ] Published funnels match live preview exactly on all devices
-- [ ] Multi-choice with images renders as 2-column card grid
-- [ ] Multi-choice without images renders as vertical list buttons
+
+### Move Up/Move Down
+- [ ] builder_v2: Click Move Up on page 2 → page moves to position 1
+- [ ] builder_v2: Click Move Down on page 1 → page moves to position 2
+- [ ] builder_v2: Move Up disabled on first page
+- [ ] builder_v2: Move Down disabled on last page
+- [ ] builder_v2: Undo after move restores original order
+- [ ] flow-canvas: Same tests as above
+
+### Duplicate
+- [ ] builder_v2: Duplicate a page with custom content → new page has same content
+- [ ] builder_v2: Duplicated page has "(Copy)" suffix in name
+- [ ] builder_v2: Duplicated page has unique ID (not same as original)
+- [ ] builder_v2: All nested nodes in canvasRoot have regenerated IDs
+- [ ] builder_v2: Editing duplicated page doesn't affect original
+- [ ] builder_v2: Undo after duplicate removes the copy
+- [ ] flow-canvas: Same behavior (already works, verify no regression)
