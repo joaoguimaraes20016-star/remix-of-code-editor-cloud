@@ -179,6 +179,7 @@ function EditorShellContent() {
     deletePage,
     updatePageProps,
     reorderPages,
+    duplicatePage,
     moveNodeUp,
     moveNodeDown,
   } = useEditorStore();
@@ -236,27 +237,24 @@ function EditorShellContent() {
   };
 
   const handleDuplicatePage = (pageId: string) => {
-    // Find the page and create a copy
-    const pageToDuplicate = pages.find(p => p.id === pageId);
-    if (pageToDuplicate) {
-      // Use addPage with the same type, then update props
-      addPage(pageToDuplicate.type);
-    }
+    duplicatePage(pageId);
   };
 
   const handleMovePageUp = (pageId: string) => {
-    // Page reordering handled by DnD, but we can support context menu too
     const pageIndex = pages.findIndex(p => p.id === pageId);
     if (pageIndex > 0) {
-      // Swap with previous page - this would need a reorderPages action
-      // For now, we'll rely on DnD
+      const newOrder = pages.map(p => p.id);
+      [newOrder[pageIndex - 1], newOrder[pageIndex]] = [newOrder[pageIndex], newOrder[pageIndex - 1]];
+      reorderPages(newOrder);
     }
   };
 
   const handleMovePageDown = (pageId: string) => {
     const pageIndex = pages.findIndex(p => p.id === pageId);
-    if (pageIndex < pages.length - 1) {
-      // Swap with next page
+    if (pageIndex >= 0 && pageIndex < pages.length - 1) {
+      const newOrder = pages.map(p => p.id);
+      [newOrder[pageIndex], newOrder[pageIndex + 1]] = [newOrder[pageIndex + 1], newOrder[pageIndex]];
+      reorderPages(newOrder);
     }
   };
 

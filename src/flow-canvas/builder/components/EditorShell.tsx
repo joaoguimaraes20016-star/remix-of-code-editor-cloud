@@ -493,6 +493,20 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     handlePageUpdate(updatedPage, 'Reorder pages');
   }, [page, handlePageUpdate]);
 
+  const handleMoveStepUp = useCallback((stepId: string) => {
+    const index = page.steps.findIndex(s => s.id === stepId);
+    if (index > 0) {
+      handleReorderSteps(index, index - 1);
+    }
+  }, [page.steps, handleReorderSteps]);
+
+  const handleMoveStepDown = useCallback((stepId: string) => {
+    const index = page.steps.findIndex(s => s.id === stepId);
+    if (index >= 0 && index < page.steps.length - 1) {
+      handleReorderSteps(index, index + 1);
+    }
+  }, [page.steps, handleReorderSteps]);
+
   // Block reordering within a stack
   const handleReorderBlocks = useCallback((stackId: string, fromIndex: number, toIndex: number) => {
     const updatedPage = deepClone(page);
@@ -1768,6 +1782,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
                 onDuplicateStep={handleDuplicateStep}
                 onAddBlankStep={handleAddBlankStep}
                 onReorderSteps={handleReorderSteps}
+                onMoveStepUp={handleMoveStepUp}
+                onMoveStepDown={handleMoveStepDown}
                 onSelectFrame={handleSelectFrame}
                 onSelectBlock={handleSelectBlock}
                 onSelectElement={handleSelectElement}

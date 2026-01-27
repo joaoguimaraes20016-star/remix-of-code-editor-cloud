@@ -577,6 +577,7 @@ type BaseEditorAction =
   | { type: 'ADD_PAGE'; page: Page }
   | { type: 'DELETE_NODE'; nodeId: string }
   | { type: 'DELETE_PAGE'; pageId: string }
+  | { type: 'DUPLICATE_PAGE'; pageId: string }
   | { type: 'REORDER_PAGES'; pageIds: string[] }
   | { type: 'MOVE_NODE_UP'; nodeId: string }
   | { type: 'MOVE_NODE_DOWN'; nodeId: string }
@@ -629,6 +630,8 @@ export type EditorStoreContextValue = {
   deleteNode: (nodeId: string) => void;
   /** Delete a page from the funnel */
   deletePage: (pageId: string) => void;
+  /** Duplicate a page with cloned content and regenerated IDs */
+  duplicatePage: (pageId: string) => void;
   /** Persist a new page order */
   reorderPages: (pageIds: string[]) => void;
   moveNodeUp: (nodeId: string) => void;
@@ -668,6 +671,7 @@ const historyTrackedActions = new Set<BaseEditorAction['type']>([
   'ADD_PAGE',
   'DELETE_NODE',
   'DELETE_PAGE',
+  'DUPLICATE_PAGE',
   'REORDER_PAGES',
   'MOVE_NODE_UP',
   'MOVE_NODE_DOWN',
@@ -860,6 +864,39 @@ function editorReducer(state: EditorSnapshot, action: BaseEditorAction): EditorS
         ...state,
         pages: nextPages,
         activePageId: nextActivePageId,
+        selectedNodeId: null,
+      };
+    }
+    case 'DUPLICATE_PAGE': {
+      const pageToDuplicate = state.pages.find((p) => p.id === action.pageId);
+      if (!pageToDuplicate) return state;
+
+      // Deep clone the page
+      const clonedPage = JSON.parse(JSON.stringify(pageToDuplicate)) as Page;
+
+      // Regenerate all IDs in the canvas tree
+      const regenerateNodeIds = (node: CanvasNode): CanvasNode => ({
+        ...node,
+        id: generateNodeId(node.type.split('_')[0] || 'node'),
+        children: node.children.map(regenerateNodeIds),
+      });
+
+      const newPage: Page = {
+        ...clonedPage,
+        id: generateNodeId('page'),
+        name: `${pageToDuplicate.name} (Copy)`,
+        canvasRoot: regenerateNodeIds(clonedPage.canvasRoot),
+      };
+
+      // Insert after original
+      const pageIndex = state.pages.findIndex((p) => p.id === action.pageId);
+      const nextPages = [...state.pages];
+      nextPages.splice(pageIndex + 1, 0, newPage);
+
+      return {
+        ...state,
+        pages: nextPages,
+        activePageId: newPage.id,
         selectedNodeId: null,
       };
     }
@@ -1421,6 +1458,12 @@ export function EditorProvider({ children, initialDocument }: EditorProviderProp
     [wrappedDispatch],
   );
 
+  // Duplicate a page with cloned content
+  const duplicatePage = useCallback(
+    (pageId: string) => wrappedDispatch({ type: 'DUPLICATE_PAGE', pageId }),
+    [wrappedDispatch],
+  );
+
   const reorderPages = useCallback(
     (pageIds: string[]) => wrappedDispatch({ type: 'REORDER_PAGES', pageIds }),
     [wrappedDispatch],
@@ -1501,6 +1544,7 @@ export function EditorProvider({ children, initialDocument }: EditorProviderProp
       addPage,
       deleteNode,
       deletePage,
+      duplicatePage,
       reorderPages,
       moveNodeUp,
       moveNodeDown,
@@ -1536,6 +1580,7 @@ export function EditorProvider({ children, initialDocument }: EditorProviderProp
       addPage,
       deleteNode,
       deletePage,
+      duplicatePage,
       reorderPages,
       moveNodeUp,
       moveNodeDown,
