@@ -2,46 +2,92 @@
 @import './components/primitives/primitives.css';
 
 /* ============================================================================
-   DESIGN TOKENS - Theme-aware variables (B1 fix)
+   UNIFIED DESIGN TOKEN SYSTEM
+   ============================================================================
+   
+   All builder UI components MUST use these tokens consistently.
+   
+   Usage in Tailwind:
+     - bg-builder-surface (via tailwind.config.ts)
+     - text-builder-text
+     - border-builder-border
+   
+   Usage in CSS:
+     - hsl(var(--builder-surface))
+     - hsl(var(--builder-text))
+   
+   IMPORTANT: Do NOT use arbitrary values like bg-[hsl(var(--builder-surface))]
+   Use the Tailwind utility classes defined in tailwind.config.ts instead.
    ============================================================================ */
 
 :root {
-  /* Dark charcoal panels - using HSL for theme compatibility */
-  --builder-bg: hsl(225 12% 10%);
+  /* === PRIMARY BUILDER TOKENS (HSL values without hsl() wrapper) === */
+  
+  /* Backgrounds */
+  --builder-bg: 225 12% 10%;
+  --builder-surface: 225 12% 14%;
+  --builder-surface-hover: 225 10% 18%;
+  --builder-surface-active: 225 8% 22%;
+  
+  /* Borders */
+  --builder-border: 225 8% 20%;
+  --builder-border-subtle: 225 8% 16%;
+  
+  /* Text */
+  --builder-text: 210 20% 96%;
+  --builder-text-secondary: 215 16% 65%;
+  --builder-text-muted: 215 12% 50%;
+  --builder-text-dim: 215 8% 40%;
+  
+  /* Accents */
+  --builder-accent: 217 91% 60%;
+  --builder-accent-hover: 217 91% 55%;
+  --builder-accent-glow: 217 91% 70%;
+  --builder-accent-muted: 217 50% 30%;
+  --builder-accent-secondary: 280 80% 60%;
+  
+  /* Semantic Colors */
+  --builder-success: 142 71% 45%;
+  --builder-warning: 45 90% 55%;
+  --builder-error: 0 84% 60%;
+  
+  /* Radius */
+  --builder-radius-sm: 6px;
+  --builder-radius-md: 10px;
+  --builder-radius-lg: 16px;
+  
+  /* Typography */
+  --builder-font-size-xs: 11px;
+  --builder-font-size-sm: 13px;
+  --builder-font-size-base: 14px;
+  
+  /* Selection */
+  --builder-selection-color: 217 91% 60%;
+  --builder-selection-bg: transparent;
+  
+  /* Legacy compat - direct hsl values for older code */
   --builder-panel-bg: hsl(225 12% 10%);
   --builder-panel-border: hsl(225 8% 16%);
   --builder-canvas-bg: hsl(225 12% 6%);
   --builder-text-primary: hsl(210 20% 96%);
-  --builder-text-secondary: hsl(215 16% 65%);
-  --builder-text-muted: hsl(215 12% 50%);
-  /* Blue accent - mapped to primary */
-  --builder-accent: hsl(217 91% 60%);
-  --builder-accent-light: hsl(217 50% 30%);
   --builder-hover-bg: hsl(225 12% 14%);
   --builder-active-bg: hsl(225 10% 18%);
-  --builder-radius-sm: 6px;
-  --builder-radius-md: 10px;
-  --builder-radius-lg: 16px;
-  --builder-font-size-xs: 11px;
-  --builder-font-size-sm: 13px;
-  --builder-font-size-base: 14px;
-  /* Blue selection - matching primary */
-  --builder-selection-color: hsl(217 91% 60%);
-  --builder-selection-bg: transparent;
+  --builder-accent-light: hsl(217 50% 30%);
   
   /* Dark content area */
   --builder-content-bg: linear-gradient(180deg, hsl(225 14% 5%) 0%, hsl(225 12% 7%) 100%);
   --builder-content-surface: hsl(0 0% 100% / 0.03);
   
-  /* Premium coaching palette - for section picker */
-  --coaching-dark: 220 20% 8%;
-  --coaching-surface: 220 15% 12%;
-  --coaching-border: 220 10% 20%;
+  /* === COACHING TOKENS (Aliased to Builder Tokens) === */
+  /* These provide semantic meaning for section picker while using unified values */
+  --coaching-dark: var(--builder-bg);
+  --coaching-surface: var(--builder-surface);
+  --coaching-border: var(--builder-border);
+  --coaching-accent: var(--builder-accent);
+  --coaching-text: var(--builder-text);
+  --coaching-muted: var(--builder-text-muted);
   --coaching-gold: 45 90% 55%;
   --coaching-emerald: 160 70% 45%;
-  --coaching-accent: 220 80% 60%;
-  --coaching-text: 0 0% 95%;
-  --coaching-muted: 0 0% 60%;
 }
 
 /* ============================================================================
@@ -1765,4 +1811,147 @@
 .builder-v2-page-button:focus-visible {
   outline: 2px solid var(--builder-accent);
   outline-offset: 2px;
+}
+
+/* ============================================================================
+   UNIFIED VISUAL CONSISTENCY UTILITIES (Phase 6)
+   ============================================================================ */
+
+/* Selection States */
+.builder-selection-ring {
+  box-shadow: 0 0 0 2px hsl(var(--builder-accent));
+}
+
+.builder-selection-ring-offset {
+  box-shadow: 
+    0 0 0 2px hsl(var(--builder-bg)),
+    0 0 0 4px hsl(var(--builder-accent));
+}
+
+.builder-selection-ring-dashed {
+  outline: 2px dashed hsl(var(--builder-accent));
+  outline-offset: 4px;
+}
+
+/* Hover States */
+.builder-hover-lift {
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.builder-hover-lift:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px hsl(0 0% 0% / 0.2);
+}
+
+.builder-hover-glow {
+  transition: box-shadow 200ms ease;
+}
+
+.builder-hover-glow:hover {
+  box-shadow: 0 0 20px hsl(var(--builder-accent) / 0.25);
+}
+
+.builder-hover-border {
+  transition: border-color 150ms ease;
+}
+
+.builder-hover-border:hover {
+  border-color: hsl(var(--builder-accent));
+}
+
+/* Focus States */
+.builder-focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 
+    0 0 0 2px hsl(var(--builder-bg)),
+    0 0 0 4px hsl(var(--builder-accent));
+}
+
+/* Interactive Cards */
+.builder-card-interactive {
+  position: relative;
+  border: 2px solid hsl(var(--builder-border));
+  border-radius: var(--builder-radius-md);
+  background: hsl(var(--builder-surface));
+  transition: all 200ms ease;
+  cursor: pointer;
+}
+
+.builder-card-interactive:hover {
+  border-color: hsl(var(--builder-accent));
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px hsl(0 0% 0% / 0.3);
+}
+
+.builder-card-interactive:focus-visible {
+  outline: none;
+  border-color: hsl(var(--builder-accent));
+  box-shadow: 
+    0 0 0 2px hsl(var(--builder-bg)),
+    0 0 0 4px hsl(var(--builder-accent));
+}
+
+/* Empty States */
+.builder-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.builder-empty-state-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: hsl(var(--builder-surface));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: hsl(var(--builder-text-muted));
+}
+
+.builder-empty-state-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: hsl(var(--builder-text));
+  margin: 0 0 4px;
+}
+
+.builder-empty-state-description {
+  font-size: 12px;
+  color: hsl(var(--builder-text-muted));
+  margin: 0;
+}
+
+/* Premium Preview Cards (for section picker) */
+.premium-preview-card {
+  position: relative;
+  aspect-ratio: 4/3;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, hsl(var(--builder-surface)) 0%, hsl(var(--builder-bg)) 100%);
+  border: 2px solid hsl(var(--builder-border));
+  transition: all 200ms ease;
+  cursor: pointer;
+}
+
+.premium-preview-card:hover {
+  border-color: hsl(var(--builder-accent));
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px hsl(0 0% 0% / 0.3);
+}
+
+.premium-preview-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, hsl(0 0% 0% / 0.8) 100%);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.premium-preview-card:hover .premium-preview-card-overlay {
+  opacity: 1;
 }
