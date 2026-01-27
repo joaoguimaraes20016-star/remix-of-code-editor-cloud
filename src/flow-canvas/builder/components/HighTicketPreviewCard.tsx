@@ -926,17 +926,249 @@ const FAQPreview = React.forwardRef<HTMLDivElement>((_, ref) => (
 ));
 FAQPreview.displayName = 'FAQPreview';
 
-// Team preview
-const TeamPreview = React.forwardRef<HTMLDivElement>((_, ref) => (
-  <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col items-center justify-center">
-    <div className="h-2 w-20 bg-white/80 rounded mb-3" />
-    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 shadow-lg mb-2" />
-    <div className="space-y-1">
-      <div className="h-1.5 w-28 bg-white/30 rounded" />
-      <div className="h-1 w-20 bg-white/20 rounded mx-auto" />
-    </div>
-  </div>
-));
+// Team preview - 10 variants (Perspective-style)
+const TeamPreview = React.forwardRef<HTMLDivElement, { template: SectionTemplate }>(
+  ({ template }, ref) => {
+    const id = template.id;
+    
+    // Shared components
+    const BlueSectionLabel = ({ text = "This is our Team" }: { text?: string }) => (
+      <div className="text-[6px] text-blue-500 font-medium">{text}</div>
+    );
+    
+    const BlueRoleLabel = ({ text = "Head of Engineering" }: { text?: string }) => (
+      <div className="text-[5px] text-blue-500 font-medium">{text}</div>
+    );
+    
+    const TeamMemberCard = ({ hasDesc = true }: { hasDesc?: boolean }) => (
+      <div className="flex flex-col items-center gap-0.5">
+        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300" />
+        <div className="h-1 w-5 bg-slate-700 rounded" />
+        {hasDesc && <div className="h-0.5 w-7 bg-slate-300 rounded" />}
+      </div>
+    );
+    
+    const TeamCardWithAvatar = () => (
+      <div className="bg-white rounded border border-slate-100 p-1 flex flex-col gap-0.5">
+        <div className="flex items-center gap-1">
+          <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-slate-300 to-slate-400" />
+          <div>
+            <div className="h-0.5 w-6 bg-slate-700 rounded" />
+            <div className="h-0.5 w-4 bg-slate-400 rounded mt-0.5" />
+          </div>
+        </div>
+        <div className="h-0.5 w-full bg-slate-200 rounded" />
+      </div>
+    );
+    
+    const FeatureRow = ({ color }: { color: string }) => (
+      <div className="flex items-start gap-1">
+        <div className={cn("w-2 h-2 rounded flex-shrink-0", color)} />
+        <div className="flex-1">
+          <div className="h-0.5 w-6 bg-slate-600 rounded" />
+          <div className="h-0.5 w-10 bg-slate-300 rounded mt-0.5" />
+        </div>
+      </div>
+    );
+    
+    // Team Member Split - Text Left
+    if (id.includes('member-text-left')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <div className="h-2.5 w-16 bg-slate-800 rounded" />
+            <BlueRoleLabel />
+            <div className="h-1 w-20 bg-slate-300 rounded" />
+            <div className="h-1 w-18 bg-slate-300 rounded" />
+          </div>
+          <div className="flex-1 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300" />
+        </div>
+      );
+    }
+    
+    // Team Member Split - Image Left
+    if (id.includes('member-image-left')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300" />
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <BlueRoleLabel text="Digital Marketing" />
+            <div className="h-2.5 w-14 bg-slate-800 rounded" />
+            <div className="h-1 w-20 bg-slate-300 rounded" />
+            <div className="h-1 w-18 bg-slate-300 rounded" />
+          </div>
+        </div>
+      );
+    }
+    
+    // Team Member + Features
+    if (id.includes('member-features')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <BlueRoleLabel text="Financial Director" />
+            <div className="h-2 w-16 bg-slate-800 rounded" />
+            <div className="space-y-1 mt-1">
+              <FeatureRow color="bg-yellow-500" />
+              <FeatureRow color="bg-blue-500" />
+              <FeatureRow color="bg-green-500" />
+            </div>
+          </div>
+          <div className="flex-1 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300" />
+        </div>
+      );
+    }
+    
+    // Team Grid Simple
+    if (id.includes('grid-simple') || id === 'team-grid-simple') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="h-2.5 w-24 bg-slate-800 rounded" />
+          <div className="h-1.5 w-28 bg-slate-300 rounded" />
+          <div className="flex gap-3 mt-2">
+            <TeamMemberCard />
+            <TeamMemberCard />
+            <TeamMemberCard />
+          </div>
+        </div>
+      );
+    }
+    
+    // Team Grid + Label
+    if (id.includes('grid-label')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1">
+          <BlueSectionLabel />
+          <div className="h-2.5 w-24 bg-slate-800 rounded" />
+          <div className="h-1.5 w-28 bg-slate-300 rounded" />
+          <div className="flex gap-3 mt-2">
+            <TeamMemberCard />
+            <TeamMemberCard />
+            <TeamMemberCard />
+          </div>
+        </div>
+      );
+    }
+    
+    // Team Grid No Description
+    if (id.includes('grid-no-desc')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="h-2.5 w-24 bg-slate-800 rounded" />
+          <div className="h-1.5 w-28 bg-slate-300 rounded" />
+          <div className="flex gap-3 mt-2">
+            <TeamMemberCard hasDesc={false} />
+            <TeamMemberCard hasDesc={false} />
+            <TeamMemberCard hasDesc={false} />
+          </div>
+        </div>
+      );
+    }
+    
+    // Team Full Image
+    if (id.includes('full-image')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1">
+          <BlueSectionLabel />
+          <div className="h-2.5 w-24 bg-slate-800 rounded" />
+          <div className="h-1.5 w-28 bg-slate-300 rounded" />
+          <div className="w-full h-12 mt-2 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+            <div className="flex -space-x-1">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="w-4 h-4 rounded-full bg-gradient-to-br from-slate-300 to-slate-400 border border-white" />
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Team Grid Cards
+    if (id.includes('grid-cards') && !id.includes('gray')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex flex-col items-center justify-center gap-1">
+          <BlueSectionLabel />
+          <div className="h-2 w-20 bg-slate-800 rounded" />
+          <div className="grid grid-cols-3 gap-1 w-full mt-1.5">
+            <TeamCardWithAvatar />
+            <TeamCardWithAvatar />
+            <TeamCardWithAvatar />
+            <TeamCardWithAvatar />
+            <TeamCardWithAvatar />
+            <TeamCardWithAvatar />
+          </div>
+        </div>
+      );
+    }
+    
+    // Team Grid Cards (Gray BG)
+    if (id.includes('grid-cards-gray')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-slate-50 p-2 flex flex-col items-center justify-center gap-1">
+          <BlueSectionLabel />
+          <div className="h-2 w-20 bg-slate-800 rounded" />
+          <div className="grid grid-cols-3 gap-1 w-full mt-1.5">
+            <TeamCardWithAvatar />
+            <TeamCardWithAvatar />
+            <TeamCardWithAvatar />
+            <TeamCardWithAvatar />
+            <TeamCardWithAvatar />
+            <TeamCardWithAvatar />
+          </div>
+        </div>
+      );
+    }
+    
+    // Team Split + CTA
+    if (id.includes('split-cta')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <BlueSectionLabel text="Become part of the community" />
+            <div className="h-2 w-14 bg-slate-800 rounded" />
+            <div className="h-2 w-16 bg-slate-800 rounded" />
+            <div className="h-4 w-14 bg-blue-500 rounded mt-1" />
+          </div>
+          <div className="flex-1 grid grid-cols-2 gap-1">
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="w-5 h-5 rounded bg-gradient-to-br from-slate-200 to-slate-300" />
+              <div className="h-0.5 w-4 bg-slate-600 rounded" />
+              <div className="h-0.5 w-5 bg-slate-300 rounded" />
+            </div>
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="w-5 h-5 rounded bg-gradient-to-br from-slate-200 to-slate-300" />
+              <div className="h-0.5 w-4 bg-slate-600 rounded" />
+              <div className="h-0.5 w-5 bg-slate-300 rounded" />
+            </div>
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="w-5 h-5 rounded bg-gradient-to-br from-slate-200 to-slate-300" />
+              <div className="h-0.5 w-4 bg-slate-600 rounded" />
+              <div className="h-0.5 w-5 bg-slate-300 rounded" />
+            </div>
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="w-5 h-5 rounded bg-gradient-to-br from-slate-200 to-slate-300" />
+              <div className="h-0.5 w-4 bg-slate-600 rounded" />
+              <div className="h-0.5 w-5 bg-slate-300 rounded" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Default fallback (Team Grid)
+    return (
+      <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+        <div className="h-2.5 w-24 bg-slate-800 rounded" />
+        <div className="h-1.5 w-28 bg-slate-300 rounded" />
+        <div className="flex gap-3 mt-2">
+          <TeamMemberCard />
+          <TeamMemberCard />
+          <TeamMemberCard />
+        </div>
+      </div>
+    );
+  }
+);
 TeamPreview.displayName = 'TeamPreview';
 
 // Quiz/Form preview - 9 variants
@@ -1230,7 +1462,7 @@ function getPreviewComponent(template: SectionTemplate) {
       return <FAQPreview />;
     
     case 'team':
-      return <TeamPreview />;
+      return <TeamPreview template={template} />;
     
     default:
       return <ContentPreview />;

@@ -2314,37 +2314,431 @@ export const faqSection: SectionTemplate = {
 };
 
 // ============================================================================
-// TEAM SECTION (1 template)
-// About and team introduction
+// TEAM SECTIONS (10 templates) - Perspective-Style
+// Professional team showcasing layouts for individual members and team grids
 // ============================================================================
 
-export const teamSection: SectionTemplate = {
-  id: 'team-intro',
-  name: 'Team Intro',
-  description: 'About the founders/team',
+// Team Member Split - Text Left
+export const teamMemberTextLeft: SectionTemplate = {
+  id: 'team-member-text-left',
+  name: 'Team Member (Text Left)',
+  description: 'Name and bio left, large photo right',
   category: 'team',
-  icon: 'users',
+  icon: 'user',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'content', align: 'center' },
+    props: { variant: 'team-split' },
     children: [
       {
-        id: genId('heading'),
-        type: 'heading',
-        props: { text: 'Meet Your Coach', level: 'h2' },
+        id: genId('label'),
+        type: 'paragraph',
+        props: { text: 'Head of Engineering', variant: 'label', color: 'blue' },
         children: [],
       },
       {
-        id: genId('image'),
-        type: 'image',
-        props: { src: '', alt: 'Team photo', width: 100, height: 100, rounded: true },
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Philipp Schilling', level: 'h2' },
         children: [],
       },
       {
         id: genId('paragraph'),
         type: 'paragraph',
-        props: { text: 'With over 10 years of experience helping entrepreneurs scale, I\'ve developed a proven system that works.' },
+        props: { text: 'Philipp is Head of Engineering at our company. He brings extensive experience in software development and leads our technical team with excellence.' },
+        children: [],
+      },
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Team member photo', aspectRatio: '4:3' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Team Member Split - Image Left
+export const teamMemberImageLeft: SectionTemplate = {
+  id: 'team-member-image-left',
+  name: 'Team Member (Image Left)',
+  description: 'Large photo left, bio right',
+  category: 'team',
+  icon: 'user',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'team-split-reverse' },
+    children: [
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Team member photo', aspectRatio: '4:3' },
+        children: [],
+      },
+      {
+        id: genId('label'),
+        type: 'paragraph',
+        props: { text: 'Digital Marketing', variant: 'label', color: 'blue' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Julia Schmidt', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Julia is Head of Digital Marketing with extensive experience in online marketing strategies and brand building.' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Team Member + Features
+export const teamMemberFeatures: SectionTemplate = {
+  id: 'team-member-features',
+  name: 'Team Member + Features',
+  description: 'Bio with icon features and photo',
+  category: 'team',
+  icon: 'user-check',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'team-split' },
+    children: [
+      {
+        id: genId('label'),
+        type: 'paragraph',
+        props: { text: 'Financial Director', variant: 'label', color: 'blue' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Maximilian Weber', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('grid'),
+        type: 'feature_grid',
+        props: {
+          items: [
+            { icon: '💰', title: 'Financial Planning', description: 'Maximilian leads strategic financial planning' },
+            { icon: '📊', title: 'Risk Management', description: 'Monitors and mitigates business risks' },
+            { icon: '📈', title: 'Investment Strategy', description: 'Develops growth investment strategies' },
+          ],
+        },
+        children: [],
+      },
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Team member photo', aspectRatio: '4:3' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Team Grid Simple
+export const teamGridSimple: SectionTemplate = {
+  id: 'team-grid-simple',
+  name: 'Team Grid',
+  description: '3-column grid with photos and bios',
+  category: 'team',
+  icon: 'users',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'team-grid' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Meet our Experts', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Discover our diverse, talented team committed to your success.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('team'),
+        type: 'team_grid',
+        props: {
+          items: [
+            { image: '', name: 'Philipp Schilling', description: 'Leading technical innovation' },
+            { image: '', name: 'Julia Schmidt', description: 'Driving marketing success' },
+            { image: '', name: 'Maximilian Weber', description: 'Managing financial growth' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Team Grid + Label
+export const teamGridLabel: SectionTemplate = {
+  id: 'team-grid-label',
+  name: 'Team Grid + Label',
+  description: 'With blue section label',
+  category: 'team',
+  icon: 'users',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'team-grid' },
+    children: [
+      {
+        id: genId('label'),
+        type: 'paragraph',
+        props: { text: 'This is our Team', variant: 'label', color: 'blue', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Meet our Experts', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Discover our diverse, talented team committed to your success.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('team'),
+        type: 'team_grid',
+        props: {
+          items: [
+            { image: '', name: 'Philipp Schilling', description: 'Leading technical innovation' },
+            { image: '', name: 'Julia Schmidt', description: 'Driving marketing success' },
+            { image: '', name: 'Maximilian Weber', description: 'Managing financial growth' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Team Grid No Description
+export const teamGridNoDesc: SectionTemplate = {
+  id: 'team-grid-no-desc',
+  name: 'Team Grid (No Description)',
+  description: 'Clean grid with names only',
+  category: 'team',
+  icon: 'users',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'team-grid' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Meet our Experts', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Discover our diverse, talented team committed to your success.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('team'),
+        type: 'team_grid',
+        props: {
+          showDescription: false,
+          items: [
+            { image: '', name: 'Philipp Schilling' },
+            { image: '', name: 'Julia Schmidt' },
+            { image: '', name: 'Maximilian Weber' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Team Full Image
+export const teamFullImage: SectionTemplate = {
+  id: 'team-full-image',
+  name: 'Team Full Image',
+  description: 'Full-width team photo',
+  category: 'team',
+  icon: 'image',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'team-full' },
+    children: [
+      {
+        id: genId('label'),
+        type: 'paragraph',
+        props: { text: 'This is our Team', variant: 'label', color: 'blue', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Meet our Experts', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Discover our diverse, talented team committed to your success.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Team photo', aspectRatio: '16:9', fullWidth: true },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Team Grid Cards
+export const teamGridCards: SectionTemplate = {
+  id: 'team-grid-cards',
+  name: 'Team Grid Cards',
+  description: '2x3 cards with avatars',
+  category: 'team',
+  icon: 'layout-grid',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'team-cards' },
+    children: [
+      {
+        id: genId('label'),
+        type: 'paragraph',
+        props: { text: 'This is our Team', variant: 'label', color: 'blue', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Meet our Experts', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('team'),
+        type: 'team_cards',
+        props: {
+          items: [
+            { image: '', name: 'Philipp Schilling', role: 'Engineering', description: 'Technical leadership' },
+            { image: '', name: 'Julia Schmidt', role: 'Marketing', description: 'Brand strategy' },
+            { image: '', name: 'Maximilian Weber', role: 'Finance', description: 'Growth planning' },
+            { image: '', name: 'Anna Müller', role: 'Design', description: 'User experience' },
+            { image: '', name: 'Thomas Klein', role: 'Sales', description: 'Client success' },
+            { image: '', name: 'Laura Fischer', role: 'Support', description: 'Customer care' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Team Grid Cards (Gray BG)
+export const teamGridCardsGray: SectionTemplate = {
+  id: 'team-grid-cards-gray',
+  name: 'Team Grid Cards (Gray)',
+  description: 'Card grid on gray background',
+  category: 'team',
+  icon: 'layout-grid',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'team-cards', background: 'gray' },
+    children: [
+      {
+        id: genId('label'),
+        type: 'paragraph',
+        props: { text: 'This is our Team', variant: 'label', color: 'blue', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Meet our Experts', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('team'),
+        type: 'team_cards',
+        props: {
+          items: [
+            { image: '', name: 'Philipp Schilling', role: 'Engineering', description: 'Technical leadership' },
+            { image: '', name: 'Julia Schmidt', role: 'Marketing', description: 'Brand strategy' },
+            { image: '', name: 'Maximilian Weber', role: 'Finance', description: 'Growth planning' },
+            { image: '', name: 'Anna Müller', role: 'Design', description: 'User experience' },
+            { image: '', name: 'Thomas Klein', role: 'Sales', description: 'Client success' },
+            { image: '', name: 'Laura Fischer', role: 'Support', description: 'Customer care' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Team Split + CTA
+export const teamSplitCta: SectionTemplate = {
+  id: 'team-split-cta',
+  name: 'Team + CTA',
+  description: 'CTA left, 2x2 team grid right',
+  category: 'team',
+  icon: 'users',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'team-cta' },
+    children: [
+      {
+        id: genId('label'),
+        type: 'paragraph',
+        props: { text: 'Become part of the community', variant: 'label', color: 'blue' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Get to know our Team', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Apply now', variant: 'primary', action: 'next' },
+        children: [],
+      },
+      {
+        id: genId('team'),
+        type: 'team_grid',
+        props: {
+          columns: 2,
+          items: [
+            { image: '', name: 'Philipp', description: 'Engineering' },
+            { image: '', name: 'Julia', description: 'Marketing' },
+            { image: '', name: 'Max', description: 'Finance' },
+            { image: '', name: 'Anna', description: 'Design' },
+          ],
+        },
         children: [],
       },
     ],
@@ -2418,8 +2812,17 @@ export const allSectionTemplates: SectionTemplate[] = [
   testimonialCarousel,
   // FAQ (1)
   faqSection,
-  // Team (1)
-  teamSection,
+  // Team (10)
+  teamMemberTextLeft,
+  teamMemberImageLeft,
+  teamMemberFeatures,
+  teamGridSimple,
+  teamGridLabel,
+  teamGridNoDesc,
+  teamFullImage,
+  teamGridCards,
+  teamGridCardsGray,
+  teamSplitCta,
 ];
 
 export const sectionTemplatesByCategory = {
@@ -2432,7 +2835,7 @@ export const sectionTemplatesByCategory = {
   features: [featuresSplitChecklist, featuresSplitImage, featuresSplitIcons, features3ColCards, features4ColIcons, features2ColIcons, featuresGrayImage, featuresGrayReviews],
   testimonials: [testimonialSingle, testimonialCarousel],
   faq: [faqSection],
-  team: [teamSection],
+  team: [teamMemberTextLeft, teamMemberImageLeft, teamMemberFeatures, teamGridSimple, teamGridLabel, teamGridNoDesc, teamFullImage, teamGridCards, teamGridCardsGray, teamSplitCta],
 };
 
 export const categoryLabels: Record<string, string> = {
