@@ -6,6 +6,15 @@ import { createContext } from 'react';
 import type { PageBackground } from '../../../types/infostack';
 import { gradientToCSS } from '../modals';
 
+// Import the intelligent contrast engine
+import {
+  ContrastEngine,
+  getThemeAwareColors as getThemeAwareColorsFromEngine,
+  deriveHoverColor as deriveHoverColorFromEngine,
+  deriveActiveColor as deriveActiveColorFromEngine,
+  extractGradientFirstColor,
+} from '@/builder/utils/ContrastEngine';
+
 // ============================================================================
 // CONTEXTS
 // ============================================================================
@@ -95,20 +104,37 @@ export const effectClasses: Record<string, string> = {
 
 /**
  * Get contrasting text color based on background luminance
+ * Enhanced version using ContrastEngine for proper color parsing
  */
-export function getContrastTextColor(backgroundColor: string): string {
-  try {
-    const hex = backgroundColor.replace('#', '');
-    if (hex.length !== 6) return '#ffffff';
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.5 ? '#1f2937' : '#ffffff';
-  } catch {
-    return '#ffffff';
-  }
+export function getContrastTextColor(
+  backgroundColor: string,
+  options?: { isDarkTheme?: boolean }
+): string {
+  // Use the intelligent contrast engine for proper color handling
+  return ContrastEngine.getContrastTextColor(backgroundColor, {
+    preferDark: options?.isDarkTheme === false,
+  });
 }
+
+/**
+ * Get theme-aware colors for a background (text, hover, active, border)
+ */
+export { getThemeAwareColorsFromEngine as getThemeAwareColors };
+
+/**
+ * Derive hover background color from a base color
+ */
+export { deriveHoverColorFromEngine as deriveHoverColor };
+
+/**
+ * Derive active/pressed background color from a base color
+ */
+export { deriveActiveColorFromEngine as deriveActiveColor };
+
+/**
+ * Extract the first color from a gradient string
+ */
+export { extractGradientFirstColor };
 
 /**
  * Derive a lighter shade from a hex color (used for theme-aware gradient fallbacks)
@@ -343,6 +369,10 @@ export { easingMap };
 // Export a utility object for convenient access
 export const CanvasUtilities = {
   getContrastTextColor,
+  getThemeAwareColors: getThemeAwareColorsFromEngine,
+  deriveHoverColor: deriveHoverColorFromEngine,
+  deriveActiveColor: deriveActiveColorFromEngine,
+  extractGradientFirstColor,
   lightenHex,
   shiftHue,
   getPageBackgroundStyles,
