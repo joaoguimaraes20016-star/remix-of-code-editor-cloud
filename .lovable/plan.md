@@ -1,381 +1,553 @@
 
+# Funnel Builder Reliability Architecture: "Perspective-Level Simplicity"
 
-# Database Security Hardening: Critical Pre-Launch Fixes
+## The Core Problem
 
-## Overview
+The current funnel builder has **3 major architectural issues** that make it impossible to guarantee every button, effect, and control works:
 
-This plan addresses the **2 critical (ERROR) security issues** identified by the Supabase database linter, plus adds policies to **7 tables with RLS enabled but zero policies**.
+| Issue | Evidence | Impact |
+|-------|----------|--------|
+| **Monolithic Renderer** | `CanvasRenderer.tsx` = 5,367 lines | Impossible to test, debug, or extend |
+| **Scattered Style Logic** | 703 occurrences of `element.props?.` with inline CSS generation | Effects applied inconsistently |
+| **Dual Systems** | `flow-canvas` (5,600+ lines) + `builder_v2` (simpler registry) running parallel | Feature parity impossible |
 
-| Priority | Issue Type | Count | Tables Affected |
-|----------|-----------|-------|-----------------|
-| **Critical** | RLS Disabled in Public | 1 | `events` |
-| **Critical** | Sensitive Columns Exposed | 1 | Linked to `events` |
-| **High** | RLS Enabled, No Policies | 7 | `automations`, `asset_field_templates`, `message_logs`, `payments`, `team_automation_rules`, `team_follow_up_flow_config`, `team_follow_up_settings` |
+### Why Controls Don't Work Reliably
+
+The current flow is:
+
+```text
+Inspector Control → RightPanel.tsx (5,600 lines)
+       ↓
+Updates element.props.shadow = "lg"
+       ↓  
+CanvasRenderer.tsx (5,300 lines)
+       ↓
+getButtonShadowStyle() → conditional logic
+       ↓
+Maybe applies CSS, maybe doesn't (default fallbacks override)
+```
+
+There are **hundreds of code paths** where:
+- User sets `shadow: none` → default shadow still appears
+- User sets `borderWidth: 0` → selection ring looks like border
+- User picks gradient → text contrast breaks
+- User enables effect → nothing visible happens
 
 ---
 
-## Critical Issue 1: `events` Table Has RLS Disabled
+## The Solution: Token-Based Style System
 
-### Current State
-- RLS is **disabled** on the `events` table
-- Contains funnel analytics data including:
-  - `session_id` - User session identifiers
-  - `lead_id` - References to lead submissions
-  - `payload` - May contain email addresses and form data
-- No foreign key to `funnels.team_id` for authorization checks
-- Publicly queryable via PostgREST API
+The `builder_v2` already has the RIGHT architecture with `UnifiedButton` and primitive components. We need to:
 
-### Risk Assessment
-**HIGH RISK**: Anyone with the Supabase anon key can:
-- Query all funnel event data across all teams
-- Extract email addresses from event payloads
-- Enumerate session IDs and lead behavior
-- Perform competitive intelligence gathering
+1. **Consolidate all styling into a single token system**
+2. **Make every control a guaranteed 1:1 mapping**
+3. **Build a test harness that proves every control works**
 
-### Solution
+### New Architecture: StyleToken System
 
-#### Step 1: Enable RLS on events table
-```sql
-ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
-```
-
-#### Step 2: Create helper function for funnel team ownership
-```sql
-CREATE OR REPLACE FUNCTION public.get_funnel_team_id(p_funnel_id text)
-RETURNS uuid
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT team_id FROM funnels WHERE id::text = p_funnel_id
-$$;
-```
-
-#### Step 3: Create RLS policies
-
-**Policy 1: Team members can view their funnel events**
-```sql
-CREATE POLICY "Team members can view funnel events"
-ON public.events FOR SELECT
-USING (
-  is_team_member(auth.uid(), get_funnel_team_id(funnel_id))
-);
-```
-
-**Policy 2: Service role can insert events (for edge function)**
-```sql
-CREATE POLICY "Service role can insert events"
-ON public.events FOR INSERT
-WITH CHECK (true);
-```
-
-This policy allows the `record-funnel-event` edge function (using service role key) to insert events from public funnel pages.
-
----
-
-## Critical Issue 2: Tables with RLS Enabled but No Policies
-
-These tables have RLS enabled (good!) but zero policies defined, meaning **all access is denied** including legitimate uses. This can cause application bugs or force workarounds that bypass security.
-
-### 2.1 `automations` Table
-
-**Contains**: Team automation workflows (name, definition, triggers)  
-**Has**: `team_id` column for authorization
-
-```sql
--- Team members can view their automations
-CREATE POLICY "Team members can view automations"
-ON public.automations FOR SELECT
-USING (is_team_member(auth.uid(), team_id));
-
--- Team admins can manage automations
-CREATE POLICY "Team admins can manage automations"
-ON public.automations FOR ALL
-USING (is_team_admin(auth.uid(), team_id))
-WITH CHECK (is_team_admin(auth.uid(), team_id));
-```
-
-### 2.2 `asset_field_templates` Table
-
-**Contains**: Custom field templates for client assets  
-**Has**: `team_id` column (nullable - can be null for system templates)
-
-```sql
--- Team members can view their templates
-CREATE POLICY "Team members can view asset field templates"
-ON public.asset_field_templates FOR SELECT
-USING (
-  team_id IS NULL  -- System templates visible to all
-  OR is_team_member(auth.uid(), team_id)
-);
-
--- Team admins can manage their templates
-CREATE POLICY "Team admins can manage asset field templates"
-ON public.asset_field_templates FOR ALL
-USING (
-  team_id IS NOT NULL 
-  AND is_team_admin(auth.uid(), team_id)
-)
-WITH CHECK (
-  team_id IS NOT NULL 
-  AND is_team_admin(auth.uid(), team_id)
-);
-```
-
-### 2.3 `message_logs` Table
-
-**Contains**: SMS/email delivery logs with PII (`to_address`, `from_address`)  
-**Has**: `team_id` column
-
-```sql
--- Team members can view their message logs
-CREATE POLICY "Team members can view message logs"
-ON public.message_logs FOR SELECT
-USING (is_team_member(auth.uid(), team_id));
-
--- Service role can insert logs (for automation engine)
-CREATE POLICY "Service role can insert message logs"
-ON public.message_logs FOR INSERT
-WITH CHECK (true);
-```
-
-### 2.4 `payments` Table
-
-**Contains**: Payment transaction records  
-**Analysis needed**: Check for `team_id` or relationship
-
-```sql
--- First check table structure
--- If has team_id:
-CREATE POLICY "Team members can view payments"
-ON public.payments FOR SELECT
-USING (is_team_member(auth.uid(), team_id));
-
--- Service role can insert/update payments (for webhooks)
-CREATE POLICY "Service role can manage payments"
-ON public.payments FOR ALL
-USING (true)
-WITH CHECK (true);
-```
-
-### 2.5 `team_automation_rules` Table
-
-**Contains**: Team-specific automation rules  
-**Has**: `team_id` column
-
-```sql
--- Team admins can manage automation rules
-CREATE POLICY "Team admins can manage automation rules"
-ON public.team_automation_rules FOR ALL
-USING (is_team_admin(auth.uid(), team_id))
-WITH CHECK (is_team_admin(auth.uid(), team_id));
-```
-
-### 2.6 `team_follow_up_flow_config` Table
-
-**Contains**: Follow-up workflow configuration  
-**Has**: `team_id` column
-
-```sql
--- Team admins can manage follow-up config
-CREATE POLICY "Team admins can manage follow-up config"
-ON public.team_follow_up_flow_config FOR ALL
-USING (is_team_admin(auth.uid(), team_id))
-WITH CHECK (is_team_admin(auth.uid(), team_id));
-```
-
-### 2.7 `team_follow_up_settings` Table
-
-**Contains**: Follow-up settings per team  
-**Has**: `team_id` column
-
-```sql
--- Team members can view follow-up settings
-CREATE POLICY "Team members can view follow-up settings"
-ON public.team_follow_up_settings FOR SELECT
-USING (is_team_member(auth.uid(), team_id));
-
--- Team admins can manage follow-up settings
-CREATE POLICY "Team admins can manage follow-up settings"
-ON public.team_follow_up_settings FOR ALL
-USING (is_team_admin(auth.uid(), team_id))
-WITH CHECK (is_team_admin(auth.uid(), team_id));
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                    SINGLE SOURCE OF TRUTH                    │
+│                      StyleTokenSystem                        │
+├─────────────────────────────────────────────────────────────┤
+│  Token Definition          │  CSS Output                    │
+│  ─────────────────────────────────────────────────────────  │
+│  shadow.none              →  box-shadow: none               │
+│  shadow.sm                →  box-shadow: 0 1px 2px...       │
+│  shadow.glow              →  box-shadow: 0 0 20px {color}   │
+│  border.width.0           →  border-width: 0                │
+│  border.width.1           →  border-width: 1px              │
+│  radius.sm                →  border-radius: 4px             │
+│  effect.fadeIn            →  animation: fadeIn 0.3s         │
+│  effect.slideUp           →  animation: slideUp 0.3s        │
+│  hover.scale              →  transform: scale(1.05)         │
+│  hover.glow               →  filter: drop-shadow(...)       │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    ELEMENT RENDERER                          │
+│                   (Simple Token Consumer)                    │
+├─────────────────────────────────────────────────────────────┤
+│  Input: element.styleTokens = ['shadow.lg', 'radius.xl']    │
+│  Output: <div style={resolveTokens(element.styleTokens)}>   │
+│                                                              │
+│  NO conditional logic. NO fallbacks. Just token → CSS.       │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    INSPECTOR CONTROL                         │
+│                   (Token Picker, not props setter)           │
+├─────────────────────────────────────────────────────────────┤
+│  ShadowControl:                                              │
+│    [None] [S] [M] [L] [XL] [Glow]                            │
+│                  ↓                                           │
+│    onClick → setToken('shadow', value)                       │
+│                  ↓                                           │
+│    Guaranteed CSS output via StyleTokenSystem                │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Complete Migration Script
+## Implementation Plan
 
-```sql
--- ============================================
--- SECURITY HARDENING MIGRATION
--- Priority: CRITICAL - Run before launch
--- ============================================
+### Phase 1: Create StyleTokenSystem (Foundation)
 
--- ===========================================
--- PART 1: Enable RLS on events table
--- ===========================================
+Create a single source of truth for ALL visual properties:
 
--- Enable RLS
-ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+```typescript
+// src/builder/tokens/StyleTokenSystem.ts
 
--- Helper function to get team_id from funnel
-CREATE OR REPLACE FUNCTION public.get_funnel_team_id(p_funnel_id text)
-RETURNS uuid
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT team_id FROM funnels WHERE id::text = p_funnel_id LIMIT 1
-$$;
+export interface StyleToken {
+  id: string;           // "shadow.lg"
+  category: string;     // "shadow"
+  value: string;        // "lg"
+  css: React.CSSProperties;
+  cssClass?: string;    // Optional Tailwind class
+}
 
--- Team members can view their funnel events
-CREATE POLICY "Team members can view funnel events"
-ON public.events FOR SELECT
-USING (
-  is_team_member(auth.uid(), get_funnel_team_id(funnel_id))
-);
+export const StyleTokenSystem = {
+  // SHADOWS - Complete list, no gaps
+  shadow: {
+    none: { boxShadow: 'none' },
+    sm: { boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' },
+    md: { boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' },
+    lg: { boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' },
+    xl: { boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' },
+    glow: (color: string) => ({ 
+      boxShadow: `0 0 20px ${hexToRgba(color, 0.5)}` 
+    }),
+  },
+  
+  // BORDERS - Every value explicit
+  border: {
+    width: {
+      0: { borderWidth: '0' },
+      1: { borderWidth: '1px' },
+      2: { borderWidth: '2px' },
+      4: { borderWidth: '4px' },
+    },
+    radius: {
+      none: { borderRadius: '0' },
+      sm: { borderRadius: '4px' },
+      md: { borderRadius: '8px' },
+      lg: { borderRadius: '12px' },
+      xl: { borderRadius: '16px' },
+      full: { borderRadius: '9999px' },
+    },
+  },
+  
+  // EFFECTS - Entry + Exit animations
+  effects: {
+    fadeIn: { animation: 'fadeIn 0.3s ease-out' },
+    fadeOut: { animation: 'fadeOut 0.3s ease-out' },
+    slideUp: { animation: 'slideUp 0.3s ease-out' },
+    slideDown: { animation: 'slideDown 0.3s ease-out' },
+    scaleIn: { animation: 'scaleIn 0.2s ease-out' },
+    bounce: { animation: 'bounce 0.5s ease-out' },
+  },
+  
+  // HOVER EFFECTS
+  hover: {
+    none: {},
+    lift: { transform: 'translateY(-2px)' },
+    scale: { transform: 'scale(1.02)' },
+    glow: (color: string) => ({ 
+      filter: `drop-shadow(0 0 8px ${hexToRgba(color, 0.5)})` 
+    }),
+  },
+};
 
--- Service role can insert events (edge function uses service key)
-CREATE POLICY "Service role can insert events"
-ON public.events FOR INSERT
-WITH CHECK (true);
+// Single function to resolve tokens to CSS
+export function resolveTokens(
+  tokens: Record<string, string>,
+  context?: { primaryColor?: string }
+): React.CSSProperties {
+  const result: React.CSSProperties = {};
+  
+  for (const [category, value] of Object.entries(tokens)) {
+    const tokenDef = StyleTokenSystem[category]?.[value];
+    if (!tokenDef) continue;
+    
+    const css = typeof tokenDef === 'function' 
+      ? tokenDef(context?.primaryColor || '#8b5cf6')
+      : tokenDef;
+    
+    Object.assign(result, css);
+  }
+  
+  return result;
+}
+```
 
--- ===========================================
--- PART 2: Add policies to automations table
--- ===========================================
+**Files to create:**
+- `src/builder/tokens/StyleTokenSystem.ts` - Token definitions
+- `src/builder/tokens/index.ts` - Exports
+- `src/builder/tokens/TokenResolver.ts` - Resolution logic
 
-CREATE POLICY "Team members can view automations"
-ON public.automations FOR SELECT
-USING (is_team_member(auth.uid(), team_id));
+---
 
-CREATE POLICY "Team admins can manage automations"
-ON public.automations FOR ALL
-USING (is_team_admin(auth.uid(), team_id))
-WITH CHECK (is_team_admin(auth.uid(), team_id));
+### Phase 2: Create TokenControl Components
 
--- ===========================================
--- PART 3: Add policies to asset_field_templates
--- ===========================================
+Replace all inspector controls with token-aware versions:
 
-CREATE POLICY "Anyone can view system templates"
-ON public.asset_field_templates FOR SELECT
-USING (team_id IS NULL);
+```typescript
+// src/builder/inspector/TokenShadowControl.tsx
 
-CREATE POLICY "Team members can view their templates"
-ON public.asset_field_templates FOR SELECT
-USING (is_team_member(auth.uid(), team_id));
+export function TokenShadowControl({ 
+  value, 
+  onChange 
+}: { 
+  value: string; 
+  onChange: (token: string) => void 
+}) {
+  const options = Object.keys(StyleTokenSystem.shadow);
+  
+  return (
+    <div className="flex rounded-lg border overflow-hidden">
+      {options.map((opt) => (
+        <Button
+          key={opt}
+          variant={value === opt ? 'default' : 'ghost'}
+          onClick={() => onChange(opt)}
+          className="flex-1 h-8 text-xs"
+        >
+          {/* Live preview of the shadow */}
+          <div 
+            className="w-4 h-4 rounded bg-white"
+            style={StyleTokenSystem.shadow[opt]}
+          />
+        </Button>
+      ))}
+    </div>
+  );
+}
+```
 
-CREATE POLICY "Team admins can manage templates"
-ON public.asset_field_templates FOR ALL
-USING (team_id IS NOT NULL AND is_team_admin(auth.uid(), team_id))
-WITH CHECK (team_id IS NOT NULL AND is_team_admin(auth.uid(), team_id));
+**Files to create:**
+- `src/builder/inspector/controls/TokenShadowControl.tsx`
+- `src/builder/inspector/controls/TokenBorderControl.tsx`
+- `src/builder/inspector/controls/TokenRadiusControl.tsx`
+- `src/builder/inspector/controls/TokenEffectControl.tsx`
+- `src/builder/inspector/controls/TokenHoverControl.tsx`
 
--- ===========================================
--- PART 4: Add policies to message_logs
--- ===========================================
+---
 
-CREATE POLICY "Team members can view message logs"
-ON public.message_logs FOR SELECT
-USING (is_team_member(auth.uid(), team_id));
+### Phase 3: Create TokenElement Renderer
 
-CREATE POLICY "Service role can insert message logs"
-ON public.message_logs FOR INSERT
-WITH CHECK (true);
+A simplified element renderer that ONLY consumes tokens:
 
--- ===========================================
--- PART 5: Add policies to payments table
--- ===========================================
+```typescript
+// src/builder/canvas/TokenElementRenderer.tsx
 
--- Note: Payments typically managed by webhooks, so service role access
-CREATE POLICY "Service role can manage payments"
-ON public.payments FOR ALL
-USING (true)
-WITH CHECK (true);
-
--- ===========================================
--- PART 6: Add policies to team_automation_rules
--- ===========================================
-
-CREATE POLICY "Team admins can manage automation rules"
-ON public.team_automation_rules FOR ALL
-USING (is_team_admin(auth.uid(), team_id))
-WITH CHECK (is_team_admin(auth.uid(), team_id));
-
--- ===========================================
--- PART 7: Add policies to team_follow_up_flow_config
--- ===========================================
-
-CREATE POLICY "Team admins can manage follow-up config"
-ON public.team_follow_up_flow_config FOR ALL
-USING (is_team_admin(auth.uid(), team_id))
-WITH CHECK (is_team_admin(auth.uid(), team_id));
-
--- ===========================================
--- PART 8: Add policies to team_follow_up_settings
--- ===========================================
-
-CREATE POLICY "Team members can view follow-up settings"
-ON public.team_follow_up_settings FOR SELECT
-USING (is_team_member(auth.uid(), team_id));
-
-CREATE POLICY "Team admins can manage follow-up settings"
-ON public.team_follow_up_settings FOR ALL
-USING (is_team_admin(auth.uid(), team_id))
-WITH CHECK (is_team_admin(auth.uid(), team_id));
-
--- ===========================================
--- VERIFICATION: Run after migration
--- ===========================================
--- SELECT tablename, 
---        (SELECT count(*) FROM pg_policies WHERE schemaname = 'public' AND tablename = t.tablename) as policy_count
--- FROM pg_tables t
--- WHERE schemaname = 'public'
---   AND (SELECT count(*) FROM pg_policies WHERE schemaname = 'public' AND tablename = t.tablename) = 0;
+export function TokenElementRenderer({ 
+  element,
+  isPreview = false 
+}: { 
+  element: CanvasElement;
+  isPreview?: boolean;
+}) {
+  // Resolve all tokens to CSS
+  const tokenStyles = resolveTokens(element.tokens || {}, {
+    primaryColor: element.primaryColor,
+  });
+  
+  // Merge with explicit inline styles
+  const finalStyles = {
+    ...tokenStyles,
+    ...element.styles,
+  };
+  
+  // Render based on type - NO conditional styling logic
+  switch (element.type) {
+    case 'button':
+      return (
+        <button 
+          className="builder-button"
+          style={finalStyles}
+        >
+          {element.props.label}
+        </button>
+      );
+    
+    case 'heading':
+      return (
+        <h2 style={finalStyles}>
+          {element.props.text}
+        </h2>
+      );
+    
+    // ... other element types
+  }
+}
 ```
 
 ---
 
-## Implementation Steps
+### Phase 4: Create Visual Test Harness
 
-1. **Create migration file** with the SQL above
-2. **Run migration** via Supabase dashboard or CLI
-3. **Verify** by re-running the linter - should show 0 ERRORs for RLS issues
-4. **Test** that:
-   - Funnel event recording still works (edge function uses service role)
-   - Automation management works in the app
-   - Message logs are visible to team members
-   - No broken functionality due to overly restrictive policies
+A dedicated page that renders EVERY token combination for visual verification:
 
----
+```typescript
+// src/builder/test/TokenTestHarness.tsx
 
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `supabase/migrations/[timestamp]_security_hardening_rls.sql` | Complete migration script |
-
----
-
-## Post-Implementation Verification
-
-After running the migration, verify with:
-
-```sql
--- Check all tables now have policies
-SELECT 
-  c.relname as table_name,
-  c.relrowsecurity as rls_enabled,
-  (SELECT count(*) FROM pg_policies WHERE schemaname = 'public' AND tablename = c.relname) as policy_count
-FROM pg_class c
-JOIN pg_namespace n ON n.oid = c.relnamespace
-WHERE n.nspname = 'public'
-  AND c.relkind = 'r'
-  AND c.relname IN ('events', 'automations', 'asset_field_templates', 'message_logs', 'payments', 'team_automation_rules', 'team_follow_up_flow_config', 'team_follow_up_settings')
-ORDER BY c.relname;
+export function TokenTestHarness() {
+  return (
+    <div className="p-8 space-y-12">
+      {/* Shadow Tests */}
+      <section>
+        <h2 className="text-xl font-bold mb-4">Shadow Tokens</h2>
+        <div className="grid grid-cols-6 gap-4">
+          {Object.entries(StyleTokenSystem.shadow).map(([key, css]) => (
+            <div key={key} className="flex flex-col items-center gap-2">
+              <div 
+                className="w-16 h-16 bg-white rounded-lg"
+                style={typeof css === 'function' ? css('#8b5cf6') : css}
+              />
+              <span className="text-xs">{key}</span>
+              <span className="text-xs text-green-500">✓</span>
+            </div>
+          ))}
+        </div>
+      </section>
+      
+      {/* Border Radius Tests */}
+      <section>
+        <h2 className="text-xl font-bold mb-4">Border Radius Tokens</h2>
+        <div className="grid grid-cols-6 gap-4">
+          {Object.entries(StyleTokenSystem.border.radius).map(([key, css]) => (
+            <div key={key} className="flex flex-col items-center gap-2">
+              <div 
+                className="w-16 h-16 bg-purple-500"
+                style={css}
+              />
+              <span className="text-xs">{key}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+      
+      {/* Effect Tests (Animated) */}
+      <section>
+        <h2 className="text-xl font-bold mb-4">Effect Tokens</h2>
+        <div className="grid grid-cols-6 gap-4">
+          {Object.entries(StyleTokenSystem.effects).map(([key, css]) => (
+            <EffectTestCard key={key} name={key} css={css} />
+          ))}
+        </div>
+      </section>
+      
+      {/* Button Combinations */}
+      <section>
+        <h2 className="text-xl font-bold mb-4">Button Token Combinations</h2>
+        <div className="grid grid-cols-4 gap-4">
+          {/* Generate all shadow × radius combinations */}
+          {Object.keys(StyleTokenSystem.shadow).flatMap(shadow =>
+            Object.keys(StyleTokenSystem.border.radius).map(radius => (
+              <button
+                key={`${shadow}-${radius}`}
+                className="px-4 py-2 bg-purple-500 text-white"
+                style={{
+                  ...StyleTokenSystem.shadow[shadow],
+                  ...StyleTokenSystem.border.radius[radius],
+                }}
+              >
+                {shadow} / {radius}
+              </button>
+            ))
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
 ```
 
-Expected result: All tables should show `rls_enabled = true` and `policy_count >= 1`.
+---
 
+### Phase 5: Migrate Existing Elements
+
+Gradually migrate existing elements to use the token system:
+
+**Migration Strategy:**
+1. Add `tokens` field to Element type
+2. Update RightPanel to set tokens instead of scattered props
+3. Update CanvasRenderer to consume tokens first, fall back to props
+4. Once verified, remove prop-based styling logic
+
+```typescript
+// Element type evolution
+interface Element {
+  id: string;
+  type: string;
+  // OLD: Scattered props
+  props?: Record<string, unknown>;
+  styles?: Record<string, string>;
+  // NEW: Token-based
+  tokens?: {
+    shadow?: string;      // "none" | "sm" | "md" | "lg" | "xl" | "glow"
+    radius?: string;      // "none" | "sm" | "md" | "lg" | "xl" | "full"
+    effect?: string;      // "fadeIn" | "slideUp" | etc.
+    hover?: string;       // "none" | "lift" | "scale" | "glow"
+    border?: string;      // "0" | "1" | "2"
+  };
+}
+```
+
+---
+
+## File Structure
+
+```text
+src/builder/
+├── tokens/
+│   ├── StyleTokenSystem.ts      # Token definitions (single source of truth)
+│   ├── TokenResolver.ts         # Token → CSS resolution
+│   ├── animations.css           # All keyframe animations
+│   └── index.ts
+│
+├── inspector/
+│   └── controls/
+│       ├── TokenShadowControl.tsx
+│       ├── TokenBorderControl.tsx
+│       ├── TokenRadiusControl.tsx
+│       ├── TokenEffectControl.tsx
+│       ├── TokenHoverControl.tsx
+│       └── index.ts
+│
+├── canvas/
+│   ├── TokenElementRenderer.tsx  # Simplified element renderer
+│   └── TokenButtonRenderer.tsx   # Button-specific (unified)
+│
+└── test/
+    ├── TokenTestHarness.tsx      # Visual verification page
+    └── token.test.ts             # Unit tests for token resolution
+```
+
+---
+
+## Guarantees This Architecture Provides
+
+| Control | Current State | After Token System |
+|---------|--------------|-------------------|
+| Shadow = None | Maybe shows shadow due to fallbacks | **Guaranteed** no shadow |
+| Border = 0 | Selection ring confuses users | **Guaranteed** no visible border |
+| Effect = FadeIn | Might not trigger | **Guaranteed** animation plays |
+| Hover = Scale | Depends on element type | **Guaranteed** scale on hover |
+| Radius = Full | Works sometimes | **Guaranteed** pill shape |
+
+---
+
+## Testing Strategy
+
+### Unit Tests (token.test.ts)
+```typescript
+describe('StyleTokenSystem', () => {
+  test.each(Object.keys(StyleTokenSystem.shadow))('shadow.%s resolves to valid CSS', (key) => {
+    const css = StyleTokenSystem.shadow[key];
+    expect(css).toHaveProperty('boxShadow');
+  });
+  
+  test('shadow.none produces no visible shadow', () => {
+    expect(StyleTokenSystem.shadow.none.boxShadow).toBe('none');
+  });
+  
+  test.each(Object.keys(StyleTokenSystem.border.radius))('radius.%s resolves to valid CSS', (key) => {
+    const css = StyleTokenSystem.border.radius[key];
+    expect(css).toHaveProperty('borderRadius');
+  });
+});
+```
+
+### Visual Tests (TokenTestHarness)
+- Accessible via `/builder/token-test` in development
+- Shows every token rendered live
+- Each token has a ✓/✗ indicator
+- Can be screenshotted for regression testing
+
+### Integration Tests
+- Playwright tests that:
+  1. Open builder
+  2. Add button
+  3. Set shadow to "lg"
+  4. Verify button has `box-shadow` CSS applied
+  5. Set shadow to "none"
+  6. Verify `box-shadow: none`
+
+---
+
+## Implementation Order
+
+1. **Create StyleTokenSystem.ts** - 1-2 hours
+   - Define all tokens with explicit CSS values
+   - No conditionals, no fallbacks
+
+2. **Create TokenResolver.ts** - 30 minutes
+   - Simple function: tokens → CSS
+   - No special cases
+
+3. **Create Token controls** - 2-3 hours
+   - One control per category
+   - Each control shows live preview
+
+4. **Create TokenTestHarness** - 1-2 hours
+   - Visual verification of every token
+   - Generates confidence report
+
+5. **Migrate buttons first** - 2-3 hours
+   - Buttons are highest complexity
+   - Proves the architecture works
+
+6. **Migrate remaining elements** - 4-6 hours
+   - Headings, paragraphs, inputs
+   - Use same pattern
+
+---
+
+## Technical Details
+
+### Files to Create
+
+| File | Purpose | Est. Lines |
+|------|---------|------------|
+| `src/builder/tokens/StyleTokenSystem.ts` | Token definitions | ~200 |
+| `src/builder/tokens/TokenResolver.ts` | Resolution logic | ~50 |
+| `src/builder/tokens/animations.css` | Keyframe definitions | ~100 |
+| `src/builder/inspector/controls/TokenShadowControl.tsx` | Shadow picker | ~60 |
+| `src/builder/inspector/controls/TokenRadiusControl.tsx` | Radius picker | ~60 |
+| `src/builder/inspector/controls/TokenEffectControl.tsx` | Animation picker | ~80 |
+| `src/builder/inspector/controls/TokenHoverControl.tsx` | Hover effect picker | ~60 |
+| `src/builder/test/TokenTestHarness.tsx` | Visual test page | ~200 |
+
+**Total new code: ~810 lines**
+
+### Files to Modify
+
+| File | Changes | Est. Lines |
+|------|---------|------------|
+| `src/flow-canvas/types/infostack.ts` | Add `tokens` to Element type | ~10 |
+| `src/flow-canvas/builder/components/RightPanel.tsx` | Use token controls | ~100 |
+| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Consume tokens | ~150 |
+| `src/components/builder/UnifiedButton.tsx` | Accept token prop | ~30 |
+
+**Total modifications: ~290 lines**
+
+---
+
+## Success Criteria
+
+After implementation:
+
+- [ ] Every shadow option visually distinct in test harness
+- [ ] Every border radius option visually distinct
+- [ ] Every effect animation plays correctly
+- [ ] Every hover effect triggers on hover
+- [ ] Setting "none" to any effect **removes** it completely
+- [ ] No default fallbacks that override user intent
+- [ ] Test harness shows 100% ✓ for all tokens
+
+This architecture makes "100 of these feel easy" because:
+1. **One token = One visual result** (no surprises)
+2. **Every control is testable** (visible in harness)
+3. **No conditional logic** (what you set is what you get)
+4. **Shared across all element types** (buttons, text, cards all use same system)
