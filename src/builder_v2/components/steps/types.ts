@@ -48,11 +48,12 @@ export const FONT_SIZE_MAP = {
   large: { headline: 'text-2xl', subtext: 'text-base', button: 'text-lg' },
 };
 
+// B2: Default step design uses theme tokens
 export const DEFAULT_DESIGN: StepDesign = {
-  backgroundColor: '#0f0f0f',
-  textColor: '#ffffff',
-  buttonColor: '#6366f1',
-  buttonTextColor: '#ffffff',
+  backgroundColor: 'hsl(var(--builder-bg, 225 12% 10%))',
+  textColor: 'hsl(var(--builder-text, 0 0% 100%))',
+  buttonColor: 'hsl(var(--primary, 217 91% 60%))',
+  buttonTextColor: 'hsl(var(--primary-foreground, 0 0% 100%))',
   fontSize: 'medium',
   borderRadius: 12,
 };

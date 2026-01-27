@@ -303,7 +303,20 @@
   height: 100px;
   background-size: cover;
   background-position: center;
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: hsl(0 0% 100% / 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* A5: Emoji placeholder for options without images */
+.step-option-placeholder-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 32px;
 }
 
 .step-option-content {
@@ -317,17 +330,8 @@
 
 .step-option-content--card {
   background: hsl(var(--primary));
-  color: #ffffff;
+  color: hsl(0 0% 100%);
   font-weight: 600;
-}
-
-.step-option-emoji {
-  font-size: 18px;
-}
-
-.step-option-label {
-  font-size: 14px;
-  font-weight: 500;
 }
 
 /* ============================================================================
@@ -335,6 +339,7 @@
    Empty containers communicate possibility, not emptiness
    ============================================================================ */
 
+/* E1: Soften empty state dashed borders */
 .step-card--empty,
 .builder-v2-legacy-empty {
   display: flex;
@@ -345,13 +350,13 @@
   
   /* Empty state styling */
   background: 
-    linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, transparent 50%),
-    linear-gradient(225deg, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
-  border: 2px dashed rgba(255, 255, 255, 0.1);
+    linear-gradient(135deg, hsl(var(--primary) / 0.03) 0%, transparent 50%),
+    linear-gradient(225deg, hsl(271 81% 56% / 0.03) 0%, transparent 50%);
+  border: 2px dashed hsl(0 0% 100% / 0.08);
   border-radius: 24px;
   
   /* Guide text */
-  color: rgba(255, 255, 255, 0.4);
+  color: hsl(0 0% 100% / 0.4);
   font-size: 14px;
   text-align: center;
   padding: 32px;

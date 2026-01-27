@@ -111,27 +111,28 @@
   transition: all 200ms ease;
 }
 
+/* B3: Primary CTA uses theme tokens */
 .builder-cta-button--primary {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: #ffffff;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  background: var(--gradient-button, linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent, var(--primary))) 100%));
+  color: hsl(var(--primary-foreground, 0 0% 100%));
+  box-shadow: 0 4px 14px hsl(var(--primary) / 0.35);
 }
 
 .builder-cta-button--primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+  box-shadow: 0 6px 20px hsl(var(--primary) / 0.45);
 }
 
 .builder-cta-button--secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: hsl(0 0% 100% / 0.1);
+  color: hsl(0 0% 100%);
+  border: 1px solid hsl(0 0% 100% / 0.15);
 }
 
 .builder-cta-button--outline {
   background: transparent;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: hsl(0 0% 100%);
+  border: 1px solid hsl(0 0% 100% / 0.3);
 }
 
 /* Spacer */
@@ -483,7 +484,7 @@
 }
 
 /* =========================================================================
-   CONTENT CARD - White card container
+   CONTENT CARD - White card container (A4 fix: add background)
    ========================================================================= */
 
 .builder-content-card {
@@ -493,20 +494,23 @@
   width: 100%;
   gap: 0;
   text-align: center;
-  overflow: hidden; /* allows HeaderBar to clip to rounded corners */
+  overflow: hidden;
+  /* A4: Add proper light background for card content */
+  background: hsl(0 0% 100%);
+  border-radius: 16px;
 }
 
 .builder-content-card--shadow {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 32px hsl(0 0% 0% / 0.15);
 }
 
 /* Content card typography overrides for light bg */
 .builder-content-card .builder-heading {
-  color: #1a1a1a;
+  color: hsl(0 0% 10%);
 }
 
 .builder-content-card .builder-paragraph {
-  color: #555555;
+  color: hsl(0 0% 33%);
 }
 
 /* Nested sections in content cards should center content */
