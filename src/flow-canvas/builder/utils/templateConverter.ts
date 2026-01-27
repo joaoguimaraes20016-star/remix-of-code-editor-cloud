@@ -23,8 +23,8 @@ function mapNodeTypeToBlockType(nodeType: string): BlockType {
     'image': 'media',
     'video': 'media',
     'video_embed': 'media',
-    'spacer': 'spacer',
-    'divider': 'divider',
+    'spacer': 'custom',    // spacer is an Element, not BlockType
+    'divider': 'custom',   // divider is an Element, not BlockType
     'email_input': 'form-field',
     'phone_input': 'form-field',
     'text_input': 'form-field',

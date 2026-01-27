@@ -3773,7 +3773,7 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
           <div>
             <p className="text-sm font-semibold text-builder-text">{getBlockTypeLabel(block.type)}</p>
             {/* Only show Container badge for section-type blocks, not content blocks */}
-            {getBlockCategory(block.type) === 'Container' && (
+            {getBlockCategory(block.type) === 'Section' && (
               <p className="text-[10px] text-[hsl(280,75%,65%)]">Block</p>
             )}
           </div>
@@ -3793,7 +3793,7 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
       )}
 
       {/* Block Settings only shown for Container types, not content blocks */}
-      {getBlockCategory(block.type) === 'Container' && (
+      {getBlockCategory(block.type) === 'Section' && (
         <CollapsibleSection title="Block Settings" icon={<Layout className="w-4 h-4" />} defaultOpen>
           <div className="space-y-4 pt-3">
             <FieldGroup label="Label">
@@ -3916,7 +3916,7 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
       )}
 
       {/* Spacing controls only for Container blocks - content inherits from parent */}
-      {getBlockCategory(block.type) === 'Container' && (
+      {getBlockCategory(block.type) === 'Section' && (
         <CollapsibleSection title="Spacing" icon={<BoxSelect className="w-4 h-4" />}>
           <div className="space-y-3 pt-3">
             {/* Margin */}
@@ -3976,7 +3976,7 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
       )}
 
       {/* Border & Shadow only for Container blocks */}
-      {getBlockCategory(block.type) === 'Container' && (
+      {getBlockCategory(block.type) === 'Section' && (
         <CollapsibleSection title="Border & Shadow" icon={<Square className="w-4 h-4" />}>
           <div className="space-y-3 pt-3">
             {/* Border Width */}
@@ -4175,7 +4175,7 @@ const BlockInspector: React.FC<{ block: Block; onUpdate: (updates: Partial<Block
       )}
 
       {/* Background only for Container blocks - content inherits from parent */}
-      {getBlockCategory(block.type) === 'Container' && (
+      {getBlockCategory(block.type) === 'Section' && (
         <CollapsibleSection title="Background" icon={<Palette className="w-4 h-4" />} defaultOpen>
           <div className="pt-3">
             <BackgroundEditor

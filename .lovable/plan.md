@@ -1,13 +1,17 @@
 
-# Deep Dive: Blocks vs Elements vs Sections — Inconsistency Analysis
+# Block vs Element vs Section — IMPLEMENTED ✅
 
-## Executive Summary
+## Summary of Changes Made
 
-After extensive analysis of the funnel builder codebase, I've identified **32 distinct inconsistencies** where the conceptual model doesn't match the implementation. The core issue is that **three different mental models are conflated**:
+1. **Removed `video-thumbnail` from ElementType** — Use `video` with `displayMode: 'thumbnail'`
+2. **Removed `spacer`, `divider` from BlockType** — These are Elements, wrap in `'custom'` block
+3. **Added `faq` to BlockType** — FAQ section template (contains faq accordion elements)
+4. **Updated `getBlockCategory()`** — Returns `'Section' | 'Content'` instead of `'Container' | 'Content' | 'Layout'`
+5. **Added `FrameTemplateType`** — Documents Frame = Section mapping
+6. **Updated all templates** — AddSectionPopover, BlockPickerPanel use correct types
+7. **Updated AI parsers** — parseFunnelResponse, parseAIBlockResponse, templateConverter
 
-1. **Documented Hierarchy**: Page → Step → Frame → Stack → Block → Element
-2. **UI Terminology**: Uses "Section" (user-facing) but stores as "Frame" (internal)
-3. **BlockType vs ElementType**: Many types exist in BOTH, causing rendering confusion
+## Architecture Reference
 
 ---
 

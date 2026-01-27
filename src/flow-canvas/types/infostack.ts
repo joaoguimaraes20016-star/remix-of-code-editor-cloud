@@ -9,6 +9,8 @@ export type StepType = 'form' | 'content' | 'quiz' | 'booking' | 'checkout' | 't
 export type SubmitMode = 'next' | 'submit' | 'redirect' | 'custom';
 
 // Element types - primary types used by canvas renderer
+// Element types - atomic content units (smallest building blocks)
+// These are the ONLY types that should be used in the `elements` array of a Block
 export type ElementType = 
   | 'text' 
   | 'heading' 
@@ -18,9 +20,9 @@ export type ElementType =
   | 'checkbox' 
   | 'radio' 
   | 'image' 
-  | 'video' 
-  | 'divider'
-  | 'spacer'
+  | 'video'           // Use displayMode: 'thumbnail' for video thumbnails
+  | 'divider'         // Horizontal line separator
+  | 'spacer'          // Vertical spacing
   | 'icon'
   | 'link'
   // Extended types for flexibility
@@ -35,7 +37,6 @@ export type ElementType =
   | 'badge'              // Pill badge with optional icon
   | 'icon-text'          // Icon + text pair
   | 'process-step'       // Step in a process visualization
-  | 'video-thumbnail'    // Video with styled play overlay
   // Functional elements (fully interactive)
   | 'countdown'          // Live countdown timer with expiration actions
   | 'loader'             // Animated loading/progress indicator
@@ -46,31 +47,34 @@ export type ElementType =
   | 'trustpilot'         // Trustpilot review widget
   | 'faq';               // FAQ accordion element
 
-// Block types - core types actively used in builder
+// Block types - content containers that hold elements
+// IMPORTANT: Blocks are containers. Elements go inside blocks.
+// Section-level concepts (hero, footer, etc.) are FRAME TEMPLATES, not block types.
+// spacer, divider, faq are ELEMENTS, not blocks - use 'custom' block with those elements inside.
 export type BlockType = 
+  // Core content blocks
+  | 'form-field'         // Input fields container
+  | 'cta'                // Button/action container
+  | 'testimonial'        // Quote container
+  | 'media'              // Image/video container
+  | 'text-block'         // Text content container
+  | 'custom'             // Empty/generic container (use for spacer, divider, faq elements)
+  | 'booking'            // Calendar embed container
+  | 'application-flow'   // Flow Container: Typeform-style multi-step experience
+  | 'capture-flow-embed' // @deprecated - Use 'application-flow' instead
+  // Section template types - these create full Frame templates
+  // They're kept as BlockTypes for backwards compatibility but conceptually are Frame templates
   | 'hero' 
-  | 'form-field' 
-  | 'cta' 
-  | 'testimonial' 
-  | 'media'
-  | 'text-block'
-  | 'custom'
-  | 'booking'
-  | 'application-flow'  // Flow Container: Typeform-style multi-step experience (SINGLE SOURCE OF TRUTH)
-  | 'capture-flow-embed' // @deprecated - Use 'application-flow' instead. Kept for backwards compatibility only.
-  // Extended types for section templates
   | 'feature'
   | 'pricing'
-  | 'faq'
+  | 'faq'                // FAQ section (contains faq accordion elements)
   | 'about'
   | 'team'
   | 'trust'
   | 'logo-bar'
   | 'footer'
   | 'contact'
-  | 'spacer'
-  | 'divider'
-  // Premium block types for high-converting funnels
+  // Premium section templates
   | 'credibility-bar'    // Avatar group + "From the team who..." text
   | 'stats-row'          // Row of large stat numbers
   | 'process-flow'       // Step 1 → Step 2 → Step 3 visualization
@@ -79,6 +83,22 @@ export type BlockType =
   | 'video-hero'         // Hero section centered on video
   | 'split-hero'         // Left text, right media layout
   | 'guarantee';         // Risk reversal / guarantee section
+
+// Frame Template types - these are semantic templates for creating Frames (Sections)
+// They map to BlockType for backwards compatibility but represent Section-level concepts
+export type FrameTemplateType = 
+  | 'hero' 
+  | 'cta' 
+  | 'about' 
+  | 'testimonial' 
+  | 'feature' 
+  | 'pricing' 
+  | 'faq' 
+  | 'team' 
+  | 'trust' 
+  | 'footer' 
+  | 'contact' 
+  | 'custom';
 
 /**
  * @deprecated Use ApplicationStepType from '@/flow-canvas/shared/types/applicationEngine' instead.

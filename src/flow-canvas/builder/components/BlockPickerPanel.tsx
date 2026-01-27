@@ -944,9 +944,10 @@ const premiumBlocks: BlockTemplate[] = [
       label: 'Video Thumbnail',
       elements: [{
         id: generateId(),
-        type: 'video-thumbnail',
+        type: 'video',  // Use 'video' with displayMode: 'thumbnail'
         content: '',
         props: {
+          displayMode: 'thumbnail',
           thumbnailUrl: '',
           videoUrl: '',
           overlayStyle: 'gradient'
