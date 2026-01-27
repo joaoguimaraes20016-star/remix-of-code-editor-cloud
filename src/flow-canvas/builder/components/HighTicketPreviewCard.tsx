@@ -868,19 +868,201 @@ const FeaturesPreview = React.forwardRef<HTMLDivElement, { variant: string }>(
 );
 FeaturesPreview.displayName = 'FeaturesPreview';
 
-// Testimonials preview
-const TestimonialsPreview = React.forwardRef<HTMLDivElement, { variant: string }>(
-  ({ variant }, ref) => {
-    if (variant === 'carousel') {
+// Testimonials preview - 11 variants (Perspective-style)
+const TestimonialsPreview = React.forwardRef<HTMLDivElement, { template: SectionTemplate }>(
+  ({ template }, ref) => {
+    const id = template.id;
+    
+    // Shared components
+    const YellowStarRating = () => (
+      <div className="flex items-center gap-0.5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star key={i} size={6} className="fill-amber-400 text-amber-400" />
+        ))}
+      </div>
+    );
+    
+    const BlueLogo = () => (
+      <div className="flex items-center gap-0.5">
+        <div className="w-2.5 h-2.5 rounded bg-blue-500" />
+        <span className="text-[5px] text-slate-600 font-medium">Perspective</span>
+      </div>
+    );
+    
+    const TestimonialAvatar = ({ light = false }: { light?: boolean }) => (
+      <div className="flex items-center gap-1">
+        <div className="w-4 h-4 rounded-full bg-gradient-to-br from-slate-300 to-slate-400" />
+        <div>
+          <div className={cn("h-0.5 w-8 rounded", light ? "bg-white" : "bg-slate-700")} />
+          <div className={cn("h-0.5 w-10 rounded mt-0.5", light ? "bg-white/60" : "bg-slate-400")} />
+        </div>
+      </div>
+    );
+    
+    const TestimonialCard = ({ hasStars = true, grayBg = false }: { hasStars?: boolean; grayBg?: boolean }) => (
+      <div className={cn(
+        "p-1.5 rounded flex flex-col gap-1",
+        grayBg ? "bg-slate-50 border border-slate-100" : "bg-white border border-slate-100"
+      )}>
+        {hasStars && <YellowStarRating />}
+        <div className="h-1 w-full bg-slate-600 rounded" />
+        <div className="h-0.5 w-4/5 bg-slate-400 rounded" />
+        <TestimonialAvatar />
+      </div>
+    );
+    
+    const PhotoCard = ({ overlay = true }: { overlay?: boolean }) => (
+      <div className="flex-1 rounded overflow-hidden">
+        <div className={cn(
+          "h-8 bg-gradient-to-br from-slate-200 to-slate-300 relative",
+          overlay && "flex flex-col justify-end"
+        )}>
+          {overlay && (
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent p-1 flex flex-col justify-end">
+              <div className="h-0.5 w-8 bg-white rounded" />
+              <div className="h-0.5 w-6 bg-white/60 rounded mt-0.5" />
+            </div>
+          )}
+        </div>
+        {!overlay && (
+          <div className="p-1 bg-white">
+            <div className="h-0.5 w-8 bg-slate-600 rounded" />
+            <div className="h-0.5 w-6 bg-slate-400 rounded mt-0.5" />
+          </div>
+        )}
+      </div>
+    );
+    
+    // Single Centered - Logo + quote + avatar
+    if (id.includes('single-centered')) {
       return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col items-center">
-          <div className="h-2 w-24 bg-white/70 rounded mb-2" />
-          <div className="flex gap-2">
-            {[1, 2].map((_, i) => (
-              <div key={i} className="w-16 h-16 rounded-lg bg-white/5 border border-white/10 p-2 flex flex-col items-center">
-                <Quote size={8} className="text-white/30 mb-1" />
-                <div className="h-1 w-12 bg-white/20 rounded" />
-                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 mt-2" />
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <BlueLogo />
+          <div className="h-1.5 w-28 bg-slate-700 rounded" />
+          <div className="h-1 w-24 bg-slate-400 rounded" />
+          <TestimonialAvatar />
+        </div>
+      );
+    }
+    
+    // Single + Stars
+    if (id.includes('single-stars')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <YellowStarRating />
+          <div className="h-1.5 w-28 bg-slate-700 rounded" />
+          <div className="h-1 w-24 bg-slate-400 rounded" />
+          <TestimonialAvatar />
+        </div>
+      );
+    }
+    
+    // Single Full Image (Dark)
+    if (id.includes('single-full-image')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="flex items-center gap-0.5">
+            <div className="w-2.5 h-2.5 rounded bg-blue-500" />
+            <span className="text-[5px] text-white font-medium">Perspective</span>
+          </div>
+          <div className="h-1.5 w-28 bg-white rounded" />
+          <div className="h-1 w-24 bg-white/60 rounded" />
+          <TestimonialAvatar light />
+        </div>
+      );
+    }
+    
+    // Single Image Rounded
+    if (id.includes('single-image-rounded') || id.includes('image-rounded')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-slate-100 p-2 flex items-center justify-center">
+          <div className="w-full h-full bg-gradient-to-br from-slate-600 to-slate-700 rounded-lg p-2 flex flex-col items-center justify-center gap-1">
+            <div className="flex items-center gap-0.5">
+              <div className="w-2 h-2 rounded bg-blue-500" />
+              <span className="text-[4px] text-white font-medium">Perspective</span>
+            </div>
+            <div className="h-1 w-20 bg-white rounded" />
+            <div className="h-0.5 w-16 bg-white/60 rounded" />
+            <TestimonialAvatar light />
+          </div>
+        </div>
+      );
+    }
+    
+    // Split - Text Left
+    if (id.includes('split-text-left')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <BlueLogo />
+            <div className="h-1 w-full bg-slate-600 rounded" />
+            <div className="h-0.5 w-4/5 bg-slate-400 rounded" />
+            <div className="h-0.5 w-3/4 bg-slate-300 rounded" />
+            <TestimonialAvatar />
+          </div>
+          <div className="flex-1 bg-gradient-to-br from-slate-200 to-slate-300 rounded-lg" />
+        </div>
+      );
+    }
+    
+    // Split - Image Left
+    if (id.includes('split-image-left')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 bg-gradient-to-br from-slate-200 to-slate-300 rounded-lg" />
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <div className="h-1 w-full bg-slate-600 rounded" />
+            <div className="h-0.5 w-4/5 bg-slate-400 rounded" />
+            <div className="h-0.5 w-3/4 bg-slate-300 rounded" />
+            <TestimonialAvatar />
+          </div>
+        </div>
+      );
+    }
+    
+    // Grid Yellow Stars
+    if (id.includes('grid-yellow-stars')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex flex-col items-center justify-center gap-1">
+          <div className="h-2 w-24 bg-slate-800 rounded" />
+          <div className="h-1 w-28 bg-slate-300 rounded" />
+          <div className="flex gap-1.5 mt-1.5 w-full">
+            <TestimonialCard />
+            <TestimonialCard />
+            <TestimonialCard />
+          </div>
+        </div>
+      );
+    }
+    
+    // Grid Cards (Gray)
+    if (id.includes('grid-cards')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex flex-col items-center justify-center gap-1">
+          <div className="h-2 w-24 bg-slate-800 rounded" />
+          <div className="h-1 w-28 bg-slate-300 rounded" />
+          <div className="flex gap-1.5 mt-1.5 w-full">
+            <TestimonialCard grayBg />
+            <TestimonialCard grayBg />
+            <TestimonialCard grayBg />
+          </div>
+        </div>
+      );
+    }
+    
+    // Grid No Cards (minimal)
+    if (id.includes('grid-no-cards')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex flex-col items-center justify-center gap-1">
+          <div className="h-2 w-24 bg-slate-800 rounded" />
+          <div className="h-1 w-28 bg-slate-300 rounded" />
+          <div className="flex gap-3 mt-1.5">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex flex-col items-center gap-0.5">
+                <YellowStarRating />
+                <div className="h-1 w-10 bg-slate-600 rounded" />
+                <div className="h-0.5 w-8 bg-slate-300 rounded" />
+                <div className="h-0.5 w-6 bg-slate-500 rounded mt-0.5" />
               </div>
             ))}
           </div>
@@ -888,20 +1070,43 @@ const TestimonialsPreview = React.forwardRef<HTMLDivElement, { variant: string }
       );
     }
     
-    return (
-      <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-4 flex flex-col items-center justify-center">
-        <Quote size={20} className="text-white/20 mb-2" />
-        <div className="space-y-1 w-full px-2">
-          <div className="h-1.5 w-full bg-white/30 rounded" />
-          <div className="h-1.5 w-4/5 bg-white/25 rounded mx-auto" />
-        </div>
-        <div className="flex items-center gap-2 mt-3">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-400" />
-          <div className="space-y-0.5">
-            <div className="h-1.5 w-12 bg-white/60 rounded" />
-            <div className="h-1 w-8 bg-white/30 rounded" />
+    // Grid Photo Overlay
+    if (id.includes('grid-photo-overlay') || id.includes('photo-overlay')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex flex-col items-center justify-center gap-1">
+          <div className="h-2 w-24 bg-slate-800 rounded" />
+          <div className="h-1 w-28 bg-slate-300 rounded" />
+          <div className="flex gap-1.5 mt-1.5 w-full">
+            <PhotoCard overlay />
+            <PhotoCard overlay />
+            <PhotoCard overlay />
           </div>
         </div>
+      );
+    }
+    
+    // Grid Photo Below
+    if (id.includes('grid-photo-below') || id.includes('photo-below')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex flex-col items-center justify-center gap-1">
+          <div className="h-2 w-24 bg-slate-800 rounded" />
+          <div className="h-1 w-28 bg-slate-300 rounded" />
+          <div className="flex gap-1.5 mt-1.5 w-full">
+            <PhotoCard overlay={false} />
+            <PhotoCard overlay={false} />
+            <PhotoCard overlay={false} />
+          </div>
+        </div>
+      );
+    }
+    
+    // Default fallback (Single Centered)
+    return (
+      <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+        <BlueLogo />
+        <div className="h-1.5 w-28 bg-slate-700 rounded" />
+        <div className="h-1 w-24 bg-slate-400 rounded" />
+        <TestimonialAvatar />
       </div>
     );
   }
@@ -1456,7 +1661,7 @@ function getPreviewComponent(template: SectionTemplate) {
       return <FeaturesPreview variant="split-checklist" />;
     
     case 'testimonials':
-      return <TestimonialsPreview variant={id.includes('carousel') || id.includes('stack') ? 'carousel' : 'single'} />;
+      return <TestimonialsPreview template={template} />;
     
     case 'faq':
       return <FAQPreview />;
