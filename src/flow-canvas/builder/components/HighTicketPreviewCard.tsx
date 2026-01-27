@@ -613,66 +613,200 @@ const AboutUsPreview = React.forwardRef<HTMLDivElement, { template: SectionTempl
 );
 AboutUsPreview.displayName = 'AboutUsPreview';
 
-// Social Proof previews
-const SocialProofPreview = React.forwardRef<HTMLDivElement, { variant: string }>(
-  ({ variant }, ref) => {
-    if (variant === 'stars') {
-      return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-4 flex flex-col items-center justify-center gap-2">
-          <div className="flex items-center gap-0.5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} size={14} className="fill-yellow-400 text-yellow-400" />
-            ))}
-          </div>
-          <div className="h-1.5 w-20 bg-white/50 rounded" />
-        </div>
-      );
-    }
+// Trust / Social Proof previews - Perspective Style (10 variants)
+const TrustPreview = React.forwardRef<HTMLDivElement, { template: SectionTemplate }>(
+  ({ template }, ref) => {
+    const id = template.id;
     
-    if (variant === 'logos') {
-      return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col items-center justify-center gap-2">
-          <div className="h-1.5 w-12 bg-white/40 rounded" />
-          <div className="flex items-center gap-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="w-10 h-5 rounded bg-white/15" />
-            ))}
-          </div>
-        </div>
-      );
-    }
+    // Shared components
+    const LogoPlaceholder = ({ width = 'w-6' }: { width?: string }) => (
+      <div className={cn("h-2.5 rounded bg-slate-300", width)} />
+    );
     
-    if (variant === 'stats') {
-      return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex items-center justify-center">
-          <div className="grid grid-cols-3 gap-3">
-            {['$10M+', '500+', '97%'].map((stat, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <div className="h-3 w-8 bg-gradient-to-r from-emerald-400 to-blue-400 rounded" />
-                <div className="h-1 w-6 bg-white/30 rounded mt-1" />
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    
-    // Badges (default)
-    return (
-      <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col justify-center gap-2">
-        {[1, 2, 3].map((_, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-emerald-500/30 flex items-center justify-center">
-              <CheckCircle2 size={10} className="text-emerald-400" />
-            </div>
-            <div className="h-1.5 w-20 bg-white/30 rounded" />
-          </div>
+    const LogoRow = ({ count = 5 }: { count?: number }) => (
+      <div className="flex items-center justify-center gap-1.5">
+        {Array.from({ length: count }).map((_, i) => (
+          <LogoPlaceholder key={i} />
         ))}
+      </div>
+    );
+    
+    const LogoGrid3x2 = () => (
+      <div className="grid grid-cols-3 gap-1">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <LogoPlaceholder key={i} width="w-full" />
+        ))}
+      </div>
+    );
+    
+    const TrustTitle = () => (
+      <div className="h-2 w-20 bg-slate-800 rounded" />
+    );
+    
+    const TrustSubtext = () => (
+      <div className="space-y-0.5">
+        <div className="h-1 w-24 bg-slate-400 rounded" />
+        <div className="h-1 w-20 bg-slate-300 rounded" />
+      </div>
+    );
+    
+    const BlueButton = () => (
+      <div className="h-4 w-14 bg-blue-500 rounded" />
+    );
+    
+    // Trust Hero + Logos + CTA
+    if (id === 'trust-hero-logos-cta') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="h-2.5 w-24 bg-slate-800 rounded" />
+          <div className="h-1.5 w-28 bg-slate-300 rounded" />
+          <div className="mt-1 space-y-1">
+            <LogoRow count={5} />
+            <LogoRow count={4} />
+          </div>
+          <BlueButton />
+        </div>
+      );
+    }
+    
+    // Trust Gray Card Centered
+    if (id === 'trust-gray-card-centered') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex items-center justify-center">
+          <div className="bg-slate-50 rounded-lg p-2.5 border border-slate-100 flex flex-col items-center gap-1.5 w-full">
+            <TrustTitle />
+            <div className="h-1 w-20 bg-slate-300 rounded" />
+            <LogoRow count={5} />
+          </div>
+        </div>
+      );
+    }
+    
+    // Trust Centered Simple
+    if (id === 'trust-centered-simple') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <TrustTitle />
+          <TrustSubtext />
+          <div className="mt-1">
+            <LogoRow count={5} />
+          </div>
+        </div>
+      );
+    }
+    
+    // Trust Centered Gray BG
+    if (id === 'trust-centered-gray-bg') {
+      return (
+        <div ref={ref} className="w-full h-full bg-slate-50 p-3 flex flex-col items-center justify-center gap-1.5">
+          <TrustTitle />
+          <TrustSubtext />
+          <div className="mt-1">
+            <LogoRow count={5} />
+          </div>
+        </div>
+      );
+    }
+    
+    // Trust Split Gray Card
+    if (id === 'trust-split-gray-card') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2 items-center">
+          <div className="flex-1 space-y-1">
+            <TrustTitle />
+            <TrustSubtext />
+          </div>
+          <div className="flex-1 bg-slate-50 rounded-lg p-2 border border-slate-100">
+            <LogoGrid3x2 />
+          </div>
+        </div>
+      );
+    }
+    
+    // Trust Split White
+    if (id === 'trust-split-white') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2 items-center">
+          <div className="flex-1 space-y-1">
+            <TrustTitle />
+            <TrustSubtext />
+          </div>
+          <div className="flex-1 p-2">
+            <LogoGrid3x2 />
+          </div>
+        </div>
+      );
+    }
+    
+    // Trust Split Gray BG
+    if (id === 'trust-split-gray-bg') {
+      return (
+        <div ref={ref} className="w-full h-full bg-slate-50 p-2 flex gap-2 items-center">
+          <div className="flex-1 space-y-1">
+            <TrustTitle />
+            <TrustSubtext />
+          </div>
+          <div className="flex-1 p-2">
+            <LogoGrid3x2 />
+          </div>
+        </div>
+      );
+    }
+    
+    // Trust Split Outline
+    if (id === 'trust-split-outline') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2 items-center">
+          <div className="flex-1 space-y-1">
+            <TrustTitle />
+            <TrustSubtext />
+          </div>
+          <div className="flex-1 bg-white rounded-lg p-2 border border-slate-200">
+            <LogoGrid3x2 />
+          </div>
+        </div>
+      );
+    }
+    
+    // Trust Compact Bar
+    if (id === 'trust-compact-bar') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex items-center justify-between">
+          <div className="h-1.5 w-20 bg-slate-600 rounded" />
+          <div className="flex items-center gap-1.5">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <LogoPlaceholder key={i} />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
+    // Trust Compact Dark
+    if (id === 'trust-compact-dark') {
+      return (
+        <div ref={ref} className="w-full h-full bg-slate-800 p-3 flex items-center justify-between">
+          <div className="h-1.5 w-20 bg-white/70 rounded" />
+          <div className="flex items-center gap-1.5">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-2.5 w-6 rounded bg-white/30" />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
+    // Default fallback
+    return (
+      <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+        <TrustTitle />
+        <TrustSubtext />
+        <LogoRow count={5} />
       </div>
     );
   }
 );
-SocialProofPreview.displayName = 'SocialProofPreview';
+TrustPreview.displayName = 'TrustPreview';
 
 // Features preview - PERSPECTIVE STYLE (8 variants)
 const SectionLabel = () => (
@@ -1644,10 +1778,7 @@ function getPreviewComponent(template: SectionTemplate) {
       return <QuizFormPreview template={template} />;
     
     case 'social_proof':
-      if (id.includes('stars')) return <SocialProofPreview variant="stars" />;
-      if (id.includes('logos')) return <SocialProofPreview variant="logos" />;
-      if (id.includes('stats')) return <SocialProofPreview variant="stats" />;
-      return <SocialProofPreview variant="badges" />;
+      return <TrustPreview template={template} />;
     
     case 'features':
       if (id.includes('split-checklist')) return <FeaturesPreview variant="split-checklist" />;

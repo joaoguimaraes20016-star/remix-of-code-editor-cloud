@@ -1724,106 +1724,368 @@ export const quizSplitInfo: SectionTemplate = {
 };
 
 // ============================================================================
-// SOCIAL PROOF SECTIONS (4 templates)
-// Trust indicators and credibility builders
+// TRUST / SOCIAL PROOF SECTIONS (10 templates) - Perspective-Style
+// Company logos and trust indicators for credibility
 // ============================================================================
 
-export const socialProofStars: SectionTemplate = {
-  id: 'social-stars',
-  name: 'Star Rating',
-  description: '5-star rating with review count',
-  category: 'social_proof',
-  icon: 'star',
-  createNode: () => ({
-    id: genId('section'),
-    type: 'section',
-    props: { variant: 'content', align: 'center' },
-    children: [
-      {
-        id: genId('info'),
-        type: 'rating_display',
-        props: { rating: 5, count: 127, source: 'Google Reviews' },
-        children: [],
-      },
-    ],
-  }),
-};
-
-export const socialProofLogos: SectionTemplate = {
-  id: 'social-logos',
-  name: 'Logo Bar',
-  description: '"As seen in" brand logos',
+// Trust Hero + Logos + CTA
+export const trustHeroLogosCta: SectionTemplate = {
+  id: 'trust-hero-logos-cta',
+  name: 'Trust Hero + Logos',
+  description: 'Title, logo grid, and CTA button',
   category: 'social_proof',
   icon: 'building',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'content', align: 'center' },
+    props: { variant: 'trust-hero' },
     children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Your Vision is our Mission', level: 'h2', align: 'center' },
+        children: [],
+      },
       {
         id: genId('paragraph'),
         type: 'paragraph',
-        props: { text: 'As seen in', variant: 'small', align: 'center' },
+        props: { text: 'Benefit from our limited-time offer. Act quickly and secure exclusive benefits for your business.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 24 },
         children: [],
       },
       {
         id: genId('logos'),
         type: 'logo_bar',
-        props: { logos: [], grayscale: true },
+        props: { logos: ['Company 1', 'Company 2', 'Company 3', 'Company 4', 'Company 5'], grayscale: true },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 24 },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Learn more now', variant: 'primary', action: 'next' },
         children: [],
       },
     ],
   }),
 };
 
-export const socialProofStats: SectionTemplate = {
-  id: 'social-stats',
-  name: 'Results Stats',
-  description: '3-column achievement numbers',
+// Trust Gray Card Centered
+export const trustGrayCardCentered: SectionTemplate = {
+  id: 'trust-gray-card-centered',
+  name: 'Trust Gray Card',
+  description: 'Centered logos in gray card',
   category: 'social_proof',
-  icon: 'trending-up',
+  icon: 'building',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'content' },
+    props: { variant: 'trust-card', background: 'gray' },
     children: [
       {
-        id: genId('stats'),
-        type: 'stats_grid',
-        props: {
-          items: [
-            { value: '$10M+', label: 'Revenue Generated' },
-            { value: '500+', label: 'Happy Clients' },
-            { value: '97%', label: 'Success Rate' },
-          ],
-        },
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Companies that rely on us', level: 'h3', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Leading companies trust our expertise and innovative solutions.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 16 },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_bar',
+        props: { logos: ['Company 1', 'Company 2', 'Company 3', 'Company 4', 'Company 5'], grayscale: true },
         children: [],
       },
     ],
   }),
 };
 
-export const socialProofBadges: SectionTemplate = {
-  id: 'social-badges',
-  name: 'Trust Badges',
-  description: 'Guarantee and security icons',
+// Trust Centered Simple
+export const trustCenteredSimple: SectionTemplate = {
+  id: 'trust-centered-simple',
+  name: 'Trust Centered',
+  description: 'Simple centered logos on white',
   category: 'social_proof',
-  icon: 'shield-check',
+  icon: 'building',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'content' },
+    props: { variant: 'trust-centered' },
     children: [
       {
-        id: genId('info'),
-        type: 'info_card',
-        props: {
-          items: [
-            { icon: '✓', text: '100% Money-Back Guarantee' },
-            { icon: '🔒', text: 'Your data is secure' },
-            { icon: '⚡', text: 'Instant access' },
-          ],
-        },
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Companies that rely on us', level: 'h3', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Leading companies trust our expertise and innovative solutions.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 16 },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_bar',
+        props: { logos: ['Company 1', 'Company 2', 'Company 3', 'Company 4', 'Company 5'], grayscale: true },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Trust Centered Gray BG
+export const trustCenteredGrayBg: SectionTemplate = {
+  id: 'trust-centered-gray-bg',
+  name: 'Trust Centered (Gray BG)',
+  description: 'Centered logos on gray background',
+  category: 'social_proof',
+  icon: 'building',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'trust-centered', background: 'gray' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Companies that rely on us', level: 'h3', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Leading companies trust our expertise and innovative solutions.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 16 },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_bar',
+        props: { logos: ['Company 1', 'Company 2', 'Company 3', 'Company 4', 'Company 5'], grayscale: true },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Trust Split Gray Card
+export const trustSplitGrayCard: SectionTemplate = {
+  id: 'trust-split-gray-card',
+  name: 'Trust Split (Gray Card)',
+  description: 'Text left, gray logo card right',
+  category: 'social_proof',
+  icon: 'columns',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'trust-split' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Companies that rely on us', level: 'h3' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Leading companies trust our expertise and innovative solutions.' },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_grid',
+        props: { logos: ['Company 1', 'Company 2', 'Company 3', 'Company 4', 'Company 5', 'Company 6'], columns: 3, grayscale: true, cardStyle: 'gray' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Trust Split White
+export const trustSplitWhite: SectionTemplate = {
+  id: 'trust-split-white',
+  name: 'Trust Split (White)',
+  description: 'Text left, logos right on white',
+  category: 'social_proof',
+  icon: 'columns',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'trust-split' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Companies that rely on us', level: 'h3' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Leading companies trust our expertise and innovative solutions.' },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_grid',
+        props: { logos: ['Company 1', 'Company 2', 'Company 3', 'Company 4', 'Company 5', 'Company 6'], columns: 3, grayscale: true },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Trust Split Gray BG
+export const trustSplitGrayBg: SectionTemplate = {
+  id: 'trust-split-gray-bg',
+  name: 'Trust Split (Gray BG)',
+  description: 'Split layout on gray background',
+  category: 'social_proof',
+  icon: 'columns',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'trust-split', background: 'gray' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Companies that rely on us', level: 'h3' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Leading companies trust our expertise and innovative solutions.' },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_grid',
+        props: { logos: ['Company 1', 'Company 2', 'Company 3', 'Company 4', 'Company 5', 'Company 6'], columns: 3, grayscale: true },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Trust Split Outline
+export const trustSplitOutline: SectionTemplate = {
+  id: 'trust-split-outline',
+  name: 'Trust Split (Outline)',
+  description: 'Text left, bordered card with logos',
+  category: 'social_proof',
+  icon: 'columns',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'trust-split' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Companies that rely on us', level: 'h3' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Leading companies trust our expertise and innovative solutions.' },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_grid',
+        props: { logos: ['Company 1', 'Company 2', 'Company 3', 'Company 4', 'Company 5', 'Company 6'], columns: 3, grayscale: true, cardStyle: 'outline' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Trust Compact Bar
+export const trustCompactBar: SectionTemplate = {
+  id: 'trust-compact-bar',
+  name: 'Trust Compact',
+  description: 'Minimal horizontal logo bar',
+  category: 'social_proof',
+  icon: 'minus',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'trust-compact' },
+    children: [
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Companies that rely on us', variant: 'small' },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_bar',
+        props: { logos: ['Company 1', 'Company 2', 'Company 3'], grayscale: true, size: 'small' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Trust Compact Dark
+export const trustCompactDark: SectionTemplate = {
+  id: 'trust-compact-dark',
+  name: 'Trust Compact (Dark)',
+  description: 'Dark background compact logos',
+  category: 'social_proof',
+  icon: 'moon',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'trust-compact', background: 'dark' },
+    children: [
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Companies that rely on us', variant: 'small', color: 'white' },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_bar',
+        props: { logos: ['Company 1', 'Company 2', 'Company 3'], size: 'small' },
         children: [],
       },
     ],
@@ -3151,11 +3413,17 @@ export const allSectionTemplates: SectionTemplate[] = [
   quizImageCardsGray,
   quiz2Images,
   quizSplitInfo,
-  // Social Proof (4)
-  socialProofStars,
-  socialProofLogos,
-  socialProofStats,
-  socialProofBadges,
+  // Trust / Social Proof (10)
+  trustHeroLogosCta,
+  trustGrayCardCentered,
+  trustCenteredSimple,
+  trustCenteredGrayBg,
+  trustSplitGrayCard,
+  trustSplitWhite,
+  trustSplitGrayBg,
+  trustSplitOutline,
+  trustCompactBar,
+  trustCompactDark,
   // Features (8)
   featuresSplitChecklist,
   featuresSplitImage,
@@ -3198,7 +3466,7 @@ export const sectionTemplatesByCategory = {
   cta: [ctaSimple, ctaGrayCard, ctaDarkReviews, ctaDarkCard, ctaGradientLogos, ctaFormSplitReviews, ctaFormSplitSimple, ctaSplitForm, ctaFaq, ctaDual],
   about_us: [aboutSplitIcons, aboutSplitFaq, aboutFullImage, aboutLogos, about2ColText, aboutSplitImage, aboutContactInfo, aboutContactImage, aboutContactMap],
   quiz_form: [quizSplitBenefits, quizCenteredSimple, quizCenteredFilled, quizCenteredGray, quizCenteredCard, quizImageCards, quizImageCardsGray, quiz2Images, quizSplitInfo],
-  social_proof: [socialProofStars, socialProofLogos, socialProofStats, socialProofBadges],
+  social_proof: [trustHeroLogosCta, trustGrayCardCentered, trustCenteredSimple, trustCenteredGrayBg, trustSplitGrayCard, trustSplitWhite, trustSplitGrayBg, trustSplitOutline, trustCompactBar, trustCompactDark],
   features: [featuresSplitChecklist, featuresSplitImage, featuresSplitIcons, features3ColCards, features4ColIcons, features2ColIcons, featuresGrayImage, featuresGrayReviews],
   testimonials: [testimonialSingleCentered, testimonialSingleStars, testimonialSingleFullImage, testimonialSingleImageRounded, testimonialSplitTextLeft, testimonialSplitImageLeft, testimonialGridYellowStars, testimonialGridCards, testimonialGridNoCards, testimonialGridPhotoOverlay, testimonialGridPhotoBelow],
   faq: [faqSection],
