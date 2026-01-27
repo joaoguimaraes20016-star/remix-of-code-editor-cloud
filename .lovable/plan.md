@@ -1,302 +1,317 @@
 
-# Block vs Element vs Section — IMPLEMENTED ✅
+# Extended Inconsistency Analysis — Part 2
 
-## Summary of Changes Made
+## Summary
 
-1. **Removed `video-thumbnail` from ElementType** — Use `video` with `displayMode: 'thumbnail'`
-2. **Removed `spacer`, `divider` from BlockType** — These are Elements, wrap in `'custom'` block
-3. **Added `faq` to BlockType** — FAQ section template (contains faq accordion elements)
-4. **Updated `getBlockCategory()`** — Returns `'Section' | 'Content'` instead of `'Container' | 'Content' | 'Layout'`
-5. **Added `FrameTemplateType`** — Documents Frame = Section mapping
-6. **Updated all templates** — AddSectionPopover, BlockPickerPanel use correct types
-7. **Updated AI parsers** — parseFunnelResponse, parseAIBlockResponse, templateConverter
-
-## Architecture Reference
+Following the previous analysis, I've found **18 additional inconsistencies** that still exist in the codebase. These range from deprecated code still being actively used, to duplicate implementations, to conflicting type definitions.
 
 ---
 
-## Part 1: The Intended Architecture (Per ARCHITECTURE.md)
+## Category A: Deprecated Code Still in Active Use
 
-```text
-Page
-└── Step (funnel step/page)
-    └── Frame (visual container = "Section" in UI)
-        └── Stack (layout direction: vertical/horizontal)
-            └── Block (content group with type)
-                └── Element (atomic unit: text, button, input, etc.)
-```
+### Issue A.1: `video-thumbnail` Still Has Dedicated Rendering in FlowCanvasRenderer
 
-**Key definitions:**
-- **Frame** = A visual section container (labeled "Section" in UI)
-- **Block** = A content group (hero, cta, form-field, etc.)
-- **Element** = Atomic content (text, heading, button, input, video, etc.)
+**Location**: `src/flow-canvas/components/FlowCanvasRenderer.tsx:1683-1757`
 
----
+Despite the unification effort, there's a **complete separate case block** for `video-thumbnail` that duplicates the logic:
 
-## Part 2: Inconsistencies Found
-
-### Category A: Type Collision — Same Type in Both BlockType AND ElementType
-
-These types exist in BOTH `BlockType` and `ElementType`, creating ambiguity:
-
-| Type | In BlockType? | In ElementType? | Issue |
-|------|--------------|-----------------|-------|
-| `faq` | ✅ Yes | ✅ Yes | Block AND element — which renders? |
-| `spacer` | ✅ Yes | ✅ Yes | Block OR element? Different rendering paths |
-| `divider` | ✅ Yes | ✅ Yes | Block OR element? Different rendering paths |
-
-**Evidence:**
-- `infostack.ts:64` - `'faq'` as BlockType
-- `infostack.ts:47` - `'faq'` as ElementType
-- `infostack.ts:71` - `'spacer'` as BlockType
-- `infostack.ts:23` - `'spacer'` as ElementType
-- `infostack.ts:72` - `'divider'` as BlockType
-- `infostack.ts:22` - `'divider'` as ElementType
-
-**Problem:** When the renderer sees `type: 'faq'`, should it:
-1. Render as a Block (container with elements inside)?
-2. Render as an Element (atomic FAQ accordion)?
-
----
-
-### Category B: BlockType That Should Be Sections
-
-Some BlockTypes are actually full-page sections (containers), not content blocks:
-
-| BlockType | Reality | Should Be |
-|-----------|---------|-----------|
-| `hero` | Full-width page section | Frame (Section) template |
-| `footer` | Full-width page section | Frame (Section) template |
-| `pricing` | Full-width page section | Frame (Section) template |
-| `about` | Full-width page section | Frame (Section) template |
-| `team` | Full-width page section | Frame (Section) template |
-| `contact` | Full-width page section | Frame (Section) template |
-| `trust` | Full-width page section | Frame (Section) template |
-| `feature` | Full-width page section | Frame (Section) template |
-
-**Evidence from `labels.ts:8-11`:**
 ```typescript
-const sectionTypes = new Set([
-  'hero', 'cta', 'about', 'testimonial', 'feature', 'pricing', 
-  'faq', 'team', 'trust', 'footer', 'contact', 'custom'
-]);
-```
-
-The code **acknowledges** these are sections but stores them as BlockTypes.
-
----
-
-### Category C: Elements That Should Be Blocks (or Vice Versa)
-
-| Item | Currently | Should Be | Reason |
-|------|-----------|-----------|--------|
-| `video-thumbnail` | ElementType | Merged into `video` | Duplicate of `video` with different rendering |
-| `form-field` | BlockType | Template, not type | It's a grouping concept, not a visual type |
-| `media` | BlockType | Template | Contains image OR video elements |
-| `text-block` | BlockType | Template | Just a container for text elements |
-| `cta` | BlockType | Template | Just a container for button elements |
-| `logo-bar` | BlockType | Template | Should be `logo-marquee` element |
-| `booking` | BlockType | Template | Container for calendar embed |
-| `testimonial` | BlockType | Template | Container for quote + attribution |
-
----
-
-### Category D: Naming Inconsistencies (Internal vs UI)
-
-| Internal Name | UI Label | Files Using Internal | Files Using UI Label |
-|---------------|----------|---------------------|---------------------|
-| `Frame` | `Section` | 15+ components | SectionActionBar, LeftPanel, AddSectionPopover |
-| `Block` | `Block` (sometimes "Content Block") | CanvasRenderer | BlockPickerPanel |
-| `Stack` | (Hidden from user) | CanvasRenderer | N/A |
-| `application-flow` | `Multi-Step` | Types, Renderer | BlockPickerPanel labels |
-| `capture-flow-embed` | (Deprecated) | Types | N/A |
-
-**Problem:** User sees "Add Section" but code manipulates "Frame".
-
----
-
-### Category E: Templates Creating Wrong Types
-
-In `BlockPickerPanel.tsx`, templates create inconsistent structures:
-
-| Template | Block.type Created | Elements Created | Issue |
-|----------|-------------------|------------------|-------|
-| Divider | `'custom'` | `[{ type: 'divider' }]` | Why not `type: 'divider'` block? |
-| Logo Bar | `'custom'` | `[{ type: 'image', variant: 'logo-bar' }]` | Should be `logo-marquee` element |
-| Reviews | `'custom'` | `[{ type: 'text', variant: 'reviews' }]` | Should be `trustpilot` or dedicated element |
-| Slider | `'custom'` | `[{ type: 'image', variant: 'slider' }]` | Should be `carousel` element |
-| Spacer | `'spacer'` | `[]` | Block with no elements? |
-
-**Evidence (`BlockPickerPanel.tsx:386-396`):**
-```typescript
-{
-  type: 'divider',
-  label: 'Divider',
-  template: () => ({
-    id: generateId(),
-    type: 'custom',  // ← Creates 'custom' block
-    label: 'Divider',
-    elements: [{ id: generateId(), type: 'divider', ... }], // ← With 'divider' element
-  }),
+case 'video-thumbnail': {
+  const thumbnailUrl = (element.props?.thumbnailUrl as string);
+  const videoUrl = (element.props?.videoUrl as string);
+  // ... 70+ lines of duplicate rendering code
 }
 ```
 
----
+**Impact**: Two different render paths for the same concept, causing maintenance burden and potential visual inconsistencies.
 
-### Category F: Rendering Path Confusion
-
-The `CanvasRenderer.tsx` has **multiple render paths** for the same concept:
-
-1. **Block-level rendering** - Renders the Block container with styling
-2. **Element-level rendering** - Renders each Element inside
-3. **Special block types** - `application-flow` gets completely different rendering
-
-| Type | Rendered At | Notes |
-|------|-------------|-------|
-| `hero` block | Block level | Gets `py-12 text-center` automatically |
-| `text` element | Element level | Normal rendering |
-| `divider` block | N/A | Block has no elements, so nothing renders! |
-| `divider` element | Element level | Renders the line |
-| `spacer` block | Block level | Just adds height |
-| `spacer` element | Element level | Also adds height |
-| `faq` element | Element level | Renders accordion |
-| `faq` block | Block level | What happens? Just wrapper |
+**Fix Required**: Remove this case block entirely — the unified `video` case with `displayMode: 'thumbnail'` should handle all scenarios.
 
 ---
 
-### Category G: Inspector Logic Mismatches
+### Issue A.2: `video-thumbnail` Still in PREMIUM_ELEMENT_TYPES Array
 
-The `RightPanel.tsx` uses `getBlockCategory()` to decide which controls to show:
+**Location**: `src/flow-canvas/builder/components/RightPanel.tsx:363, 370`
 
 ```typescript
-// labels.ts:53-56
-export const getBlockCategory = (type: BlockType): 'Container' | 'Content' | 'Layout' => {
-  if (type === 'spacer' || type === 'divider') return 'Layout';
-  return sectionTypes.has(type) ? 'Container' : 'Content';
+const ELEMENT_SECTIONS = {
+  // ...
+  'video-thumbnail': ['premium'],
+} as const;
+
+const PREMIUM_ELEMENT_TYPES = [
+  'gradient-text', 'stat-number', 'avatar-group', 'ticker',
+  'badge', 'process-step', 'video-thumbnail', 'underline-text'  // ← Still here
+] as const;
+```
+
+**Impact**: Inspector routing logic still treats `video-thumbnail` as a separate type, leading to inconsistent inspector experiences.
+
+---
+
+### Issue A.3: `capture-flow-embed` Still in Valid Block Types
+
+**Locations**:
+- `src/lib/ai/parseFunnelResponse.ts:216`
+- `src/lib/ai/parseAIBlockResponse.ts:28`
+
+```typescript
+const validTypes: BlockType[] = [
+  'hero', 'form-field', 'cta', ..., 'capture-flow-embed',  // ← Deprecated!
+];
+```
+
+**Impact**: AI can still generate deprecated block types.
+
+---
+
+## Category B: Duplicate Element/Block Concepts
+
+### Issue B.1: `logo-bar` (Block) vs `logo-marquee` (Element)
+
+**Both exist and do similar things:**
+
+| Item | Type | Location | Behavior |
+|------|------|----------|----------|
+| `logo-bar` | BlockType | `infostack.ts:74` | Static logo row |
+| `logo-marquee` | ElementType | `infostack.ts:44` | Animated scrolling logos |
+
+**Templates create them inconsistently:**
+- `BlockPickerPanel.tsx:412` creates `logo-bar` block with `image` element having `variant: 'logo-bar'`
+- `BlockPickerPanel.tsx:686` creates `custom` block with `logo-marquee` element
+
+**Recommended**: Unify into single `logo-marquee` element with `animated: true/false` prop.
+
+---
+
+### Issue B.2: FAQ as Both Block and Element
+
+**Current State**:
+- `faq` is in `FrameTemplateType` (section-level)
+- `faq` is in `ElementType` (accordion widget)
+- Templates create `faq` blocks that contain `faq` elements
+
+**Confusion**: When user adds "FAQ" from BlockPicker, which one do they get?
+
+---
+
+### Issue B.3: `inputStyle` Type Mismatch Across Files
+
+| File | Allowed Values |
+|------|----------------|
+| `infostack.ts:136` | `'default' \| 'minimal' \| 'rounded' \| 'square' \| 'pill'` |
+| `captureFlow.ts:84` | `'default' \| 'minimal' \| 'rounded' \| 'square'` (missing `pill`) |
+| `applicationEngine.ts:93` | `'default' \| 'minimal' \| 'rounded' \| 'square' \| 'pill'` |
+
+**Impact**: Setting `inputStyle: 'pill'` in captureFlow will be silently invalid.
+
+---
+
+## Category C: Inconsistent Rendering Logic
+
+### Issue C.1: Multiple `getContrastTextColor` Implementations
+
+**Found 3 different implementations:**
+
+| Location | Implementation |
+|----------|----------------|
+| `templateThemeUtils.ts:83` | Simple light/dark check |
+| `ContrastEngine.ts:273` | Full WCAG-compliant engine |
+| `CanvasUtilities.ts:110` | Wrapper around ContrastEngine |
+
+**Problem**: Some components use the simple version, others use the full engine, leading to inconsistent text contrast.
+
+---
+
+### Issue C.2: `autoAdvance` Not Wired to Runtime
+
+**Location**: `src/flow-canvas/builder/components/elements/LoaderAnimation.tsx`
+
+The `LoaderAnimation` component has `autoAdvance` prop and `onComplete` callback, but when rendered in `FlowCanvasRenderer.tsx:1822-1834`, the `onComplete` is never connected to step progression:
+
+```typescript
+// FlowCanvasRenderer.tsx:1833
+autoAdvance={autoAdvance}
+// But no onComplete handler passed!
+```
+
+**Impact**: Loader element doesn't actually advance to next step when complete in published funnel.
+
+---
+
+### Issue C.3: `placeholder: true` Prop Has No Standard Handling
+
+**Found in templates:**
+```typescript
+{ type: 'video', props: { displayMode: 'thumbnail', placeholder: true, ... } }
+```
+
+But `placeholder: true` is **never checked** in the renderer — it should show a placeholder UI but doesn't.
+
+---
+
+## Category D: Type System Gaps
+
+### Issue D.1: `ButtonPreset` Defined in Multiple Places
+
+| Location | Values |
+|----------|--------|
+| `infostack.ts:126` | `'primary' \| 'secondary' \| 'outline' \| 'ghost'` |
+| `UnifiedButton.tsx:256` | `'primary' \| 'secondary' \| 'outline' \| 'ghost' \| 'gradient'` (extra!) |
+| `captureFlow.ts:90` | `'primary' \| 'secondary' \| 'outline' \| 'ghost'` |
+
+**Impact**: Setting `buttonPreset: 'gradient'` on a CaptureNode will be invalid at the type level.
+
+---
+
+### Issue D.2: `FrameTemplateType` Includes Extra Types Not in BlockType
+
+`labels.ts:16-20` defines frame templates:
+```typescript
+const frameTemplateTypes = new Set<string>([
+  'hero', 'cta', 'about', 'testimonial', 'feature', 'pricing', 'faq',
+  'team', 'trust', 'footer', 'contact', 'custom',
+  'credibility-bar', 'stats-row', 'process-flow', 'urgency-banner',
+  'ticker-bar', 'video-hero', 'split-hero', 'guarantee'  // ← Not in BlockType!
+]);
+```
+
+But `BlockType` in `infostack.ts` doesn't include all of these, causing type mismatches.
+
+---
+
+### Issue D.3: `StepIntent` Has 5 Values But Only 4 Used
+
+```typescript
+// infostack.ts
+export type StepIntent = 'capture' | 'qualify' | 'schedule' | 'convert' | 'complete';
+
+// labels.ts:122
+export const stepIntentLabels: Record<StepIntent, string> = {
+  capture: 'Collect Info',
+  qualify: 'Questions',
+  schedule: 'Booking',
+  convert: 'Checkout',
+  complete: 'Thank You',
 };
 ```
 
+But in actual templates and builders, only `capture`, `qualify`, and `complete` are ever used. `convert` and `schedule` have no actual implementation.
+
+---
+
+## Category E: builder_v2 vs flow-canvas Fragmentation
+
+### Issue E.1: Two Parallel Builder Systems
+
+The codebase has **two complete builder implementations**:
+
+| System | Location | Used By |
+|--------|----------|---------|
+| `builder_v2` | `src/builder_v2/` | Legacy funnels, some templates |
+| `flow-canvas` | `src/flow-canvas/` | New funnels |
+
+**Shared via:**
+- `templateConverter.ts` converts builder_v2 templates to flow-canvas format
+- `EditorDocumentRenderer.tsx` renders builder_v2 documents in runtime
+
 **Problems:**
-- `hero`, `cta`, `testimonial` → `Container` → Show layout controls
-- `text-block`, `media`, `form-field` → `Content` → Hide layout controls
-- `spacer`, `divider` → `Layout` → What controls?
-
-But then **elements inside blocks** don't respect this. A button element inside a `cta` block has its own styling, separate from the block's "Container" category.
+- Duplicate type definitions
+- Inconsistent rendering between systems
+- Maintenance burden
 
 ---
 
-### Category H: video-thumbnail Still Exists Everywhere
+### Issue E.2: `allSectionTemplates` Imported from builder_v2
 
-Despite claims of unification, `video-thumbnail` is still:
+**Locations**:
+- `src/flow-canvas/builder/components/InlineSectionPicker.tsx:22`
+- `src/flow-canvas/builder/components/EditorShell.tsx:22`
 
-1. **In ElementType** (`infostack.ts:38`)
-2. **Created by templates** (`AddSectionPopover.tsx:419, 671, 856`)
-3. **Has separate inspector** (`PremiumElementInspector.tsx:1361`)
-4. **Handled in FlowCanvasRenderer separately** (`FlowCanvasRenderer.tsx:1683`)
+The flow-canvas builder **imports templates from builder_v2**, then converts them. This creates a dependency chain:
 
----
-
-## Part 3: The Correct Conceptual Model
-
-### What Each Level SHOULD Be
-
-| Level | Purpose | Contains | UI Term |
-|-------|---------|----------|---------|
-| **Frame** | Visual section boundary | Stacks | "Section" |
-| **Stack** | Layout direction control | Blocks | (Hidden) |
-| **Block** | Content grouping | Elements | "Block" or "Content" |
-| **Element** | Atomic content unit | Props only | "Element" or by type name |
-
-### BlockType SHOULD Be Limited To:
-- `text-block` - Text content container
-- `form-field` - Input fields container
-- `cta` - Button/action container
-- `media` - Image/video container
-- `testimonial` - Quote container
-- `booking` - Calendar container
-- `application-flow` - Multi-step interactive
-- `custom` - Empty container
-
-### BlockType Should NOT Include:
-- `hero`, `footer`, `pricing`, `about`, `team`, `contact`, `trust`, `feature`
-  - These are **Frame templates** (sections), not block types
-- `spacer`, `divider`, `faq`
-  - These are **Elements**, not blocks
-
----
-
-## Part 4: Recommended Fixes
-
-### Fix 1: Remove Duplicate Types
-
-Remove from `BlockType` (keep only in `ElementType`):
-- `spacer`
-- `divider`  
-- `faq`
-
-Update templates to create Elements directly within a `custom` block.
-
-### Fix 2: Rename Section Types as Frame Templates
-
-Move these from BlockType to a new `FrameTemplateType`:
-- `hero`, `footer`, `pricing`, `about`, `team`, `contact`, `trust`, `feature`
-
-These become templates for creating Frames, not block types.
-
-### Fix 3: Fully Remove video-thumbnail
-
-1. Delete from `ElementType`
-2. Update ALL templates to use `type: 'video'` with `displayMode: 'thumbnail'`
-3. Remove separate inspector handling
-4. Remove separate FlowCanvasRenderer case
-
-### Fix 4: Normalize Template Output
-
-All templates in `BlockPickerPanel.tsx` and `AddSectionPopover.tsx` should:
-1. Create blocks with correct `type` (not always `'custom'`)
-2. Create elements with correct `type` (not variants of other types)
-
-### Fix 5: Align Internal/External Naming
-
-| Internal | External (UI) | Action |
-|----------|---------------|--------|
-| Frame | Section | Keep — document mapping |
-| Stack | (Hidden) | Keep hidden |
-| Block | Block | Keep consistent |
-| Element | (By type name) | Keep — show "Button", "Text", etc. |
-
-### Fix 6: Simplify getBlockCategory
-
-```typescript
-// New approach: blocks don't have categories
-// ALL blocks just contain elements
-// Layout/Container distinction should be at Frame level
+```
+flow-canvas → builder_v2 templates → templateConverter → flow-canvas format
 ```
 
----
-
-## Part 5: Implementation Priority
-
-| Priority | Fix | Impact | Effort |
-|----------|-----|--------|--------|
-| P0 | Remove duplicate types (spacer, divider, faq) | Reduces confusion | Medium |
-| P0 | Fully eliminate video-thumbnail | Reduces redundancy | Low |
-| P1 | Move section types to FrameTemplateType | Architectural clarity | High |
-| P1 | Normalize template output | Consistency | Medium |
-| P2 | Document Frame = Section mapping | Developer clarity | Low |
-| P2 | Simplify inspector category logic | Cleaner code | Medium |
+Should either:
+1. Fully migrate templates to flow-canvas native format
+2. Create shared template format used by both
 
 ---
 
-## Files Requiring Changes
+## Category F: Inspector UI Gaps
 
-| File | Changes Needed |
-|------|----------------|
-| `src/flow-canvas/types/infostack.ts` | Remove duplicate types, add FrameTemplateType |
-| `src/flow-canvas/builder/utils/labels.ts` | Update category logic, remove sectionTypes |
-| `src/flow-canvas/builder/components/BlockPickerPanel.tsx` | Fix template output types |
-| `src/flow-canvas/builder/components/AddSectionPopover.tsx` | Fix template output types, remove video-thumbnail |
-| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Remove video-thumbnail case |
-| `src/flow-canvas/components/FlowCanvasRenderer.tsx` | Remove video-thumbnail case |
-| `src/flow-canvas/builder/components/inspectors/PremiumElementInspector.tsx` | Remove video-thumbnail section |
-| `src/flow-canvas/builder/components/RightPanel.tsx` | Simplify block category display |
+### Issue F.1: Premium Element Inspector Comment Says "video-thumbnail" but Logic Changed
+
+**Location**: `PremiumElementInspector.tsx:3-6`
+
+```typescript
+/**
+ * Premium Element Inspector
+ * Provides editing controls for all premium element types:
+ * - gradient-text, stat-number, avatar-group, ticker
+ * - badge, process-step, video-thumbnail, underline-text  // ← Comment outdated
+ */
+```
+
+The comment still references `video-thumbnail` but line 1361-1362 handles it via `video` element with `displayMode: 'thumbnail'`.
+
+---
+
+### Issue F.2: Missing Inspector for `loader` Element
+
+The `loader` element has:
+- Rendering in `CanvasRenderer.tsx`
+- Template in `BlockPickerPanel.tsx`
+- Component in `LoaderAnimation.tsx`
+
+But **no inspector section** in `RightPanel.tsx` to configure:
+- Duration
+- Animation type
+- Auto-advance behavior
+- Colors
+
+---
+
+## Implementation Priority
+
+| Priority | Issue | Effort | Impact |
+|----------|-------|--------|--------|
+| P0 | Remove FlowCanvasRenderer video-thumbnail case | Low | Reduces code duplication |
+| P0 | Remove video-thumbnail from PREMIUM_ELEMENT_TYPES | Low | Fixes inspector routing |
+| P0 | Remove capture-flow-embed from AI parsers | Low | Prevents deprecated output |
+| P1 | Unify logo-bar/logo-marquee | Medium | Reduces confusion |
+| P1 | Fix inputStyle type mismatch | Low | Type safety |
+| P1 | Wire LoaderAnimation onComplete to runtime | Medium | Fixes broken functionality |
+| P1 | Add loader element inspector | Medium | Feature completeness |
+| P2 | Consolidate getContrastTextColor implementations | Medium | Consistent text contrast |
+| P2 | Add missing BlockType entries | Low | Type safety |
+| P2 | Document builder_v2/flow-canvas relationship | Low | Developer clarity |
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/flow-canvas/components/FlowCanvasRenderer.tsx` | Remove `video-thumbnail` case, wire loader onComplete |
+| `src/flow-canvas/builder/components/RightPanel.tsx` | Remove video-thumbnail from arrays, add loader inspector |
+| `src/lib/ai/parseFunnelResponse.ts` | Remove capture-flow-embed from valid types |
+| `src/lib/ai/parseAIBlockResponse.ts` | Remove capture-flow-embed from valid types |
+| `src/flow-canvas/types/infostack.ts` | Add missing premium BlockTypes |
+| `src/flow-canvas/types/captureFlow.ts` | Add 'pill' to inputStyle union |
+| `src/flow-canvas/builder/components/inspectors/PremiumElementInspector.tsx` | Update comment |
+| `src/flow-canvas/builder/utils/templateThemeUtils.ts` | Remove duplicate getContrastTextColor, use ContrastEngine |
+
+---
+
+## Expected Outcomes
+
+After implementation:
+
+1. **No duplicate rendering** — video-thumbnail completely removed
+2. **Consistent types** — inputStyle, ButtonPreset unified across all files  
+3. **Working loader** — auto-advances in published funnel
+4. **Cleaner AI output** — no deprecated block types generated
+5. **Better DX** — loader element has inspector controls
