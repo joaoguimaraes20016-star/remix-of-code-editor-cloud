@@ -12,13 +12,37 @@ export const cloneGradient = (gradient: GradientValue): GradientValue => ({
   stops: gradient.stops.map(stop => ({ ...stop })),
 });
 
+// Varied default gradients for fallback - rotates through different palettes
+const DEFAULT_GRADIENTS = [
+  'linear-gradient(135deg, #8B5CF6 0%, #D946EF 100%)', // Violet-Fuchsia
+  'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)', // Sapphire
+  'linear-gradient(135deg, #0EA5E9 0%, #06B6D4 100%)', // Ocean
+  'linear-gradient(135deg, #10B981 0%, #047857 100%)', // Emerald
+  'linear-gradient(135deg, #F97316 0%, #EF4444 100%)', // Sunset
+  'linear-gradient(135deg, #FB7185 0%, #F43F5E 100%)', // Coral
+  'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)', // Indigo
+  'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)', // Teal
+];
+
+let defaultGradientIndex = 0;
+
+/**
+ * Get a varied default gradient (rotates through palette)
+ */
+export const getVariedDefaultGradient = (): string => {
+  const gradient = DEFAULT_GRADIENTS[defaultGradientIndex];
+  defaultGradientIndex = (defaultGradientIndex + 1) % DEFAULT_GRADIENTS.length;
+  return gradient;
+};
+
 /**
  * Convert a gradient object to CSS gradient string
  * IMPORTANT: This function is PURE - it does NOT mutate the input gradient
  */
 export const gradientToCSS = (gradient: GradientValue): string => {
   if (!gradient || !gradient.stops || gradient.stops.length === 0) {
-    return 'linear-gradient(135deg, #8B5CF6 0%, #D946EF 100%)';
+    // Use varied fallback instead of always the same purple-pink
+    return getVariedDefaultGradient();
   }
   
   // Clone and sort stops to avoid mutating the original array

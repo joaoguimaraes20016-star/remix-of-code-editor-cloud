@@ -16,6 +16,7 @@ import { extractAestheticsFromPrompt, getAestheticRules } from './aestheticVocab
 import { extractIndustryFromPrompt, getIndustryGuidance } from './industryKnowledge.ts';
 import { getAtomicDesignRules } from './componentAtoms.ts';
 import { getPatternGuidanceForPrompt } from './promptPatterns.ts';
+import { getColorContextForPrompt, detectIndustryFromPrompt, getRandomPaletteForIndustry, formatPaletteForPrompt } from './colorPalettes.ts';
 
 export type TaskType = 'suggest' | 'generate' | 'rewrite' | 'analyze';
 export type GenerationMode = 'block' | 'funnel' | 'settings' | 'workflow';
@@ -715,26 +716,33 @@ function formatContext(context: PageContext): string {
   return parts.length > 0 ? parts.join('\n') : 'No specific context provided';
 }
 
-function formatStylingContext(context: PageContext): string {
+function formatStylingContext(context: PageContext, userPrompt?: string): string {
   const styling = context.styling;
-  if (!styling) return 'No styling context';
-  
   const parts: string[] = [];
   
-  parts.push(`Theme: ${styling.theme || 'light'}`);
-  if (styling.primaryColor) parts.push(`Primary Color: ${styling.primaryColor}`);
-  if (styling.backgroundColor) parts.push(`Background: ${styling.backgroundColor}`);
-  if (styling.fontFamily) parts.push(`Font: ${styling.fontFamily}`);
-  
-  // Add styling instructions
-  if (styling.theme === 'dark') {
-    parts.push('\nIMPORTANT: This is a DARK theme. Use light text colors and darker backgrounds.');
+  // If user has existing styling, use it
+  if (styling) {
+    parts.push(`Theme: ${styling.theme || 'light'}`);
+    if (styling.primaryColor) parts.push(`Primary Color: ${styling.primaryColor}`);
+    if (styling.backgroundColor) parts.push(`Background: ${styling.backgroundColor}`);
+    if (styling.fontFamily) parts.push(`Font: ${styling.fontFamily}`);
+    
+    // Add styling instructions
+    if (styling.theme === 'dark') {
+      parts.push('\nIMPORTANT: This is a DARK theme. Use light text colors and darker backgrounds.');
+    }
+    if (styling.primaryColor) {
+      parts.push(`\nUse ${styling.primaryColor} for buttons and accent elements.`);
+    }
   }
-  if (styling.primaryColor) {
-    parts.push(`\nUse ${styling.primaryColor} for buttons and accent elements.`);
+  
+  // If no existing styling, suggest a varied palette based on the prompt
+  if (!styling?.primaryColor && userPrompt) {
+    const colorContext = getColorContextForPrompt(userPrompt);
+    parts.push('\n' + colorContext);
   }
   
-  return parts.join('\n');
+  return parts.length > 0 ? parts.join('\n') : 'No styling context - use a fresh, industry-appropriate color palette';
 }
 
 function formatExistingContent(context: PageContext): string {
@@ -783,6 +791,10 @@ export function getSystemPrompt(
   const uiKnowledge = getRelevantKnowledge(task, context);
   const antiPatterns = getAntiPatternsForTask(task);
   
+  // Get dynamic color palette based on user prompt
+  const colorContext = userPrompt ? getColorContextForPrompt(userPrompt) : '';
+  const dynamicStylingContext = formatStylingContext(context || {}, userPrompt);
+  
   // Handle generation modes for 'generate' task
   if (task === 'generate' && mode) {
     switch (mode) {
@@ -790,7 +802,8 @@ export function getSystemPrompt(
         return FUNNEL_GENERATE_PROMPT
           .replace('{{USER_PROMPT}}', userPrompt || 'Create a professional funnel')
           .replace('{{UI_KNOWLEDGE}}', uiKnowledge)
-          .replace('{{ANTI_PATTERNS}}', antiPatterns);
+          .replace('{{ANTI_PATTERNS}}', antiPatterns)
+          .replace('{{COLOR_PALETTE}}', colorContext);
       
       case 'settings':
         return SETTINGS_PROMPT
@@ -807,7 +820,7 @@ export function getSystemPrompt(
           .replace('{{UI_KNOWLEDGE}}', uiKnowledge)
           .replace('{{ANTI_PATTERNS}}', antiPatterns)
           .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance)
-          .replace('{{STYLING_CONTEXT}}', stylingContext)
+          .replace('{{STYLING_CONTEXT}}', dynamicStylingContext)
           .replace('{{EXISTING_CONTENT}}', existingContent);
     }
   }

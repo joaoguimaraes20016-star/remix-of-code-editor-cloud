@@ -2219,9 +2219,28 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         );
 
       case 'video':
-        const videoSettings = element.props?.videoSettings as { url?: string; platform?: string; autoplay?: boolean; muted?: boolean } | undefined;
-        const videoUrl = videoSettings?.url;
+      case 'video-thumbnail': {
+        // UNIFIED VIDEO ELEMENT: handles both embed and thumbnail modes
+        const videoSettings = element.props?.videoSettings as { url?: string; platform?: string; autoplay?: boolean; muted?: boolean; loop?: boolean } | undefined;
+        const videoUrl = videoSettings?.url || (element.props?.videoUrl as string);
         const videoPlatform = videoSettings?.platform || 'youtube';
+        const thumbnailUrl = element.props?.thumbnailUrl as string;
+        
+        // Display mode: 'embed' shows iframe, 'thumbnail' shows clickable thumbnail
+        // Auto-detect: if URL exists and no explicit mode, use embed; otherwise thumbnail
+        const displayMode = (element.props?.displayMode as 'embed' | 'thumbnail') || 
+          (element.type === 'video-thumbnail' ? 'thumbnail' : (videoUrl ? 'embed' : 'thumbnail'));
+        
+        // Thumbnail styling
+        const overlayStyle = (element.props?.overlayStyle as string) || 'gradient';
+        const showPlayButton = element.props?.showPlayButton !== false;
+        const playButtonStyle = (element.props?.playButtonStyle as string) || 'rounded';
+        const playButtonStyleMap: Record<string, string> = {
+          rounded: 'rounded-full bg-white/90',
+          square: 'rounded-lg bg-white/90',
+          minimal: 'bg-transparent border-2 border-white',
+        };
+        
         const videoContainerStyles: React.CSSProperties = {
           width: element.styles?.width || '100%',
           height: element.styles?.height || 'auto',
@@ -2236,34 +2255,90 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           width: element.styles?.margin === '0 auto' || element.styles?.margin === '0 0 0 auto' ? 'fit-content' : undefined,
         };
         
-        return (
-          <div ref={combinedRef} style={videoWrapperStyles} className={cn(baseClasses, 'relative')} {...stateHandlers}>
-            {/* Inject state styles CSS */}
-            {stateStylesCSS && <style>{stateStylesCSS}</style>}
-            {/* Visual indicator badges */}
-            {renderIndicatorBadges()}
-            {/* Unified Toolbar */}
-            {!readOnly && (
-              <UnifiedElementToolbar
-                elementId={element.id}
-                elementType="video"
-                elementLabel="Video"
-                isSelected={isSelected}
-                targetRef={wrapperRef}
-                deviceMode={deviceMode}
-                dragHandleProps={{ attributes, listeners }}
-                onDuplicate={onDuplicate}
-                onDelete={onDelete}
-              />
-            )}
-            {/* Element drag handle integrated into toolbar */}
-            {videoUrl ? (
+        // Render based on display mode
+        if (displayMode === 'thumbnail' || !videoUrl) {
+          // THUMBNAIL MODE - shows thumbnail with play button overlay
+          return (
+            <div ref={combinedRef} style={videoWrapperStyles} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+              {stateStylesCSS && <style>{stateStylesCSS}</style>}
+              {renderIndicatorBadges()}
+              {!readOnly && (
+                <UnifiedElementToolbar
+                  elementId={element.id}
+                  elementType="video"
+                  elementLabel="Video"
+                  isSelected={isSelected}
+                  targetRef={wrapperRef}
+                  deviceMode={deviceMode}
+                  dragHandleProps={{ attributes, listeners }}
+                  onDuplicate={onDuplicate}
+                  onDelete={onDelete}
+                />
+              )}
+              <div 
+                className={cn(
+                  "relative rounded-2xl overflow-hidden aspect-video cursor-pointer",
+                  isDarkTheme ? "bg-white/5" : "bg-gray-100"
+                )}
+                style={{ minHeight: '200px', ...videoContainerStyles }}
+                onClick={(e) => { e.stopPropagation(); onSelect(); }}
+              >
+                {thumbnailUrl ? (
+                  <img 
+                    src={thumbnailUrl} 
+                    alt="Video thumbnail"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className={cn(
+                    "absolute inset-0 flex items-center justify-center",
+                    isDarkTheme ? "bg-gradient-to-br from-white/10 to-white/5" : "bg-gradient-to-br from-gray-100 to-gray-200"
+                  )}>
+                    <Video className={cn("w-12 h-12", isDarkTheme ? "text-white/30" : "text-gray-400")} />
+                  </div>
+                )}
+                {/* Overlay */}
+                <div className={cn(
+                  "video-thumbnail-overlay",
+                  overlayStyle === 'gradient' && "bg-gradient-to-b from-transparent to-black/50"
+                )}>
+                  {showPlayButton && (
+                    <div className={cn(
+                      "w-16 h-16 flex items-center justify-center backdrop-blur-sm",
+                      playButtonStyleMap[playButtonStyle] || playButtonStyleMap.rounded
+                    )}>
+                      <Play className={cn("w-8 h-8 ml-1", playButtonStyle === 'minimal' ? 'text-white' : 'text-gray-900')} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        } else {
+          // EMBED MODE - shows iframe directly
+          return (
+            <div ref={combinedRef} style={videoWrapperStyles} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+              {stateStylesCSS && <style>{stateStylesCSS}</style>}
+              {renderIndicatorBadges()}
+              {!readOnly && (
+                <UnifiedElementToolbar
+                  elementId={element.id}
+                  elementType="video"
+                  elementLabel="Video"
+                  isSelected={isSelected}
+                  targetRef={wrapperRef}
+                  deviceMode={deviceMode}
+                  dragHandleProps={{ attributes, listeners }}
+                  onDuplicate={onDuplicate}
+                  onDelete={onDelete}
+                />
+              )}
               <div style={videoContainerStyles} onClick={(e) => { e.stopPropagation(); onSelect(); }}>
                 <iframe
                   src={getEmbedUrl(videoUrl, videoPlatform, {
                     autoplay: videoSettings?.autoplay,
                     muted: videoSettings?.muted,
-                    loop: (videoSettings as { loop?: boolean })?.loop,
+                    loop: videoSettings?.loop,
                   })}
                   className="w-full h-full"
                   frameBorder="0"
@@ -2271,20 +2346,10 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                   allowFullScreen
                 />
               </div>
-            ) : (
-              <div 
-                className="bg-gray-900 flex items-center justify-center cursor-pointer hover:bg-gray-800 transition-colors" 
-                style={videoContainerStyles}
-                onClick={(e) => { e.stopPropagation(); onSelect(); }}
-              >
-                <div className="text-center">
-                  <Play className="w-10 h-10 text-gray-500 mx-auto mb-2" />
-                  <span className="text-xs text-gray-500">Click to add video</span>
-                </div>
-              </div>
-            )}
-          </div>
-        );
+            </div>
+          );
+        }
+      }
 
       case 'divider':
         const dividerColor = element.styles?.borderColor || (isDarkTheme ? '#374151' : '#e5e7eb');
@@ -3100,72 +3165,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           </div>
         );
       
-      case 'video-thumbnail':
-        const overlayStyle = (element.props?.overlayStyle as string) || 'gradient';
-        const thumbnailUrl = (element.props?.thumbnailUrl as string);
-        const showPlayButton = element.props?.showPlayButton !== false;
-        const playButtonStyle = (element.props?.playButtonStyle as string) || 'rounded';
-        const playButtonStyleMap: Record<string, string> = {
-          rounded: 'rounded-full bg-white/90',
-          square: 'rounded-lg bg-white/90',
-          minimal: 'bg-transparent border-2 border-white',
-        };
-        return (
-          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
-            {stateStylesCSS && <style>{stateStylesCSS}</style>}
-            {renderIndicatorBadges()}
-            {!readOnly && (
-              <UnifiedElementToolbar
-                elementId={element.id}
-                elementType="video-thumbnail"
-                elementLabel="Video Thumbnail"
-                isSelected={isSelected}
-                targetRef={wrapperRef}
-                deviceMode={deviceMode}
-                dragHandleProps={{ attributes, listeners }}
-                onDuplicate={onDuplicate}
-                onDelete={onDelete}
-              />
-            )}
-            <div 
-              className={cn(
-                "relative rounded-2xl overflow-hidden aspect-video",
-                isDarkTheme ? "bg-white/5" : "bg-gray-100"
-              )}
-              style={{ minHeight: '200px' }}
-              onClick={(e) => { e.stopPropagation(); onSelect(); }}
-            >
-              {thumbnailUrl ? (
-                <img 
-                  src={thumbnailUrl} 
-                  alt="Video thumbnail"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-              ) : (
-                <div className={cn(
-                  "absolute inset-0 flex items-center justify-center",
-                  isDarkTheme ? "bg-gradient-to-br from-white/10 to-white/5" : "bg-gradient-to-br from-gray-100 to-gray-200"
-                )}>
-                  <Video className={cn("w-12 h-12", isDarkTheme ? "text-white/30" : "text-gray-400")} />
-                </div>
-              )}
-              {/* Overlay */}
-              <div className={cn(
-                "video-thumbnail-overlay",
-                overlayStyle === 'gradient' && "bg-gradient-to-b from-transparent to-black/50"
-              )}>
-                {showPlayButton && (
-                  <div className={cn(
-                    "w-16 h-16 flex items-center justify-center backdrop-blur-sm",
-                    playButtonStyleMap[playButtonStyle] || playButtonStyleMap.rounded
-                  )}>
-                    <Play className={cn("w-8 h-8 ml-1", playButtonStyle === 'minimal' ? 'text-white' : 'text-gray-900')} />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        );
+      // NOTE: 'video-thumbnail' is now handled by the unified 'video' case above
       
       case 'underline-text':
         const underlineFrom = (element.props?.underlineFrom as string) || primaryColor;
