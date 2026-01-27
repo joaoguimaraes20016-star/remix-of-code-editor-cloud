@@ -45,7 +45,7 @@ interface MultiSelection {
 
 // Import shared utilities from CanvasUtilities (Phase 8: consolidated)
 import { CanvasUtilities } from './renderers/CanvasUtilities';
-const { getContrastTextColor, lightenHex, shiftHue } = CanvasUtilities;
+const { getContrastTextColor, lightenHex, shiftHue, isLightColor, extractGradientFirstColor: extractFirstGradientColor } = CanvasUtilities;
 
 // Helper to generate page background styles
 const getPageBackgroundStyles = (bg: PageBackground | undefined, isDarkTheme: boolean): React.CSSProperties => {
@@ -4287,6 +4287,7 @@ interface StackRendererProps {
   activeApplicationFlowBlockId?: string | null;
   selectedStepElement?: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null;
   onSelectStepElement?: (element: { stepId: string; elementType: 'title' | 'description' | 'button' | 'option' | 'input'; optionIndex?: number } | null) => void;
+  parentBackgroundColor?: string; // For contrast-adaptive UI elements
 }
 
 const StackRenderer: React.FC<StackRendererProps> = ({ 
@@ -4318,7 +4319,13 @@ const StackRenderer: React.FC<StackRendererProps> = ({
   activeApplicationFlowBlockId,
   selectedStepElement,
   onSelectStepElement,
+  parentBackgroundColor,
 }) => {
+  // Compute if parent background is dark for contrast-adaptive UI
+  const isParentDark = useMemo(() => {
+    if (!parentBackgroundColor || parentBackgroundColor === 'transparent') return false;
+    return !isLightColor(parentBackgroundColor);
+  }, [parentBackgroundColor]);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const isSelected = selection.type === 'stack' && selection.id === stack.id;
   const stackPath = [...path, 'stack', stack.id];
@@ -4386,7 +4393,7 @@ const StackRenderer: React.FC<StackRendererProps> = ({
       {/* CRITICAL: Empty state is ONLY for editor - never render in readOnly (preview/runtime) */}
       {stack.blocks.length === 0 ? (
         !readOnly ? (
-          // Polished empty state - matches the original "Add Block" design
+          // Polished empty state - contrast-adaptive based on parent background
           <div 
             onClick={(e) => {
               e.stopPropagation();
@@ -4396,24 +4403,43 @@ const StackRenderer: React.FC<StackRendererProps> = ({
             }}
             className="w-full py-16 flex items-center justify-center cursor-pointer"
           >
-            <div className="group flex flex-col items-center justify-center py-20 px-8 w-full max-w-2xl border-2 border-dashed border-purple-300/50 rounded-2xl bg-white hover:border-purple-400/60 transition-all duration-200">
+            <div className={cn(
+              "group flex flex-col items-center justify-center py-20 px-8 w-full max-w-2xl border-2 border-dashed rounded-2xl transition-all duration-200",
+              isParentDark
+                ? "border-white/30 hover:border-white/50 bg-white/5"
+                : "border-purple-300/50 hover:border-purple-400/60 bg-white"
+            )}>
               {/* Icon container */}
-              <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-5">
-                <Layers size={32} className="text-gray-400" />
+              <div className={cn(
+                "w-16 h-16 rounded-2xl flex items-center justify-center mb-5",
+                isParentDark ? "bg-white/10" : "bg-gray-100"
+              )}>
+                <Layers size={32} className={isParentDark ? "text-white/60" : "text-gray-400"} />
               </div>
               
               {/* Title */}
-              <span className="text-lg font-semibold text-gray-800 mb-1">
+              <span className={cn(
+                "text-lg font-semibold mb-1",
+                isParentDark ? "text-white/90" : "text-gray-800"
+              )}>
                 Add content to this section
               </span>
               
               {/* Subtitle */}
-              <span className="text-sm text-gray-400 mb-6">
+              <span className={cn(
+                "text-sm mb-6",
+                isParentDark ? "text-white/50" : "text-gray-400"
+              )}>
                 Capture forms, questions, buttons & more
               </span>
               
-              {/* Dark button */}
-              <span className="inline-flex items-center gap-2 rounded-lg px-6 py-3 bg-gray-900 text-white text-sm font-semibold shadow-lg group-hover:bg-gray-800 transition-all">
+              {/* Button - always high contrast */}
+              <span className={cn(
+                "inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold shadow-lg transition-all",
+                isParentDark
+                  ? "bg-white text-gray-900 group-hover:bg-white/90"
+                  : "bg-gray-900 text-white group-hover:bg-gray-800"
+              )}>
                 <Plus size={18} />
                 <span>Insert Content</span>
               </span>
@@ -4480,12 +4506,17 @@ const StackRenderer: React.FC<StackRendererProps> = ({
             </DragOverlay>
           </DndContext>
           
-          {/* Add content button */}
+          {/* Add content button - contrast-adaptive */}
           {!readOnly && stack.blocks.length > 0 && (
             <div className="mt-3 opacity-60 hover:opacity-100 transition-opacity">
               <button
                 onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
-                className="flex items-center justify-center gap-1.5 w-full py-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                className={cn(
+                  "flex items-center justify-center gap-1.5 w-full py-2 text-xs transition-colors",
+                  isParentDark
+                    ? "text-white/50 hover:text-white/80"
+                    : "text-gray-500 hover:text-gray-700"
+                )}
               >
                 <Plus size={14} />
                 <span>Add content</span>
@@ -4667,6 +4698,29 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
 
   const frameStyles = getFrameBackgroundStyles();
   
+  // Compute effective background color for contrast-adaptive child elements
+  const effectiveBackgroundColor = useMemo(() => {
+    const bg = frame.background || 'transparent';
+    switch (bg) {
+      case 'custom': return frame.backgroundColor || '#ffffff';
+      case 'white': return '#ffffff';
+      case 'dark': return '#111827';
+      case 'gradient': {
+        // Extract first color from gradient for contrast calculation
+        const gradient = frame.backgroundGradient 
+          ? gradientToCSS(frame.backgroundGradient as any)
+          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        return extractFirstGradientColor(gradient) || '#667eea';
+      }
+      case 'transparent':
+      case 'glass':
+      case 'image':
+      case 'video':
+      default:
+        return 'transparent';
+    }
+  }, [frame.background, frame.backgroundColor, frame.backgroundGradient]);
+  
   // Determine layout mode - 'contained' (centered box) or 'full-width' (edge-to-edge within device frame)
   // Default to full-width for better out-of-box experience
   const isFullWidth = frame.layout !== 'contained';
@@ -4785,6 +4839,7 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
               activeApplicationFlowBlockId={activeApplicationFlowBlockId}
               selectedStepElement={selectedStepElement}
               onSelectStepElement={onSelectStepElement}
+              parentBackgroundColor={effectiveBackgroundColor}
             />
           ))}
         </div>
