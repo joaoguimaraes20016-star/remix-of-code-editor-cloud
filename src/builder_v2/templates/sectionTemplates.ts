@@ -2213,28 +2213,35 @@ export const featuresGrayReviews: SectionTemplate = {
 };
 
 // ============================================================================
-// TESTIMONIALS SECTIONS (2 templates)
-// Customer quotes and success stories
+// TESTIMONIALS SECTIONS (11 templates) - Perspective-Style
+// Customer quotes and success stories with various layouts
 // ============================================================================
 
-export const testimonialSingle: SectionTemplate = {
-  id: 'testimonial-single',
-  name: 'Single Testimonial',
-  description: 'Quote with photo and name',
+// Testimonial Single Centered - Logo + quote + avatar
+export const testimonialSingleCentered: SectionTemplate = {
+  id: 'testimonial-single-centered',
+  name: 'Single Centered',
+  description: 'Centered quote with logo and avatar',
   category: 'testimonials',
   icon: 'quote',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'content', align: 'center' },
+    props: { variant: 'testimonial', align: 'center' },
     children: [
+      {
+        id: genId('logo'),
+        type: 'paragraph',
+        props: { text: 'Perspective', variant: 'label', color: 'blue', align: 'center' },
+        children: [],
+      },
       {
         id: genId('testimonial'),
         type: 'testimonial_card',
         props: {
-          quote: '"This program completely transformed my business. I went from struggling to $50K months in just 90 days."',
-          author: 'Sarah M.',
-          title: 'Agency Owner',
+          quote: '"Partnering with Perspektive resulted in over 2000 new leads in just 3 months."',
+          author: 'Ferdinand Schulz',
+          title: 'Software Engineer, Example GmbH',
           image: '',
         },
         children: [],
@@ -2243,30 +2250,381 @@ export const testimonialSingle: SectionTemplate = {
   }),
 };
 
-export const testimonialCarousel: SectionTemplate = {
-  id: 'testimonial-carousel',
-  name: 'Testimonial Stack',
-  description: 'Multiple success stories',
+// Testimonial Single + Stars - 5-star rating + quote
+export const testimonialSingleStars: SectionTemplate = {
+  id: 'testimonial-single-stars',
+  name: 'Single + Stars',
+  description: '5-star rating with quote',
   category: 'testimonials',
-  icon: 'users',
+  icon: 'star',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'content' },
+    props: { variant: 'testimonial', align: 'center' },
+    children: [
+      {
+        id: genId('rating'),
+        type: 'rating_display',
+        props: { rating: 5, showStars: true, align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('testimonial'),
+        type: 'testimonial_card',
+        props: {
+          quote: '"Partnering with Perspektive resulted in over 2000 new leads in just 3 months."',
+          author: 'Ferdinand Schulz',
+          title: 'Software Engineer, Example GmbH',
+          image: '',
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Testimonial Single Full Image - Dark overlay with quote
+export const testimonialSingleFullImage: SectionTemplate = {
+  id: 'testimonial-single-full-image',
+  name: 'Single Full Image',
+  description: 'Quote over full background image',
+  category: 'testimonials',
+  icon: 'image',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'testimonial', background: 'image', overlay: 'dark' },
+    children: [
+      {
+        id: genId('logo'),
+        type: 'paragraph',
+        props: { text: 'Perspective', variant: 'label', color: 'white', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('testimonial'),
+        type: 'testimonial_card',
+        props: {
+          quote: '"Partnering with Perspektive resulted in over 2000 new leads in just 3 months."',
+          author: 'Ferdinand Schulz',
+          title: 'Software Engineer, Example GmbH',
+          image: '',
+          textColor: 'white',
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Testimonial Single Image Rounded - Rounded container with image bg
+export const testimonialSingleImageRounded: SectionTemplate = {
+  id: 'testimonial-single-image-rounded',
+  name: 'Single Image (Rounded)',
+  description: 'Rounded container with image',
+  category: 'testimonials',
+  icon: 'image',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'testimonial', background: 'image', overlay: 'dark', rounded: true },
+    children: [
+      {
+        id: genId('logo'),
+        type: 'paragraph',
+        props: { text: 'Perspective', variant: 'label', color: 'white', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('testimonial'),
+        type: 'testimonial_card',
+        props: {
+          quote: '"Partnering with Perspektive resulted in over 2000 new leads in just 3 months."',
+          author: 'Ferdinand Schulz',
+          title: 'Software Engineer, Example GmbH',
+          image: '',
+          textColor: 'white',
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Testimonial Split - Text Left
+export const testimonialSplitTextLeft: SectionTemplate = {
+  id: 'testimonial-split-text-left',
+  name: 'Split (Text Left)',
+  description: 'Quote left, image right',
+  category: 'testimonials',
+  icon: 'columns',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'testimonial-split' },
+    children: [
+      {
+        id: genId('logo'),
+        type: 'paragraph',
+        props: { text: 'Perspective', variant: 'label', color: 'blue' },
+        children: [],
+      },
+      {
+        id: genId('testimonial'),
+        type: 'testimonial_card',
+        props: {
+          quote: '"Partnering with Perspektive resulted in over 2000 new leads in just 3 months."',
+          author: 'Ferdinand Schulz',
+          title: 'Software Engineer',
+          image: '',
+        },
+        children: [],
+      },
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Customer photo', aspectRatio: '3:4' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Testimonial Split - Image Left
+export const testimonialSplitImageLeft: SectionTemplate = {
+  id: 'testimonial-split-image-left',
+  name: 'Split (Image Left)',
+  description: 'Image left, quote right',
+  category: 'testimonials',
+  icon: 'columns',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'testimonial-split-reverse' },
+    children: [
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Customer photo', aspectRatio: '3:4' },
+        children: [],
+      },
+      {
+        id: genId('testimonial'),
+        type: 'testimonial_card',
+        props: {
+          quote: '"Partnering with Perspektive resulted in over 2000 new leads in just 3 months."',
+          author: 'Ferdinand Schulz',
+          title: 'Software Engineer',
+          image: '',
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Testimonial Grid 3-Column (Yellow Stars)
+export const testimonialGridYellowStars: SectionTemplate = {
+  id: 'testimonial-grid-yellow-stars',
+  name: 'Grid (Yellow Stars)',
+  description: '3-column grid with star ratings',
+  category: 'testimonials',
+  icon: 'star',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'testimonial-grid' },
     children: [
       {
         id: genId('heading'),
         type: 'heading',
-        props: { text: 'What Our Clients Say', level: 'h2', align: 'center' },
+        props: { text: 'What our customers say', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'With Perspective, our customers make measurable progress every day.', align: 'center' },
         children: [],
       },
       {
         id: genId('testimonials'),
-        type: 'testimonial_stack',
+        type: 'testimonial_grid',
         props: {
+          showStars: true,
+          columns: 3,
           items: [
-            { quote: '"Game-changing program!"', author: 'John D.', title: 'Coach' },
-            { quote: '"Best investment I ever made."', author: 'Lisa K.', title: 'Consultant' },
+            { quote: 'Working with Perspective increased our revenue significantly.', author: 'Philipp S.', title: 'CEO' },
+            { quote: 'With their help, we were able to scale faster than expected.', author: 'Laura S.', title: 'Founder' },
+            { quote: 'Through Perspective, we have been able to reach new markets.', author: 'Maximilian W.', title: 'CMO' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Testimonial Grid Cards (Gray BG)
+export const testimonialGridCards: SectionTemplate = {
+  id: 'testimonial-grid-cards',
+  name: 'Grid Cards',
+  description: '3-column cards with gray styling',
+  category: 'testimonials',
+  icon: 'layout-grid',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'testimonial-grid', cardStyle: 'gray' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'What our customers say', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'With Perspective, our customers make measurable progress every day.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('testimonials'),
+        type: 'testimonial_grid',
+        props: {
+          showStars: true,
+          columns: 3,
+          cardStyle: 'gray',
+          items: [
+            { quote: 'Working with Perspective increased our revenue significantly.', author: 'Philipp S.', title: 'CEO' },
+            { quote: 'With their help, we were able to scale faster than expected.', author: 'Laura S.', title: 'Founder' },
+            { quote: 'Through Perspective, we have been able to reach new markets.', author: 'Maximilian W.', title: 'CMO' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Testimonial Grid No Cards (minimal)
+export const testimonialGridNoCards: SectionTemplate = {
+  id: 'testimonial-grid-no-cards',
+  name: 'Grid (No Cards)',
+  description: 'Minimal grid without card borders',
+  category: 'testimonials',
+  icon: 'layout-grid',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'testimonial-grid', cardStyle: 'none' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'What our customers say', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'With Perspective, our customers make measurable progress every day.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('testimonials'),
+        type: 'testimonial_grid',
+        props: {
+          showStars: true,
+          columns: 3,
+          cardStyle: 'none',
+          items: [
+            { quote: 'Working with Perspective increased our revenue significantly.', description: 'Thanks to innovative solutions...', author: 'Philipp S.', title: '' },
+            { quote: 'With their help, we were able to scale faster than expected.', description: 'Through creative strategies...', author: 'Laura S.', title: '' },
+            { quote: 'Through Perspective, we have been able to reach new markets.', description: 'We have set new standards...', author: 'Maximilian W.', title: '' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Testimonial Grid Photo Cards (Overlay)
+export const testimonialGridPhotoOverlay: SectionTemplate = {
+  id: 'testimonial-grid-photo-overlay',
+  name: 'Grid Photo (Overlay)',
+  description: 'Photo cards with gradient overlay',
+  category: 'testimonials',
+  icon: 'image',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'testimonial-photo-grid' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'What our customers say', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'With Perspective, our customers make measurable progress every day.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('testimonials'),
+        type: 'testimonial_photo_grid',
+        props: {
+          overlay: true,
+          items: [
+            { image: '', quote: 'Working with Perspective...', author: 'Philipp S.', title: 'CEO' },
+            { image: '', quote: 'With their help...', author: 'Laura S.', title: 'Founder' },
+            { image: '', quote: 'Through Perspective...', author: 'Maximilian W.', title: 'CMO' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// Testimonial Grid Photo Cards (Text Below)
+export const testimonialGridPhotoBelow: SectionTemplate = {
+  id: 'testimonial-grid-photo-below',
+  name: 'Grid Photo (Text Below)',
+  description: 'Photos with text underneath',
+  category: 'testimonials',
+  icon: 'image',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'testimonial-photo-grid' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'What our customers say', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'With Perspective, our customers make measurable progress every day.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('testimonials'),
+        type: 'testimonial_photo_grid',
+        props: {
+          overlay: false,
+          items: [
+            { image: '', quote: 'Working with Perspective...', author: 'Philipp S.', title: 'CEO' },
+            { image: '', quote: 'With their help...', author: 'Laura S.', title: 'Founder' },
+            { image: '', quote: 'Through Perspective...', author: 'Maximilian W.', title: 'CMO' },
           ],
         },
         children: [],
@@ -2807,9 +3165,18 @@ export const allSectionTemplates: SectionTemplate[] = [
   features2ColIcons,
   featuresGrayImage,
   featuresGrayReviews,
-  // Testimonials (2)
-  testimonialSingle,
-  testimonialCarousel,
+  // Testimonials (11)
+  testimonialSingleCentered,
+  testimonialSingleStars,
+  testimonialSingleFullImage,
+  testimonialSingleImageRounded,
+  testimonialSplitTextLeft,
+  testimonialSplitImageLeft,
+  testimonialGridYellowStars,
+  testimonialGridCards,
+  testimonialGridNoCards,
+  testimonialGridPhotoOverlay,
+  testimonialGridPhotoBelow,
   // FAQ (1)
   faqSection,
   // Team (10)
@@ -2833,7 +3200,7 @@ export const sectionTemplatesByCategory = {
   quiz_form: [quizSplitBenefits, quizCenteredSimple, quizCenteredFilled, quizCenteredGray, quizCenteredCard, quizImageCards, quizImageCardsGray, quiz2Images, quizSplitInfo],
   social_proof: [socialProofStars, socialProofLogos, socialProofStats, socialProofBadges],
   features: [featuresSplitChecklist, featuresSplitImage, featuresSplitIcons, features3ColCards, features4ColIcons, features2ColIcons, featuresGrayImage, featuresGrayReviews],
-  testimonials: [testimonialSingle, testimonialCarousel],
+  testimonials: [testimonialSingleCentered, testimonialSingleStars, testimonialSingleFullImage, testimonialSingleImageRounded, testimonialSplitTextLeft, testimonialSplitImageLeft, testimonialGridYellowStars, testimonialGridCards, testimonialGridNoCards, testimonialGridPhotoOverlay, testimonialGridPhotoBelow],
   faq: [faqSection],
   team: [teamMemberTextLeft, teamMemberImageLeft, teamMemberFeatures, teamGridSimple, teamGridLabel, teamGridNoDesc, teamFullImage, teamGridCards, teamGridCardsGray, teamSplitCta],
 };
