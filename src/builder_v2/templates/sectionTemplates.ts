@@ -785,25 +785,37 @@ export const socialProofBadges: SectionTemplate = {
 };
 
 // ============================================================================
-// FEATURES SECTIONS (2 templates)
-// Benefits and what's included
+// FEATURES SECTIONS (8 templates) - Perspective-Style
+// Clean, light-themed feature sections matching modern SaaS landing pages
 // ============================================================================
 
-export const featuresList: SectionTemplate = {
-  id: 'features-list',
-  name: 'Features List',
-  description: 'Benefits with checkmarks',
+export const featuresSplitChecklist: SectionTemplate = {
+  id: 'features-split-checklist',
+  name: 'Split + Checklist',
+  description: 'Text left, checklist right',
   category: 'features',
   icon: 'check-circle',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'content' },
+    props: { variant: 'features-split' },
     children: [
       {
         id: genId('heading'),
         type: 'heading',
-        props: { text: 'What\'s Included', level: 'h2' },
+        props: { text: 'Customer Satisfaction', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Our customers report exceptional experiences with our comprehensive service approach.' },
+        children: [],
+      },
+      {
+        id: genId('rating'),
+        type: 'rating_display',
+        props: { rating: 5.0, count: 200, source: 'reviews' },
         children: [],
       },
       {
@@ -811,10 +823,145 @@ export const featuresList: SectionTemplate = {
         type: 'info_card',
         props: {
           items: [
-            { icon: '✓', text: 'Weekly 1-on-1 coaching calls' },
-            { icon: '✓', text: 'Private community access' },
-            { icon: '✓', text: 'Done-for-you templates' },
-            { icon: '✓', text: 'Lifetime updates' },
+            { icon: '✓', text: 'Easy operation' },
+            { icon: '✓', text: 'Real-time data' },
+            { icon: '✓', text: 'Customizable' },
+          ],
+        },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Learn more', variant: 'primary', action: 'next' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const featuresSplitImage: SectionTemplate = {
+  id: 'features-split-image',
+  name: 'Split + Image',
+  description: 'Text left, image right',
+  category: 'features',
+  icon: 'image',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'features-split' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Customer Service', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Experience seamless support that meets your business needs at every level of growth.' },
+        children: [],
+      },
+      {
+        id: genId('rating'),
+        type: 'rating_display',
+        props: { rating: 5.0, count: 200, source: 'reviews' },
+        children: [],
+      },
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Feature image', aspectRatio: '4:3' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const featuresSplitIcons: SectionTemplate = {
+  id: 'features-split-icons',
+  name: 'Split + Icons',
+  description: 'Image left, icon features right',
+  category: 'features',
+  icon: 'layout',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'features-split-reverse' },
+    children: [
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Feature image', aspectRatio: '4:3' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Exclusive Analyses', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('grid'),
+        type: 'feature_grid',
+        props: {
+          items: [
+            { icon: '📊', title: 'Industry Reports', description: 'Detailed market analysis' },
+            { icon: '📈', title: 'Forecasts', description: 'Data-driven predictions' },
+            { icon: '🎯', title: 'Strategies', description: 'Actionable recommendations' },
+          ],
+        },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Get Analysis', variant: 'primary', action: 'next' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const features3ColCards: SectionTemplate = {
+  id: 'features-3col-cards',
+  name: '3-Column Cards',
+  description: 'Three image cards with descriptions',
+  category: 'features',
+  icon: 'grid',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'features-centered' },
+    children: [
+      {
+        id: genId('label'),
+        type: 'paragraph',
+        props: { text: 'Our Services', variant: 'label', align: 'center', color: 'blue' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'These Are Your Advantages with Us', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Secure Offer Now', variant: 'primary', action: 'next' },
+        children: [],
+      },
+      {
+        id: genId('grid'),
+        type: 'feature_grid',
+        props: {
+          columns: 3,
+          items: [
+            { image: '', title: 'Fast Implementation', description: 'Quick and efficient setup process' },
+            { image: '', title: 'Personal Consultation', description: 'One-on-one expert guidance' },
+            { image: '', title: 'Cost-Effective Solutions', description: 'Maximum value for your investment' },
           ],
         },
         children: [],
@@ -823,21 +970,133 @@ export const featuresList: SectionTemplate = {
   }),
 };
 
-export const featuresGrid: SectionTemplate = {
-  id: 'features-grid',
-  name: 'Features Grid',
-  description: '3-column benefit cards',
+export const features4ColIcons: SectionTemplate = {
+  id: 'features-4col-icons',
+  name: '4-Column Icons',
+  description: '2x2 grid of icon features',
   category: 'features',
-  icon: 'grid',
+  icon: 'grid-2x2',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'content' },
+    props: { variant: 'features-centered' },
     children: [
+      {
+        id: genId('label'),
+        type: 'paragraph',
+        props: { text: 'Our Services', variant: 'label', align: 'center', color: 'blue' },
+        children: [],
+      },
       {
         id: genId('heading'),
         type: 'heading',
-        props: { text: 'Why Choose Us', level: 'h2', align: 'center' },
+        props: { text: 'These Are Your Advantages with Us', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Secure Offer Now', variant: 'primary', action: 'next' },
+        children: [],
+      },
+      {
+        id: genId('grid'),
+        type: 'feature_grid',
+        props: {
+          columns: 2,
+          items: [
+            { icon: '🔗', title: 'Easy Integration', description: 'Seamless connection with your systems' },
+            { icon: '⚡', title: 'Immediate Start', description: 'Get up and running instantly' },
+            { icon: '📞', title: 'Personal Support', description: '24/7 dedicated assistance' },
+            { icon: '💡', title: 'Customized Strategies', description: 'Tailored to your needs' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const features2ColIcons: SectionTemplate = {
+  id: 'features-2col-icons',
+  name: '2-Column + Icons',
+  description: 'Image cards with icon features below',
+  category: 'features',
+  icon: 'columns',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'features-centered' },
+    children: [
+      {
+        id: genId('label'),
+        type: 'paragraph',
+        props: { text: 'Our Services', variant: 'label', align: 'center', color: 'blue' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'These Are Your Advantages', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Secure Offer Now', variant: 'primary', action: 'next' },
+        children: [],
+      },
+      {
+        id: genId('grid'),
+        type: 'feature_grid',
+        props: {
+          columns: 2,
+          items: [
+            { image: '', title: 'Fast Implementation', description: 'Quick setup' },
+            { image: '', title: 'Personal Consultation', description: 'Expert guidance' },
+          ],
+        },
+        children: [],
+      },
+      {
+        id: genId('icons'),
+        type: 'feature_grid',
+        props: {
+          columns: 4,
+          items: [
+            { icon: '🔗', title: 'Integration' },
+            { icon: '📞', title: 'Support' },
+            { icon: '⚡', title: 'Fast Start' },
+            { icon: '💡', title: 'Strategies' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const featuresGrayImage: SectionTemplate = {
+  id: 'features-gray-image',
+  name: 'Gray BG + Image',
+  description: 'Icon list with device image',
+  category: 'features',
+  icon: 'smartphone',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'features-gray' },
+    children: [
+      {
+        id: genId('label'),
+        type: 'paragraph',
+        props: { text: 'Our Services', variant: 'label', color: 'blue' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Real-Time Analytics', level: 'h2' },
         children: [],
       },
       {
@@ -845,11 +1104,62 @@ export const featuresGrid: SectionTemplate = {
         type: 'feature_grid',
         props: {
           items: [
-            { icon: '🚀', title: 'Fast Results', description: 'See improvements in just 30 days' },
-            { icon: '💎', title: 'Premium Quality', description: 'Enterprise-grade solutions' },
-            { icon: '🎯', title: 'Proven System', description: 'Battle-tested methodology' },
+            { icon: '⚡', title: 'Quick Operation', description: 'Fast data processing' },
+            { icon: '📊', title: 'Real-Time Data', description: 'Live insights' },
+            { icon: '📱', title: 'Interactive Dashboards', description: 'Visual analytics' },
           ],
         },
+        children: [],
+      },
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Device mockup', aspectRatio: '4:3' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const featuresGrayReviews: SectionTemplate = {
+  id: 'features-gray-reviews',
+  name: 'Gray BG + Reviews',
+  description: 'Text with reviews and image',
+  category: 'features',
+  icon: 'star',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'features-gray' },
+    children: [
+      {
+        id: genId('label'),
+        type: 'paragraph',
+        props: { text: 'Our Services', variant: 'label', color: 'blue' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Real-Time Analytics', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Experience powerful analytics that transform your data into actionable business insights.' },
+        children: [],
+      },
+      {
+        id: genId('rating'),
+        type: 'rating_display',
+        props: { rating: 5.0, count: 200, source: 'reviews' },
+        children: [],
+      },
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Feature image', aspectRatio: '4:3' },
         children: [],
       },
     ],
@@ -1027,9 +1337,15 @@ export const allSectionTemplates: SectionTemplate[] = [
   socialProofLogos,
   socialProofStats,
   socialProofBadges,
-  // Features (2)
-  featuresList,
-  featuresGrid,
+  // Features (8)
+  featuresSplitChecklist,
+  featuresSplitImage,
+  featuresSplitIcons,
+  features3ColCards,
+  features4ColIcons,
+  features2ColIcons,
+  featuresGrayImage,
+  featuresGrayReviews,
   // Testimonials (2)
   testimonialSingle,
   testimonialCarousel,
@@ -1046,7 +1362,7 @@ export const sectionTemplatesByCategory = {
   media: [mediaVideo, mediaImage],
   embed: [embedCalendar, embedEmpty],
   social_proof: [socialProofStars, socialProofLogos, socialProofStats, socialProofBadges],
-  features: [featuresList, featuresGrid],
+  features: [featuresSplitChecklist, featuresSplitImage, featuresSplitIcons, features3ColCards, features4ColIcons, features2ColIcons, featuresGrayImage, featuresGrayReviews],
   testimonials: [testimonialSingle, testimonialCarousel],
   faq: [faqSection],
   team: [teamSection],
