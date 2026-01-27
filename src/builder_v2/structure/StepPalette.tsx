@@ -12,16 +12,17 @@ import {
 import { cn } from '@/lib/utils';
 import { STEP_DEFINITIONS } from '@/lib/funnel/stepDefinitions';
 
+// Theme-aligned step type colors using HSL tokens
 const STEP_TYPE_CONFIG = [
-  { type: 'welcome', icon: Play, color: '#6366f1' },
-  { type: 'text_question', icon: MessageSquare, color: '#8b5cf6' },
-  { type: 'multi_choice', icon: List, color: '#a855f7' },
-  { type: 'email_capture', icon: Mail, color: '#ec4899' },
-  { type: 'phone_capture', icon: Phone, color: '#f43f5e' },
-  { type: 'opt_in', icon: UserCheck, color: '#f97316' },
-  { type: 'video', icon: Video, color: '#eab308' },
-  { type: 'embed', icon: Code, color: '#22c55e' },
-  { type: 'thank_you', icon: CheckCircle, color: '#14b8a6' },
+  { type: 'welcome', icon: Play, color: 'hsl(239 84% 67%)' },       // Primary indigo
+  { type: 'text_question', icon: MessageSquare, color: 'hsl(250 84% 67%)' },
+  { type: 'multi_choice', icon: List, color: 'hsl(270 76% 65%)' },
+  { type: 'email_capture', icon: Mail, color: 'hsl(330 80% 60%)' },
+  { type: 'phone_capture', icon: Phone, color: 'hsl(350 89% 60%)' },
+  { type: 'opt_in', icon: UserCheck, color: 'hsl(25 95% 53%)' },
+  { type: 'video', icon: Video, color: 'hsl(45 93% 47%)' },
+  { type: 'embed', icon: Code, color: 'hsl(142 71% 45%)' },
+  { type: 'thank_you', icon: CheckCircle, color: 'hsl(168 76% 42%)' },
 ] as const;
 
 interface StepPaletteProps {

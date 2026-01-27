@@ -94,13 +94,13 @@ const HOVER_EFFECTS = [
   { label: 'Brighten', value: 'brighten' },
 ];
 
-// Personality options
+// Personality options - controls subtle interaction effects
 const PERSONALITY_OPTIONS: { value: LayoutPersonality; label: string; description: string }[] = [
-  { value: 'clean', label: 'Clean', description: 'Minimal, breathable' },
-  { value: 'bold', label: 'Bold', description: 'High impact, confident' },
-  { value: 'editorial', label: 'Editorial', description: 'Magazine-like hierarchy' },
-  { value: 'dense', label: 'Dense', description: 'Information-rich, compact' },
-  { value: 'conversion', label: 'Conversion', description: 'CTA-focused, urgent' },
+  { value: 'clean', label: 'Clean', description: 'Minimal spacing, subtle emphasis' },
+  { value: 'bold', label: 'Bold', description: 'Stronger hover effects' },
+  { value: 'editorial', label: 'Editorial', description: 'Reading-focused interactions' },
+  { value: 'dense', label: 'Dense', description: 'Compact, efficient feedback' },
+  { value: 'conversion', label: 'Conversion', description: 'Prominent CTA effects' },
 ];
 
 // ============================================================================
@@ -666,7 +666,7 @@ export function EnhancedInspector() {
           className={cn("ei-tab", activeTab === 'blocks' && "ei-tab--active")}
           onClick={() => setActiveTab('blocks')}
         >
-          <LayoutGrid size={14} /> Blocks
+          <LayoutGrid size={14} /> Layout
         </button>
         <button
           type="button"
