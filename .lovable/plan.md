@@ -1,231 +1,29 @@
 
 
-# Add Quiz/Form Section Category
+# Add Team Templates - Perspective-Style
 
 ## Summary
 
-Add a new "Quiz/Form" section category under "About Us" in the Section Picker. This category contains 9 Perspective-style interactive quiz templates that leverage the FlowContainer (choice/question) blocks but as pre-styled section templates.
+Expand the Team section from 1 basic template to 10 Perspective-style templates matching the reference screenshots. These showcase individual team members and team grids with consistent light-themed visual language.
 
 ---
 
 ## Template Patterns Identified
 
-From the uploaded screenshots, I identified **9 distinct Quiz/Form patterns**:
+From the uploaded screenshots, I identified **10 distinct Team patterns**:
 
 | Template | Layout | Key Elements |
 |----------|--------|--------------|
-| **Quiz Split + Benefits** | 50/50 | Quiz question left (blue label, title, 4 radio options, submit button), benefits card right (title + 3 icon features) |
-| **Quiz Centered Simple** | Centered | Blue label, title, subtext, 2x2 grid of white text options with icons |
-| **Quiz Centered Filled** | Centered | Same layout but with filled blue button options |
-| **Quiz Centered Gray BG** | Centered | Same as simple but with gray background |
-| **Quiz Centered Card** | Centered | Quiz inside a white/gray card container with rounded corners |
-| **Quiz Image Cards** | Centered | Blue label, title, subtext, 4 image cards in a row with labels at bottom |
-| **Quiz Image Cards (Gray BG)** | Centered | Same as above but with gray background |
-| **Quiz 2 Image Cards** | Centered | For fewer options - 2 large image cards side by side |
-| **Quiz Split + Info Card** | 50/50 | Quiz with 2x2 image cards left, info card with icon right |
-
----
-
-## File Changes
-
-### 1. `SectionPicker.tsx`
-
-Add `quiz_form` to `SECTION_CATEGORIES` after `about_us`:
-
-```typescript
-const SECTION_CATEGORIES = [
-  { id: 'hero', label: 'Hero', icon: 'square' as const },
-  { id: 'features', label: 'Features', icon: 'grid' as const },
-  { id: 'cta', label: 'Call to Action', icon: 'sparkles' as const },
-  { id: 'about_us', label: 'About Us', icon: 'squares' as const },
-  { id: 'quiz_form', label: 'Quiz/Form', icon: 'sparkles' as const }, // NEW
-  { id: 'team', label: 'Team', icon: 'people' as const },
-  // ...
-];
-```
-
-### 2. `sectionTemplates.ts`
-
-Update `SectionTemplate` interface to add `quiz_form` category:
-
-```typescript
-category: 'hero' | 'content' | 'cta' | 'about_us' | 'quiz_form' | 'social_proof' | 'features' | 'testimonials' | 'team' | 'faq';
-```
-
-Add 9 new Quiz/Form templates:
-
-| Template ID | Name |
-|-------------|------|
-| `quiz-split-benefits` | Quiz + Benefits Card |
-| `quiz-centered-simple` | Quiz Centered (Simple) |
-| `quiz-centered-filled` | Quiz Centered (Filled) |
-| `quiz-centered-gray` | Quiz Centered (Gray BG) |
-| `quiz-centered-card` | Quiz Card |
-| `quiz-image-cards` | Quiz Image Cards |
-| `quiz-image-cards-gray` | Quiz Image Cards (Gray BG) |
-| `quiz-2-images` | Quiz 2 Options |
-| `quiz-split-info` | Quiz + Info Card |
-
-### 3. `HighTicketPreviewCard.tsx`
-
-Add new `QuizFormPreview` component with 9 variants:
-
----
-
-## ASCII Template Layouts
-
-### Quiz Split + Benefits
-```text
-+------------------------+------------------------+
-| Tell us about your...  |  Your exclusive        |
-| What is your goal      |  benefits              |
-| with the Community?    |                        |
-|                        |  💡 Scalable           |
-| ○ Gain loyal fans      |     Our templates...   |
-| ○ Secure competitive.. |  ⚡ Easy & Fast        |
-| ○ Create customer...   |     Achieve results... |
-| ○ Receive support      |  🌱 Sustainable Growth |
-|                        |     Generate robust... |
-| [Submit and Continue]  |                        |
-+------------------------+------------------------+
-```
-
-### Quiz Centered Simple
-```text
-+------------------------------------------------+
-|              One last Question                  |
-|    What is your Community goal?                 |
-|  Answer the question to find the right course   |
-|                                                 |
-|   [🏆 Gain loyal fans] [🚀 Secure competitive] |
-|   [⭐ Create customer] [📞 Receive support]    |
-|                                                 |
-+------------------------------------------------+
-```
-
-### Quiz Centered Filled
-```text
-+------------------------------------------------+
-|              One last Question                  |
-|    What is your Community goal?                 |
-|  Answer the question to find the right course   |
-|                                                 |
-| [🏆 Gain loyal fans ] [🚀 Secure competitive ] |
-| [⭐ Create customer ] [📞 Receive support     ] |
-|         (Blue filled buttons)                   |
-+------------------------------------------------+
-```
-
-### Quiz Centered Gray BG
-```text
-+------------------------------------------------+
-| [Gray Background]                              |
-|              One last Question                  |
-|    What is your Community goal?                 |
-|  Answer the question to find the right course   |
-|                                                 |
-|   [🏆 Gain loyal fans] [🚀 Secure competitive] |
-|   [⭐ Create customer] [📞 Receive support]    |
-+------------------------------------------------+
-```
-
-### Quiz Centered Card
-```text
-+------------------------------------------------+
-|           ┌────────────────────────┐           |
-| [Gray BG] │  One last Question     │           |
-|           │  What is your goal?    │           |
-|           │                        │           |
-|           │  ○ Option 1  ○ Option 2│           |
-|           │  ○ Option 3  ○ Option 4│           |
-|           └────────────────────────┘           |
-+------------------------------------------------+
-```
-
-### Quiz Image Cards
-```text
-+------------------------------------------------+
-|              One last Question                  |
-|    What is your Community goal?                 |
-|                                                 |
-|  ┌──────┐  ┌──────┐  ┌──────┐  ┌──────┐       |
-|  │ IMG  │  │ IMG  │  │ IMG  │  │ IMG  │       |
-|  │      │  │      │  │      │  │      │       |
-|  │[Gain]│  │[Stay]│  │[Loyal]│ │[Get] │       |
-|  └──────┘  └──────┘  └──────┘  └──────┘       |
-+------------------------------------------------+
-```
-
-### Quiz 2 Image Cards
-```text
-+------------------------------------------------+
-|           Choose your Model                     |
-|  Which model would you like to test drive?      |
-|                                                 |
-|       ┌──────────┐    ┌──────────┐             |
-|       │   IMG    │    │   IMG    │             |
-|       │  (Car)   │    │  (Car)   │             |
-|       └──────────┘    └──────────┘             |
-+------------------------------------------------+
-```
-
-### Quiz Split + Info Card
-```text
-+------------------------+------------------------+
-| What is you            |                        |
-| Community goal?        |   [💬 Icon/Illustration]|
-|                        |                        |
-| ┌────┐ ┌────┐         |   Do you want to       |
-| │IMG │ │IMG │         |   further expand       |
-| │Gain│ │Stay│         |   your community?      |
-| └────┘ └────┘         |                        |
-| ┌────┐ ┌────┐         |   Our templates helped |
-| │IMG │ │IMG │         |   grow to 2,500...     |
-| │Loyal││Get │         |                        |
-| └────┘ └────┘         |                        |
-+------------------------+------------------------+
-```
-
----
-
-## New Preview Components
-
-### QuizFormPreview Component
-
-```tsx
-const QuizFormPreview = React.forwardRef<HTMLDivElement, { variant: string }>(
-  ({ variant }, ref) => {
-    // Shared components
-    const BlueSectionLabel = () => (
-      <div className="text-[6px] text-blue-500 font-medium">One last Question</div>
-    );
-    
-    const QuizOption = ({ filled, icon }: { filled?: boolean; icon?: boolean }) => (
-      <div className={cn(
-        "h-4 flex items-center gap-1 px-1.5 rounded border",
-        filled 
-          ? "bg-blue-500 border-blue-500" 
-          : "bg-white border-slate-200"
-      )}>
-        {icon && <div className="w-2 h-2 rounded bg-amber-400" />}
-        <div className={cn("h-1 w-10 rounded", filled ? "bg-white" : "bg-slate-600")} />
-        {!filled && <div className="w-2 h-2 rounded-full border border-slate-300" />}
-      </div>
-    );
-    
-    const ImageCard = () => (
-      <div className="flex flex-col rounded overflow-hidden">
-        <div className="h-6 bg-gradient-to-br from-slate-200 to-slate-300" />
-        <div className="h-3 bg-blue-500 flex items-center justify-center">
-          <div className="h-1 w-8 bg-white rounded" />
-        </div>
-      </div>
-    );
-    
-    // Variant implementations...
-  }
-);
-```
+| **Team Member Split - Text Left** | 50/50 | Name + blue role label + bio on left, large image on right |
+| **Team Member Split - Image Left** | 50/50 | Large image on left, blue role label + name + bio on right |
+| **Team Member Split + Features** | 50/50 | Name + role + icon features on left, image on right |
+| **Team Grid Simple** | Centered | Title + subtext, 3-column grid of photo cards with name + description |
+| **Team Grid + Label** | Centered | Blue "This is our Team" label + title, 3-column photo grid |
+| **Team Grid No Description** | Centered | Same as simple but without description text under names |
+| **Team Full Image** | Centered | Blue label + title + subtext + full-width team photo |
+| **Team Grid Cards** | Centered | 2x3 white cards with avatar, name, role, description |
+| **Team Grid Cards (Gray)** | Centered | Same but with gray background |
+| **Team Split + CTA** | 50/50 | "Get to know our Team" + button on left, 2x2 team member grid on right |
 
 ---
 
@@ -235,100 +33,313 @@ const QuizFormPreview = React.forwardRef<HTMLDivElement, { variant: string }>(
 
 | Element | Style |
 |---------|-------|
-| **Section Label** | Blue text "One last Question" above title |
-| **Headlines** | Bold slate-800 text |
-| **Subtext** | Light slate-400 text |
-| **Radio Options** | White bg + border + circle, or filled blue |
-| **Image Cards** | Rounded image + blue footer with label |
-| **Icons** | Small colored circles (amber, blue, purple) |
-
-### Color Palette
-
-| Variant | Background | Options |
-|---------|------------|---------|
-| Simple | White | White + border |
-| Filled | White | Blue filled |
-| Gray BG | Slate-50 | White + border |
-| Card | Slate-50 outer, White card | White + border |
-| Image Cards | White/Gray | Image + Blue footer |
+| **Section Label** | Blue text "This is our Team" above title |
+| **Headlines** | Bold slate-800 text (e.g., "Meet our Experts") |
+| **Role Labels** | Blue text for job titles (e.g., "Head of Engineering") |
+| **Subtext** | Light slate-400/500 text for descriptions |
+| **Images** | Rounded corners, professional photos |
+| **Cards** | White background with subtle borders/shadows |
 
 ---
 
-## Template Node Structure
+## ASCII Template Layouts
 
-Each quiz template creates nodes that integrate with the existing FlowContainer/choice system:
+### Team Member Split - Text Left (Philipp Schilling style)
+```text
++------------------------+------------------------+
+|  Philipp Schilling     |                        |
+|  [Head of Engineering] |   [Large Professional  |
+|  (blue text)           |    Photo]              |
+|                        |                        |
+|  Philipp is Head of    |                        |
+|  Engineering at...     |                        |
+|                        |                        |
+|  He brings experience  |                        |
+|  in software dev...    |                        |
++------------------------+------------------------+
+```
 
-```typescript
-export const quizCenteredSimple: SectionTemplate = {
-  id: 'quiz-centered-simple',
-  name: 'Quiz Centered',
-  description: 'Centered quiz with 2x2 choice grid',
-  category: 'quiz_form',
-  icon: 'list',
-  createNode: () => ({
-    id: genId('section'),
-    type: 'section',
-    props: { variant: 'quiz' },
-    children: [
-      { type: 'label', props: { text: 'One last Question' } },
-      { type: 'heading', props: { text: 'What is your Community goal?', level: 'h2' } },
-      { type: 'paragraph', props: { text: 'Answer the question to find the right course...' } },
-      { 
-        type: 'choice_group',
-        props: { 
-          layout: 'grid-2x2',
-          options: [
-            { label: 'Gain loyal fans', icon: 'trophy' },
-            { label: 'Secure competitive advantage', icon: 'rocket' },
-            { label: 'Create customer loyalty', icon: 'star' },
-            { label: 'Receive support', icon: 'phone' },
-          ]
-        }
-      },
-    ],
-  }),
-};
+### Team Member Split - Image Left (Julia Schmidt style)
+```text
++------------------------+------------------------+
+|                        |  [Digital Marketing]   |
+|   [Large Professional  |  Julia Schmidt         |
+|    Photo]              |                        |
+|                        |  Julia is Head of      |
+|                        |  Digital Marketing...  |
+|                        |                        |
+|                        |  With her experience   |
+|                        |  in online marketing...|
++------------------------+------------------------+
+```
+
+### Team Member Split + Features (Maximilian Weber style)
+```text
++------------------------+------------------------+
+|  [Digital Marketing]   |                        |
+|  Maximilian Weber      |   [Large Professional  |
+|                        |    Photo]              |
+|  💰 Financial Planning |                        |
+|     Maximilian leads...|                        |
+|                        |                        |
+|  📊 Risk Management    |                        |
+|     Monitors risk...   |                        |
+|                        |                        |
+|  📈 Investment Strategy|                        |
+|     Develops strategy..|                        |
++------------------------+------------------------+
+```
+
+### Team Grid Simple
+```text
++------------------------------------------------+
+|          Meet our experts                       |
+|  Discover our diverse, talented team...         |
+|                                                 |
+|  ┌──────┐    ┌──────┐    ┌──────┐             |
+|  │ PHOTO│    │ PHOTO│    │ PHOTO│             |
+|  │      │    │      │    │      │             |
+|  └──────┘    └──────┘    └──────┘             |
+|  Philipp     Julia       Maximilian            |
+|  Schilling   Schmidt     Weber                 |
+|  [bio text]  [bio text]  [bio text]            |
++------------------------------------------------+
+```
+
+### Team Grid + Label
+```text
++------------------------------------------------+
+|           [This is our Team]                    |
+|          Meet our Experts                       |
+|  Discover our diverse, talented team...         |
+|                                                 |
+|  ┌──────┐    ┌──────┐    ┌──────┐             |
+|  │ PHOTO│    │ PHOTO│    │ PHOTO│             |
+|  └──────┘    └──────┘    └──────┘             |
+|  Name        Name        Name                  |
+|  [bio]       [bio]       [bio]                 |
++------------------------------------------------+
+```
+
+### Team Grid No Description
+```text
++------------------------------------------------+
+|          Meet our experts                       |
+|  Discover our diverse, talented team...         |
+|                                                 |
+|  ┌──────┐    ┌──────┐    ┌──────┐             |
+|  │ PHOTO│    │ PHOTO│    │ PHOTO│             |
+|  └──────┘    └──────┘    └──────┘             |
+|  Philipp     Julia       Maximilian            |
+|  Schilling   Schmidt     Weber                 |
++------------------------------------------------+
+```
+
+### Team Full Image
+```text
++------------------------------------------------+
+|           [This is our Team]                    |
+|          Meet our Experts                       |
+|  Discover our diverse, talented team...         |
+|                                                 |
+|   [Full-Width Office/Meeting Room Photo]        |
+|                                                 |
++------------------------------------------------+
+```
+
+### Team Grid Cards (2x3)
+```text
++------------------------------------------------+
+|           [This is our Team]                    |
+|          Meet our Experts                       |
+|                                                 |
+| ┌─────────────┐ ┌─────────────┐ ┌─────────────┐|
+| │ (o) Name    │ │ (o) Name    │ │ (o) Name    │|
+| │  Role       │ │  Role       │ │  Role       │|
+| │             │ │             │ │             │|
+| │ Description │ │ Description │ │ Description │|
+| │ text...     │ │ text...     │ │ text...     │|
+| └─────────────┘ └─────────────┘ └─────────────┘|
+| ┌─────────────┐ ┌─────────────┐ ┌─────────────┐|
+| │ (o) Name    │ │ (o) Name    │ │ (o) Name    │|
+| │  Role       │ │  Role       │ │  Role       │|
+| │ Description │ │ Description │ │ Description │|
+| └─────────────┘ └─────────────┘ └─────────────┘|
++------------------------------------------------+
+```
+
+### Team Grid Cards (Gray BG)
+```text
+Same as above but with gray/slate-50 background
+```
+
+### Team Split + CTA
+```text
++------------------------+------------------------+
+| [Become part of the    |  ┌────┐    ┌────┐    |
+|  community]            |  │PHOTO│   │PHOTO│    |
+|                        |  │Name │   │Name │    |
+| Get to know            |  │bio  │   │bio  │    |
+| our Team               |  └────┘    └────┘    |
+|                        |  ┌────┐    ┌────┐    |
+| [Apply now]            |  │PHOTO│   │PHOTO│    |
+|                        |  │Name │   │Name │    |
+|                        |  │bio  │   │bio  │    |
+|                        |  └────┘    └────┘    |
++------------------------+------------------------+
 ```
 
 ---
 
-## Files to Modify
+## File Changes
 
-| File | Changes |
-|------|---------|
-| `src/flow-canvas/builder/components/SectionPicker/SectionPicker.tsx` | Add `quiz_form` to `SECTION_CATEGORIES` |
-| `src/builder_v2/templates/sectionTemplates.ts` | Add `quiz_form` to category type, add 9 new templates, update exports |
-| `src/flow-canvas/builder/components/HighTicketPreviewCard.tsx` | Add `QuizFormPreview` component with 9 variants, add case to `getPreviewComponent` |
-| `src/builder_v2/components/TemplatePreviewCard.tsx` | Add `quiz_form` category handling if needed |
+### 1. `sectionTemplates.ts`
+
+Remove the single `teamSection` template and add 10 new Team templates:
+
+| New Template ID | Name |
+|-----------------|------|
+| `team-member-text-left` | Team Member (Text Left) |
+| `team-member-image-left` | Team Member (Image Left) |
+| `team-member-features` | Team Member + Features |
+| `team-grid-simple` | Team Grid |
+| `team-grid-label` | Team Grid + Label |
+| `team-grid-no-desc` | Team Grid (No Description) |
+| `team-full-image` | Team Full Image |
+| `team-grid-cards` | Team Grid Cards |
+| `team-grid-cards-gray` | Team Grid Cards (Gray) |
+| `team-split-cta` | Team + CTA |
+
+Update:
+- `allSectionTemplates` array
+- `sectionTemplatesByCategory.team` array
+
+### 2. `HighTicketPreviewCard.tsx`
+
+Replace the single `TeamPreview` component with a multi-variant `TeamPreview` component:
+
+```tsx
+const TeamPreview = React.forwardRef<HTMLDivElement, { template: SectionTemplate }>(
+  ({ template }, ref) => {
+    const id = template.id;
+    
+    // Shared components
+    const BlueSectionLabel = () => (
+      <div className="text-[6px] text-blue-500 font-medium">This is our Team</div>
+    );
+    
+    const BlueRoleLabel = () => (
+      <div className="text-[5px] text-blue-500 font-medium">Head of Engineering</div>
+    );
+    
+    const TeamMemberCard = ({ hasDesc = true }: { hasDesc?: boolean }) => (
+      <div className="flex flex-col items-center">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 mb-1" />
+        <div className="h-1 w-6 bg-slate-700 rounded mb-0.5" />
+        {hasDesc && <div className="h-0.5 w-8 bg-slate-300 rounded" />}
+      </div>
+    );
+    
+    const TeamCardWithAvatar = () => (
+      <div className="bg-white rounded border border-slate-100 p-1.5 flex flex-col gap-0.5">
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-gradient-to-br from-slate-300 to-slate-400" />
+          <div>
+            <div className="h-0.5 w-8 bg-slate-700 rounded" />
+            <div className="h-0.5 w-5 bg-slate-400 rounded mt-0.5" />
+          </div>
+        </div>
+        <div className="h-0.5 w-full bg-slate-200 rounded" />
+      </div>
+    );
+    
+    // Variant implementations based on id...
+  }
+);
+```
+
+Update `getPreviewComponent` to handle 10 variants:
+
+```tsx
+case 'team':
+  return <TeamPreview template={template} />;
+```
 
 ---
 
 ## Implementation Order
 
 1. **Update `sectionTemplates.ts`**:
-   - Add `quiz_form` to the category type union
-   - Add 9 new quiz template definitions
+   - Remove `teamSection` 
+   - Add 10 new team templates with proper `createNode` functions
    - Update `allSectionTemplates` array
-   - Update `sectionTemplatesByCategory` object
-   - Update `categoryLabels`, `categoryDescriptions`, `categoryIcons`
+   - Update `sectionTemplatesByCategory.team` array
 
 2. **Update `HighTicketPreviewCard.tsx`**:
-   - Add `QuizFormPreview` component with all 9 variants
-   - Add `quiz_form` case to `getPreviewComponent` switch
+   - Replace simple `TeamPreview` with multi-variant component
+   - Add shared components (BlueSectionLabel, BlueRoleLabel, TeamMemberCard, etc.)
+   - Implement all 10 variant layouts
+   - Update `getPreviewComponent` switch case
 
-3. **Update `SectionPicker.tsx`**:
-   - Add `quiz_form` to `SECTION_CATEGORIES` after `about_us`
+---
 
-4. **Update `TemplatePreviewCard.tsx`** (if needed):
-   - Ensure `quiz_form` category is handled
+## New Preview Component Structure
+
+### Shared Helper Components
+
+```tsx
+// Blue section label
+const BlueSectionLabel = () => (
+  <div className="text-[6px] text-blue-500 font-medium">This is our Team</div>
+);
+
+// Blue role label (for individual member templates)
+const BlueRoleLabel = () => (
+  <div className="text-[5px] text-blue-500 font-medium">Head of Engineering</div>
+);
+
+// Photo card for grid layouts
+const TeamMemberCard = ({ hasDesc = true }: { hasDesc?: boolean }) => (
+  <div className="flex flex-col items-center gap-0.5">
+    <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300" />
+    <div className="h-1 w-5 bg-slate-700 rounded" />
+    {hasDesc && <div className="h-0.5 w-7 bg-slate-300 rounded" />}
+  </div>
+);
+
+// Avatar card for card grid layouts
+const TeamCardWithAvatar = () => (
+  <div className="bg-white rounded border border-slate-100 p-1 flex flex-col gap-0.5">
+    <div className="flex items-center gap-1">
+      <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+      <div>
+        <div className="h-0.5 w-6 bg-slate-700 rounded" />
+        <div className="h-0.5 w-4 bg-slate-400 rounded mt-0.5" />
+      </div>
+    </div>
+    <div className="h-0.5 w-full bg-slate-200 rounded" />
+  </div>
+);
+
+// Icon feature row for team member + features
+const FeatureRow = ({ color }: { color: string }) => (
+  <div className="flex items-start gap-1">
+    <div className={cn("w-2 h-2 rounded flex-shrink-0", color)} />
+    <div className="flex-1">
+      <div className="h-0.5 w-6 bg-slate-600 rounded" />
+      <div className="h-0.5 w-10 bg-slate-300 rounded mt-0.5" />
+    </div>
+  </div>
+);
+```
 
 ---
 
 ## Result
 
 After implementation:
-- New "Quiz/Form" category visible in Section Picker below "About Us"
-- 9 Perspective-style quiz templates matching the reference screenshots
-- Visual consistency with Hero, Features, CTA, and About Us templates
-- Templates integrate with existing FlowContainer choice system for runtime functionality
+- "Team" category expanded from 1 to 10 Perspective-style templates
+- Light-themed previews matching the visual language of Hero, Features, CTA, About Us, and Quiz/Form
+- Professional team showcasing layouts for individual members and team grids
+- Consistent blue accent for role labels and section labels
 
