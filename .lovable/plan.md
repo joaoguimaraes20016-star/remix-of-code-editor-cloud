@@ -1,248 +1,242 @@
 
-# Bug Fix Verification Report - Remaining Issues & New Fixes Required
+# Funnel Builder: Selection IDs, Font Sizing, Duplicate Constant & Perspective Cards Fixes
 
 ## Executive Summary
 
-After a comprehensive code review, I've verified that **most of the planned bug fixes were implemented**, but I found **4 critical issues** that are still broken or incompletely fixed. These need to be addressed for the bugs to actually work correctly.
+This plan addresses **4 distinct issues** in the funnel builder that cause broken behaviors, build failures, and missing features:
+
+1. **Selection ID mismatch** - Click-to-edit doesn't focus the right sidebar field
+2. **Mobile font sizing inconsistency** - Live preview uses smaller fonts on mobile than published funnels
+3. **Duplicate constant declaration** - TypeScript build error from duplicate `OPTION_HOVER_OPTIONS`
+4. **Missing perspective cards** - Image-based multi-choice cards aren't available in flow-canvas
 
 ---
 
-## Verified Fixes (Working Correctly)
+## Issue 1: Selection ID Mismatch
 
-### Bug 1: Outline Text Color
-**Status: FIXED** in `CanvasRenderer.tsx:1616-1618`
+### Problem
+When a user clicks elements in `StepPreview`, the selection ID doesn't match what `StepContentEditor` expects, so the sidebar doesn't auto-focus the right input field.
+
+| Element Clicked | StepPreview sends | StepContentEditor expects |
+|-----------------|-------------------|---------------------------|
+| CTA Button | `"button"` | `"button_text"` |
+| Input field | `"input"` | `"placeholder"` |
+| Submit button | `"submit_button"` | (no mapping) |
+
+**Root Cause**: 
+- `StepPreview.tsx:616-617` - Button selection uses `elementId` which is `"button"`
+- `StepContentEditor.tsx:114-115` - Auto-focus expects `"button_text"` and `"placeholder"`
+
+### Fix
+Update `StepPreview.tsx` to send the correct IDs that match what the sidebar expects:
+
 ```typescript
-: isOutlineMode
-  ? (element.props?.textColor as string || (isDarkTheme ? '#ffffff' : '#18181b')) // User color OR default
-```
-The code now correctly prioritizes user-set text color.
+// Button at line ~617: Change elementId to 'button_text'
+onSelect={() => onSelectElement('button_text')}
+isSelected={selectedElementId === 'button_text'}
 
-### Bug 2: Shadows on Outline Buttons
-**Status: FIXED** in `CanvasRenderer.tsx:1625-1629`
+// Input placeholder area: Change to 'placeholder'
+onSelect={() => onSelectElement('placeholder')}
+isSelected={selectedElementId === 'placeholder'}
+```
+
+Also update `EditorSidebar.tsx:132-133` label mappings to handle both IDs gracefully:
 ```typescript
-const hasShadowSetting = element.props?.shadow && element.props?.shadow !== 'none';
-const effectiveShadow = hasShadowSetting ? ... : ...
+if (selectedElementId === 'button' || selectedElementId === 'button_text') return 'Button';
+if (selectedElementId === 'input' || selectedElementId === 'placeholder') return 'Input Field';
 ```
-Shadows now work on outline buttons when explicitly set.
 
-### Bug 3: Border Width/Color
-**Status: FIXED** in `CanvasRenderer.tsx:1642-1647`
-```typescript
-borderWidth: userBorderWidth || (isOutlineMode ? '2px' : ...),
-borderColor: userBorderColor || (isOutlineMode ? outlineBorderColor : ...),
-```
-User-defined borders are now respected.
-
-### Bug 5: Publish/Save Session
-**Status: FIXED** in `FunnelEditor.tsx:263-304`
-- localStorage cleanup implemented
-- Error handling added for save failures
-- Publish proceeds even if save fails
-
-### Bug 7: Absolute Positioning
-**Status: FIXED** in `CanvasRenderer.tsx:1566-1577`
-```typescript
-const wrapperStyle: React.CSSProperties = isAbsolutePosition ? {
-  position: 'absolute',
-  top: element.styles?.top || undefined,
-  // ... correctly applies all position offsets
-} : { /* normal layout */ }
-```
+**Files to modify:**
+- `src/components/funnel-builder/StepPreview.tsx` (~6 lines)
+- `src/components/funnel-builder/EditorSidebar.tsx` (~4 lines)
 
 ---
 
-## Issues Still Broken (Require Fixes)
+## Issue 2: Live Preview Font Sizing Mismatch
 
-### Issue 1: CTA Icons Still Show By Default (Bug 4 - INCOMPLETE)
+### Problem
+`LivePreviewMode.tsx:232` passes `isPreview={device === 'mobile'}` to `DynamicElementRenderer`, which then selects a smaller font map (`PREVIEW_FONT_SIZE_MAP`) only for mobile.
 
-**Problem**: While the "Show Icon" toggle was added to `ButtonStyleInspector.tsx` and `RightPanel.tsx` correctly defaults `showIcon` to `false`, the **rendering logic in `CanvasRenderer.tsx`** still uses `!== false` which means undefined = show icon.
+This means:
+- **Mobile preview**: Uses small "editor" fonts
+- **Tablet/Desktop preview**: Uses large "public" fonts
+- **Actual published funnel (all devices)**: Uses large "public" fonts
 
-**Location**: `CanvasRenderer.tsx:1758, 1767`
+The mobile preview looks wrong compared to what users will actually see.
+
+**Root Cause**: The conditional `isPreview={device === 'mobile'}` is backwards logic from when previews needed smaller fonts in a constrained space. Now the live preview should match public rendering exactly.
+
+### Fix
+Change `LivePreviewMode.tsx:232` to always use public font sizing:
+
 ```typescript
-// CURRENT (broken):
-{element.props?.showIcon !== false && element.props?.iconPosition === 'left' && renderButtonIcon()}
-{element.props?.showIcon !== false && element.props?.iconPosition !== 'left' && renderButtonIcon()}
+// BEFORE (broken):
+isPreview={device === 'mobile'}
 
-// SHOULD BE (to respect default false):
-{element.props?.showIcon === true && element.props?.iconPosition === 'left' && renderButtonIcon()}
-{element.props?.showIcon === true && element.props?.iconPosition !== 'left' && renderButtonIcon()}
+// AFTER (consistent):
+isPreview={false}  // Always use public font sizing in live preview
 ```
 
-**Impact**: Existing buttons and new buttons still show icons unless explicitly set to false.
+Alternatively, remove the `isPreview` prop entirely since `false` is the default.
+
+**Files to modify:**
+- `src/components/funnel-builder/LivePreviewMode.tsx` (~1 line)
 
 ---
 
-### Issue 2: Icon Gradient Uses Broken Mask (Bug 6 - INCOMPLETE)
+## Issue 3: Duplicate Constant Declaration
 
-**Problem**: The icon gradient fix in `CanvasRenderer.tsx:2424-2425` uses a **placeholder empty SVG** as the mask, which means the icon won't actually render with the gradient.
+### Problem
+`DesignEditor.tsx` declares `OPTION_HOVER_OPTIONS` twice at lines 91-96 and 98-103:
 
-**Location**: `CanvasRenderer.tsx:2417-2437`
 ```typescript
-// CURRENT (broken - empty placeholder SVG):
-WebkitMask: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3C/svg%3E")`,
+// Line 91-96:
+const OPTION_HOVER_OPTIONS = [
+  { value: 'none', label: 'None' },
+  { value: 'scale', label: 'Scale' },
+  { value: 'glow', label: 'Glow' },
+  { value: 'lift', label: 'Lift' },
+];
+
+// Line 98-103 (DUPLICATE):
+const OPTION_HOVER_OPTIONS = [
+  { value: 'none', label: 'None' },
+  { value: 'scale', label: 'Scale' },
+  { value: 'glow', label: 'Glow' },
+  { value: 'lift', label: 'Lift' },
+];
 ```
 
-The SVG in the mask URL is empty (no path data), so it masks nothing.
+This causes TypeScript error: `Cannot redeclare block-scoped variable 'OPTION_HOVER_OPTIONS'`
 
-**Solution**: Use a CSS-only approach - render the icon normally and apply gradient via filter or use the icon as a direct mask:
-```typescript
-// Better approach - use icon itself as mask:
-if (isGradientIcon) {
-  return (
-    <div 
-      style={{
-        width: iconSize,
-        height: iconSize,
-        background: gradientToCSS(iconGradient),
-        WebkitMaskImage: 'url(#icon-mask)',  // Won't work with data URL
-      }}
-    >
-      <IconComponent style={{ width: '100%', height: '100%' }} />
-    </div>
-  );
+### Fix
+Delete lines 98-103 (the duplicate declaration).
+
+**Files to modify:**
+- `src/components/funnel-builder/DesignEditor.tsx` (delete 6 lines)
+
+---
+
+## Issue 4: Missing Perspective-Style Multi-Choice Cards
+
+### Problem
+The `builder_v2` system has image-based "perspective" cards for multi-choice questions, but the active `flow-canvas` funnel builder only renders simple text buttons without image support.
+
+**Schema Support**: The schema already supports images!
+- `CaptureNodeChoice.imageUrl` exists in `src/flow-canvas/types/captureFlow.ts:56`
+- The legacy adapter maps `imageUrl` correctly
+
+**Missing**: The renderers (`SingleChoiceNode.tsx`, `MultiChoiceNode.tsx`) don't use `choice.imageUrl`.
+
+### Fix
+Update `SingleChoiceNode.tsx` and `MultiChoiceNode.tsx` to:
+1. Detect if any choices have images: `const hasImages = choices.some(c => c.imageUrl);`
+2. Apply perspective grid layout when images exist
+3. Render image cards with the image on top and label below
+
+**Updated SingleChoiceNode rendering logic:**
+
+```tsx
+// Detect image layout mode
+const hasImages = choices.some(c => c.imageUrl);
+
+return (
+  <div className={cn(
+    "w-full",
+    hasImages ? "grid grid-cols-2 gap-4" : "flex flex-col gap-2"
+  )}>
+    {choices.map((choice) => (
+      <button
+        key={choice.id}
+        className={cn(
+          'transition-all text-left',
+          hasImages && choice.imageUrl
+            ? 'flex flex-col rounded-xl overflow-hidden border border-border'
+            : 'flex items-center gap-3 p-4 rounded-lg border',
+          // ... selection styles
+        )}
+      >
+        {/* Image card layout */}
+        {hasImages && choice.imageUrl && (
+          <div 
+            className="w-full aspect-[4/3] bg-cover bg-center"
+            style={{ backgroundImage: `url(${choice.imageUrl})` }}
+          />
+        )}
+        
+        {/* Label area */}
+        <div className={cn(
+          hasImages && choice.imageUrl 
+            ? "p-3 bg-primary text-primary-foreground"
+            : "flex items-center gap-3"
+        )}>
+          {!hasImages && choice.emoji && (
+            <span className="text-lg">{choice.emoji}</span>
+          )}
+          <span className="text-sm font-medium">{choice.label}</span>
+        </div>
+      </button>
+    ))}
+  </div>
+);
+```
+
+**Also add CSS for perspective cards** (in `mobile.css` or as Tailwind classes):
+
+```css
+/* Perspective card grid */
+.choice-grid--perspective {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.choice-card--image {
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 14px;
 }
 ```
 
-Actually, the correct approach is simpler: wrap the icon in a div that has the gradient as background, and use the SVG as a CSS mask by making it render white on transparent and using `mix-blend-mode`.
+**Files to modify:**
+- `src/flow-canvas/builder/components/capture-flow/nodes/SingleChoiceNode.tsx` (~40 lines)
+- `src/flow-canvas/builder/components/capture-flow/nodes/MultiChoiceNode.tsx` (~40 lines)
+- Add image URL field to choice inspector if not present
 
 ---
 
-### Issue 3: Published CTA Borders Still Hardcoded (Bug 8 - INCOMPLETE)
+## Implementation Priority
 
-**Problem**: While the editor correctly uses `userBorderWidth`, the runtime renderer `FlowCanvasRenderer.tsx` still **hardcodes** border width to `2px` for outline buttons.
-
-**Location**: `FlowCanvasRenderer.tsx:789-794`
-```typescript
-// CURRENT (broken - ignores user border width):
-...(isOutlineMode ? {
-  borderWidth: '2px',  // HARDCODED - should use element.styles?.borderWidth
-  borderStyle: 'solid',
-  borderColor: element.styles?.borderColor || 'currentColor',
-} : {}),
-```
-
-**Fix Required**:
-```typescript
-...(isOutlineMode ? {
-  borderWidth: element.styles?.borderWidth || '2px',
-  borderStyle: 'solid',
-  borderColor: element.styles?.borderColor || 'currentColor',
-} : {}),
-```
+| Issue | Priority | Risk | Effort |
+|-------|----------|------|--------|
+| 3 - Duplicate constant | **P0** | Build breaking | 2 min |
+| 2 - Font sizing | **P1** | User confusion | 5 min |
+| 1 - Selection IDs | **P1** | Poor UX | 15 min |
+| 4 - Perspective cards | **P2** | Missing feature | 45 min |
 
 ---
 
-### Issue 4: Published Icon Gradients Use Wrong Method
+## Files Summary
 
-**Problem**: `FlowCanvasRenderer.tsx:1210-1217` still uses `WebkitBackgroundClip: 'text'` for icon gradients, which **does not work on SVG icons** (only works on actual text elements).
-
-**Location**: `FlowCanvasRenderer.tsx:1210-1217`
-```typescript
-// CURRENT (broken - background-clip doesn't work on SVGs):
-const iconStyle: React.CSSProperties = iconFillType === 'gradient' && iconGradient ? {
-  background: gradientToCSS(iconGradient),
-  WebkitBackgroundClip: 'text',  // DOESN'T WORK ON SVGs
-  WebkitTextFillColor: 'transparent',
-```
-
-**Fix Required**: Must match the editor's approach (once fixed).
+| File | Changes |
+|------|---------|
+| `src/components/funnel-builder/DesignEditor.tsx` | Delete duplicate lines 98-103 |
+| `src/components/funnel-builder/LivePreviewMode.tsx` | Change `isPreview={device === 'mobile'}` to `isPreview={false}` |
+| `src/components/funnel-builder/StepPreview.tsx` | Update selection IDs for button and input |
+| `src/components/funnel-builder/EditorSidebar.tsx` | Update label mapping to handle both ID formats |
+| `src/flow-canvas/builder/components/capture-flow/nodes/SingleChoiceNode.tsx` | Add image card layout |
+| `src/flow-canvas/builder/components/capture-flow/nodes/MultiChoiceNode.tsx` | Add image card layout |
 
 ---
 
-## Additional Bugs Discovered
+## Testing Checklist
 
-### New Bug A: RightPanel showIcon toggle doesn't update existing elements
-
-While `RightPanel.tsx:905` correctly sets the default to `false` for the inspector:
-```typescript
-showIcon: element.props?.showIcon as boolean ?? false,
-```
-
-This only affects the **display** in the inspector. Existing elements still have `showIcon: undefined` which the renderer treats as `true`.
-
-**Fix**: The renderer must treat `undefined` as `false`, not as `true`.
-
----
-
-## Technical Implementation Details
-
-### Files Requiring Changes
-
-| File | Issue | Lines | Fix Type |
-|------|-------|-------|----------|
-| `CanvasRenderer.tsx` | Icon default | 1758, 1767 | Change `!== false` to `=== true` |
-| `CanvasRenderer.tsx` | Icon gradient mask | 2417-2437 | Implement proper mask technique |
-| `FlowCanvasRenderer.tsx` | Border hardcode | 789-794 | Use `element.styles?.borderWidth` |
-| `FlowCanvasRenderer.tsx` | Icon gradient | 1210-1217 | Match editor's mask approach |
-
----
-
-## Correct Icon Gradient Implementation
-
-The proper way to apply a gradient to an SVG icon is:
-
-```typescript
-// Option 1: Use the icon as a mask-image via clip-path
-const iconStyle: React.CSSProperties = isGradientIcon ? {
-  width: iconSize,
-  height: iconSize,
-  background: gradientToCSS(iconGradient),
-  // The icon SVG will be inserted as a child and we'll use mix-blend-mode
-} : { color: iconColor, width: iconSize, height: iconSize };
-
-// Then in JSX:
-if (isGradientIcon) {
-  return (
-    <div style={iconStyle} className="relative">
-      <IconComponent 
-        style={{ 
-          position: 'absolute',
-          inset: 0,
-          color: 'white',
-          mixBlendMode: 'destination-in',
-        }} 
-      />
-    </div>
-  );
-}
-```
-
-OR
-
-```typescript
-// Option 2: Inline SVG approach - use the gradient in SVG defs
-<svg width={iconSize} height={iconSize}>
-  <defs>
-    <linearGradient id="icon-grad-{elementId}" gradientTransform="rotate({angle})">
-      {stops.map(s => <stop offset={`${s.position}%`} stopColor={s.color} />)}
-    </linearGradient>
-  </defs>
-  {/* Clone the icon path with fill="url(#icon-grad-{elementId})" */}
-</svg>
-```
-
----
-
-## Recommended Fix Order
-
-1. **Quick Win - CTA Icon Default** (5 min)
-   - Change `!== false` to `=== true` in CanvasRenderer lines 1758, 1767
-
-2. **Quick Win - Published Border Width** (5 min)
-   - Add `element.styles?.borderWidth ||` before `'2px'` in FlowCanvasRenderer line 791
-
-3. **Medium - Icon Gradient Implementation** (30 min)
-   - Replace the broken mask approach with mix-blend-mode or inline SVG gradients
-   - Update both CanvasRenderer and FlowCanvasRenderer
-
----
-
-## Testing Checklist After Fixes
-
-- [ ] New CTA buttons have NO icon by default
-- [ ] Existing CTA buttons without explicit showIcon have NO icon
-- [ ] Toggle "Show Icon" ON actually shows the icon
-- [ ] Icon elements with gradient fill show gradient ON the icon shape (not background)
-- [ ] Published outline buttons respect custom border width
-- [ ] Published outline buttons respect custom border color
-- [ ] Published icon gradients display correctly
+After implementation:
+- [ ] Build succeeds without TypeScript errors
+- [ ] Clicking CTA button in preview focuses sidebar "Button Text" field
+- [ ] Clicking input placeholder focuses sidebar "Placeholder" field
+- [ ] Mobile live preview shows same font sizes as tablet/desktop
+- [ ] Published funnels match live preview exactly on all devices
+- [ ] Multi-choice with images renders as 2-column card grid
+- [ ] Multi-choice without images renders as vertical list buttons
