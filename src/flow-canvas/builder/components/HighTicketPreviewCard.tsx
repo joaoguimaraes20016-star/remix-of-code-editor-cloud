@@ -377,36 +377,194 @@ const SocialProofPreview = React.forwardRef<HTMLDivElement, { variant: string }>
 );
 SocialProofPreview.displayName = 'SocialProofPreview';
 
-// Features preview
+// Features preview - PERSPECTIVE STYLE (8 variants)
+const SectionLabel = () => (
+  <div className="text-[5px] font-medium text-blue-500">Our Services</div>
+);
+
+const ChecklistRow = ({ count = 3 }: { count?: number }) => (
+  <div className="space-y-1">
+    {Array.from({ length: count }).map((_, i) => (
+      <div key={i} className="flex items-center gap-1">
+        <CheckCircle2 size={6} className="text-green-500" />
+        <div className="h-1 w-16 bg-slate-300 rounded" />
+      </div>
+    ))}
+  </div>
+);
+
+const IconFeature = ({ color }: { color: string }) => (
+  <div className="flex items-center gap-1">
+    <div className={cn("w-4 h-4 rounded-full", color)} />
+    <div className="space-y-0.5">
+      <div className="h-1 w-10 bg-slate-700 rounded" />
+      <div className="h-0.5 w-8 bg-slate-300 rounded" />
+    </div>
+  </div>
+);
+
+const ImageCard = () => (
+  <div className="flex flex-col items-center gap-1">
+    <div className="w-full h-8 bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg" />
+    <div className="h-1 w-10 bg-slate-700 rounded" />
+    <div className="h-0.5 w-12 bg-slate-300 rounded" />
+  </div>
+);
+
 const FeaturesPreview = React.forwardRef<HTMLDivElement, { variant: string }>(
   ({ variant }, ref) => {
-    if (variant === 'grid') {
+    // Features Split + Checklist
+    if (variant === 'split-checklist') {
       return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col items-center">
-          <div className="h-2.5 w-20 bg-white/80 rounded mb-3" />
-          <div className="grid grid-cols-3 gap-2">
-            {['🚀', '💎', '🎯'].map((emoji, i) => (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500/30 to-indigo-500/30 flex items-center justify-center text-xs">
-                  {emoji}
-                </div>
-                <div className="h-1 w-8 bg-white/30 rounded" />
-              </div>
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <div className="h-2 w-20 bg-slate-800 rounded" />
+            <div className="h-1 w-16 bg-slate-300 rounded" />
+            <div className="flex items-center gap-1 mt-1">
+              <AvatarStack />
+              <StarRating />
+            </div>
+          </div>
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <ChecklistRow />
+            <div className="h-4 w-14 bg-blue-500 rounded mt-1" />
+          </div>
+        </div>
+      );
+    }
+    
+    // Features Split + Image
+    if (variant === 'split-image') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <div className="h-2 w-20 bg-slate-800 rounded" />
+            <div className="h-1 w-16 bg-slate-300 rounded" />
+            <div className="flex items-center gap-1 mt-1">
+              <AvatarStack />
+              <StarRating />
+            </div>
+          </div>
+          <ImagePlaceholder className="flex-1" />
+        </div>
+      );
+    }
+    
+    // Features Split + Icons (image left)
+    if (variant === 'split-icons') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <ImagePlaceholder className="flex-1" />
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <div className="h-2 w-18 bg-slate-800 rounded" />
+            <div className="space-y-1 mt-1">
+              <IconFeature color="bg-blue-400" />
+              <IconFeature color="bg-purple-400" />
+              <IconFeature color="bg-amber-400" />
+            </div>
+            <div className="h-4 w-14 bg-blue-500 rounded mt-1" />
+          </div>
+        </div>
+      );
+    }
+    
+    // Features 3-Column Cards
+    if (variant === '3col-cards') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center gap-2">
+          <SectionLabel />
+          <div className="h-2 w-28 bg-slate-800 rounded" />
+          <div className="h-4 w-16 bg-blue-500 rounded" />
+          <div className="grid grid-cols-3 gap-2 w-full mt-1">
+            <ImageCard />
+            <ImageCard />
+            <ImageCard />
+          </div>
+        </div>
+      );
+    }
+    
+    // Features 4-Column Icons (2x2)
+    if (variant === '4col-icons') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center gap-2">
+          <SectionLabel />
+          <div className="h-2 w-28 bg-slate-800 rounded" />
+          <div className="h-4 w-16 bg-blue-500 rounded" />
+          <div className="grid grid-cols-2 gap-2 w-full mt-1">
+            <IconFeature color="bg-blue-400" />
+            <IconFeature color="bg-amber-400" />
+            <IconFeature color="bg-indigo-400" />
+            <IconFeature color="bg-purple-400" />
+          </div>
+        </div>
+      );
+    }
+    
+    // Features 2-Column + Icons
+    if (variant === '2col-icons') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex flex-col items-center gap-1.5">
+          <SectionLabel />
+          <div className="h-2 w-24 bg-slate-800 rounded" />
+          <div className="h-3 w-14 bg-blue-500 rounded" />
+          <div className="grid grid-cols-2 gap-2 w-full">
+            <div className="h-8 bg-gradient-to-br from-slate-100 to-slate-200 rounded" />
+            <div className="h-8 bg-gradient-to-br from-slate-100 to-slate-200 rounded" />
+          </div>
+          <div className="grid grid-cols-4 gap-1 w-full">
+            {['bg-blue-400', 'bg-indigo-400', 'bg-amber-400', 'bg-purple-400'].map((color, i) => (
+              <div key={i} className={cn("w-3 h-3 rounded-full mx-auto", color)} />
             ))}
           </div>
         </div>
       );
     }
     
-    return (
-      <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col">
-        <div className="h-2.5 w-20 bg-white/80 rounded mb-2" />
-        {[1, 2, 3, 4].map((_, i) => (
-          <div key={i} className="flex items-center gap-2 mb-1.5">
-            <CheckCircle2 size={10} className="text-emerald-400" />
-            <div className="h-1.5 w-24 bg-white/30 rounded" />
+    // Features Gray BG + Image
+    if (variant === 'gray-image') {
+      return (
+        <div ref={ref} className="w-full h-full bg-slate-50 p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <SectionLabel />
+            <div className="h-2 w-16 bg-slate-800 rounded" />
+            <div className="space-y-1 mt-1">
+              <IconFeature color="bg-amber-400" />
+              <IconFeature color="bg-blue-400" />
+              <IconFeature color="bg-purple-400" />
+            </div>
           </div>
-        ))}
+          <div className="flex-1 bg-gradient-to-br from-slate-200 to-slate-300 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-12 bg-slate-100 rounded-md border border-slate-300" />
+          </div>
+        </div>
+      );
+    }
+    
+    // Features Gray BG + Reviews
+    if (variant === 'gray-reviews') {
+      return (
+        <div ref={ref} className="w-full h-full bg-slate-50 p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <SectionLabel />
+            <div className="h-2 w-16 bg-slate-800 rounded" />
+            <div className="h-1 w-20 bg-slate-300 rounded" />
+            <div className="flex items-center gap-1 mt-1">
+              <AvatarStack />
+              <StarRating />
+            </div>
+          </div>
+          <ImagePlaceholder className="flex-1" />
+        </div>
+      );
+    }
+    
+    // Default fallback
+    return (
+      <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+        <SectionLabel />
+        <div className="h-2.5 w-28 bg-slate-800 rounded" />
+        <ChecklistRow />
       </div>
     );
   }
@@ -524,7 +682,15 @@ function getPreviewComponent(template: SectionTemplate) {
       return <SocialProofPreview variant="badges" />;
     
     case 'features':
-      return <FeaturesPreview variant={id.includes('grid') ? 'grid' : 'list'} />;
+      if (id.includes('split-checklist')) return <FeaturesPreview variant="split-checklist" />;
+      if (id.includes('split-image')) return <FeaturesPreview variant="split-image" />;
+      if (id.includes('split-icons')) return <FeaturesPreview variant="split-icons" />;
+      if (id.includes('3col-cards')) return <FeaturesPreview variant="3col-cards" />;
+      if (id.includes('4col-icons')) return <FeaturesPreview variant="4col-icons" />;
+      if (id.includes('2col-icons')) return <FeaturesPreview variant="2col-icons" />;
+      if (id.includes('gray-image')) return <FeaturesPreview variant="gray-image" />;
+      if (id.includes('gray-reviews')) return <FeaturesPreview variant="gray-reviews" />;
+      return <FeaturesPreview variant="split-checklist" />;
     
     case 'testimonials':
       return <TestimonialsPreview variant={id.includes('carousel') || id.includes('stack') ? 'carousel' : 'single'} />;
