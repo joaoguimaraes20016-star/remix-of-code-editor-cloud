@@ -59,6 +59,34 @@ You are trained on the best high-converting pages and understand professional UI
 Your goal is to help users create world-class, high-converting pages that look premium and drive action.
 Be concise, actionable, and design-aware.`;
 
+// CRITICAL: AI output guardrails to prevent generating builder code
+const AI_OUTPUT_GUARDRAILS = `
+=== CRITICAL OUTPUT CONSTRAINTS ===
+You are ONLY allowed to generate:
+✓ FlowCanvas JSON structures (steps, frames, stacks, blocks, elements)
+✓ Content text (headlines, body copy, button labels, placeholder text)
+✓ Style values (colors as hex, spacing in px, font sizes, border radius)
+✓ Element properties (alignment, visibility, animation settings)
+
+You are NEVER allowed to generate:
+✗ React/JSX/TSX component code
+✗ Import statements or module syntax
+✗ TypeScript interfaces, types, or type definitions
+✗ Function definitions or arrow functions
+✗ Variable declarations (const, let, var)
+✗ Any code that looks like it modifies the builder infrastructure
+✗ File paths, class definitions, or code comments
+
+If a user asks you to:
+- "modify the builder" → Politely decline, explain you only create funnel content
+- "add a new component type" → Decline, suggest using existing elements creatively
+- "change how the editor works" → Decline, explain this is outside your scope
+- "write code for me" → Decline, offer to generate design content instead
+
+Your output must ALWAYS be valid FlowCanvas JSON or plain text content.
+Never output anything that could be interpreted as source code.
+`;
+
 // Design quality checklist the AI must validate against
 const DESIGN_QUALITY_CHECKLIST = `
 === QUALITY CHECKLIST (Validate before generating) ===
@@ -795,28 +823,31 @@ export function getSystemPrompt(
   const colorContext = userPrompt ? getColorContextForPrompt(userPrompt) : '';
   const dynamicStylingContext = formatStylingContext(context || {}, userPrompt);
   
+  // CRITICAL: Always prepend guardrails to prevent AI from generating builder code
+  const guardrailPrefix = AI_OUTPUT_GUARDRAILS + '\n\n';
+  
   // Handle generation modes for 'generate' task
   if (task === 'generate' && mode) {
     switch (mode) {
       case 'funnel':
-        return FUNNEL_GENERATE_PROMPT
+        return guardrailPrefix + FUNNEL_GENERATE_PROMPT
           .replace('{{USER_PROMPT}}', userPrompt || 'Create a professional funnel')
           .replace('{{UI_KNOWLEDGE}}', uiKnowledge)
           .replace('{{ANTI_PATTERNS}}', antiPatterns)
           .replace('{{COLOR_PALETTE}}', colorContext);
       
       case 'settings':
-        return SETTINGS_PROMPT
+        return guardrailPrefix + SETTINGS_PROMPT
           .replace('{{CURRENT_SETTINGS}}', currentSettings)
           .replace('{{USER_PROMPT}}', userPrompt || 'Update the theme');
       
       case 'workflow':
-        return WORKFLOW_GENERATE_PROMPT
+        return guardrailPrefix + WORKFLOW_GENERATE_PROMPT
           .replace('{{USER_PROMPT}}', userPrompt || 'Create a simple automation');
       
       case 'block':
       default:
-        return GENERATE_PROMPT
+        return guardrailPrefix + GENERATE_PROMPT
           .replace('{{UI_KNOWLEDGE}}', uiKnowledge)
           .replace('{{ANTI_PATTERNS}}', antiPatterns)
           .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance)
@@ -827,13 +858,13 @@ export function getSystemPrompt(
   
   switch (task) {
     case 'suggest':
-      return SUGGEST_PROMPT
+      return guardrailPrefix + SUGGEST_PROMPT
         .replace('{{CONTEXT}}', formattedContext)
         .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance)
         .replace('{{UI_KNOWLEDGE}}', UI_KNOWLEDGE.SECTION_ARCHETYPES);
     
     case 'generate':
-      return GENERATE_PROMPT
+      return guardrailPrefix + GENERATE_PROMPT
         .replace('{{UI_KNOWLEDGE}}', uiKnowledge)
         .replace('{{ANTI_PATTERNS}}', antiPatterns)
         .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance)
@@ -841,20 +872,20 @@ export function getSystemPrompt(
         .replace('{{EXISTING_CONTENT}}', existingContent);
     
     case 'rewrite':
-      return REWRITE_PROMPT
+      return guardrailPrefix + REWRITE_PROMPT
         .replace('{{CONTENT}}', context?.elementContent || '')
         .replace('{{CONTEXT}}', formattedContext)
         .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance)
         .replace('{{UI_KNOWLEDGE}}', UI_KNOWLEDGE.BUTTON_RULES + '\n' + UI_KNOWLEDGE.CONVERSION_PSYCHOLOGY);
     
     case 'analyze':
-      return ANALYZE_PROMPT
+      return guardrailPrefix + ANALYZE_PROMPT
         .replace('{{CONTEXT}}', formattedContext)
         .replace('{{FUNNEL_TYPE_GUIDANCE}}', funnelTypeGuidance)
         .replace('{{UI_KNOWLEDGE}}', uiKnowledge)
         .replace('{{ANTI_PATTERNS}}', antiPatterns);
     
     default:
-      return BASE_CONTEXT;
+      return guardrailPrefix + BASE_CONTEXT;
   }
 }

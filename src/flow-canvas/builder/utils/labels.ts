@@ -101,6 +101,7 @@ export const elementTypeLabels: Record<ElementType, string> = {
   'map-embed': 'Google Maps',
   'html-embed': 'HTML Embed',
   trustpilot: 'Trustpilot Widget',
+  faq: 'FAQ Accordion',
 };
 
 // Step intent labels - User-friendly, not system terminology

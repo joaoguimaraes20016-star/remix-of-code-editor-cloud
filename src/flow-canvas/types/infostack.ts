@@ -43,7 +43,8 @@ export type ElementType =
   | 'logo-marquee'       // Animated scrolling logo bar
   | 'map-embed'          // Google Maps embed
   | 'html-embed'         // Custom HTML/code embed
-  | 'trustpilot';        // Trustpilot review widget
+  | 'trustpilot'         // Trustpilot review widget
+  | 'faq';               // FAQ accordion element
 
 // Block types - core types actively used in builder
 export type BlockType = 
