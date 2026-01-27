@@ -79,19 +79,21 @@ export const SectionActionBar: React.FC<SectionActionBarProps> = ({
   return (
     <div 
       className={cn(
-        "absolute -top-14 left-4 flex items-center gap-1.5 transition-all duration-200 z-30",
+        // Reduced offset from -top-14 to -top-10 to work with reduced padding
+        "absolute -top-10 left-2 flex items-center gap-1.5 transition-all duration-200 z-30",
         isSelected 
           ? "opacity-100" 
           : "opacity-0 pointer-events-none group-hover/frame:opacity-100 group-hover/frame:pointer-events-auto"
       )}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Horizontal action bar - positioned at top left of section */}
+      {/* Horizontal action bar - unified styling with primary toolbar (glass effect) */}
       <div className={cn(
         "flex items-center gap-0.5 px-1.5 py-1 rounded-lg border shadow-lg",
-        isSelected 
-          ? "bg-[hsl(var(--builder-accent))] border-[hsl(var(--builder-accent))] backdrop-blur-xl" 
-          : "bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]"
+        // Match TopToolbar glass styling - consistent across all toolbars
+        "bg-[hsl(var(--builder-surface))]/95 backdrop-blur-xl",
+        "border-[hsl(var(--builder-border))]",
+        isSelected && "ring-1 ring-[hsl(var(--builder-accent))]"
       )}>
         {/* Drag Handle */}
         <button
