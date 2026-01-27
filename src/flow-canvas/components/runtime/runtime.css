@@ -369,10 +369,11 @@
   background: transparent !important;
 }
 
-/* Device-frame full transparency in runtime/preview - background comes from root only */
+/* Device-frame cleanup for runtime/preview - remove editor chrome but preserve inline backgrounds */
 .flowcanvas-runtime .device-frame,
 .builder-v2-canvas--preview .device-frame {
-  background: transparent !important;
+  /* CRITICAL: Do NOT override background - inline styles from CanvasRenderer must be preserved */
+  /* per runtime-css-constraints: background overrides are prohibited */
   border-radius: 0 !important;
   box-shadow: none !important;
   border: none !important;
