@@ -25,6 +25,7 @@ import type { Stack, Block, Element, SelectionState } from '../../../types/infos
 import type { DeviceMode } from '../TopToolbar';
 import { BlockDragOverlay } from './BlockDragOverlay';
 import { isLightColor } from '@/builder/utils/ContrastEngine';
+import { BlockAdder } from '../BlockAdder';
 
 // Note: SortableBlockRenderer remains in CanvasRenderer.tsx as it's too complex to extract
 // This is a forward reference that will be passed as a render prop
@@ -225,21 +226,19 @@ export const StackRenderer: React.FC<StackRendererProps> = ({
             </DragOverlay>
           </DndContext>
           
-          {/* Add content button - contrast-adaptive */}
+          {/* Add content button - use BlockAdder popover */}
           {!readOnly && stack.blocks.length > 0 && (
-            <div className="mt-3 opacity-60 hover:opacity-100 transition-opacity">
-              <button
-                onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
-                className={cn(
-                  "flex items-center justify-center gap-1.5 w-full py-2 text-xs transition-colors",
-                  isParentDark
-                    ? "text-white/50 hover:text-white/80"
-                    : "text-gray-500 hover:text-gray-700"
-                )}
-              >
-                <Plus size={14} />
-                <span>Add content</span>
-              </button>
+            <div className={cn(
+              "mt-3 flex justify-center opacity-60 hover:opacity-100 transition-opacity",
+              isParentDark ? "text-white/50" : "text-gray-500"
+            )}>
+              <BlockAdder 
+                variant="minimal"
+                onAddBlock={(blockType) => {
+                  // For now, use the existing callback if available
+                  onOpenBlockPickerInPanel?.(stack.id);
+                }}
+              />
             </div>
           )}
         </>

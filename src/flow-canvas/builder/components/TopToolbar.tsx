@@ -59,7 +59,7 @@ interface TopToolbarProps {
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
-  onOpenBlockPalette?: () => void;
+  /** Opens section picker modal - single entry point for adding sections */
   onAddFrame?: () => void;
   onOpenTextStyles?: () => void;
   showGrid?: boolean;
@@ -152,7 +152,6 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
   canRedo = false,
   onUndo,
   onRedo,
-  onOpenBlockPalette,
   onAddFrame,
   onOpenTextStyles,
   showGrid = false,
@@ -311,22 +310,14 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
 
           {/* Toolbar Icons */}
           <div className="flex items-center gap-1 ml-2">
-            <ToolbarButton
-              onClick={onOpenBlockPalette}
-              disabled={isAddBlockDisabled}
-              disabledReason={addBlockDisabledReason}
-              tooltip="Add Content (B)"
-            >
-              <Plus className="w-4 h-4" />
-            </ToolbarButton>
-
+            {/* Single "Add Section" button - opens section picker */}
             <ToolbarButton
               onClick={onAddFrame}
               disabled={isAddFrameDisabled}
               disabledReason={addFrameDisabledReason}
               tooltip="Add Section (F)"
             >
-              <Layers className="w-4 h-4" />
+              <Plus className="w-4 h-4" />
             </ToolbarButton>
 
             <ToolbarButton

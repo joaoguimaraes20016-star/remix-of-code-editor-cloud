@@ -107,7 +107,6 @@ interface LeftPanelProps {
   onSelectElement?: (elementId: string, path: string[]) => void;
   onRenameStep?: (stepId: string, newName: string) => void;
   onOpenImagePicker?: () => void;
-  onOpenBlockPicker?: () => void;
   /** Callback to close the entire left panel */
   onClosePanel?: () => void;
 }
@@ -919,7 +918,6 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   onSelectElement,
   onRenameStep,
   onOpenImagePicker,
-  onOpenBlockPicker,
   onClosePanel,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('pages');

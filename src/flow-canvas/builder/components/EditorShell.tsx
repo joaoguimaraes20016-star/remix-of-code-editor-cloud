@@ -7,9 +7,9 @@ import { TopToolbar, DeviceMode } from './TopToolbar';
 import { MobileActionBar } from './MobileActionBar';
 import { TouchStepList } from './TouchStepCard';
 import { MobileBottomSheet, ControlGroup, TouchInput, TouchSegmentedControl } from './MobileBottomSheet';
-import { BlockPickerGrid } from './BlockPickerGrid';
 import { AIBuilderCopilot } from './AIBuilderCopilot';
 import { BlockPickerPanel } from './BlockPickerPanel';
+import { SectionPicker } from './SectionPicker';
 import { InlineSectionPicker } from './InlineSectionPicker';
 import { useHistory } from '../hooks/useHistory';
 import { 
@@ -1679,10 +1679,6 @@ export const EditorShell: React.FC<EditorShellProps> = ({
           canRedo={canRedo}
           onUndo={handleUndo}
           onRedo={handleRedo}
-          onOpenBlockPalette={() => {
-            setBlockPickerOpen(true);
-            setBlockPickerMode('blocks');
-          }}
           onAddFrame={handleAddFrame}
           onOpenTextStyles={() => setIsTextStylesOpen(true)}
           showGrid={showGrid}
@@ -1832,10 +1828,6 @@ export const EditorShell: React.FC<EditorShellProps> = ({
                 onSelectElement={handleSelectElement}
                 onRenameStep={handleRenameStep}
                 onOpenImagePicker={() => setIsSocialImagePickerOpen(true)}
-                onOpenBlockPicker={() => {
-                  setBlockPickerOpen(true);
-                  setBlockPickerMode('sections');
-                }}
                 onClosePanel={() => setLeftPanelOpen(false)}
               />
             )}
@@ -1884,13 +1876,13 @@ export const EditorShell: React.FC<EditorShellProps> = ({
           </Drawer.Root>
         )}
 
-        {/* Mobile Block Picker - Full Screen Grid */}
+        {/* Mobile Section Picker - uses unified SectionPicker */}
         {isMobile && (
-          <BlockPickerGrid
-            open={mobileBlockPickerOpen}
+          <SectionPicker
+            isOpen={mobileBlockPickerOpen}
             onClose={() => setMobileBlockPickerOpen(false)}
-            onSelectBlock={(blockType) => {
-              handleAddBlock({ type: blockType } as any);
+            onSelectTemplate={(templateId) => {
+              handleAddSectionFromTemplate(templateId);
               setMobileBlockPickerOpen(false);
             }}
           />
