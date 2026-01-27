@@ -15,7 +15,7 @@ export interface SectionTemplate {
   id: string;
   name: string;
   description: string;
-  category: 'hero' | 'content' | 'cta' | 'embed' | 'social_proof' | 'features' | 'testimonials' | 'team' | 'faq';
+  category: 'hero' | 'content' | 'cta' | 'about_us' | 'social_proof' | 'features' | 'testimonials' | 'team' | 'faq';
   icon: string;
   createNode: () => CanvasNode;
 }
@@ -940,42 +940,388 @@ export const ctaDual: SectionTemplate = {
 };
 
 // ============================================================================
-// EMBED SECTIONS (2 templates)
-// Calendar embeds and widgets
+// ABOUT US SECTIONS (9 templates)
+// Company info, contact, and team sections
 // ============================================================================
 
-export const embedCalendar: SectionTemplate = {
-  id: 'embed-calendar',
-  name: 'Calendar Embed',
-  description: 'Calendly, Cal.com, or similar',
-  category: 'embed',
-  icon: 'calendar',
+export const aboutSplitIcons: SectionTemplate = {
+  id: 'about-split-icons',
+  name: 'About + Icon Features',
+  description: 'Image left, icon features right',
+  category: 'about_us',
+  icon: 'sparkles',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'embed' },
+    props: { variant: 'about' },
     children: [
       {
-        id: genId('calendar'),
-        type: 'calendar_embed',
-        props: { url: '', placeholder: 'Paste your Calendly or Cal.com link' },
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Team workspace', aspectRatio: '4:3' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'A smart future.', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('features'),
+        type: 'feature_list',
+        props: {
+          items: [
+            { icon: 'sparkles', title: 'Innovation', description: 'Cutting-edge technologies for modern manufacturing' },
+            { icon: 'zap', title: 'Efficiency', description: 'Automated systems that optimize production' },
+            { icon: 'leaf', title: 'Sustainability', description: 'Optimized use of resources and energy' },
+          ],
+        },
         children: [],
       },
     ],
   }),
 };
 
-export const embedEmpty: SectionTemplate = {
-  id: 'embed-empty',
-  name: 'Custom Embed',
-  description: 'Empty container for any widget',
-  category: 'embed',
-  icon: 'code',
+export const aboutSplitFaq: SectionTemplate = {
+  id: 'about-split-faq',
+  name: 'About + FAQ',
+  description: 'FAQ left, image right',
+  category: 'about_us',
+  icon: 'help-circle',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'embed' },
-    children: [],
+    props: { variant: 'about' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Our company', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Learn how we are transforming the industry with innovative solutions.' },
+        children: [],
+      },
+      {
+        id: genId('faq'),
+        type: 'faq_list',
+        props: {
+          items: [
+            { question: 'How do we promote innovation?', answer: 'Our technologies enable next-generation automation.' },
+            { question: 'Which industries do we serve?', answer: 'We work across manufacturing, logistics, and more.' },
+            { question: 'How safe are our solutions?', answer: 'Safety is built into every system we design.' },
+          ],
+        },
+        children: [],
+      },
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Office interior', aspectRatio: '4:3' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const aboutFullImage: SectionTemplate = {
+  id: 'about-full-image',
+  name: 'About Full Image',
+  description: 'Centered title with full-width image',
+  category: 'about_us',
+  icon: 'image',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'about', align: 'center' },
+    children: [
+      {
+        id: genId('badge'),
+        type: 'badge',
+        props: { text: 'This is us', variant: 'primary' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Learn more about our company', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'We want to show you how we are transforming the manufacturing sector with advanced robotics and intelligent automation.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Team photo', aspectRatio: '16:9', fullWidth: true },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const aboutLogos: SectionTemplate = {
+  id: 'about-logos',
+  name: 'About + Logos',
+  description: 'Centered with partner logos',
+  category: 'about_us',
+  icon: 'building',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'about', align: 'center' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Learn more about our company', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'We want to show you how we are transforming the industry with advanced solutions.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_bar',
+        props: { logos: [], grayscale: true },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const about2ColText: SectionTemplate = {
+  id: 'about-2col-text',
+  name: 'About 2-Column Text',
+  description: 'Two-column text layout',
+  category: 'about_us',
+  icon: 'columns',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'about' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'About us', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'We want to show you how we are transforming the manufacturing sector with advanced robotics and intelligent automation.' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Our mission is to improve manufacturing through cutting-edge technologies that increase efficiency while reducing environmental impact.' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'We develop tailor-made solutions perfectly tailored to the individual needs and requirements of our customers.' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const aboutSplitImage: SectionTemplate = {
+  id: 'about-split-image',
+  name: 'About Split + Image',
+  description: 'Text left, image right',
+  category: 'about_us',
+  icon: 'layout',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'about' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Learn more about our company', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'We want to show you how we are transforming the manufacturing sector with advanced robotics and intelligent automation.' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Our mission is to improve the manufacturing sector through cutting-edge technologies that increase efficiency while reducing environmental impact.' },
+        children: [],
+      },
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Office interior', aspectRatio: '4:3' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const aboutContactInfo: SectionTemplate = {
+  id: 'about-contact-info',
+  name: 'Contact Info',
+  description: 'Contact details with icons',
+  category: 'about_us',
+  icon: 'mail',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'about' },
+    children: [
+      {
+        id: genId('badge'),
+        type: 'badge',
+        props: { text: 'This is us', variant: 'primary' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Contact us.', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'State-of-the-art technologies and innovative solutions optimize the manufacturing process.' },
+        children: [],
+      },
+      {
+        id: genId('contact'),
+        type: 'contact_info',
+        props: {
+          items: [
+            { icon: 'mail', label: 'E-Mail', value: 'contact@company.com' },
+            { icon: 'phone', label: 'Phone', value: '+1 234 567 890' },
+            { icon: 'map-pin', label: 'Location', value: '123 Business Street' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const aboutContactImage: SectionTemplate = {
+  id: 'about-contact-image',
+  name: 'Contact + Image',
+  description: 'Contact info with building image',
+  category: 'about_us',
+  icon: 'building',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'about' },
+    children: [
+      {
+        id: genId('badge'),
+        type: 'badge',
+        props: { text: 'This is us', variant: 'primary' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Contact us.', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'State-of-the-art technologies and innovative solutions.' },
+        children: [],
+      },
+      {
+        id: genId('contact'),
+        type: 'contact_info',
+        props: {
+          items: [
+            { icon: 'mail', label: 'E-Mail', value: 'contact@company.com' },
+            { icon: 'phone', label: 'Phone', value: '+1 234 567 890' },
+            { icon: 'map-pin', label: 'Location', value: '123 Business Street' },
+          ],
+        },
+        children: [],
+      },
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Office building', aspectRatio: '21:9', fullWidth: true },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const aboutContactMap: SectionTemplate = {
+  id: 'about-contact-map',
+  name: 'Contact + Map',
+  description: 'Contact info with embedded map',
+  category: 'about_us',
+  icon: 'map-pin',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'about' },
+    children: [
+      {
+        id: genId('badge'),
+        type: 'badge',
+        props: { text: 'This is us', variant: 'primary' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Contact us.', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'State-of-the-art technologies and innovative solutions.' },
+        children: [],
+      },
+      {
+        id: genId('contact'),
+        type: 'contact_info',
+        props: {
+          items: [
+            { icon: 'mail', label: 'E-Mail', value: 'contact@company.com' },
+            { icon: 'phone', label: 'Phone', value: '+1 234 567 890' },
+            { icon: 'map-pin', label: 'Location', value: '123 Business Street' },
+          ],
+        },
+        children: [],
+      },
+      {
+        id: genId('map'),
+        type: 'map_embed',
+        props: { location: '123 Business Street', height: 300 },
+        children: [],
+      },
+    ],
   }),
 };
 
@@ -1635,9 +1981,16 @@ export const allSectionTemplates: SectionTemplate[] = [
   ctaSplitForm,
   ctaFaq,
   ctaDual,
-  // Embed (2)
-  embedCalendar,
-  embedEmpty,
+  // About Us (9)
+  aboutSplitIcons,
+  aboutSplitFaq,
+  aboutFullImage,
+  aboutLogos,
+  about2ColText,
+  aboutSplitImage,
+  aboutContactInfo,
+  aboutContactImage,
+  aboutContactMap,
   // Social Proof (4)
   socialProofStars,
   socialProofLogos,
@@ -1665,7 +2018,7 @@ export const sectionTemplatesByCategory = {
   hero: [heroSimple, heroReviews, heroLogos, heroSplit, heroFormCard, heroInlineForm, heroGradient, heroDark],
   content: [contentText, contentHeadingText],
   cta: [ctaSimple, ctaGrayCard, ctaDarkReviews, ctaDarkCard, ctaGradientLogos, ctaFormSplitReviews, ctaFormSplitSimple, ctaSplitForm, ctaFaq, ctaDual],
-  embed: [embedCalendar, embedEmpty],
+  about_us: [aboutSplitIcons, aboutSplitFaq, aboutFullImage, aboutLogos, about2ColText, aboutSplitImage, aboutContactInfo, aboutContactImage, aboutContactMap],
   social_proof: [socialProofStars, socialProofLogos, socialProofStats, socialProofBadges],
   features: [featuresSplitChecklist, featuresSplitImage, featuresSplitIcons, features3ColCards, features4ColIcons, features2ColIcons, featuresGrayImage, featuresGrayReviews],
   testimonials: [testimonialSingle, testimonialCarousel],
@@ -1677,7 +2030,7 @@ export const categoryLabels: Record<string, string> = {
   hero: 'Hero',
   content: 'Content',
   cta: 'Call to Action',
-  embed: 'Embed',
+  about_us: 'About Us',
   social_proof: 'Social Proof',
   features: 'Features',
   testimonials: 'Testimonials',
@@ -1689,7 +2042,7 @@ export const categoryDescriptions: Record<string, string> = {
   hero: 'Opening sections that hook visitors',
   content: 'Text and information blocks',
   cta: 'Conversion buttons and actions',
-  embed: 'Calendars and external widgets',
+  about_us: 'Company info and contact',
   social_proof: 'Trust indicators and credibility',
   features: 'Benefits and what\'s included',
   testimonials: 'Customer success stories',
@@ -1701,7 +2054,7 @@ export const categoryIcons: Record<string, string> = {
   hero: 'layout',
   content: 'type',
   cta: 'mouse-pointer-click',
-  embed: 'calendar',
+  about_us: 'building',
   social_proof: 'star',
   features: 'package',
   testimonials: 'quote',
