@@ -1328,3 +1328,110 @@
   color: rgba(255, 255, 255, 0.4);
   letter-spacing: 0.01em;
 }
+
+/* ============================================================================
+   A1: HIDDEN ELEMENT INDICATOR (Editor Mode Only)
+   Shows ghosted element with "Hidden" badge
+   ============================================================================ */
+
+.builder-v2-node--hidden {
+  opacity: 0.35;
+  border: 1px dashed rgba(148, 163, 184, 0.3);
+  border-radius: 8px;
+  position: relative;
+}
+
+.builder-v2-node--hidden::after {
+  content: "Hidden";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 10px;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  color: white;
+  font-weight: 500;
+  z-index: 10;
+}
+
+/* ============================================================================
+   A2: ANIMATION PRESETS
+   Enter animations applied via data attributes
+   ============================================================================ */
+
+.builder-v2-anim--fadeIn { animation: builder-v2-fadeIn 0.4s ease-out; }
+.builder-v2-anim--slideUp { animation: builder-v2-slideUp 0.4s ease-out; }
+.builder-v2-anim--slideDown { animation: builder-v2-slideDown 0.4s ease-out; }
+.builder-v2-anim--scale { animation: builder-v2-scaleIn 0.3s ease-out; }
+.builder-v2-anim--bounce { animation: builder-v2-bounce 0.5s ease-out; }
+
+@keyframes builder-v2-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes builder-v2-slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes builder-v2-slideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes builder-v2-scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes builder-v2-bounce {
+  0% { transform: scale(0.9); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* ============================================================================
+   A2: HOVER EFFECT PRESETS
+   Interactive hover effects applied via data attributes
+   ============================================================================ */
+
+.builder-v2-hover--lift {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.builder-v2-hover--lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.builder-v2-hover--glow {
+  transition: box-shadow 200ms ease;
+}
+
+.builder-v2-hover--glow:hover {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+.builder-v2-hover--scale {
+  transition: transform 200ms ease;
+}
+
+.builder-v2-hover--scale:hover {
+  transform: scale(1.02);
+}
+
+.builder-v2-hover--brighten {
+  transition: filter 200ms ease;
+}
+
+.builder-v2-hover--brighten:hover {
+  filter: brightness(1.08);
+}
+
+/* B2: Unified selection color token */
+.builder-v2-node[data-selected='true'] .builder-v2-node-overlay {
+  border-color: var(--builder-selection-color, hsl(217 91% 60%));
+  box-shadow: 0 0 0 2px hsl(217 91% 60% / 0.3);
+}

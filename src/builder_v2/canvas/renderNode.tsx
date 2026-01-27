@@ -56,6 +56,14 @@ export function renderNode(
     '--builder-v2-node-depth': depth,
   } as CSSProperties;
   
+  // A1: Handle hidden elements
+  const isHidden = props.hidden === true;
+  
+  // In readonly/preview mode, don't render hidden elements at all
+  if (isHidden && readonly) {
+    return <></>;
+  }
+  
   // In readonly mode, never show selection
   const isSelected = readonly ? false : editorState.selectedNodeId === node.id;
   
@@ -67,12 +75,22 @@ export function renderNode(
   
   const typeLabel = getNodeLabel(node.type);
 
+  // A2: Build animation and hover effect classes
+  const animationClass = props.animation && props.animation !== 'none'
+    ? ` builder-v2-anim--${props.animation}`
+    : '';
+  const hoverClass = props.hoverEffect && props.hoverEffect !== 'none'
+    ? ` builder-v2-hover--${props.hoverEffect}`
+    : '';
+  // A1: Hidden indicator class (only in editor mode)
+  const hiddenClass = isHidden && !readonly ? ' builder-v2-node--hidden' : '';
+
   return (
     <div
       key={node.id}
       className={`builder-v2-node${readonly ? ' builder-v2-node--readonly' : ''}${
         canHaveChildren ? ' builder-v2-node--container' : ' builder-v2-node--leaf'
-      }`}
+      }${animationClass}${hoverClass}${hiddenClass}`}
       data-selected={isSelected}
       data-highlighted={isHighlighted || undefined}
       data-node-id={node.id}
@@ -80,6 +98,7 @@ export function renderNode(
       data-readonly={readonly || undefined}
       data-has-children={canHaveChildren || undefined}
       data-depth={depth}
+      data-hidden={isHidden || undefined}
       style={surfaceStyle}
     >
       {/* Node overlay - only render in editor mode, not in readonly/preview/runtime */}

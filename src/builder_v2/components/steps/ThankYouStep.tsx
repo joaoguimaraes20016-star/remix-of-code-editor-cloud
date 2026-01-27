@@ -3,6 +3,7 @@ import { CheckCircle } from 'lucide-react';
 import type { StepComponentProps } from './types';
 import { FONT_SIZE_MAP, DEFAULT_DESIGN } from './types';
 import { UnifiedButton, presetToVariant, sizeToVariant } from '@/components/builder/UnifiedButton';
+import { useButtonAction, type ButtonAction } from '@/builder_v2/hooks/useButtonAction';
 
 export function ThankYouStep({
   content,
@@ -17,6 +18,10 @@ export function ThankYouStep({
   const backgroundStyle = d.useGradient && d.gradientFrom && d.gradientTo
     ? { background: `linear-gradient(${d.gradientDirection || 'to bottom'}, ${d.gradientFrom}, ${d.gradientTo})` }
     : { backgroundColor: d.backgroundColor };
+
+  // A4: Wire button action
+  const buttonAction: ButtonAction | undefined = content.buttonAction || (d as any).buttonAction;
+  const handleButtonClick = useButtonAction(buttonAction);
 
   return (
     <div
@@ -52,6 +57,7 @@ export function ThankYouStep({
             borderRadiusPx={d.borderRadius}
             fullWidth={(d as any).buttonFullWidth ?? false}
             className="mt-4"
+            onClick={handleButtonClick}
           >
             {content.button_text}
           </UnifiedButton>

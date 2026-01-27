@@ -1347,3 +1347,71 @@
     transform: translateX(0);
   }
 }
+
+/* ============================================================================
+   B5: STEP PALETTE STYLES
+   ============================================================================ */
+
+.step-palette {
+  padding: 12px;
+}
+
+.step-palette--compact {
+  padding: 8px;
+}
+
+.step-palette-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px;
+  margin-bottom: 8px;
+}
+
+.step-palette-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--builder-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.step-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.step-palette-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  background: var(--builder-hover-bg);
+  border: 1px solid var(--builder-panel-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.step-palette-item:hover {
+  background: var(--builder-active-bg);
+  border-color: var(--builder-accent);
+}
+
+.step-palette-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.step-palette-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--builder-text-primary);
+  text-align: center;
+}
