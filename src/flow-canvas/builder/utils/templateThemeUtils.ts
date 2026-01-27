@@ -193,10 +193,36 @@ export function shiftHue(hex: string, shift = 30): string {
   }
 }
 
+// Known palette gradients for common primary colors
+const KNOWN_PALETTE_GRADIENTS: Record<string, [string, string]> = {
+  '#8B5CF6': ['#8B5CF6', '#D946EF'], // Violet
+  '#3B82F6': ['#3B82F6', '#8B5CF6'], // Sapphire
+  '#0EA5E9': ['#0EA5E9', '#06B6D4'], // Ocean
+  '#14B8A6': ['#14B8A6', '#0D9488'], // Teal
+  '#10B981': ['#10B981', '#047857'], // Emerald
+  '#F97316': ['#F97316', '#EF4444'], // Sunset
+  '#FB7185': ['#FB7185', '#F43F5E'], // Coral
+  '#F59E0B': ['#F59E0B', '#EAB308'], // Amber
+  '#E11D48': ['#E11D48', '#DB2777'], // Rose
+  '#6366F1': ['#818CF8', '#6366F1'], // Indigo
+  '#D946EF': ['#E879F9', '#D946EF'], // Fuchsia
+  '#D4AF37': ['#D4AF37', '#F5D061'], // Gold
+};
+
 /**
  * Generate a complementary gradient from a primary color
+ * Uses known palette combinations for common colors, falls back to hue shift
  */
 export function generateAccentGradient(primaryColor: string): [string, string] {
+  // Check if we have a known palette for this color
+  const upperColor = primaryColor.toUpperCase();
+  for (const [key, gradient] of Object.entries(KNOWN_PALETTE_GRADIENTS)) {
+    if (key.toUpperCase() === upperColor) {
+      return gradient;
+    }
+  }
+  
+  // Fallback to hue shift for custom colors
   const shifted = shiftHue(primaryColor, 40);
   return [primaryColor, shifted];
 }
