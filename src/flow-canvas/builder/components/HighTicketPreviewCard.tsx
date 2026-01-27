@@ -17,75 +17,193 @@ interface HighTicketPreviewCardProps {
 // PREVIEW COMPONENTS - Rich visual representations of each template type
 // ============================================================================
 
-// Hero previews with different variants
+// ============================================================================
+// HERO PREVIEWS - Perspective-Style Light Theme
+// Clean, modern landing page aesthetics matching the reference designs
+// ============================================================================
+
+// Shared components for hero previews
+const AvatarStack = () => (
+  <div className="flex -space-x-1.5">
+    {[
+      'from-blue-400 to-blue-500',
+      'from-emerald-400 to-emerald-500',
+      'from-purple-400 to-purple-500',
+      'from-orange-400 to-orange-500',
+    ].map((gradient, i) => (
+      <div
+        key={i}
+        className={cn(
+          "w-4 h-4 rounded-full border-2 border-white",
+          `bg-gradient-to-br ${gradient}`
+        )}
+      />
+    ))}
+  </div>
+);
+
+const StarRating = () => (
+  <div className="flex items-center gap-0.5">
+    {Array.from({ length: 5 }).map((_, i) => (
+      <Star key={i} size={8} className="fill-yellow-400 text-yellow-400" />
+    ))}
+  </div>
+);
+
+const LogoBar = () => (
+  <div className="flex items-center justify-center gap-2">
+    {Array.from({ length: 5 }).map((_, i) => (
+      <div key={i} className="w-8 h-3 bg-slate-200 rounded" />
+    ))}
+  </div>
+);
+
+const ImagePlaceholder = ({ className }: { className?: string }) => (
+  <div className={cn("bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg flex items-center justify-center", className)}>
+    <div className="w-8 h-8 rounded-full bg-slate-300/50" />
+  </div>
+);
+
+const FormInputMockup = ({ placeholder }: { placeholder: string }) => (
+  <div className="h-4 w-full bg-slate-100 rounded border border-slate-200 flex items-center px-1.5">
+    <span className="text-[5px] text-slate-400">{placeholder}</span>
+  </div>
+);
+
+// Hero previews with different variants - PERSPECTIVE STYLE
 const HeroPreview = React.forwardRef<HTMLDivElement, { variant: string }>(
   ({ variant }, ref) => {
-    if (variant === 'impact') {
+    // Hero Simple - Centered with image below
+    if (variant === 'simple') {
       return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 flex flex-col justify-center items-center gap-2">
-          {/* Urgency Badge */}
-          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30">
-            <div className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-            <div className="h-1 w-12 bg-orange-400/60 rounded" />
-          </div>
-          {/* Headline */}
-          <div className="h-4 w-36 bg-gradient-to-r from-white to-white/80 rounded" />
-          <div className="h-2 w-32 bg-white/40 rounded" />
-          {/* CTA */}
-          <div className="h-7 w-24 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg mt-2 shadow-lg shadow-blue-500/30" />
-        </div>
-      );
-    }
-    
-    if (variant === 'video') {
-      return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col items-center justify-center gap-2">
-          {/* Video placeholder */}
-          <div className="w-full h-16 bg-black/40 rounded-lg flex items-center justify-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
-            <div className="w-10 h-10 rounded-full bg-white/10 border-2 border-white/30 flex items-center justify-center">
-              <Play size={16} className="text-white/80 ml-0.5" />
-            </div>
-          </div>
-          <div className="h-2.5 w-28 bg-white/70 rounded" />
-          <div className="h-5 w-20 bg-blue-500 rounded" />
-        </div>
-      );
-    }
-    
-    if (variant === 'authority') {
-      return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-4 flex flex-col items-center justify-center gap-2">
-          {/* Avatar */}
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 shadow-lg" />
-          <div className="h-3 w-24 bg-white/80 rounded" />
-          <div className="h-1.5 w-32 bg-white/30 rounded" />
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="h-2.5 w-28 bg-slate-800 rounded" />
+          <div className="h-1.5 w-24 bg-slate-300 rounded" />
           <div className="h-5 w-16 bg-blue-500 rounded mt-1" />
+          <ImagePlaceholder className="w-full h-12 mt-2" />
         </div>
       );
     }
     
+    // Hero + Reviews - With avatar stack and rating
+    if (variant === 'reviews') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="h-2.5 w-28 bg-slate-800 rounded" />
+          <div className="h-1.5 w-24 bg-slate-300 rounded" />
+          <div className="h-5 w-16 bg-blue-500 rounded mt-1" />
+          <div className="flex items-center gap-1 mt-1">
+            <AvatarStack />
+            <StarRating />
+            <span className="text-[5px] text-slate-500">4.8</span>
+          </div>
+          <ImagePlaceholder className="w-full h-10 mt-1" />
+        </div>
+      );
+    }
+    
+    // Hero + Logos - With trusted-by logos
+    if (variant === 'logos') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="h-2.5 w-28 bg-slate-800 rounded" />
+          <div className="h-1.5 w-24 bg-slate-300 rounded" />
+          <div className="h-5 w-16 bg-blue-500 rounded mt-1" />
+          <div className="mt-2 w-full">
+            <LogoBar />
+          </div>
+        </div>
+      );
+    }
+    
+    // Hero Split - 50/50 layout
     if (variant === 'split') {
       return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-2 flex gap-2">
-          {/* Image side */}
-          <div className="flex-1 bg-gradient-to-br from-slate-700 to-slate-600 rounded-lg" />
-          {/* Text side */}
-          <div className="flex-1 flex flex-col justify-center gap-1.5 pr-2">
-            <div className="h-2.5 w-full bg-white/80 rounded" />
-            <div className="h-1.5 w-4/5 bg-white/30 rounded" />
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <div className="h-2 w-20 bg-slate-800 rounded" />
+            <div className="h-1 w-16 bg-slate-300 rounded" />
             <div className="h-4 w-12 bg-blue-500 rounded mt-1" />
+            <div className="flex gap-1 mt-1">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="w-5 h-2 bg-slate-200 rounded" />
+              ))}
+            </div>
+          </div>
+          <ImagePlaceholder className="flex-1" />
+        </div>
+      );
+    }
+    
+    // Hero + Form Card - Split with floating form
+    if (variant === 'form-card') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <div className="h-2.5 w-24 bg-slate-800 rounded" />
+            <div className="h-1 w-20 bg-slate-300 rounded" />
+          </div>
+          <div className="flex-1 bg-slate-50 rounded-lg p-2 flex flex-col gap-1.5 border border-slate-100">
+            <div className="h-1.5 w-16 bg-slate-700 rounded" />
+            <FormInputMockup placeholder="Name" />
+            <FormInputMockup placeholder="E-Mail" />
+            <FormInputMockup placeholder="Phone" />
+            <div className="h-4 w-full bg-blue-500 rounded mt-0.5" />
           </div>
         </div>
       );
     }
     
-    // Minimal (default)
+    // Hero + Inline Form - Form integrated with content
+    if (variant === 'inline-form') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <div className="h-2 w-20 bg-slate-800 rounded" />
+            <div className="h-1 w-16 bg-slate-300 rounded" />
+            <div className="space-y-1 mt-1">
+              <FormInputMockup placeholder="E-Mail" />
+              <FormInputMockup placeholder="Phone" />
+            </div>
+            <div className="h-4 w-full bg-blue-500 rounded mt-1" />
+          </div>
+          <ImagePlaceholder className="flex-1" />
+        </div>
+      );
+    }
+    
+    // Hero Gradient - Soft gradient background
+    if (variant === 'gradient') {
+      return (
+        <div ref={ref} className="w-full h-full bg-gradient-to-b from-blue-50 to-slate-50 p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="h-2.5 w-28 bg-slate-800 rounded" />
+          <div className="h-1.5 w-24 bg-slate-400 rounded" />
+          <div className="h-5 w-16 bg-blue-500 rounded mt-1" />
+          <div className="mt-2 w-full">
+            <LogoBar />
+          </div>
+        </div>
+      );
+    }
+    
+    // Hero Dark - Dark background with light text
+    if (variant === 'dark') {
+      return (
+        <div ref={ref} className="w-full h-full bg-slate-700 p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="h-2.5 w-28 bg-white rounded" />
+          <div className="h-1.5 w-24 bg-white/40 rounded" />
+          <div className="h-5 w-16 border border-white/60 rounded mt-1" />
+          <div className="w-full h-10 bg-slate-600 rounded-lg mt-2" />
+        </div>
+      );
+    }
+    
+    // Default fallback
     return (
-      <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-4 flex flex-col justify-center items-center gap-2">
-        <div className="h-4 w-28 bg-white/90 rounded" />
-        <div className="h-2 w-36 bg-white/30 rounded" />
-        <div className="h-6 w-20 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg mt-2" />
+      <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+        <div className="h-2.5 w-28 bg-slate-800 rounded" />
+        <div className="h-1.5 w-24 bg-slate-300 rounded" />
+        <div className="h-5 w-16 bg-blue-500 rounded mt-1" />
       </div>
     );
   }
@@ -375,11 +493,15 @@ function getPreviewComponent(template: SectionTemplate) {
   
   switch (category) {
     case 'hero':
-      if (id.includes('impact')) return <HeroPreview variant="impact" />;
-      if (id.includes('video')) return <HeroPreview variant="video" />;
-      if (id.includes('authority')) return <HeroPreview variant="authority" />;
+      if (id.includes('simple')) return <HeroPreview variant="simple" />;
+      if (id.includes('reviews')) return <HeroPreview variant="reviews" />;
+      if (id.includes('logos')) return <HeroPreview variant="logos" />;
       if (id.includes('split')) return <HeroPreview variant="split" />;
-      return <HeroPreview variant="minimal" />;
+      if (id.includes('form-card')) return <HeroPreview variant="form-card" />;
+      if (id.includes('inline-form')) return <HeroPreview variant="inline-form" />;
+      if (id.includes('gradient')) return <HeroPreview variant="gradient" />;
+      if (id.includes('dark')) return <HeroPreview variant="dark" />;
+      return <HeroPreview variant="simple" />;
     
     case 'content':
       return <ContentPreview hasHeading={id.includes('heading')} />;
