@@ -96,7 +96,7 @@ export interface ApplicationStepSettings {
   descriptionSize?: 'xs' | 'sm' | 'base' | 'lg';
   descriptionColor?: string;
   // Button preset - references shared Button system
-  buttonPreset?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  buttonPreset?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'gradient';
   // Answer/option styling
   answerBgColor?: string;
   answerBorderColor?: string;

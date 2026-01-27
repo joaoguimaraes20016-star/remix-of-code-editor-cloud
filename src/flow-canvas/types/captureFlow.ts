@@ -81,13 +81,13 @@ export interface CaptureNodeSettings {
   // Appearance
   align?: 'left' | 'center' | 'right';
   spacing?: 'compact' | 'normal' | 'relaxed';
-  inputStyle?: 'default' | 'minimal' | 'rounded' | 'square';
+  inputStyle?: 'default' | 'minimal' | 'rounded' | 'square' | 'pill';
   titleSize?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
   titleColor?: string;
   descriptionSize?: 'xs' | 'sm' | 'base' | 'lg';
   descriptionColor?: string;
   // Button preset - references shared Button system
-  buttonPreset?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  buttonPreset?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'gradient';
 }
 
 export interface CaptureNodeNavigation {

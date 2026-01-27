@@ -360,14 +360,15 @@ const ELEMENT_SECTIONS = {
   'ticker': ['premium'],
   'badge': ['premium'],
   'process-step': ['premium'],
-  'video-thumbnail': ['premium'],
   'underline-text': ['premium'],
+  // NOTE: 'video-thumbnail' is deprecated - use 'video' with displayMode: 'thumbnail'
 } as const;
 
 // Premium element types that need specialized inspector
+// NOTE: 'video-thumbnail' removed - use 'video' with displayMode: 'thumbnail' instead
 const PREMIUM_ELEMENT_TYPES = [
   'gradient-text', 'stat-number', 'avatar-group', 'ticker',
-  'badge', 'process-step', 'video-thumbnail', 'underline-text'
+  'badge', 'process-step', 'underline-text'
 ] as const;
 
 type ElementSectionType = keyof typeof ELEMENT_SECTIONS;
@@ -484,6 +485,10 @@ const ElementInspector: React.FC<{
   const [isVideoEmbedOpen, setIsVideoEmbedOpen] = useState(false);
   const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
   
+  // React state for tracking which slide/logo is being edited (replaces global window state)
+  const [editingSlideIndex, setEditingSlideIndex] = useState<number | null>(null);
+  const [editingLogoIndex, setEditingLogoIndex] = useState<number | null>(null);
+  
   // Shared sensors for all sortable lists in this inspector - zero distance for immediate response
   const inspectorSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 0 } }),
@@ -566,26 +571,23 @@ const ElementInspector: React.FC<{
   };
 
   const handleImageSelect = (url: string) => {
-    // Check if we're editing a specific slide or logo
-    const editingSlideIndex = (window as any).__editingSlideIndex;
-    const editingLogoIndex = (window as any).__editingLogoIndex;
-    
-    if (editingSlideIndex !== undefined && editingSlideIndex !== null) {
+    // Use React state instead of global window state
+    if (editingSlideIndex !== null) {
       // Editing a carousel slide
       const slides = [...((element.props?.slides as Array<{ id: string; src: string; alt?: string; caption?: string }>) || [])];
       if (slides[editingSlideIndex]) {
         slides[editingSlideIndex] = { ...slides[editingSlideIndex], src: url };
         onUpdate({ props: { ...element.props, slides } });
       }
-      (window as any).__editingSlideIndex = undefined;
-    } else if (editingLogoIndex !== undefined && editingLogoIndex !== null) {
+      setEditingSlideIndex(null);
+    } else if (editingLogoIndex !== null) {
       // Editing a logo bar logo
       const logos = [...((element.props?.logos as Array<{ id: string; src: string; alt?: string; url?: string }>) || [])];
       if (logos[editingLogoIndex]) {
         logos[editingLogoIndex] = { ...logos[editingLogoIndex], src: url };
         onUpdate({ props: { ...element.props, logos } });
       }
-      (window as any).__editingLogoIndex = undefined;
+      setEditingLogoIndex(null);
     } else {
       // Default: update the main image src
       onUpdate({ props: { ...element.props, src: url } });
@@ -2524,7 +2526,7 @@ const ElementInspector: React.FC<{
                       <div 
                         className="w-14 h-10 rounded bg-muted flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary/50 transition-all"
                         onClick={() => {
-                          (window as any).__editingSlideIndex = idx;
+                          setEditingSlideIndex(idx);
                           setIsImagePickerOpen(true);
                         }}
                       >
@@ -2670,7 +2672,7 @@ const ElementInspector: React.FC<{
                       <div 
                         className="w-12 h-8 rounded bg-muted flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary/50 transition-all"
                         onClick={() => {
-                          (window as any).__editingLogoIndex = idx;
+                          setEditingLogoIndex(idx);
                           setIsImagePickerOpen(true);
                         }}
                       >

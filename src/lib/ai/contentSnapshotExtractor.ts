@@ -8,6 +8,7 @@
 import type { Page, Step, Block, Element } from '@/flow-canvas/types/infostack';
 
 /** List of premium element types for detection */
+// NOTE: 'video-thumbnail' removed - use 'video' with displayMode: 'thumbnail' instead
 const PREMIUM_ELEMENT_TYPES = [
   'gradient-text',
   'stat-number',
@@ -15,7 +16,6 @@ const PREMIUM_ELEMENT_TYPES = [
   'ticker',
   'badge',
   'process-step',
-  'video-thumbnail',
   'underline-text',
 ];
 
