@@ -1,9 +1,9 @@
 /**
- * InlineSectionPicker - Wrapper for the Perspective-style section picker
- * Uses the new PerspectiveSectionPicker for a premium visual experience
+ * InlineSectionPicker - Wrapper for the unified SectionPicker
+ * This is a compatibility layer - prefer using SectionPicker directly
  */
 
-import { PerspectiveSectionPicker } from './PerspectiveSectionPicker';
+import { SectionPicker } from './SectionPicker';
 
 interface InlineSectionPickerProps {
   isOpen: boolean;
@@ -18,7 +18,7 @@ export function InlineSectionPicker({
   onSelectTemplate,
 }: InlineSectionPickerProps) {
   return (
-    <PerspectiveSectionPicker
+    <SectionPicker
       isOpen={isOpen}
       onClose={onClose}
       onSelectTemplate={onSelectTemplate}
