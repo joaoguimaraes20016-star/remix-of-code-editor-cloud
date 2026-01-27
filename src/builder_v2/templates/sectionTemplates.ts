@@ -21,14 +21,14 @@ export interface SectionTemplate {
 }
 
 // ============================================================================
-// HERO SECTIONS (5 templates)
-// Opening hooks - headline, subtext, CTA for high-ticket offers
+// HERO SECTIONS (8 templates) - Perspective-Style
+// Clean, light-themed hero sections matching modern SaaS landing pages
 // ============================================================================
 
-export const heroImpact: SectionTemplate = {
-  id: 'hero-impact',
-  name: 'Impact Hero',
-  description: 'Bold headline with urgency badge and CTA',
+export const heroSimple: SectionTemplate = {
+  id: 'hero-simple',
+  name: 'Hero Simple',
+  description: 'Centered headline with image below',
   category: 'hero',
   icon: 'layout',
   createNode: () => ({
@@ -37,21 +37,15 @@ export const heroImpact: SectionTemplate = {
     props: { variant: 'hero' },
     children: [
       {
-        id: genId('badge'),
-        type: 'badge',
-        props: { text: '🔥 Limited spots available', variant: 'urgent' },
-        children: [],
-      },
-      {
         id: genId('heading'),
         type: 'heading',
-        props: { text: 'Transform Your Business in 90 Days', level: 'h1' },
+        props: { text: 'More Success with Less Effort', level: 'h1' },
         children: [],
       },
       {
         id: genId('paragraph'),
         type: 'paragraph',
-        props: { text: 'Join 500+ entrepreneurs who scaled to 6-figures using our proven system.' },
+        props: { text: 'With our tailored solutions, you will reach your goals faster than ever before.' },
         children: [],
       },
       {
@@ -63,97 +57,31 @@ export const heroImpact: SectionTemplate = {
       {
         id: genId('button'),
         type: 'cta_button',
-        props: { label: 'Apply Now →', variant: 'primary', action: 'next', size: 'lg' },
-        children: [],
-      },
-    ],
-  }),
-};
-
-export const heroVideo: SectionTemplate = {
-  id: 'hero-video',
-  name: 'Video Hero',
-  description: 'VSL player with headline below',
-  category: 'hero',
-  icon: 'play',
-  createNode: () => ({
-    id: genId('section'),
-    type: 'section',
-    props: { variant: 'hero' },
-    children: [
-      {
-        id: genId('video'),
-        type: 'video_embed',
-        props: { url: '', placeholder: 'Add your VSL video URL' },
+        props: { label: 'Learn more now', variant: 'primary', action: 'next', size: 'lg' },
         children: [],
       },
       {
         id: genId('spacer'),
         type: 'spacer',
-        props: { height: 20 },
+        props: { height: 24 },
         children: [],
       },
-      {
-        id: genId('heading'),
-        type: 'heading',
-        props: { text: 'Watch: How We Help Coaches Scale', level: 'h2' },
-        children: [],
-      },
-      {
-        id: genId('button'),
-        type: 'cta_button',
-        props: { label: 'Book Your Strategy Call', variant: 'primary', action: 'next' },
-        children: [],
-      },
-    ],
-  }),
-};
-
-export const heroAuthority: SectionTemplate = {
-  id: 'hero-authority',
-  name: 'Authority Hero',
-  description: 'Photo with credentials and headline',
-  category: 'hero',
-  icon: 'user',
-  createNode: () => ({
-    id: genId('section'),
-    type: 'section',
-    props: { variant: 'hero' },
-    children: [
       {
         id: genId('image'),
         type: 'image',
-        props: { src: '', alt: 'Expert photo', width: 120, height: 120, rounded: true },
-        children: [],
-      },
-      {
-        id: genId('heading'),
-        type: 'heading',
-        props: { text: 'Hi, I\'m [Your Name]', level: 'h1' },
-        children: [],
-      },
-      {
-        id: genId('paragraph'),
-        type: 'paragraph',
-        props: { text: 'I\'ve helped 1,000+ coaches build 6 and 7-figure businesses. Let me show you how.' },
-        children: [],
-      },
-      {
-        id: genId('button'),
-        type: 'cta_button',
-        props: { label: 'Work With Me', variant: 'primary', action: 'next' },
+        props: { src: '', alt: 'Hero image', aspectRatio: '16:9' },
         children: [],
       },
     ],
   }),
 };
 
-export const heroMinimal: SectionTemplate = {
-  id: 'hero-minimal',
-  name: 'Minimal Hero',
-  description: 'Clean text-only with CTA',
+export const heroReviews: SectionTemplate = {
+  id: 'hero-reviews',
+  name: 'Hero + Reviews',
+  description: 'With avatar stack and star rating',
   category: 'hero',
-  icon: 'type',
+  icon: 'star',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
@@ -162,13 +90,13 @@ export const heroMinimal: SectionTemplate = {
       {
         id: genId('heading'),
         type: 'heading',
-        props: { text: 'Your headline here', level: 'h1' },
+        props: { text: 'More Success with Less Effort', level: 'h1' },
         children: [],
       },
       {
         id: genId('paragraph'),
         type: 'paragraph',
-        props: { text: 'A compelling subtext that supports your headline and drives action.' },
+        props: { text: 'With our tailored solutions, you will reach your goals faster than ever before.' },
         children: [],
       },
       {
@@ -180,7 +108,82 @@ export const heroMinimal: SectionTemplate = {
       {
         id: genId('button'),
         type: 'cta_button',
-        props: { label: 'Get Started', variant: 'primary', action: 'next' },
+        props: { label: 'Learn more now', variant: 'primary', action: 'next', size: 'lg' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 16 },
+        children: [],
+      },
+      {
+        id: genId('rating'),
+        type: 'rating_display',
+        props: { rating: 4.8, count: 148, source: 'reviews' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 24 },
+        children: [],
+      },
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Hero image', aspectRatio: '16:9' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const heroLogos: SectionTemplate = {
+  id: 'hero-logos',
+  name: 'Hero + Logos',
+  description: 'With trusted-by company logos',
+  category: 'hero',
+  icon: 'building',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'hero' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'More Success with Less Effort', level: 'h1' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'With our tailored solutions, you will reach your goals faster than ever before.' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 24 },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Learn more now', variant: 'primary', action: 'next', size: 'lg' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 32 },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_bar',
+        props: { logos: ['Coca-Cola', 'Zalando', 'Braun', 'IKEA', 'Sony'] },
         children: [],
       },
     ],
@@ -189,52 +192,254 @@ export const heroMinimal: SectionTemplate = {
 
 export const heroSplit: SectionTemplate = {
   id: 'hero-split',
-  name: 'Split Hero',
-  description: 'Image left, text right layout',
+  name: 'Hero Split',
+  description: 'Text left, image right layout',
+  category: 'hero',
+  icon: 'columns',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'hero-split' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'More Success with Less Effort', level: 'h1' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'With our tailored solutions, you will reach your goals faster than ever before.' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 24 },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Learn more now', variant: 'primary', action: 'next' },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_bar',
+        props: { logos: ['Coca-Cola', 'Zalando', 'Braun', 'IKEA', 'Sony'] },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const heroFormCard: SectionTemplate = {
+  id: 'hero-form-card',
+  name: 'Hero + Form Card',
+  description: 'Split layout with floating form',
   category: 'hero',
   icon: 'layout',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'hero-card' },
+    props: { variant: 'hero-form' },
     children: [
       {
-        id: genId('card'),
-        type: 'content_card',
-        props: { backgroundColor: '#ffffff', borderRadius: 20, shadow: true, padding: 0 },
-        children: [
-          {
-            id: genId('image'),
-            type: 'image',
-            props: { src: '', alt: 'Hero image', aspectRatio: '16:9' },
-            children: [],
-          },
-          {
-            id: genId('body'),
-            type: 'section',
-            props: { variant: 'content', padding: 28, gap: 14 },
-            children: [
-              {
-                id: genId('heading'),
-                type: 'heading',
-                props: { text: 'Achieve More in Less Time', level: 'h1' },
-                children: [],
-              },
-              {
-                id: genId('paragraph'),
-                type: 'paragraph',
-                props: { text: 'Our tailored approach helps you reach your goals faster.' },
-                children: [],
-              },
-              {
-                id: genId('button'),
-                type: 'cta_button',
-                props: { label: 'Learn More', variant: 'primary', fullWidth: false },
-                children: [],
-              },
-            ],
-          },
-        ],
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Secure Your Exclusive Bundle Now', level: 'h1' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Get access to our premium package with limited-time bonuses.' },
+        children: [],
+      },
+      {
+        id: genId('form'),
+        type: 'form_group',
+        props: { 
+          fields: [
+            { type: 'text', placeholder: 'Name', required: true },
+            { type: 'email', placeholder: 'E-Mail', required: true },
+            { type: 'tel', placeholder: 'Phone' }
+          ]
+        },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Get your bundle now', variant: 'primary', action: 'next', fullWidth: true },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const heroInlineForm: SectionTemplate = {
+  id: 'hero-inline-form',
+  name: 'Hero + Inline Form',
+  description: 'Integrated form inputs with CTA',
+  category: 'hero',
+  icon: 'form-input',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'hero-form' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Secure Your Exclusive Bundle Now', level: 'h1' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Get access to our premium package with limited-time bonuses.' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 16 },
+        children: [],
+      },
+      {
+        id: genId('input'),
+        type: 'form_input',
+        props: { placeholder: 'E-Mail', type: 'email' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 12 },
+        children: [],
+      },
+      {
+        id: genId('input'),
+        type: 'form_input',
+        props: { placeholder: 'Phone', type: 'tel' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 16 },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Get your bundle now', variant: 'primary', action: 'next' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const heroGradient: SectionTemplate = {
+  id: 'hero-gradient',
+  name: 'Hero Gradient',
+  description: 'Soft gradient background with logos',
+  category: 'hero',
+  icon: 'palette',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'hero', background: 'gradient' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Get Your Exclusive Discount Today', level: 'h1' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Join thousands who have already transformed their business with our proven system.' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 24 },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Learn more now', variant: 'primary', action: 'next', size: 'lg' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 32 },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_bar',
+        props: { logos: ['Coca-Cola', 'Zalando', 'Braun', 'IKEA', 'Sony'] },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const heroDark: SectionTemplate = {
+  id: 'hero-dark',
+  name: 'Hero Dark',
+  description: 'Dark background with light text',
+  category: 'hero',
+  icon: 'moon',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'hero', background: 'dark' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Get Your Exclusive Discount Today', level: 'h1', color: 'white' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Join thousands who have already transformed their business with our proven system.', color: 'white' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 24 },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Learn more now', variant: 'outline', action: 'next', size: 'lg' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 24 },
+        children: [],
+      },
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Hero image', aspectRatio: '16:9' },
+        children: [],
       },
     ],
   }),
@@ -795,12 +1000,15 @@ export const teamSection: SectionTemplate = {
 // ============================================================================
 
 export const allSectionTemplates: SectionTemplate[] = [
-  // Hero (5)
-  heroImpact,
-  heroVideo,
-  heroAuthority,
-  heroMinimal,
+  // Hero (8)
+  heroSimple,
+  heroReviews,
+  heroLogos,
   heroSplit,
+  heroFormCard,
+  heroInlineForm,
+  heroGradient,
+  heroDark,
   // Content (2)
   contentText,
   contentHeadingText,
@@ -832,7 +1040,7 @@ export const allSectionTemplates: SectionTemplate[] = [
 ];
 
 export const sectionTemplatesByCategory = {
-  hero: [heroImpact, heroVideo, heroAuthority, heroMinimal, heroSplit],
+  hero: [heroSimple, heroReviews, heroLogos, heroSplit, heroFormCard, heroInlineForm, heroGradient, heroDark],
   content: [contentText, contentHeadingText],
   cta: [ctaSimple, ctaUrgency, ctaDual],
   media: [mediaVideo, mediaImage],
