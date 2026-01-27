@@ -4,6 +4,7 @@
  */
 
 export { SectionPicker } from './SectionPicker';
+export { CategoryIcon } from './CategoryIcon';
 export { QuickPicks } from './QuickPicks';
 export { TemplateGallery } from './TemplateGallery';
 export type { SectionPickerProps } from './SectionPicker';
