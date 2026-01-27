@@ -3128,31 +3128,31 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
           <div className="toggle-pill w-full">
             <button 
               onClick={() => handleBackgroundTypeChange('solid')}
-              className={cn('toggle-pill-option flex-1 text-center', bgType === 'solid' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
+              className={cn('toggle-pill-option toggle-pill-option-compact flex-1 text-center min-w-0', bgType === 'solid' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
             >
               Solid
             </button>
             <button 
               onClick={() => handleBackgroundTypeChange('gradient')}
-              className={cn('toggle-pill-option flex-1 text-center', bgType === 'gradient' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
+              className={cn('toggle-pill-option toggle-pill-option-compact flex-1 text-center min-w-0', bgType === 'gradient' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
             >
               Gradient
             </button>
             <button 
               onClick={() => handleBackgroundTypeChange('image')}
-              className={cn('toggle-pill-option flex-1 text-center', bgType === 'image' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
+              className={cn('toggle-pill-option toggle-pill-option-compact flex-1 text-center min-w-0', bgType === 'image' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
             >
               Image
             </button>
             <button 
               onClick={() => handleBackgroundTypeChange('video')}
-              className={cn('toggle-pill-option flex-1 text-center', bgType === 'video' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
+              className={cn('toggle-pill-option toggle-pill-option-compact flex-1 text-center min-w-0', bgType === 'video' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
             >
               Video
             </button>
             <button 
               onClick={() => handleBackgroundTypeChange('pattern')}
-              className={cn('toggle-pill-option flex-1 text-center', bgType === 'pattern' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
+              className={cn('toggle-pill-option toggle-pill-option-compact flex-1 text-center min-w-0', bgType === 'pattern' ? 'toggle-pill-option-active' : 'toggle-pill-option-inactive')}
             >
               Pattern
             </button>

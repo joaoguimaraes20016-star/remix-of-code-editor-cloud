@@ -221,16 +221,17 @@ export const BlockActionBar: React.FC<BlockActionBarProps> = ({
      <AnimatePresence>
        {isSelected && (
          <TooltipProvider delayDuration={400}>
-           <motion.div
-             initial={{ opacity: 0, scale: 0.9, x: position === 'left' ? -4 : 4 }}
-             animate={{ opacity: 1, scale: 1, x: 0 }}
-             exit={{ opacity: 0, scale: 0.9, x: position === 'left' ? -4 : 4 }}
-             transition={{ duration: 0.12, ease: [0.2, 0, 0, 1] }}
-             className={cn(
-               'absolute',
-               position === 'left' ? 'left-1.5 top-1/2' : 'right-1.5 top-1/2',
-               'flex flex-col gap-0.5 p-1 rounded-lg',
-               'bg-[hsl(var(--builder-surface))]/90 backdrop-blur-md',
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, x: position === 'left' ? -4 : 4 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.9, x: position === 'left' ? -4 : 4 }}
+              transition={{ duration: 0.12, ease: [0.2, 0, 0, 1] }}
+              className={cn(
+                'absolute',
+                // Position toolbar OUTSIDE the block boundary to prevent overlap
+                position === 'left' ? '-left-10 top-1/2' : '-right-10 top-1/2',
+                'flex flex-col gap-0.5 p-0.5 rounded-lg',
+                'bg-[hsl(var(--builder-surface))]/95 backdrop-blur-xl',
                'border border-[hsl(var(--builder-border))]',
                'shadow-lg shadow-black/30 z-[60] pointer-events-auto'
              )}

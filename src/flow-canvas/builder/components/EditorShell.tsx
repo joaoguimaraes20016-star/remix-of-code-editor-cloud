@@ -470,17 +470,32 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     const stepToDuplicate = page.steps.find(s => s.id === stepId);
     if (!stepToDuplicate) return;
 
-    const duplicatedStep = deepClone(stepToDuplicate);
+    // Use JSON-based deep clone for guaranteed new reference
+    const duplicatedStep = JSON.parse(JSON.stringify(stepToDuplicate));
     duplicatedStep.id = generateId();
     duplicatedStep.name = `${stepToDuplicate.name} (Copy)`;
     
-    const regenerateIds = (obj: any) => {
-      if (obj && typeof obj === 'object') {
-        if (obj.id) obj.id = generateId();
-        Object.values(obj).forEach(regenerateIds);
-      }
+    // Robust ID regeneration - handles nested objects and arrays correctly
+    const regenerateIds = (obj: any): void => {
+      if (!obj || typeof obj !== 'object') return;
+      
+      // If it's an array, recurse into each element
       if (Array.isArray(obj)) {
-        obj.forEach(regenerateIds);
+        obj.forEach(item => regenerateIds(item));
+        return;
+      }
+      
+      // If it's an object with an 'id' property (string), regenerate it
+      if ('id' in obj && typeof obj.id === 'string') {
+        obj.id = generateId();
+      }
+      
+      // Recurse into all object values
+      for (const key of Object.keys(obj)) {
+        const value = obj[key];
+        if (value && typeof value === 'object') {
+          regenerateIds(value);
+        }
       }
     };
     regenerateIds(duplicatedStep.frames);
@@ -489,7 +504,9 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     const stepIndex = updatedPage.steps.findIndex(s => s.id === stepId);
     updatedPage.steps.splice(stepIndex + 1, 0, duplicatedStep);
     handlePageUpdate(updatedPage, 'Duplicate page');
-    toast.success('Page duplicated');
+    
+    const sectionCount = duplicatedStep.frames?.length || 0;
+    toast.success(`Page duplicated${sectionCount > 0 ? ` (${sectionCount} section${sectionCount > 1 ? 's' : ''})` : ''}`);
   }, [page, handlePageUpdate]);
 
   const handleReorderSteps = useCallback((fromIndex: number, toIndex: number) => {
@@ -2063,6 +2080,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
           onUpdatePage={handleAIPageUpdate}
           isExpanded={isAICopilotExpanded}
           onToggle={() => setIsAICopilotExpanded(!isAICopilotExpanded)}
+          onClose={() => setIsAICopilotExpanded(false)}
         />
       )}
 

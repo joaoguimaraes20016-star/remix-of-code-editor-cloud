@@ -663,6 +663,17 @@ export const legalOptInForm: SectionTemplate = {
 // EXPORTS
 // ============================================================================
 
+// IDs of legacy templates to hide from the UI
+const HIDDEN_LEGACY_IDS = [
+  'form-email', 
+  'form-phone', 
+  'form-full', 
+  'form-multi-choice',
+  'form-calendar',
+  'legal-consent',
+  'legal-optin',
+];
+
 export const allSectionTemplates: SectionTemplate[] = [
   // Hero
   heroSimple,
@@ -684,15 +695,8 @@ export const allSectionTemplates: SectionTemplate[] = [
   socialProofBadges,
   // Features
   featuresList,
-  // Legacy (deprecated - kept for backwards compatibility)
-  formEmail,
-  formPhone,
-  formFull,
-  formMultiChoice,
-  formCalendar,
-  legalConsent,
-  legalOptInForm,
-];
+  // NOTE: Legacy templates removed from UI - use interactive blocks instead
+].filter(t => !HIDDEN_LEGACY_IDS.includes(t.id));
 
 export const sectionTemplatesByCategory = {
   hero: [heroSimple, heroWithButton, heroCardWithImage],
