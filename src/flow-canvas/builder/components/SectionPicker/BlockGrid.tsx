@@ -20,13 +20,28 @@ import {
   CalendarIcon,
   HTMLIcon,
   FormIcon,
+  // Question icons
+  MultipleChoiceIcon,
+  ChoiceIcon,
+  QuizIcon,
+  VideoQuestionIcon,
+  // Form icons
+  FormBlockIcon,
+  AppointmentIcon,
+  UploadIcon,
+  MessageIcon,
+  DateIcon,
+  DropdownIcon,
+  PaymentIcon,
 } from './BlockIcons';
 
 interface BlockGridProps {
   onAddBlock: (blockId: string) => void;
+  category: 'content' | 'cta';
 }
 
-// Block definitions with visual details
+// ============ BASIC BLOCKS (content category) ============
+
 const CORE_COMPONENTS = [
   { id: 'text', name: 'Text', bgColor: 'bg-gray-50', icon: <TextIcon /> },
   { id: 'button', name: 'Button', bgColor: 'bg-blue-50', icon: <ButtonIcon /> },
@@ -51,7 +66,57 @@ const EMBED_BLOCKS = [
   { id: 'form', name: 'Form', bgColor: 'bg-green-50', icon: <FormIcon /> },
 ];
 
-export function BlockGrid({ onAddBlock }: BlockGridProps) {
+// ============ INTERACTIVE BLOCKS (cta category) ============
+
+const QUESTION_BLOCKS = [
+  { id: 'multiple-choice', name: 'Multiple-Choice', bgColor: 'bg-green-50', icon: <MultipleChoiceIcon /> },
+  { id: 'choice', name: 'Choice', bgColor: 'bg-blue-50', icon: <ChoiceIcon /> },
+  { id: 'quiz', name: 'Quiz', bgColor: 'bg-gray-50', icon: <QuizIcon /> },
+  { id: 'video-question', name: 'Video question', bgColor: 'bg-slate-50', icon: <VideoQuestionIcon /> },
+];
+
+const FORM_BLOCKS = [
+  { id: 'form-block', name: 'Form', bgColor: 'bg-indigo-50', icon: <FormBlockIcon /> },
+  { id: 'appointment', name: 'Appointment', bgColor: 'bg-teal-50', icon: <AppointmentIcon /> },
+  { id: 'upload', name: 'Upload', bgColor: 'bg-purple-50', icon: <UploadIcon /> },
+  { id: 'message', name: 'Message', bgColor: 'bg-cyan-50', icon: <MessageIcon /> },
+  { id: 'date', name: 'Date', bgColor: 'bg-gray-50', icon: <DateIcon /> },
+  { id: 'dropdown', name: 'Dropdown', bgColor: 'bg-amber-50', icon: <DropdownIcon /> },
+  { id: 'payment', name: 'Payment', bgColor: 'bg-amber-50', icon: <PaymentIcon /> },
+];
+
+export function BlockGrid({ onAddBlock, category }: BlockGridProps) {
+  if (category === 'cta') {
+    return (
+      <div className="p-6 overflow-y-auto">
+        {/* Questions */}
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">Questions</h3>
+        <div className="grid grid-cols-2 gap-3 mb-8">
+          {QUESTION_BLOCKS.map(block => (
+            <BlockTileCard
+              key={block.id}
+              {...block}
+              onAdd={() => onAddBlock(block.id)}
+            />
+          ))}
+        </div>
+
+        {/* Forms */}
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">Forms</h3>
+        <div className="grid grid-cols-2 gap-3">
+          {FORM_BLOCKS.map(block => (
+            <BlockTileCard
+              key={block.id}
+              {...block}
+              onAdd={() => onAddBlock(block.id)}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Default: content category (basic blocks)
   return (
     <div className="p-6 overflow-y-auto">
       {/* Core Components */}
