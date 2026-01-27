@@ -13,6 +13,7 @@ import {
   deriveHoverColor as deriveHoverColorFromEngine,
   deriveActiveColor as deriveActiveColorFromEngine,
   extractGradientFirstColor,
+  isLightColor,
 } from '@/builder/utils/ContrastEngine';
 
 // ============================================================================
@@ -373,6 +374,7 @@ export const CanvasUtilities = {
   deriveHoverColor: deriveHoverColorFromEngine,
   deriveActiveColor: deriveActiveColorFromEngine,
   extractGradientFirstColor,
+  isLightColor,
   lightenHex,
   shiftHue,
   getPageBackgroundStyles,

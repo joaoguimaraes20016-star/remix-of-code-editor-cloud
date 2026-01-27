@@ -2,7 +2,7 @@
  * Stack Renderer - Renders a stack of blocks with drag-and-drop support
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import type { Stack, Block, Element, SelectionState } from '../../../types/infostack';
 import type { DeviceMode } from '../TopToolbar';
 import { BlockDragOverlay } from './BlockDragOverlay';
+import { isLightColor } from '@/builder/utils/ContrastEngine';
 
 // Note: SortableBlockRenderer remains in CanvasRenderer.tsx as it's too complex to extract
 // This is a forward reference that will be passed as a render prop
@@ -65,6 +66,8 @@ export interface StackRendererProps {
     stackPath: string[];
     activeBlockId: string | null;
   }) => React.ReactNode;
+  // Parent background for contrast-adaptive UI
+  parentBackgroundColor?: string;
 }
 
 export const StackRenderer: React.FC<StackRendererProps> = ({ 
@@ -77,10 +80,17 @@ export const StackRenderer: React.FC<StackRendererProps> = ({
   readOnly = false,
   onOpenBlockPickerInPanel,
   renderBlock,
+  parentBackgroundColor,
 }) => {
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const isSelected = selection.type === 'stack' && selection.id === stack.id;
   const stackPath = [...path, 'stack', stack.id];
+
+  // Compute if parent background is dark for contrast-adaptive UI
+  const isParentDark = useMemo(() => {
+    if (!parentBackgroundColor || parentBackgroundColor === 'transparent') return false;
+    return !isLightColor(parentBackgroundColor);
+  }, [parentBackgroundColor]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -137,7 +147,7 @@ export const StackRenderer: React.FC<StackRendererProps> = ({
     >
       {/* Empty state - only show in editor mode */}
       {stack.blocks.length === 0 && !readOnly ? (
-        // Empty state
+        // Empty state - contrast-adaptive based on parent background
         <div 
           onClick={(e) => {
             e.stopPropagation();
@@ -146,20 +156,40 @@ export const StackRenderer: React.FC<StackRendererProps> = ({
           }}
           className={cn(
             "relative flex flex-col items-center justify-center py-16 px-8 rounded-xl cursor-pointer transition-all",
-            "border-2 border-dashed border-gray-200 hover:border-gray-300",
-            "bg-gradient-to-b from-gray-50/50 to-transparent",
+            "border-2 border-dashed",
+            isParentDark 
+              ? "border-white/30 hover:border-white/50 bg-white/5"
+              : "border-gray-200 hover:border-gray-300 bg-gradient-to-b from-gray-50/50 to-transparent",
             "group/empty"
           )}
         >
           <div className="flex flex-col items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-white border border-gray-200 shadow-sm flex items-center justify-center group-hover/empty:border-gray-300 group-hover/empty:shadow-md transition-all">
-              <LayoutGrid className="w-5 h-5 text-gray-400 group-hover/empty:text-gray-600 transition-colors" />
+            <div className={cn(
+              "w-12 h-12 rounded-xl border shadow-sm flex items-center justify-center transition-all",
+              isParentDark
+                ? "bg-white/10 border-white/20 group-hover/empty:bg-white/15 group-hover/empty:shadow-md"
+                : "bg-white border-gray-200 group-hover/empty:border-gray-300 group-hover/empty:shadow-md"
+            )}>
+              <LayoutGrid className={cn(
+                "w-5 h-5 transition-colors",
+                isParentDark 
+                  ? "text-white/60 group-hover/empty:text-white/80" 
+                  : "text-gray-400 group-hover/empty:text-gray-600"
+              )} />
             </div>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 group-hover/empty:text-gray-800 transition-colors">
+              <p className={cn(
+                "text-sm font-medium transition-colors",
+                isParentDark 
+                  ? "text-white/80 group-hover/empty:text-white" 
+                  : "text-gray-600 group-hover/empty:text-gray-800"
+              )}>
                 Add Block
               </p>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className={cn(
+                "text-xs mt-0.5",
+                isParentDark ? "text-white/50" : "text-gray-400"
+              )}>
                 Click to add content
               </p>
             </div>
@@ -195,12 +225,17 @@ export const StackRenderer: React.FC<StackRendererProps> = ({
             </DragOverlay>
           </DndContext>
           
-          {/* Add content button */}
+          {/* Add content button - contrast-adaptive */}
           {!readOnly && stack.blocks.length > 0 && (
             <div className="mt-3 opacity-60 hover:opacity-100 transition-opacity">
               <button
                 onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
-                className="flex items-center justify-center gap-1.5 w-full py-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                className={cn(
+                  "flex items-center justify-center gap-1.5 w-full py-2 text-xs transition-colors",
+                  isParentDark
+                    ? "text-white/50 hover:text-white/80"
+                    : "text-gray-500 hover:text-gray-700"
+                )}
               >
                 <Plus size={14} />
                 <span>Add content</span>
