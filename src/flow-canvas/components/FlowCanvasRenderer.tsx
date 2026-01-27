@@ -786,9 +786,9 @@ function ButtonRenderer({ element, onClick, isSubmitting }: ButtonRendererProps)
           background: gradientBackground,
           color: customTextColor,
           borderRadius: customBorderRadius,
-          // Handle outline mode border
+          // Handle outline mode border - respect user's border settings
           ...(isOutlineMode ? {
-            borderWidth: '2px',
+            borderWidth: element.styles?.borderWidth || '2px',
             borderStyle: 'solid',
             borderColor: element.styles?.borderColor || 'currentColor',
           } : {}),
@@ -1207,23 +1207,62 @@ export function FlowCanvasRenderer({
         };
         const IconComp = iconComponents[iconName] || Sparkles;
         
-        const iconStyle: React.CSSProperties = iconFillType === 'gradient' && iconGradient ? {
-          width: iconSize,
-          height: iconSize,
-          background: gradientToCSS(iconGradient),
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-          display: 'inline-block',
-        } : {
-          width: iconSize,
-          height: iconSize,
-          color: iconColor,
-        };
+        const isGradientIcon = iconFillType === 'gradient' && iconGradient;
+        
+        // For gradient icons, use inline SVG gradient (background-clip doesn't work on SVGs)
+        if (isGradientIcon) {
+          const gradientId = `icon-gradient-${element.id}`;
+          const gradientAngle = iconGradient.angle || 135;
+          const stops = iconGradient.stops || [];
+          
+          // Calculate gradient direction based on angle
+          const angleRad = (gradientAngle - 90) * (Math.PI / 180);
+          const x1 = 50 - Math.cos(angleRad) * 50;
+          const y1 = 50 - Math.sin(angleRad) * 50;
+          const x2 = 50 + Math.cos(angleRad) * 50;
+          const y2 = 50 + Math.sin(angleRad) * 50;
+          
+          return (
+            <div key={element.id} className="flex items-center justify-center p-2">
+              <svg 
+                width={iconSize} 
+                height={iconSize} 
+                viewBox="0 0 24 24"
+                style={{ display: 'block' }}
+              >
+                <defs>
+                  <linearGradient 
+                    id={gradientId} 
+                    x1={`${x1}%`} 
+                    y1={`${y1}%`} 
+                    x2={`${x2}%`} 
+                    y2={`${y2}%`}
+                  >
+                    {stops.map((stop, i) => (
+                      <stop 
+                        key={i} 
+                        offset={`${stop.position}%`} 
+                        stopColor={stop.color} 
+                      />
+                    ))}
+                  </linearGradient>
+                </defs>
+                <IconComp 
+                  style={{ 
+                    width: 24, 
+                    height: 24,
+                    fill: `url(#${gradientId})`,
+                    stroke: `url(#${gradientId})`,
+                  }} 
+                />
+              </svg>
+            </div>
+          );
+        }
         
         return (
           <div key={element.id} className="flex items-center justify-center p-2">
-            <IconComp style={iconStyle} />
+            <IconComp style={{ width: iconSize, height: iconSize, color: iconColor }} />
           </div>
         );
       }
