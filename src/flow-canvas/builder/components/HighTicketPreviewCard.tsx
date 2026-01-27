@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Plus, Star, Play, Calendar, CheckCircle2, Quote, Users, TrendingUp, HelpCircle, Clock, Sparkles, Shield } from 'lucide-react';
+import { Plus, Star, Calendar, CheckCircle2, Quote, Users, TrendingUp, HelpCircle, Sparkles, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SectionTemplate } from '@/builder_v2/templates/sectionTemplates';
 
@@ -225,64 +225,188 @@ const ContentPreview = React.forwardRef<HTMLDivElement, { hasHeading?: boolean }
 );
 ContentPreview.displayName = 'ContentPreview';
 
-// CTA previews
+// CTA previews - PERSPECTIVE STYLE (10 variants)
 const CTAPreview = React.forwardRef<HTMLDivElement, { variant: string }>(
   ({ variant }, ref) => {
-    if (variant === 'urgency') {
+    // CTA Simple - White centered
+    if (variant === 'simple') {
       return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 p-4 flex flex-col justify-center items-center gap-2">
-          <div className="h-8 w-28 bg-white rounded-lg shadow-lg flex items-center justify-center">
-            <div className="h-2.5 w-20 bg-blue-600 rounded" />
-          </div>
-          <div className="flex items-center gap-1">
-            <Clock size={10} className="text-white/70" />
-            <div className="h-1.5 w-16 bg-white/50 rounded" />
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="h-2.5 w-28 bg-slate-800 rounded" />
+          <div className="h-1.5 w-32 bg-slate-300 rounded" />
+          <div className="h-5 w-20 bg-blue-500 rounded mt-2" />
+        </div>
+      );
+    }
+    
+    // CTA Gray Card
+    if (variant === 'gray-card') {
+      return (
+        <div ref={ref} className="w-full h-full bg-slate-50 p-3 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-3 border border-slate-100 shadow-sm flex flex-col items-center gap-1.5">
+            <div className="h-2 w-24 bg-slate-800 rounded" />
+            <div className="h-1 w-28 bg-slate-300 rounded" />
+            <div className="h-4 w-16 bg-blue-500 rounded mt-1" />
           </div>
         </div>
       );
     }
     
+    // CTA Dark with Reviews
+    if (variant === 'dark-reviews') {
+      return (
+        <div ref={ref} className="w-full h-full bg-slate-800 p-3 flex flex-col items-center justify-center gap-1.5">
+          <AvatarStack />
+          <StarRating />
+          <div className="text-[5px] text-white/60">Over 200 satisfied customers</div>
+          <div className="h-2.5 w-28 bg-white rounded" />
+          <div className="h-1.5 w-32 bg-white/40 rounded" />
+          <div className="h-5 w-20 bg-blue-500 rounded mt-1" />
+        </div>
+      );
+    }
+    
+    // CTA Dark Card
+    if (variant === 'dark-card') {
+      return (
+        <div ref={ref} className="w-full h-full bg-slate-800 p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="bg-slate-700 rounded-lg p-3 border border-slate-600 flex flex-col items-center gap-1.5">
+            <AvatarStack />
+            <div className="h-4 w-16 bg-blue-500 rounded mt-1" />
+          </div>
+        </div>
+      );
+    }
+    
+    // CTA Gradient + Logos
+    if (variant === 'gradient-logos') {
+      return (
+        <div ref={ref} className="w-full h-full bg-gradient-to-b from-blue-50 to-slate-50 p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="h-2.5 w-28 bg-slate-800 rounded" />
+          <div className="h-1.5 w-32 bg-slate-400 rounded" />
+          <div className="h-5 w-20 bg-blue-500 rounded mt-1" />
+          <div className="mt-2 w-full">
+            <LogoBar />
+          </div>
+        </div>
+      );
+    }
+    
+    // CTA Form Split with Reviews
+    if (variant === 'form-split-reviews') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <div className="h-2 w-14 bg-slate-800 rounded" />
+            <div className="h-2 w-12 bg-slate-800 rounded" />
+            <div className="h-2 w-16 bg-slate-800 rounded" />
+            <div className="flex items-center gap-1 mt-1">
+              <AvatarStack />
+              <StarRating />
+            </div>
+          </div>
+          <div className="flex-1 bg-slate-50 rounded-lg p-2 flex flex-col gap-1 border border-slate-100">
+            <FormInputMockup placeholder="Name" />
+            <FormInputMockup placeholder="E-Mail" />
+            <FormInputMockup placeholder="Phone" />
+            <div className="h-4 w-full bg-blue-500 rounded mt-0.5" />
+          </div>
+        </div>
+      );
+    }
+    
+    // CTA Form Split Simple
+    if (variant === 'form-split-simple') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <div className="h-2 w-14 bg-slate-800 rounded" />
+            <div className="h-2 w-12 bg-slate-800 rounded" />
+            <div className="h-2 w-16 bg-slate-800 rounded" />
+            <div className="h-1 w-20 bg-slate-300 rounded mt-1" />
+          </div>
+          <div className="flex-1 bg-slate-50 rounded-lg p-2 flex flex-col gap-1 border border-slate-100">
+            <FormInputMockup placeholder="Name" />
+            <FormInputMockup placeholder="E-Mail" />
+            <FormInputMockup placeholder="Phone" />
+            <div className="h-4 w-full bg-blue-500 rounded mt-0.5" />
+          </div>
+        </div>
+      );
+    }
+    
+    // CTA Split Form (Light BG with privacy note)
+    if (variant === 'split-form') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <div className="h-2.5 w-14 bg-slate-800 rounded" />
+            <div className="h-2.5 w-16 bg-slate-800 rounded" />
+            <div className="h-1 w-20 bg-slate-300 rounded mt-1" />
+          </div>
+          <div className="flex-1 flex flex-col gap-1">
+            <div className="h-1 w-20 bg-slate-300 rounded" />
+            <FormInputMockup placeholder="Name" />
+            <FormInputMockup placeholder="E-Mail" />
+            <div className="h-4 w-full bg-blue-500 rounded" />
+            <div className="h-0.5 w-16 bg-slate-200 rounded mx-auto" />
+          </div>
+        </div>
+      );
+    }
+    
+    // CTA + FAQ
+    if (variant === 'faq') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-2 flex gap-2">
+          <div className="flex-1 flex flex-col justify-center gap-1">
+            <div className="h-2.5 w-14 bg-slate-800 rounded" />
+            <div className="h-2.5 w-16 bg-slate-800 rounded" />
+            <div className="h-1 w-20 bg-slate-300 rounded mt-0.5" />
+            <div className="h-4 w-14 bg-blue-500 rounded mt-1" />
+          </div>
+          <div className="flex-1 flex flex-col gap-1 justify-center">
+            <div className="bg-slate-50 rounded p-1.5 border border-slate-100">
+              <div className="flex items-center justify-between">
+                <div className="h-1 w-16 bg-slate-600 rounded" />
+                <Plus size={6} className="text-slate-400" />
+              </div>
+            </div>
+            <div className="bg-slate-50 rounded p-1.5 border border-slate-100">
+              <div className="flex items-center justify-between">
+                <div className="h-1 w-14 bg-slate-600 rounded" />
+                <Plus size={6} className="text-slate-400" />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // CTA Dual
     if (variant === 'dual') {
       return (
-        <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-4 flex flex-col justify-center items-center gap-2">
-          <div className="h-7 w-24 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg" />
-          <div className="h-5 w-16 border border-white/20 rounded bg-transparent flex items-center justify-center">
-            <div className="h-1.5 w-10 bg-white/40 rounded" />
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-2">
+          <div className="h-2.5 w-24 bg-slate-800 rounded" />
+          <div className="h-5 w-20 bg-blue-500 rounded" />
+          <div className="h-4 w-16 border border-slate-300 rounded flex items-center justify-center">
+            <div className="h-1 w-10 bg-slate-400 rounded" />
           </div>
         </div>
       );
     }
     
+    // Default fallback
     return (
-      <div ref={ref} className="w-full h-full bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 p-4 flex items-center justify-center">
-        <div className="h-8 w-24 bg-white rounded-lg shadow-lg flex items-center justify-center">
-          <div className="h-2.5 w-16 bg-blue-600 rounded" />
-        </div>
+      <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+        <div className="h-2.5 w-28 bg-slate-800 rounded" />
+        <div className="h-1.5 w-32 bg-slate-300 rounded" />
+        <div className="h-5 w-20 bg-blue-500 rounded mt-2" />
       </div>
     );
   }
 );
 CTAPreview.displayName = 'CTAPreview';
-
-// Media preview
-const MediaPreview = React.forwardRef<HTMLDivElement, { type: 'video' | 'image' }>(
-  ({ type }, ref) => (
-    <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex items-center justify-center">
-      {type === 'video' ? (
-        <div className="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center backdrop-blur">
-          <Play size={24} className="text-white/80 ml-1" />
-        </div>
-      ) : (
-        <div className="w-full h-full rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
-          <div className="w-12 h-12 rounded-lg bg-slate-600/50 flex items-center justify-center">
-            <div className="w-6 h-6 rounded bg-slate-500/50" />
-          </div>
-        </div>
-      )}
-    </div>
-  )
-);
-MediaPreview.displayName = 'MediaPreview';
 
 // Embed preview
 const EmbedPreview = React.forwardRef<HTMLDivElement, { type: 'calendar' | 'empty' }>(
@@ -665,12 +789,17 @@ function getPreviewComponent(template: SectionTemplate) {
       return <ContentPreview hasHeading={id.includes('heading')} />;
     
     case 'cta':
-      if (id.includes('urgency')) return <CTAPreview variant="urgency" />;
+      if (id.includes('simple') && !id.includes('split')) return <CTAPreview variant="simple" />;
+      if (id.includes('gray-card')) return <CTAPreview variant="gray-card" />;
+      if (id.includes('dark-reviews')) return <CTAPreview variant="dark-reviews" />;
+      if (id.includes('dark-card')) return <CTAPreview variant="dark-card" />;
+      if (id.includes('gradient-logos')) return <CTAPreview variant="gradient-logos" />;
+      if (id.includes('form-split-reviews')) return <CTAPreview variant="form-split-reviews" />;
+      if (id.includes('form-split-simple')) return <CTAPreview variant="form-split-simple" />;
+      if (id.includes('split-form')) return <CTAPreview variant="split-form" />;
+      if (id.includes('faq')) return <CTAPreview variant="faq" />;
       if (id.includes('dual')) return <CTAPreview variant="dual" />;
       return <CTAPreview variant="simple" />;
-    
-    case 'media':
-      return <MediaPreview type={id.includes('video') ? 'video' : 'image'} />;
     
     case 'embed':
       return <EmbedPreview type={id.includes('calendar') ? 'calendar' : 'empty'} />;

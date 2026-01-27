@@ -15,7 +15,7 @@ export interface SectionTemplate {
   id: string;
   name: string;
   description: string;
-  category: 'hero' | 'content' | 'cta' | 'media' | 'embed' | 'social_proof' | 'features' | 'testimonials' | 'team' | 'faq';
+  category: 'hero' | 'content' | 'cta' | 'embed' | 'social_proof' | 'features' | 'testimonials' | 'team' | 'faq';
   icon: string;
   createNode: () => CanvasNode;
 }
@@ -499,14 +499,14 @@ export const contentHeadingText: SectionTemplate = {
 };
 
 // ============================================================================
-// CTA SECTIONS (3 templates)
-// Conversion-focused call-to-action sections
+// CTA SECTIONS (10 templates) - Perspective-Style
+// Clean, light-themed conversion sections matching modern SaaS landing pages
 // ============================================================================
 
 export const ctaSimple: SectionTemplate = {
   id: 'cta-simple',
   name: 'Simple CTA',
-  description: 'Button only',
+  description: 'Centered title, subtext and button',
   category: 'cta',
   icon: 'mouse-pointer-click',
   createNode: () => ({
@@ -515,42 +515,379 @@ export const ctaSimple: SectionTemplate = {
     props: { variant: 'cta' },
     children: [
       {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Get your exclusive discount now!', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Take advantage of our limited-time offer and transform your business today.' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 24 },
+        children: [],
+      },
+      {
         id: genId('button'),
         type: 'cta_button',
-        props: { label: 'Continue', variant: 'primary', action: 'next', size: 'lg' },
+        props: { label: 'Get Discount Now', variant: 'primary', action: 'next', size: 'lg' },
         children: [],
       },
     ],
   }),
 };
 
-export const ctaUrgency: SectionTemplate = {
-  id: 'cta-urgency',
-  name: 'CTA + Urgency',
-  description: 'Button with scarcity text',
+export const ctaGrayCard: SectionTemplate = {
+  id: 'cta-gray-card',
+  name: 'Gray Card CTA',
+  description: 'Card on gray background',
   category: 'cta',
-  icon: 'clock',
+  icon: 'square',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'cta' },
+    props: { variant: 'cta', background: 'gray' },
     children: [
       {
-        id: genId('button'),
-        type: 'cta_button',
-        props: { label: 'Claim Your Spot', variant: 'primary', action: 'next', size: 'lg' },
-        children: [],
-      },
-      {
-        id: genId('spacer'),
-        type: 'spacer',
-        props: { height: 12 },
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Get your exclusive discount now!', level: 'h2' },
         children: [],
       },
       {
         id: genId('paragraph'),
         type: 'paragraph',
-        props: { text: '⏰ Only 5 spots left this week', variant: 'small', align: 'center' },
+        props: { text: 'Take advantage of our limited-time offer and transform your business today.' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 24 },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Get Discount Now', variant: 'primary', action: 'next', size: 'lg' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const ctaDarkReviews: SectionTemplate = {
+  id: 'cta-dark-reviews',
+  name: 'Dark + Reviews',
+  description: 'Dark background with social proof',
+  category: 'cta',
+  icon: 'star',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'cta', background: 'dark' },
+    children: [
+      {
+        id: genId('rating'),
+        type: 'rating_display',
+        props: { rating: 5.0, count: 200, source: 'satisfied customers' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Get your exclusive discount now!', level: 'h2', color: 'white' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Take advantage of our limited-time offer and transform your business today.', color: 'white' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 24 },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Get Discount Now', variant: 'primary', action: 'next', size: 'lg' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const ctaDarkCard: SectionTemplate = {
+  id: 'cta-dark-card',
+  name: 'Dark + Card',
+  description: 'Dark background with inset card',
+  category: 'cta',
+  icon: 'moon',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'cta', background: 'dark' },
+    children: [
+      {
+        id: genId('rating'),
+        type: 'rating_display',
+        props: { rating: 5.0, count: 200, source: 'satisfied customers' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 16 },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Get Discount Now', variant: 'primary', action: 'next', size: 'lg' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const ctaGradientLogos: SectionTemplate = {
+  id: 'cta-gradient-logos',
+  name: 'Gradient + Logos',
+  description: 'Gradient background with trusted logos',
+  category: 'cta',
+  icon: 'palette',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'cta', background: 'gradient' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Get your exclusive discount now!', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Take advantage of our limited-time offer and transform your business today.' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 24 },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Get Discount Now', variant: 'primary', action: 'next', size: 'lg' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 32 },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_bar',
+        props: { logos: ['Coca-Cola', 'Zalando', 'Braun', 'IKEA', 'Sony'] },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const ctaFormSplitReviews: SectionTemplate = {
+  id: 'cta-form-split-reviews',
+  name: 'Form Split + Reviews',
+  description: 'Text with reviews left, form right',
+  category: 'cta',
+  icon: 'layout',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'cta-split' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'More Leads.\nMore Time.\nMore Business.', level: 'h1' },
+        children: [],
+      },
+      {
+        id: genId('rating'),
+        type: 'rating_display',
+        props: { rating: 5.0, count: 5000, source: 'companies trust us' },
+        children: [],
+      },
+      {
+        id: genId('form'),
+        type: 'form_group',
+        props: {
+          fields: [
+            { type: 'text', placeholder: 'Name', required: true },
+            { type: 'email', placeholder: 'E-Mail', required: true },
+            { type: 'tel', placeholder: 'Phone' }
+          ]
+        },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: '14-day free trial', variant: 'primary', action: 'next', fullWidth: true },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const ctaFormSplitSimple: SectionTemplate = {
+  id: 'cta-form-split-simple',
+  name: 'Form Split Simple',
+  description: 'Text left, form right',
+  category: 'cta',
+  icon: 'form-input',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'cta-split' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'More Leads.\nMore Time.\nMore Business.', level: 'h1' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Start your journey to success today with our proven system.' },
+        children: [],
+      },
+      {
+        id: genId('form'),
+        type: 'form_group',
+        props: {
+          fields: [
+            { type: 'text', placeholder: 'Name', required: true },
+            { type: 'email', placeholder: 'E-Mail', required: true },
+            { type: 'tel', placeholder: 'Phone' }
+          ]
+        },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: '14-day free trial', variant: 'primary', action: 'next', fullWidth: true },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const ctaSplitForm: SectionTemplate = {
+  id: 'cta-split-form',
+  name: 'Split Form',
+  description: 'Title left, form with privacy right',
+  category: 'cta',
+  icon: 'columns',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'cta-split' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Get your exclusive discount!', level: 'h1' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Take advantage of our limited-time offer today.' },
+        children: [],
+      },
+      {
+        id: genId('form'),
+        type: 'form_group',
+        props: {
+          fields: [
+            { type: 'text', placeholder: 'Name', required: true },
+            { type: 'email', placeholder: 'E-Mail', required: true }
+          ]
+        },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Get non-binding offer', variant: 'primary', action: 'next', fullWidth: true },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'We treat your data confidentially.', variant: 'small', align: 'center' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const ctaFaq: SectionTemplate = {
+  id: 'cta-faq',
+  name: 'CTA + FAQ',
+  description: 'Title and button left, FAQ right',
+  category: 'cta',
+  icon: 'help-circle',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'cta-split' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Get your exclusive discount!', level: 'h1' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Take advantage of our limited-time offer today.' },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Get non-binding offer', variant: 'primary', action: 'next' },
+        children: [],
+      },
+      {
+        id: genId('faq'),
+        type: 'faq_accordion',
+        props: {
+          items: [
+            { question: 'Is the offer non-binding?', answer: 'Yes, the offer you receive is completely free and non-binding.' },
+            { question: 'How long does it take?', answer: 'You will receive your personalized offer within 24 hours.' },
+          ]
+        },
         children: [],
       },
     ],
@@ -560,7 +897,7 @@ export const ctaUrgency: SectionTemplate = {
 export const ctaDual: SectionTemplate = {
   id: 'cta-dual',
   name: 'Dual CTA',
-  description: 'Primary and secondary options',
+  description: 'Primary and secondary buttons',
   category: 'cta',
   icon: 'mouse-pointer-click',
   createNode: () => ({
@@ -568,6 +905,18 @@ export const ctaDual: SectionTemplate = {
     type: 'section',
     props: { variant: 'cta' },
     children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Ready to get started?', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 24 },
+        children: [],
+      },
       {
         id: genId('button'),
         type: 'cta_button',
@@ -584,53 +933,6 @@ export const ctaDual: SectionTemplate = {
         id: genId('button'),
         type: 'cta_button',
         props: { label: 'Not right now', variant: 'ghost', action: 'dismiss' },
-        children: [],
-      },
-    ],
-  }),
-};
-
-// ============================================================================
-// MEDIA SECTIONS (2 templates)
-// Video and image content
-// ============================================================================
-
-export const mediaVideo: SectionTemplate = {
-  id: 'media-video',
-  name: 'Video',
-  description: 'Embedded video player',
-  category: 'media',
-  icon: 'play',
-  createNode: () => ({
-    id: genId('section'),
-    type: 'section',
-    props: { variant: 'media' },
-    children: [
-      {
-        id: genId('video'),
-        type: 'video_embed',
-        props: { url: '', placeholder: 'Paste your video URL' },
-        children: [],
-      },
-    ],
-  }),
-};
-
-export const mediaImage: SectionTemplate = {
-  id: 'media-image',
-  name: 'Image',
-  description: 'Full-width image',
-  category: 'media',
-  icon: 'image',
-  createNode: () => ({
-    id: genId('section'),
-    type: 'section',
-    props: { variant: 'media' },
-    children: [
-      {
-        id: genId('image'),
-        type: 'image',
-        props: { src: '', alt: 'Image description' },
         children: [],
       },
     ],
@@ -1322,13 +1624,17 @@ export const allSectionTemplates: SectionTemplate[] = [
   // Content (2)
   contentText,
   contentHeadingText,
-  // CTA (3)
+  // CTA (10)
   ctaSimple,
-  ctaUrgency,
+  ctaGrayCard,
+  ctaDarkReviews,
+  ctaDarkCard,
+  ctaGradientLogos,
+  ctaFormSplitReviews,
+  ctaFormSplitSimple,
+  ctaSplitForm,
+  ctaFaq,
   ctaDual,
-  // Media (2)
-  mediaVideo,
-  mediaImage,
   // Embed (2)
   embedCalendar,
   embedEmpty,
@@ -1358,8 +1664,7 @@ export const allSectionTemplates: SectionTemplate[] = [
 export const sectionTemplatesByCategory = {
   hero: [heroSimple, heroReviews, heroLogos, heroSplit, heroFormCard, heroInlineForm, heroGradient, heroDark],
   content: [contentText, contentHeadingText],
-  cta: [ctaSimple, ctaUrgency, ctaDual],
-  media: [mediaVideo, mediaImage],
+  cta: [ctaSimple, ctaGrayCard, ctaDarkReviews, ctaDarkCard, ctaGradientLogos, ctaFormSplitReviews, ctaFormSplitSimple, ctaSplitForm, ctaFaq, ctaDual],
   embed: [embedCalendar, embedEmpty],
   social_proof: [socialProofStars, socialProofLogos, socialProofStats, socialProofBadges],
   features: [featuresSplitChecklist, featuresSplitImage, featuresSplitIcons, features3ColCards, features4ColIcons, features2ColIcons, featuresGrayImage, featuresGrayReviews],
@@ -1372,7 +1677,6 @@ export const categoryLabels: Record<string, string> = {
   hero: 'Hero',
   content: 'Content',
   cta: 'Call to Action',
-  media: 'Media',
   embed: 'Embed',
   social_proof: 'Social Proof',
   features: 'Features',
@@ -1385,7 +1689,6 @@ export const categoryDescriptions: Record<string, string> = {
   hero: 'Opening sections that hook visitors',
   content: 'Text and information blocks',
   cta: 'Conversion buttons and actions',
-  media: 'Video and image content',
   embed: 'Calendars and external widgets',
   social_proof: 'Trust indicators and credibility',
   features: 'Benefits and what\'s included',
@@ -1398,7 +1701,6 @@ export const categoryIcons: Record<string, string> = {
   hero: 'layout',
   content: 'type',
   cta: 'mouse-pointer-click',
-  media: 'play',
   embed: 'calendar',
   social_proof: 'star',
   features: 'package',

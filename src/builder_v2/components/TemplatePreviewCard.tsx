@@ -92,24 +92,6 @@ function TemplatePreview({ template }: { template: SectionTemplate }) {
     );
   }
 
-  // Media templates
-  if (category === 'media') {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className={cn(
-          "rounded bg-white/20 flex items-center justify-center",
-          id.includes('video') ? "w-16 h-10" : "w-14 h-10"
-        )}>
-          {id.includes('video') ? (
-            <div className="w-4 h-4 border-l-4 border-t-2 border-b-2 border-white/60 border-l-white/60 border-t-transparent border-b-transparent" />
-          ) : (
-            <div className="w-4 h-4 rounded-full bg-white/40" />
-          )}
-        </div>
-      </div>
-    );
-  }
-
   // Embed templates (calendar, widgets)
   if (category === 'embed') {
     if (id.includes('calendar')) {

@@ -33,7 +33,7 @@ const BLOCK_CATEGORIES = [
 const SECTION_CATEGORIES = [
   { id: 'hero', label: 'Hero', icon: 'square' as const },
   { id: 'features', label: 'Features', icon: 'grid' as const },
-  { id: 'media', label: 'Media', icon: 'bars' as const },
+  { id: 'cta', label: 'Call to Action', icon: 'sparkles' as const },
   { id: 'embed', label: 'Embed', icon: 'squares' as const },
   { id: 'team', label: 'Team', icon: 'people' as const },
   { id: 'testimonials', label: 'Testimonials', icon: 'quote' as const },
