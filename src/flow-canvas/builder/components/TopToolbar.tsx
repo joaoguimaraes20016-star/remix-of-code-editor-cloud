@@ -471,24 +471,23 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
 
           <div className="toolbar-divider" />
 
-          {/* Preview Toggle - Single Source of Truth */}
+          {/* Preview Toggle - Contextual label within toolbar */}
           <button 
             onClick={onPreviewToggle}
             className={cn(
               'toolbar-preview-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--builder-accent))] focus-visible:ring-offset-1 focus-visible:ring-offset-[hsl(var(--builder-surface))]',
               previewMode 
-                ? 'toolbar-preview-active bg-[hsl(var(--builder-success)/0.15)] text-[hsl(var(--builder-success))] ring-1 ring-[hsl(var(--builder-success)/0.4)]' 
+                ? 'bg-[hsl(var(--builder-accent)/0.15)] text-[hsl(var(--builder-accent))] ring-1 ring-[hsl(var(--builder-accent)/0.3)]' 
                 : 'text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover'
             )}
           >
             {previewMode ? (
               <>
-                <div className="preview-indicator-dot w-2 h-2 rounded-full bg-[hsl(var(--builder-success))] animate-pulse" />
                 <Eye className="w-4 h-4" />
-                <span>Previewing</span>
+                <span>Testing</span>
                 <span className="text-[hsl(var(--builder-text-muted))]">·</span>
-                <span className="preview-exit-text text-[hsl(var(--builder-text-secondary))] group-hover:text-[hsl(var(--builder-success))] transition-colors">
-                  Exit
+                <span className="text-[hsl(var(--builder-text-secondary))] hover:text-[hsl(var(--builder-accent))] transition-colors">
+                  Back to Edit
                 </span>
               </>
             ) : (

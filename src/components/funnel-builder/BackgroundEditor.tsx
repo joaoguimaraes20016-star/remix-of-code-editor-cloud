@@ -42,7 +42,7 @@ const GRADIENT_DIRECTIONS = [
 ];
 
 // Import unified presets from single source of truth
-import { backgroundColorPresets as COLOR_PRESETS } from '@/flow-canvas/builder/utils/presets';
+import { backgroundColorPresetsFlat as COLOR_PRESETS } from '@/flow-canvas/builder/utils/presets';
 
 export function BackgroundEditor({ settings, onChange }: BackgroundEditorProps) {
   const [showImagePicker, setShowImagePicker] = useState(false);

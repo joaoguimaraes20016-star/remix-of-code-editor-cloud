@@ -17,8 +17,8 @@ interface ColorPickerPopoverProps {
   onGradientClick?: () => void;
 }
 
-// Import unified presets from single source of truth
-import { masterColorPresets as presetColors } from '../../utils/presets';
+// Import unified presets from single source of truth (grouped by category)
+import { masterColorPresets as presetColors, inspectorColorPresets as groupedPresets } from '../../utils/presets';
 
 // Check for EyeDropper API support
 const supportsEyeDropper = typeof window !== 'undefined' && 'EyeDropper' in window;
@@ -326,25 +326,70 @@ export const ColorPickerPopover = forwardRef<HTMLButtonElement, ColorPickerPopov
             </div>
           )}
 
-          {/* Preset Colors Grid - 8 columns for 48 colors */}
-          <div className="grid grid-cols-8 gap-1 mb-3">
-            {presetColors.map((preset) => (
-              <button
-                key={preset}
-                onClick={() => handlePresetClick(preset)}
-                className={cn(
-                  'w-6 h-6 rounded-md border transition-all hover:scale-110',
-                  color === preset 
-                    ? 'ring-2 ring-builder-accent border-builder-accent' 
-                    : 'border-builder-border hover:border-builder-text-muted'
-                )}
-                style={{ backgroundColor: preset }}
-              >
-                {color === preset && (
-                  <Check className="w-2.5 h-2.5 mx-auto text-white mix-blend-difference" />
-                )}
-              </button>
-            ))}
+          {/* Organized Color Palette by Category */}
+          <div className="space-y-2.5 mb-3">
+            {/* Neutrals Row */}
+            <div className="grid grid-cols-8 gap-1">
+              {groupedPresets.neutrals.map((preset) => (
+                <button
+                  key={preset}
+                  onClick={() => handlePresetClick(preset)}
+                  className={cn(
+                    'w-6 h-6 rounded-md border transition-all hover:scale-110',
+                    color === preset 
+                      ? 'ring-2 ring-builder-accent border-builder-accent' 
+                      : 'border-builder-border hover:border-builder-text-muted'
+                  )}
+                  style={{ backgroundColor: preset }}
+                >
+                  {color === preset && (
+                    <Check className="w-2.5 h-2.5 mx-auto text-white mix-blend-difference" />
+                  )}
+                </button>
+              ))}
+            </div>
+            
+            {/* Brand Row (purples/pinks) */}
+            <div className="grid grid-cols-8 gap-1">
+              {groupedPresets.brand.map((preset) => (
+                <button
+                  key={preset}
+                  onClick={() => handlePresetClick(preset)}
+                  className={cn(
+                    'w-6 h-6 rounded-md border transition-all hover:scale-110',
+                    color === preset 
+                      ? 'ring-2 ring-builder-accent border-builder-accent' 
+                      : 'border-builder-border hover:border-builder-text-muted'
+                  )}
+                  style={{ backgroundColor: preset }}
+                >
+                  {color === preset && (
+                    <Check className="w-2.5 h-2.5 mx-auto text-white mix-blend-difference" />
+                  )}
+                </button>
+              ))}
+            </div>
+            
+            {/* Combined Warm + Cool Row */}
+            <div className="grid grid-cols-11 gap-1">
+              {[...groupedPresets.warm, ...groupedPresets.cool].map((preset) => (
+                <button
+                  key={preset}
+                  onClick={() => handlePresetClick(preset)}
+                  className={cn(
+                    'w-6 h-6 rounded-md border transition-all hover:scale-110',
+                    color === preset 
+                      ? 'ring-2 ring-builder-accent border-builder-accent' 
+                      : 'border-builder-border hover:border-builder-text-muted'
+                  )}
+                  style={{ backgroundColor: preset }}
+                >
+                  {color === preset && (
+                    <Check className="w-2.5 h-2.5 mx-auto text-white mix-blend-difference" />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Gradient Option */}
