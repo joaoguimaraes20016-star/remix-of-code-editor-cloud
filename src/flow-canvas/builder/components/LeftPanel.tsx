@@ -15,6 +15,7 @@ import {
   Image as ImageIcon,
   ChevronRight,
   ChevronDown,
+  ChevronUp,
   Home,
   HelpCircle,
   Eye,
@@ -99,6 +100,8 @@ interface LeftPanelProps {
   onDeleteStep: (stepId: string) => void;
   onDuplicateStep: (stepId: string) => void;
   onReorderSteps: (fromIndex: number, toIndex: number) => void;
+  onMoveStepUp?: (stepId: string) => void;
+  onMoveStepDown?: (stepId: string) => void;
   onSelectFrame?: (frameId: string, path: string[]) => void;
   onSelectBlock?: (blockId: string, path: string[]) => void;
   onSelectElement?: (elementId: string, path: string[]) => void;
@@ -127,6 +130,10 @@ interface SortablePageItemProps {
   onDuplicateStep: (stepId: string) => void;
   onDeleteStep: (stepId: string) => void;
   onRenameStep?: (stepId: string, newName: string) => void;
+  onMoveUp?: (stepId: string) => void;
+  onMoveDown?: (stepId: string) => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }
 
 const SortablePageItem: React.FC<SortablePageItemProps> = ({
@@ -138,6 +145,10 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
   onDuplicateStep,
   onDeleteStep,
   onRenameStep,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp = true,
+  canMoveDown = true,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(step.name);
@@ -267,6 +278,23 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
             className="text-builder-text hover:bg-builder-surface-hover"
           >
             Duplicate
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-builder-border-subtle" />
+          <DropdownMenuItem 
+            onClick={() => onMoveUp?.(step.id)}
+            disabled={!canMoveUp}
+            className="text-builder-text hover:bg-builder-surface-hover disabled:opacity-50"
+          >
+            <ChevronUp className="w-3.5 h-3.5 mr-2" />
+            Move Up
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => onMoveDown?.(step.id)}
+            disabled={!canMoveDown}
+            className="text-builder-text hover:bg-builder-surface-hover disabled:opacity-50"
+          >
+            <ChevronDown className="w-3.5 h-3.5 mr-2" />
+            Move Down
           </DropdownMenuItem>
           <DropdownMenuSeparator className="bg-builder-border-subtle" />
           <DropdownMenuItem 
@@ -884,6 +912,8 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   onDeleteStep,
   onDuplicateStep,
   onReorderSteps,
+  onMoveStepUp,
+  onMoveStepDown,
   onSelectFrame,
   onSelectBlock,
   onSelectElement,
@@ -1016,6 +1046,10 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
                         onDuplicateStep={onDuplicateStep}
                         onDeleteStep={onDeleteStep}
                         onRenameStep={onRenameStep}
+                        onMoveUp={onMoveStepUp}
+                        onMoveDown={onMoveStepDown}
+                        canMoveUp={index > 0}
+                        canMoveDown={index < steps.length - 1}
                       />
                     );
                   })}
