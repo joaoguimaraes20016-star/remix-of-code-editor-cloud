@@ -933,29 +933,7 @@ const premiumBlocks: BlockTemplate[] = [
       props: {},
     }),
   },
-  {
-    type: 'video-thumbnail-block',
-    label: 'Video Thumbnail',
-    icon: <Play size={16} />,
-    description: 'Click-to-play video card',
-    template: () => ({
-      id: generateId(),
-      type: 'custom',
-      label: 'Video Thumbnail',
-      elements: [{
-        id: generateId(),
-        type: 'video',  // Use 'video' with displayMode: 'thumbnail'
-        content: '',
-        props: {
-          displayMode: 'thumbnail',
-          thumbnailUrl: '',
-          videoUrl: '',
-          overlayStyle: 'gradient'
-        }
-      }],
-      props: {},
-    }),
-  },
+  // NOTE: 'video-thumbnail-block' has been removed - use the 'video' block with displayMode: 'thumbnail' instead
 ];
 
 // ============ BLOCK CATEGORIES ============

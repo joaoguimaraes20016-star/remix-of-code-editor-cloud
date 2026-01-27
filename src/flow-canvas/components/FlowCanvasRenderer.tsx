@@ -28,79 +28,20 @@ import { CanvasRenderer } from '@/flow-canvas/builder/components/CanvasRenderer'
 import { FlowContainerProvider } from '@/flow-canvas/builder/contexts/FlowContainerContext';
 import type { Step, Page, SelectionState } from '@/flow-canvas/types/infostack';
 
-// Helper to convert gradient object to CSS
-function gradientToCSS(gradient: { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> }): string {
-  const stops = (gradient.stops || [{ color: '#8B5CF6', position: 0 }, { color: '#EC4899', position: 100 }])
-    .map(s => `${s.color} ${s.position}%`).join(', ');
-  if (gradient.type === 'radial') {
-    return `radial-gradient(circle, ${stops})`;
-  }
-  return `linear-gradient(${gradient.angle || 135}deg, ${stops})`;
-}
+// Import consolidated utilities from CanvasUtilities (Phase 4: utility consolidation)
+import { CanvasUtilities } from '@/flow-canvas/builder/components/renderers/CanvasUtilities';
+import { gradientToCSS as importedGradientToCSS, type GradientValue } from '@/flow-canvas/builder/components/modals';
+const { shiftHue } = CanvasUtilities;
 
-// Helper to shift hue of a color for theme-aware gradients
-function shiftHue(hex: string, shift = 30): string {
-  try {
-    const color = hex.replace('#', '');
-    if (color.length !== 6) return hex;
-    
-    const r = parseInt(color.substr(0, 2), 16);
-    const g = parseInt(color.substr(2, 2), 16);
-    const b = parseInt(color.substr(4, 2), 16);
-    
-    // Convert RGB to HSL
-    const rNorm = r / 255;
-    const gNorm = g / 255;
-    const bNorm = b / 255;
-    
-    const max = Math.max(rNorm, gNorm, bNorm);
-    const min = Math.min(rNorm, gNorm, bNorm);
-    const l = (max + min) / 2;
-    
-    let h = 0;
-    let s = 0;
-    
-    if (max !== min) {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      
-      switch (max) {
-        case rNorm: h = ((gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0)) / 6; break;
-        case gNorm: h = ((bNorm - rNorm) / d + 2) / 6; break;
-        case bNorm: h = ((rNorm - gNorm) / d + 4) / 6; break;
-      }
-    }
-    
-    // Shift hue
-    h = (h + shift / 360) % 1;
-    
-    // Convert back to RGB
-    const hue2rgb = (p: number, q: number, t: number) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1/6) return p + (q - p) * 6 * t;
-      if (t < 1/2) return q;
-      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-      return p;
-    };
-    
-    let rOut: number, gOut: number, bOut: number;
-    
-    if (s === 0) {
-      rOut = gOut = bOut = l;
-    } else {
-      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-      const p = 2 * l - q;
-      rOut = hue2rgb(p, q, h + 1/3);
-      gOut = hue2rgb(p, q, h);
-      bOut = hue2rgb(p, q, h - 1/3);
-    }
-    
-    const toHex = (n: number) => Math.round(n * 255).toString(16).padStart(2, '0');
-    return `#${toHex(rOut)}${toHex(gOut)}${toHex(bOut)}`;
-  } catch {
-    return hex;
-  }
+// Local type-safe wrapper for gradientToCSS that handles loose types from props
+function gradientToCSS(gradient: { type?: string; angle?: number; stops?: Array<{ color: string; position: number }> }): string {
+  // Coerce to proper GradientValue type
+  const safeGradient: GradientValue = {
+    type: (gradient.type === 'radial' ? 'radial' : 'linear') as 'linear' | 'radial',
+    angle: gradient.angle ?? 135,
+    stops: gradient.stops || [{ color: '#8B5CF6', position: 0 }, { color: '#EC4899', position: 100 }],
+  };
+  return importedGradientToCSS(safeGradient);
 }
 
 // Types

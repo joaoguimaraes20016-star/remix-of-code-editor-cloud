@@ -2,6 +2,13 @@
 // Once the funnel builder persists `content.intent` for each step,
 // this defaulting logic can be removed.
 
+/**
+ * StepIntent for legacy funnel step inference.
+ * 
+ * Note: This differs from the canonical StepIntent in '@/flow-canvas/types/infostack'.
+ * - 'collect' here maps to 'qualify' in the canonical definition
+ * - Future unification should migrate to canonical types
+ */
 export type StepIntent = "capture" | "collect" | "schedule" | "complete";
 
 export type FunnelStepLike = {

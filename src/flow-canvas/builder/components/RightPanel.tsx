@@ -353,6 +353,10 @@ const ELEMENT_SECTIONS = {
   divider: ['dividerStyle'],
   spacer: ['spacerStyle'],
   list: ['listItems', 'listStyle', 'typography'],
+  // Loader element - configurable duration, animation, and colors
+  loader: ['loaderSettings', 'animation'],
+  // Countdown element
+  countdown: ['countdownSettings', 'animation'],
   // Premium elements - handled by PremiumElementInspector
   'gradient-text': ['premium'],
   'stat-number': ['premium'],
@@ -1868,6 +1872,100 @@ const ElementInspector: React.FC<{
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {/* ========== LOADER SETTINGS SECTION ========== */}
+      {element.type === 'loader' && (
+        <CollapsibleSection title="Loader Settings" icon={<Loader2 className="w-4 h-4" />} defaultOpen sectionId="loaderSettings">
+          <div className="pt-3 space-y-4">
+            {/* Animation Type */}
+            <FieldGroup label="Animation Type">
+              <Select 
+                value={(element.props?.animationType as string) || 'analyzing'}
+                onValueChange={(value) => handlePropsChange('animationType', value)}
+              >
+                <SelectTrigger className="builder-input"><SelectValue placeholder="Analyzing" /></SelectTrigger>
+                <SelectContent className="bg-background border-border">
+                  <SelectItem value="analyzing">Analyzing (Steps)</SelectItem>
+                  <SelectItem value="spinner">Spinner</SelectItem>
+                  <SelectItem value="progress">Progress Bar</SelectItem>
+                  <SelectItem value="dots">Dots</SelectItem>
+                  <SelectItem value="pulse">Pulse</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldGroup>
+
+            {/* Duration */}
+            <FieldGroup label="Duration" hint="Total animation duration in seconds">
+              <div className="flex items-center gap-2">
+                <CommitSlider
+                  value={((element.props?.duration as number) || 3000) / 1000}
+                  onValueCommit={(v) => handlePropsChange('duration', v * 1000)}
+                  min={1}
+                  max={15}
+                  step={0.5}
+                  className="flex-1"
+                />
+                <span className="text-xs text-builder-text-muted w-10 text-right">
+                  {(((element.props?.duration as number) || 3000) / 1000).toFixed(1)}s
+                </span>
+              </div>
+            </FieldGroup>
+
+            {/* Auto Advance */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Auto Advance</span>
+              <TogglePill
+                value={(element.props?.autoAdvance ?? true) as boolean}
+                onToggle={() => handlePropsChange('autoAdvance', !(element.props?.autoAdvance ?? true))}
+              />
+            </div>
+
+            {/* Show Progress */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-builder-text-muted">Show Progress</span>
+              <TogglePill
+                value={(element.props?.showProgress ?? true) as boolean}
+                onToggle={() => handlePropsChange('showProgress', !(element.props?.showProgress ?? true))}
+              />
+            </div>
+
+            {/* Size */}
+            <FieldGroup label="Size">
+              <Select 
+                value={(element.props?.size as string) || 'md'}
+                onValueChange={(value) => handlePropsChange('size', value)}
+              >
+                <SelectTrigger className="builder-input"><SelectValue placeholder="Medium" /></SelectTrigger>
+                <SelectContent className="bg-background border-border">
+                  <SelectItem value="sm">Small</SelectItem>
+                  <SelectItem value="md">Medium</SelectItem>
+                  <SelectItem value="lg">Large</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldGroup>
+
+            {/* Loader Text */}
+            <FieldGroup label="Loading Text">
+              <Input
+                value={element.content || 'Analyzing your results...'}
+                onChange={(e) => onUpdate({ content: e.target.value })}
+                placeholder="Analyzing your results..."
+                className="builder-input"
+              />
+            </FieldGroup>
+
+            {/* Complete Text */}
+            <FieldGroup label="Complete Text">
+              <Input
+                value={(element.props?.completeText as string) || 'Complete!'}
+                onChange={(e) => handlePropsChange('completeText', e.target.value)}
+                placeholder="Complete!"
+                className="builder-input"
+              />
+            </FieldGroup>
           </div>
         </CollapsibleSection>
       )}

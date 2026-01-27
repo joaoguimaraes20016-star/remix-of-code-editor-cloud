@@ -1,6 +1,13 @@
 // src/lib/funnel/types.ts
 // Canonical types for the Funnel System
 
+/**
+ * StepIntent for legacy funnel system.
+ * 
+ * Note: This differs from the canonical StepIntent in '@/flow-canvas/types/infostack'.
+ * - 'collect' here maps to 'qualify' in the canonical definition
+ * - Future unification should migrate to canonical types
+ */
 export type StepIntent = 'capture' | 'collect' | 'schedule' | 'complete';
 
 export type StepType = 

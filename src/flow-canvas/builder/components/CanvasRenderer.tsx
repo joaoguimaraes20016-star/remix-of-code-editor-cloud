@@ -3397,7 +3397,12 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                     primary: (element.props?.colors as { primary?: string })?.primary || element.props?.primaryColor as string || primaryColor,
                     text: (element.props?.colors as { text?: string })?.text || element.props?.color as string,
                   }}
+                  autoAdvance={element.props?.autoAdvance !== false}
                   isBuilder={true}
+                  onComplete={() => {
+                    // In editor/builder, just log completion for debugging
+                    console.log('[Builder] Loader animation complete');
+                  }}
                 />
               </React.Suspense>
             </div>
