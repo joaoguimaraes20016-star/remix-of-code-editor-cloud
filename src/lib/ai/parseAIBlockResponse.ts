@@ -18,15 +18,16 @@ const VALID_ELEMENT_TYPES: ElementType[] = [
   'multiple-choice', 'single-choice',
   // Premium elements
   'gradient-text', 'underline-text', 'stat-number', 'avatar-group',
-  'ticker', 'badge', 'icon-text', 'process-step', 'video-thumbnail'
+  'ticker', 'badge', 'icon-text', 'process-step', 'faq'
 ];
 
 // Valid block types from the schema
+// Note: spacer and divider are ELEMENTS, not BlockTypes - use 'custom' block to contain them
 const VALID_BLOCK_TYPES: BlockType[] = [
   'hero', 'form-field', 'cta', 'testimonial', 'media', 'text-block',
   'custom', 'booking', 'application-flow', 'capture-flow-embed',
   'feature', 'pricing', 'faq', 'about', 'team', 'trust',
-  'logo-bar', 'footer', 'contact', 'spacer', 'divider',
+  'logo-bar', 'footer', 'contact',
   // Premium blocks
   'credibility-bar', 'stats-row', 'process-flow', 'urgency-banner',
   'ticker-bar', 'video-hero', 'split-hero', 'guarantee'

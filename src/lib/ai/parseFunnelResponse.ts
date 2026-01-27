@@ -103,9 +103,10 @@ function convertAIElement(aiElement: AIElement, brandKit: BrandKit): Element {
     element.props.step = aiElement.props?.step || 1;
   }
   
-  // Handle video-thumbnail
+  // Handle video-thumbnail - convert to video with displayMode
   if (aiElement.type === 'video-thumbnail') {
-    element.type = 'video-thumbnail';
+    element.type = 'video';
+    element.props.displayMode = 'thumbnail';
     element.props.placeholder = true;
     element.props.overlayStyle = aiElement.props?.overlayStyle || 'gradient';
   }
@@ -150,7 +151,7 @@ function normalizeElementType(type: string): ElementType {
     'multiple-choice', 'single-choice',
     // Premium element types
     'gradient-text', 'underline-text', 'stat-number', 'avatar-group',
-    'ticker', 'badge', 'icon-text', 'process-step', 'video-thumbnail'
+    'ticker', 'badge', 'icon-text', 'process-step', 'faq'
   ];
   
   return validTypes.includes(normalized as ElementType) ? normalized as ElementType : 'text';
@@ -214,7 +215,7 @@ function normalizeBlockType(type: string): BlockType {
     'hero', 'form-field', 'cta', 'testimonial', 'media', 'text-block',
     'custom', 'booking', 'application-flow', 'capture-flow-embed',
     'feature', 'pricing', 'faq', 'about', 'team', 'trust', 'logo-bar',
-    'footer', 'contact', 'spacer', 'divider',
+    'footer', 'contact',
     // Premium block types
     'credibility-bar', 'stats-row', 'process-flow', 'urgency-banner',
     'ticker-bar', 'video-hero', 'split-hero', 'guarantee'

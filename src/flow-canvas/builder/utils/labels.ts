@@ -1,28 +1,45 @@
 // Human-readable labels for all builder types
 // This file maps internal developer terminology to user-friendly display text
+//
+// ARCHITECTURE NOTE:
+// - Frame = "Section" in UI (visual container)
+// - Block = Content group that holds Elements
+// - Element = Atomic content unit (text, button, input, etc.)
+//
+// Section-level types (hero, footer, etc.) are FRAME TEMPLATES.
+// spacer, divider, faq are ELEMENTS - use a 'custom' block to contain them.
 
-import { BlockType, ElementType, StepIntent, StepType, SubmitMode } from '../../types/infostack';
+import { BlockType, ElementType, StepIntent, StepType, SubmitMode, FrameTemplateType } from '../../types/infostack';
 
-// Block type labels
-// Section types - pre-built containers that hold content
-const sectionTypes = new Set([
-  'hero', 'cta', 'about', 'testimonial', 'feature', 'pricing', 
-  'faq', 'team', 'trust', 'footer', 'contact', 'custom'
+// Frame template types - these create full sections (Frames)
+// Used for "Add Section" UI but stored as BlockType for backwards compatibility
+const frameTemplateTypes = new Set<string>([
+  'hero', 'cta', 'about', 'testimonial', 'feature', 'pricing', 'faq',
+  'team', 'trust', 'footer', 'contact', 'custom',
+  'credibility-bar', 'stats-row', 'process-flow', 'urgency-banner',
+  'ticker-bar', 'video-hero', 'split-hero', 'guarantee'
+]);
+
+// Content block types - these go inside Frames
+const contentBlockTypes = new Set<string>([
+  'form-field', 'cta', 'testimonial', 'media', 'text-block', 
+  'custom', 'booking', 'application-flow', 'logo-bar'
 ]);
 
 // Block type labels - NO "Section" in content block names
 export const blockTypeLabels: Record<BlockType, string> = {
-  hero: 'Hero',
-  'form-field': 'Input Fields',  // Renamed from "Form Field"
+  // Core content blocks
+  'form-field': 'Input Fields',
   cta: 'Call to Action',
   testimonial: 'Testimonial',
   media: 'Media',
   'text-block': 'Text',
-  custom: 'Empty Section',
+  custom: 'Content Block',
   booking: 'Booking',
-  'application-flow': 'Multi-Step',  // User-friendly name - just a layout with steps
-  'capture-flow-embed': 'Multi-Step',  // @deprecated - use application-flow instead
-  // Extended types
+  'application-flow': 'Multi-Step',
+  'capture-flow-embed': 'Multi-Step',  // @deprecated
+  // Section template types (Frame templates)
+  hero: 'Hero',
   feature: 'Feature',
   pricing: 'Pricing',
   faq: 'FAQ',
@@ -32,9 +49,7 @@ export const blockTypeLabels: Record<BlockType, string> = {
   'logo-bar': 'Logo Bar',
   footer: 'Footer',
   contact: 'Contact',
-  spacer: 'Spacer',
-  divider: 'Divider',
-  // Premium block types
+  // Premium section templates
   'credibility-bar': 'Credibility Bar',
   'stats-row': 'Stats Row',
   'process-flow': 'Process Flow',
@@ -45,28 +60,28 @@ export const blockTypeLabels: Record<BlockType, string> = {
   guarantee: 'Guarantee',
 };
 
-// Check if a block type is a "Section" (container) vs "Content" (element)
-export const isSectionType = (type: BlockType): boolean => sectionTypes.has(type);
+// Check if a block type is a Frame template (section) vs content block
+export const isFrameTemplate = (type: BlockType): boolean => frameTemplateTypes.has(type);
 
-// Get the category badge for a block type
-// "Container" for section types, "Content" for content blocks, "Layout" for spacer/divider
-export const getBlockCategory = (type: BlockType): 'Container' | 'Content' | 'Layout' => {
-  if (type === 'spacer' || type === 'divider') return 'Layout';
-  return sectionTypes.has(type) ? 'Container' : 'Content';
+// Legacy alias for backwards compatibility
+export const isSectionType = isFrameTemplate;
+
+// Get the category for a block type
+// "Section" for frame templates, "Content" for content blocks
+export const getBlockCategory = (type: BlockType): 'Section' | 'Content' => {
+  return frameTemplateTypes.has(type) ? 'Section' : 'Content';
 };
 
 // Content blocks should NOT show layout controls (Direction, Justify, Align, etc.)
-// Section types are containers - they control layout at the Frame level, not Block level
-// Content blocks never need layout controls
+// Layout controls belong at the Frame (Section) level, not Block level
 export const shouldShowLayoutControls = (type: BlockType): boolean => {
-  // Section types don't show layout controls at the Block level
-  if (isSectionType(type)) return false;
-  // Pure content blocks - no layout controls
-  const contentOnlyTypes = new Set(['text-block', 'media', 'form-field']);
+  // Only show layout controls for actual content container blocks
+  // Pure content blocks like text-block, media, form-field don't need them
+  const contentOnlyTypes = new Set(['text-block', 'media', 'form-field', 'cta', 'testimonial']);
   return !contentOnlyTypes.has(type);
 };
 
-// Element type labels
+// Element type labels - atomic content units
 export const elementTypeLabels: Record<ElementType, string> = {
   text: 'Text',
   heading: 'Heading',
@@ -76,7 +91,7 @@ export const elementTypeLabels: Record<ElementType, string> = {
   checkbox: 'Checkbox',
   radio: 'Radio Button',
   image: 'Image',
-  video: 'Video',
+  video: 'Video',           // Use displayMode: 'thumbnail' for video thumbnails
   divider: 'Divider',
   spacer: 'Spacer',
   icon: 'Icon',
@@ -92,7 +107,6 @@ export const elementTypeLabels: Record<ElementType, string> = {
   badge: 'Badge',
   'icon-text': 'Icon Text',
   'process-step': 'Process Step',
-  'video-thumbnail': 'Video Thumbnail',
   // Functional element types
   countdown: 'Countdown Timer',
   loader: 'Loader',

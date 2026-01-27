@@ -2218,18 +2218,18 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           </div>
         );
 
-      case 'video':
-      case 'video-thumbnail': {
+      case 'video': {
         // UNIFIED VIDEO ELEMENT: handles both embed and thumbnail modes
+        // video-thumbnail is deprecated - use displayMode: 'thumbnail' instead
         const videoSettings = element.props?.videoSettings as { url?: string; platform?: string; autoplay?: boolean; muted?: boolean; loop?: boolean } | undefined;
         const videoUrl = videoSettings?.url || (element.props?.videoUrl as string);
         const videoPlatform = videoSettings?.platform || 'youtube';
         const thumbnailUrl = element.props?.thumbnailUrl as string;
         
         // Display mode: 'embed' shows iframe, 'thumbnail' shows clickable thumbnail
-        // Auto-detect: if URL exists and no explicit mode, use embed; otherwise thumbnail
+        // Auto-detect: if displayMode is set, use it; otherwise if URL exists, use embed
         const displayMode = (element.props?.displayMode as 'embed' | 'thumbnail') || 
-          (element.type === 'video-thumbnail' ? 'thumbnail' : (videoUrl ? 'embed' : 'thumbnail'));
+          (videoUrl ? 'embed' : 'thumbnail');
         
         // Thumbnail styling
         const overlayStyle = (element.props?.overlayStyle as string) || 'gradient';

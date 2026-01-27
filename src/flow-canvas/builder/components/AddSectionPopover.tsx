@@ -150,10 +150,10 @@ const basicBlocks: BlockTemplate[] = [
     description: 'Vertical space',
     template: () => ({
       id: generateId(),
-      type: 'spacer',
+      type: 'custom',  // spacer is an Element, wrapped in 'custom' block
       label: 'Spacer',
-      elements: [],
-      props: { height: 32 },
+      elements: [{ id: generateId(), type: 'spacer', content: '', props: { height: 32 } }],
+      props: {},
     }),
   },
   {
@@ -163,10 +163,10 @@ const basicBlocks: BlockTemplate[] = [
     description: 'Horizontal line',
     template: (t) => ({
       id: generateId(),
-      type: 'divider',
+      type: 'custom',  // divider is an Element, wrapped in 'custom' block
       label: 'Divider',
-      elements: [],
-      props: { style: 'solid', color: t.borderColor },
+      elements: [{ id: generateId(), type: 'divider', content: '', props: { style: 'solid', color: t.borderColor } }],
+      props: {},
     }),
   },
 ];
@@ -416,7 +416,7 @@ const sectionCategories: SectionCategory[] = [
             { id: generateId(), type: 'heading', content: 'The System That Turns Long-Form Into', props: { level: 1, color: t.textColor } },
             { id: generateId(), type: 'gradient-text', content: 'Viral Content', props: { gradient: t.accentGradient } },
             { id: generateId(), type: 'text', content: 'Watch this free training to learn the exact framework used by 9,943+ business owners', props: { color: t.mutedTextColor } },
-            { id: generateId(), type: 'video-thumbnail', content: '', props: { placeholder: true, aspectRatio: '16:9' } },
+            { id: generateId(), type: 'video', content: '', props: { displayMode: 'thumbnail', placeholder: true, aspectRatio: '16:9' } },
             { id: generateId(), type: 'button', content: 'BOOK YOUR FREE STRATEGY CALL', props: { variant: 'primary', size: 'xl', backgroundColor: t.primaryColor } },
             { id: generateId(), type: 'text', content: 'Join 9,943+ entrepreneurs already using this system', props: { variant: 'caption', color: t.captionColor } },
           ],
@@ -668,7 +668,7 @@ const sectionCategories: SectionCategory[] = [
           elements: [
             { id: generateId(), type: 'badge', content: 'WATCH NOW', props: { variant: 'premium', backgroundColor: t.badgeBg, textColor: t.badgeText } },
             { id: generateId(), type: 'heading', content: 'Free Training: The Exact System We Use', props: { level: 2, color: t.textColor } },
-            { id: generateId(), type: 'video-thumbnail', content: '', props: { placeholder: true, aspectRatio: '16:9', className: 'rounded-xl shadow-2xl' } },
+            { id: generateId(), type: 'video', content: '', props: { displayMode: 'thumbnail', placeholder: true, aspectRatio: '16:9', className: 'rounded-xl shadow-2xl' } },
             { id: generateId(), type: 'text', content: 'Over 9,943 business owners have watched this training', props: { variant: 'caption', color: t.captionColor } },
           ],
           props: { alignment: 'center', className: 'py-12' },
@@ -853,7 +853,7 @@ const sectionCategories: SectionCategory[] = [
           type: 'testimonial',
           label: 'Video Testimonial',
           elements: [
-            { id: generateId(), type: 'video-thumbnail', content: '', props: { placeholder: true, aspectRatio: '16:9', className: 'rounded-xl' } },
+            { id: generateId(), type: 'video', content: '', props: { displayMode: 'thumbnail', placeholder: true, aspectRatio: '16:9', className: 'rounded-xl' } },
             { id: generateId(), type: 'text', content: '"This changed everything for my business"', props: { className: 'text-lg font-semibold mt-4', color: t.textColor } },
             { id: generateId(), type: 'text', content: 'John Smith, Founder @ AgencyXYZ', props: { variant: 'caption', color: t.captionColor } },
           ],

@@ -1357,8 +1357,9 @@ export const PremiumElementInspector: React.FC<PremiumElementInspectorProps> = (
     );
   }
 
-  // ========== VIDEO THUMBNAIL ==========
-  if (element.type === 'video-thumbnail') {
+  // ========== VIDEO THUMBNAIL (handled by video element with displayMode: 'thumbnail') ==========
+  // video-thumbnail is deprecated - video elements with displayMode: 'thumbnail' are handled by main video inspector
+  if (element.type === 'video' && element.props?.displayMode === 'thumbnail') {
     return (
       <div className="space-y-0">
         <Section title="Video" icon={<Play className="w-4 h-4" />} defaultOpen>
