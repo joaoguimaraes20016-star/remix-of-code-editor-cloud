@@ -26,7 +26,7 @@ export interface SectionPickerProps {
 // Block categories (basic elements) - show tile grid
 const BLOCK_CATEGORIES = [
   { id: 'content', label: 'Basic blocks', icon: 'text' as const },
-  { id: 'cta', label: 'Interactive blocks', icon: 'sparkles' as const },
+  { id: 'interactive', label: 'Interactive blocks', icon: 'sparkles' as const },
 ] as const;
 
 // Section categories (full sections) - show template gallery
@@ -50,7 +50,7 @@ function getTemplatesForCategory(categoryId: string): SectionTemplate[] {
 
 // Check if category is a block category (shows tile grid)
 function isBlockCategory(categoryId: string): boolean {
-  return categoryId === 'content' || categoryId === 'cta';
+  return categoryId === 'content' || categoryId === 'interactive';
 }
 
 export function SectionPicker({
