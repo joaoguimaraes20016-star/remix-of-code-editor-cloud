@@ -15,7 +15,7 @@ export interface SectionTemplate {
   id: string;
   name: string;
   description: string;
-  category: 'hero' | 'content' | 'cta' | 'about_us' | 'social_proof' | 'features' | 'testimonials' | 'team' | 'faq';
+  category: 'hero' | 'content' | 'cta' | 'about_us' | 'quiz_form' | 'social_proof' | 'features' | 'testimonials' | 'team' | 'faq';
   icon: string;
   createNode: () => CanvasNode;
 }
@@ -1326,6 +1326,404 @@ export const aboutContactMap: SectionTemplate = {
 };
 
 // ============================================================================
+// QUIZ/FORM SECTIONS (9 templates) - Perspective-Style
+// Interactive quiz and form templates for lead qualification
+// ============================================================================
+
+export const quizSplitBenefits: SectionTemplate = {
+  id: 'quiz-split-benefits',
+  name: 'Quiz + Benefits',
+  description: 'Quiz question with benefits card',
+  category: 'quiz_form',
+  icon: 'list',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'quiz-split' },
+    children: [
+      {
+        id: genId('badge'),
+        type: 'badge',
+        props: { text: 'Tell us about your goals', variant: 'primary' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'What is your goal with the Community?', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('choice'),
+        type: 'choice_group',
+        props: {
+          layout: 'list',
+          options: [
+            { label: 'Gain loyal fans', icon: 'trophy' },
+            { label: 'Secure competitive advantage', icon: 'rocket' },
+            { label: 'Create customer loyalty', icon: 'star' },
+            { label: 'Receive support', icon: 'phone' },
+          ],
+        },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Submit and Continue', variant: 'primary', action: 'next', fullWidth: true },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const quizCenteredSimple: SectionTemplate = {
+  id: 'quiz-centered-simple',
+  name: 'Quiz Centered',
+  description: 'Centered quiz with 2x2 choice grid',
+  category: 'quiz_form',
+  icon: 'grid-2x2',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'quiz-centered' },
+    children: [
+      {
+        id: genId('badge'),
+        type: 'badge',
+        props: { text: 'One last Question', variant: 'primary' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'What is your Community goal?', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Answer the question to find the right course for you.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('choice'),
+        type: 'choice_group',
+        props: {
+          layout: 'grid-2x2',
+          variant: 'outline',
+          options: [
+            { label: 'Gain loyal fans', icon: 'trophy' },
+            { label: 'Secure competitive advantage', icon: 'rocket' },
+            { label: 'Create customer loyalty', icon: 'star' },
+            { label: 'Receive support', icon: 'phone' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const quizCenteredFilled: SectionTemplate = {
+  id: 'quiz-centered-filled',
+  name: 'Quiz Filled',
+  description: 'Centered quiz with filled button options',
+  category: 'quiz_form',
+  icon: 'check-square',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'quiz-centered' },
+    children: [
+      {
+        id: genId('badge'),
+        type: 'badge',
+        props: { text: 'One last Question', variant: 'primary' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'What is your Community goal?', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Answer the question to find the right course for you.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('choice'),
+        type: 'choice_group',
+        props: {
+          layout: 'grid-2x2',
+          variant: 'filled',
+          options: [
+            { label: 'Gain loyal fans', icon: 'trophy' },
+            { label: 'Secure competitive advantage', icon: 'rocket' },
+            { label: 'Create customer loyalty', icon: 'star' },
+            { label: 'Receive support', icon: 'phone' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const quizCenteredGray: SectionTemplate = {
+  id: 'quiz-centered-gray',
+  name: 'Quiz Gray BG',
+  description: 'Quiz with gray background',
+  category: 'quiz_form',
+  icon: 'square',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'quiz-centered', background: 'gray' },
+    children: [
+      {
+        id: genId('badge'),
+        type: 'badge',
+        props: { text: 'One last Question', variant: 'primary' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'What is your Community goal?', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Answer the question to find the right course for you.', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('choice'),
+        type: 'choice_group',
+        props: {
+          layout: 'grid-2x2',
+          variant: 'outline',
+          options: [
+            { label: 'Gain loyal fans', icon: 'trophy' },
+            { label: 'Secure competitive advantage', icon: 'rocket' },
+            { label: 'Create customer loyalty', icon: 'star' },
+            { label: 'Receive support', icon: 'phone' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const quizCenteredCard: SectionTemplate = {
+  id: 'quiz-centered-card',
+  name: 'Quiz Card',
+  description: 'Quiz inside a card container',
+  category: 'quiz_form',
+  icon: 'credit-card',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'quiz-card', background: 'gray' },
+    children: [
+      {
+        id: genId('badge'),
+        type: 'badge',
+        props: { text: 'One last Question', variant: 'primary' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'What is your Community goal?', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('choice'),
+        type: 'choice_group',
+        props: {
+          layout: 'grid-2x2',
+          variant: 'outline',
+          options: [
+            { label: 'Gain loyal fans', icon: 'trophy' },
+            { label: 'Secure competitive advantage', icon: 'rocket' },
+            { label: 'Create customer loyalty', icon: 'star' },
+            { label: 'Receive support', icon: 'phone' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const quizImageCards: SectionTemplate = {
+  id: 'quiz-image-cards',
+  name: 'Quiz Image Cards',
+  description: '4 image cards in a row',
+  category: 'quiz_form',
+  icon: 'image',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'quiz-centered' },
+    children: [
+      {
+        id: genId('badge'),
+        type: 'badge',
+        props: { text: 'One last Question', variant: 'primary' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'What is your Community goal?', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('choice'),
+        type: 'choice_group',
+        props: {
+          layout: 'grid-4',
+          variant: 'image-card',
+          options: [
+            { label: 'Gain loyal fans', imageUrl: '' },
+            { label: 'Stay competitive', imageUrl: '' },
+            { label: 'Build loyalty', imageUrl: '' },
+            { label: 'Get support', imageUrl: '' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const quizImageCardsGray: SectionTemplate = {
+  id: 'quiz-image-cards-gray',
+  name: 'Quiz Images Gray',
+  description: 'Image cards with gray background',
+  category: 'quiz_form',
+  icon: 'image',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'quiz-centered', background: 'gray' },
+    children: [
+      {
+        id: genId('badge'),
+        type: 'badge',
+        props: { text: 'One last Question', variant: 'primary' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'What is your Community goal?', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('choice'),
+        type: 'choice_group',
+        props: {
+          layout: 'grid-4',
+          variant: 'image-card',
+          options: [
+            { label: 'Gain loyal fans', imageUrl: '' },
+            { label: 'Stay competitive', imageUrl: '' },
+            { label: 'Build loyalty', imageUrl: '' },
+            { label: 'Get support', imageUrl: '' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const quiz2Images: SectionTemplate = {
+  id: 'quiz-2-images',
+  name: 'Quiz 2 Options',
+  description: 'Two large image cards',
+  category: 'quiz_form',
+  icon: 'columns',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'quiz-centered' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Choose your Model', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Which model would you like to test drive?', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('choice'),
+        type: 'choice_group',
+        props: {
+          layout: 'grid-2',
+          variant: 'image-card-large',
+          options: [
+            { label: 'Model A', imageUrl: '' },
+            { label: 'Model B', imageUrl: '' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const quizSplitInfo: SectionTemplate = {
+  id: 'quiz-split-info',
+  name: 'Quiz + Info',
+  description: 'Quiz with info card right',
+  category: 'quiz_form',
+  icon: 'layout',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'quiz-split' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'What is your Community goal?', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('choice'),
+        type: 'choice_group',
+        props: {
+          layout: 'grid-2x2',
+          variant: 'image-card',
+          options: [
+            { label: 'Gain loyal fans', imageUrl: '' },
+            { label: 'Stay competitive', imageUrl: '' },
+            { label: 'Build loyalty', imageUrl: '' },
+            { label: 'Get support', imageUrl: '' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// ============================================================================
 // SOCIAL PROOF SECTIONS (4 templates)
 // Trust indicators and credibility builders
 // ============================================================================
@@ -1991,6 +2389,16 @@ export const allSectionTemplates: SectionTemplate[] = [
   aboutContactInfo,
   aboutContactImage,
   aboutContactMap,
+  // Quiz/Form (9)
+  quizSplitBenefits,
+  quizCenteredSimple,
+  quizCenteredFilled,
+  quizCenteredGray,
+  quizCenteredCard,
+  quizImageCards,
+  quizImageCardsGray,
+  quiz2Images,
+  quizSplitInfo,
   // Social Proof (4)
   socialProofStars,
   socialProofLogos,
@@ -2019,6 +2427,7 @@ export const sectionTemplatesByCategory = {
   content: [contentText, contentHeadingText],
   cta: [ctaSimple, ctaGrayCard, ctaDarkReviews, ctaDarkCard, ctaGradientLogos, ctaFormSplitReviews, ctaFormSplitSimple, ctaSplitForm, ctaFaq, ctaDual],
   about_us: [aboutSplitIcons, aboutSplitFaq, aboutFullImage, aboutLogos, about2ColText, aboutSplitImage, aboutContactInfo, aboutContactImage, aboutContactMap],
+  quiz_form: [quizSplitBenefits, quizCenteredSimple, quizCenteredFilled, quizCenteredGray, quizCenteredCard, quizImageCards, quizImageCardsGray, quiz2Images, quizSplitInfo],
   social_proof: [socialProofStars, socialProofLogos, socialProofStats, socialProofBadges],
   features: [featuresSplitChecklist, featuresSplitImage, featuresSplitIcons, features3ColCards, features4ColIcons, features2ColIcons, featuresGrayImage, featuresGrayReviews],
   testimonials: [testimonialSingle, testimonialCarousel],
@@ -2031,6 +2440,7 @@ export const categoryLabels: Record<string, string> = {
   content: 'Content',
   cta: 'Call to Action',
   about_us: 'About Us',
+  quiz_form: 'Quiz/Form',
   social_proof: 'Social Proof',
   features: 'Features',
   testimonials: 'Testimonials',
@@ -2043,6 +2453,7 @@ export const categoryDescriptions: Record<string, string> = {
   content: 'Text and information blocks',
   cta: 'Conversion buttons and actions',
   about_us: 'Company info and contact',
+  quiz_form: 'Interactive quizzes and forms',
   social_proof: 'Trust indicators and credibility',
   features: 'Benefits and what\'s included',
   testimonials: 'Customer success stories',
@@ -2055,6 +2466,7 @@ export const categoryIcons: Record<string, string> = {
   content: 'type',
   cta: 'mouse-pointer-click',
   about_us: 'building',
+  quiz_form: 'list-checks',
   social_proof: 'star',
   features: 'package',
   testimonials: 'quote',

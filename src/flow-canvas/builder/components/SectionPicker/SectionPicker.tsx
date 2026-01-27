@@ -35,6 +35,7 @@ const SECTION_CATEGORIES = [
   { id: 'features', label: 'Features', icon: 'grid' as const },
   { id: 'cta', label: 'Call to Action', icon: 'sparkles' as const },
   { id: 'about_us', label: 'About Us', icon: 'squares' as const },
+  { id: 'quiz_form', label: 'Quiz/Form', icon: 'sparkles' as const },
   { id: 'team', label: 'Team', icon: 'people' as const },
   { id: 'testimonials', label: 'Testimonials', icon: 'quote' as const },
   { id: 'social_proof', label: 'Trust', icon: 'grid' as const },
