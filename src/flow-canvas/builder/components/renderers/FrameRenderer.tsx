@@ -202,10 +202,11 @@ export const FrameRenderer: React.FC<FrameRendererProps> = ({
       {/* Frame content with padding */}
       <div 
         style={{
-          paddingTop: frame.paddingVertical || 32,
-          paddingBottom: frame.paddingVertical || 32,
-          paddingLeft: isFullWidth ? 16 : (frame.paddingHorizontal || 32),
-          paddingRight: isFullWidth ? 16 : (frame.paddingHorizontal || 32),
+          // Reduced default padding from 32px to 16px for tighter sections
+          paddingTop: frame.paddingVertical ?? 16,
+          paddingBottom: frame.paddingVertical ?? 16,
+          paddingLeft: isFullWidth ? 16 : (frame.paddingHorizontal ?? 24),
+          paddingRight: isFullWidth ? 16 : (frame.paddingHorizontal ?? 24),
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: frame.blockGap || 12 }}>

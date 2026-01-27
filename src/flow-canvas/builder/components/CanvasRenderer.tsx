@@ -4730,10 +4730,11 @@ const FrameRenderer: React.FC<FrameRendererProps> = ({
       <div 
         className="relative z-10"
         style={{
-          paddingTop: frame.paddingVertical || 32,
-          paddingBottom: frame.paddingVertical || 32,
-          paddingLeft: isFullWidth ? 16 : (frame.paddingHorizontal || 32),
-          paddingRight: isFullWidth ? 16 : (frame.paddingHorizontal || 32),
+          // Reduced default padding from 32px to 16px for tighter sections
+          paddingTop: frame.paddingVertical ?? 16,
+          paddingBottom: frame.paddingVertical ?? 16,
+          paddingLeft: isFullWidth ? 16 : (frame.paddingHorizontal ?? 24),
+          paddingRight: isFullWidth ? 16 : (frame.paddingHorizontal ?? 24),
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: frame.blockGap || 12 }}>
@@ -5066,8 +5067,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
           />
         )}
         
-        {/* Spacer at top */}
-        <div className="pt-4" />
+        {/* Minimal spacer at top - reduced from pt-4 to pt-1 to minimize gap above first section */}
+        <div className="pt-1" />
 
         {/* Canvas Container with Device Frame */}
         <div className={cn('mx-auto px-8 pb-8 overflow-x-hidden', deviceWidths[deviceMode])}>
