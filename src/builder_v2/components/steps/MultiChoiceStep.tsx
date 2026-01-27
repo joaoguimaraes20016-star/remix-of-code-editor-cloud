@@ -53,36 +53,43 @@ export function MultiChoiceStep({
           "step-options",
           hasImages && "step-options--perspective"
         )}>
+        {/* A5: Normalize - all options use card layout when ANY has image */}
           {options.map((option: any) => (
             <button
               key={option.id}
               className={cn(
                 "step-option",
-                hasImages && option.image && "step-option--card"
+                hasImages && "step-option--card"
               )}
               style={{
-                backgroundColor: hasImages ? 'transparent' : 'rgba(255,255,255,0.08)',
+                backgroundColor: hasImages ? 'transparent' : 'hsl(0 0% 100% / 0.08)',
                 borderRadius: `${d.borderRadius}px`,
                 color: d.textColor,
               }}
             >
-              {/* Image card layout */}
-              {hasImages && option.image && (
+              {/* Image card layout - show image or emoji placeholder */}
+              {hasImages && (
                 <div 
                   className="step-option-image"
                   style={{
-                    backgroundImage: `url(${option.image})`,
+                    backgroundImage: option.image ? `url(${option.image})` : 'none',
+                    backgroundColor: option.image ? undefined : 'hsl(0 0% 100% / 0.06)',
                     borderRadius: `${d.borderRadius}px ${d.borderRadius}px 0 0`,
                   }}
-                />
+                >
+                  {/* Show emoji as placeholder if no image */}
+                  {!option.image && option.emoji && (
+                    <span className="step-option-placeholder-emoji">{option.emoji}</span>
+                  )}
+                </div>
               )}
               
               {/* Label area with optional emoji */}
               <div className={cn(
                 "step-option-content",
-                hasImages && option.image && "step-option-content--card"
+                hasImages && "step-option-content--card"
               )}
-              style={hasImages && option.image ? {
+              style={hasImages ? {
                 backgroundColor: d.buttonColor || 'hsl(var(--primary))',
                 borderRadius: `0 0 ${d.borderRadius}px ${d.borderRadius}px`,
               } : undefined}
