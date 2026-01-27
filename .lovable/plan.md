@@ -1,30 +1,29 @@
 
 
-# Add Testimonials Templates - Perspective-Style
+# Add Trust (Social Proof) Templates - Perspective-Style
 
 ## Summary
 
-Expand the Testimonials section from 2 basic templates to 11 Perspective-style templates matching the reference screenshots. These include single-quote layouts, split layouts with images, and 3-column grids with various card styles.
+Expand the Trust/Social Proof section from 4 basic templates to 10 Perspective-style templates matching the reference screenshots. These showcase company logos ("Companies that rely on us") in various layouts: hero combinations, centered grids, split views, and compact bars.
 
 ---
 
 ## Template Patterns Identified
 
-From the uploaded screenshots, I identified **11 distinct Testimonial patterns**:
+From the uploaded screenshots, I identified **10 distinct Trust patterns**:
 
 | Template | Layout | Key Elements |
 |----------|--------|--------------|
-| **Testimonial Single Centered** | Centered | Logo/icon at top, large quote, avatar + name + role below |
-| **Testimonial Single + Stars** | Centered | 5-star rating, large quote, avatar + name + role |
-| **Testimonial Single Full Image** | Full bleed | Dark background image, logo overlay, white quote text, avatar + name |
-| **Testimonial Single Image (Rounded)** | Full bleed | Same as above but with rounded corners |
-| **Testimonial Split - Text Left** | 50/50 | Logo + quote + name on left, large image on right |
-| **Testimonial Split - Image Left** | 50/50 | Large image on left, quote + name + role on right |
-| **Testimonial Grid 3-Column (Yellow Stars)** | Centered | Title + subtext, 3 white cards with yellow 5-star ratings |
-| **Testimonial Grid 3-Column (Cards)** | Centered | Same but with gray card styling/shadows |
-| **Testimonial Grid 3-Column (No Cards)** | Centered | 3 columns without card borders, extended description |
-| **Testimonial Grid Photo Cards (Overlay)** | Centered | 3 photo cards with gradient overlay and text at bottom |
-| **Testimonial Grid Photo Cards (Below)** | Centered | 3 photos above, quote + name text below each photo |
+| **Trust Hero + Logos + CTA** | Centered | Title, subtext, 2-row logo grid (5x2), blue CTA button |
+| **Trust Gray Card Centered** | Centered | Gray card background, centered title + subtext, single row logos |
+| **Trust Centered Simple** | Centered | White background, centered title + subtext, single row logos |
+| **Trust Centered Gray BG** | Full-width | Gray background, centered title + subtext, logos |
+| **Trust Split Gray Card** | 50/50 | Text left (title + subtext), gray card with 2x3 logo grid on right |
+| **Trust Split White** | 50/50 | Text left, white area with 2x3 logo grid on right |
+| **Trust Split Gray BG** | 50/50 | Same as split white but with gray background |
+| **Trust Split Outline** | 50/50 | Text left, white card with thin border containing 2x3 logos on right |
+| **Trust Compact Bar** | Horizontal | Minimal - title left, 3 logos inline on right (white BG) |
+| **Trust Compact Dark** | Horizontal | Same as compact but with dark/accent background |
 
 ---
 
@@ -34,182 +33,122 @@ From the uploaded screenshots, I identified **11 distinct Testimonial patterns**
 
 | Element | Style |
 |---------|-------|
-| **Logo/Icon** | Small blue icon or "Perspective" logo at top |
-| **Stars** | Yellow/amber 5-star ratings |
-| **Quotes** | Bold slate-800 text with quotation marks |
-| **Subtext** | Light slate-400/500 for role/company |
-| **Avatars** | Circular, gradient placeholder |
-| **Cards** | White or gray-50 with subtle borders |
-| **Photo Overlays** | Dark gradient from bottom |
+| **Title** | Bold "Companies that rely on us" |
+| **Subtext** | Light slate-400 "Leading companies trust our expertise..." |
+| **Logos** | Grayscale placeholder bars representing company logos |
+| **Background** | White, gray-50/100, or dark variants |
+| **Logo Grid** | 5-column (single row) or 3x2 grid |
 
 ---
 
 ## ASCII Template Layouts
 
-### Testimonial Single Centered
+### Trust Hero + Logos + CTA
 ```text
 +------------------------------------------------+
-|               [P] Perspective                   |
+|          Your Vision is our Mission            |
+|  Benefit from our limited-time offer. Act      |
+|  quickly and secure exclusive benefits...       |
 |                                                 |
-|    "Partnering with Perspektive resulted       |
-|     in over 2000 new leads in 3 months."       |
+|  [logo] [logo] [logo] [logo] [logo] [logo]     |
+|  [logo] [logo] [logo] [logo]                   |
 |                                                 |
-|               (o) Ferdinand Schulz              |
-|           Software Engineer, Example GmbH       |
+|           [Learn more now]                      |
 +------------------------------------------------+
 ```
 
-### Testimonial Single + Stars
+### Trust Gray Card Centered
 ```text
 +------------------------------------------------+
-|               ★★★★★                            |
-|                                                 |
-|    "Partnering with Perspektive resulted       |
-|     in over 2000 new leads in 3 months."       |
-|                                                 |
-|               (o) Ferdinand Schulz              |
-|           Software Engineer, Example GmbH       |
+| ┌────────────────────────────────────────────┐ |
+| │       Companies that rely on us            │ |
+| │   Leading companies trust our expertise... │ |
+| │                                            │ |
+| │   [logo] [logo] [logo] [logo] [logo]      │ |
+| └────────────────────────────────────────────┘ |
 +------------------------------------------------+
 ```
 
-### Testimonial Single Full Image (Dark)
+### Trust Centered Simple
 ```text
 +------------------------------------------------+
-| [Full Background Image - Office/Person]        |
-|          with dark overlay                      |
-|               [P] Perspective                   |
+|          Companies that rely on us             |
+|   Leading companies trust our expertise and    |
+|   innovative solutions...                       |
 |                                                 |
-|    "Partnering with Perspektive resulted       |
-|     in over 2000 new leads in 3 months."       |
-|                                                 |
-|               (o) Ferdinand Schulz              |
-|           Software Engineer, Example GmbH       |
+|     [logo] [logo] [logo] [logo] [logo]        |
 +------------------------------------------------+
 ```
 
-### Testimonial Single Image (Rounded)
+### Trust Centered Gray BG
 ```text
-+------------------------------------------------+
-|  ┌────────────────────────────────────────┐   |
-|  │ [Full Background Image with rounded]    │   |
-|  │            [P] Perspective              │   |
-|  │                                         │   |
-|  │  "Partnering with Perspektive..."      │   |
-|  │                                         │   |
-|  │       (o) Ferdinand Schulz              │   |
-|  │   Software Engineer, Example GmbH       │   |
-|  └────────────────────────────────────────┘   |
-+------------------------------------------------+
++================================================+
+| [Gray Background]                              |
+|          Companies that rely on us             |
+|   Leading companies trust our expertise...     |
+|                                                 |
+|     [logo] [logo] [logo] [logo] [logo]        |
++================================================+
 ```
 
-### Testimonial Split - Text Left
+### Trust Split Gray Card
 ```text
 +------------------------+------------------------+
-| [P] Perspective        |                        |
-|                        |   [Large Professional  |
-| "Partnering with       |    Photo]              |
-| Perspektive resulted   |                        |
-| in over 2000 new       |                        |
-| leads in 3 months."    |                        |
+| Companies that rely    | ┌────────────────────┐ |
+| on us                  | │ [logo] [logo] [logo]│ |
+|                        | │                     │ |
+| Leading companies      | │ [logo] [logo] [logo]│ |
+| trust our expertise... | └────────────────────┘ |
++------------------------+------------------------+
+```
+
+### Trust Split White
+```text
++------------------------+------------------------+
+| Companies that rely    |                        |
+| on us                  |  [logo] [logo] [logo]  |
 |                        |                        |
-| Ferdinand Schulz       |                        |
-| Software Engineer      |                        |
+| Leading companies      |  [logo] [logo] [logo]  |
+| trust our expertise... |                        |
 +------------------------+------------------------+
 ```
 
-### Testimonial Split - Image Left
+### Trust Split Gray BG
+```text
++========================+========================+
+| [Gray Background]      |                        |
+| Companies that rely    |  [logo] [logo] [logo]  |
+| on us                  |                        |
+|                        |  [logo] [logo] [logo]  |
+| Leading companies...   |                        |
++========================+========================+
+```
+
+### Trust Split Outline
 ```text
 +------------------------+------------------------+
-|                        |                        |
-|   [Large Professional  |   "Partnering with     |
-|    Photo]              |   Perspektive resulted |
-|                        |   in over 2000 new     |
-|                        |   leads in 3 months."  |
-|                        |                        |
-|                        |   Ferdinand Schulz     |
-|                        |   Software Engineer    |
+| Companies that rely    | ┌────────────────────┐ |
+| on us                  | │ [logo] [logo] [logo]│ |
+|                        | │                     │ |
+| Leading companies      | │ [logo] [logo] [logo]│ |
+| trust our expertise... | └────────────────────┘ |
 +------------------------+------------------------+
+ (White card with thin border on right)
 ```
 
-### Testimonial Grid 3-Column (Yellow Stars)
+### Trust Compact Bar
 ```text
 +------------------------------------------------+
-|          What our customers say                 |
-|  With Perspective, our customers make...        |
-|                                                 |
-| ┌──────────┐ ┌──────────┐ ┌──────────┐        |
-| │ ★★★★★   │ │ ★★★★★   │ │ ★★★★★   │        |
-| │          │ │          │ │          │        |
-| │ "Working │ │ "With    │ │ "Through │        |
-| │ with..." │ │ help..." │ │ we have..│        |
-| │          │ │          │ │          │        |
-| │(o) Name  │ │(o) Name  │ │(o) Name  │        |
-| │ Role     │ │ Role     │ │ Role     │        |
-| └──────────┘ └──────────┘ └──────────┘        |
+| Companies that rely on us  [logo] [logo] [logo]|
 +------------------------------------------------+
 ```
 
-### Testimonial Grid 3-Column (Cards/Gray)
+### Trust Compact Dark
 ```text
-Same layout but cards have:
-- Gray background (slate-50)
-- Subtle border/shadow
-- Slightly darker styling
-```
-
-### Testimonial Grid 3-Column (No Cards)
-```text
-+------------------------------------------------+
-|          What our customers say                 |
-|  With Perspective, our customers make...        |
-|                                                 |
-|  ★★★★★        ★★★★★        ★★★★★              |
-|                                                 |
-| "Working with  "With         "Through           |
-| Perspective    Perspective's  Perspective,      |
-| increased      help, we were  we have been     |
-| revenue..."    able to..."    able to..."       |
-|                                                 |
-| Thanks to      Through        We have set new   |
-| innovative...  creative...    standards with... |
-|                                                 |
-| Philipp S.     Laura S.       Maximilian W.    |
-+------------------------------------------------+
-```
-
-### Testimonial Grid Photo Cards (Overlay)
-```text
-+------------------------------------------------+
-|          What our customers say                 |
-|  With Perspective, our customers make...        |
-|                                                 |
-| ┌──────────┐ ┌──────────┐ ┌──────────┐        |
-| │  [PHOTO] │ │  [PHOTO] │ │  [PHOTO] │        |
-| │          │ │          │ │          │        |
-| │▓▓▓▓▓▓▓▓▓│ │▓▓▓▓▓▓▓▓▓│ │▓▓▓▓▓▓▓▓▓│        |
-| │"Working  │ │"With     │ │"Through  │        |
-| │with..."  │ │help..."  │ │we have...│        |
-| │Name,Role │ │Name,Role │ │Name,Role │        |
-| └──────────┘ └──────────┘ └──────────┘        |
-+------------------------------------------------+
-```
-
-### Testimonial Grid Photo Cards (Text Below)
-```text
-+------------------------------------------------+
-|          What our customers say                 |
-|  With Perspective, our customers make...        |
-|                                                 |
-| ┌──────────┐ ┌──────────┐ ┌──────────┐        |
-| │  [PHOTO] │ │  [PHOTO] │ │  [PHOTO] │        |
-| │          │ │          │ │          │        |
-| └──────────┘ └──────────┘ └──────────┘        |
-|                                                 |
-| "Working with  "With help..."  "Through..."     |
-| Perspective..."                                 |
-|                                                 |
-| Name, Role     Name, Role      Name, Role       |
-+------------------------------------------------+
++================================================+
+| [Dark/Blue Background]                         |
+| Companies that rely on us  [logo] [logo] [logo]|
++================================================+
 ```
 
 ---
@@ -218,159 +157,221 @@ Same layout but cards have:
 
 ### 1. `sectionTemplates.ts`
 
-Remove the 2 existing testimonial templates and add 11 new Perspective-style templates:
+Replace the 4 existing social_proof templates with 10 new Perspective-style templates:
 
 | New Template ID | Name |
 |-----------------|------|
-| `testimonial-single-centered` | Single Centered |
-| `testimonial-single-stars` | Single + Stars |
-| `testimonial-single-full-image` | Single Full Image |
-| `testimonial-single-image-rounded` | Single Image (Rounded) |
-| `testimonial-split-text-left` | Split (Text Left) |
-| `testimonial-split-image-left` | Split (Image Left) |
-| `testimonial-grid-yellow-stars` | Grid (Yellow Stars) |
-| `testimonial-grid-cards` | Grid Cards |
-| `testimonial-grid-no-cards` | Grid (No Cards) |
-| `testimonial-grid-photo-overlay` | Grid Photo (Overlay) |
-| `testimonial-grid-photo-below` | Grid Photo (Text Below) |
+| `trust-hero-logos-cta` | Trust Hero + Logos |
+| `trust-gray-card-centered` | Trust Gray Card |
+| `trust-centered-simple` | Trust Centered |
+| `trust-centered-gray-bg` | Trust Centered (Gray BG) |
+| `trust-split-gray-card` | Trust Split (Gray Card) |
+| `trust-split-white` | Trust Split (White) |
+| `trust-split-gray-bg` | Trust Split (Gray BG) |
+| `trust-split-outline` | Trust Split (Outline) |
+| `trust-compact-bar` | Trust Compact |
+| `trust-compact-dark` | Trust Compact (Dark) |
 
 Update:
 - `allSectionTemplates` array
-- `sectionTemplatesByCategory.testimonials` array
+- `sectionTemplatesByCategory.social_proof` array
 
 ### 2. `HighTicketPreviewCard.tsx`
 
-Replace the simple `TestimonialsPreview` component with a multi-variant version:
+Replace the simple `SocialProofPreview` component with a multi-variant `TrustPreview` component:
 
 ```tsx
-const TestimonialsPreview = React.forwardRef<HTMLDivElement, { template: SectionTemplate }>(
+const TrustPreview = React.forwardRef<HTMLDivElement, { template: SectionTemplate }>(
   ({ template }, ref) => {
     const id = template.id;
     
     // Shared components
-    const YellowStarRating = () => (
-      <div className="flex items-center gap-0.5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Star key={i} size={6} className="fill-amber-400 text-amber-400" />
+    const LogoPlaceholder = ({ width = 'w-8' }: { width?: string }) => (
+      <div className={cn("h-3 rounded bg-slate-300", width)} />
+    );
+    
+    const LogoRow = ({ count = 5 }: { count?: number }) => (
+      <div className="flex items-center justify-center gap-2">
+        {Array.from({ length: count }).map((_, i) => (
+          <LogoPlaceholder key={i} />
         ))}
       </div>
     );
     
-    const BlueLogo = () => (
-      <div className="flex items-center gap-0.5">
-        <div className="w-2.5 h-2.5 rounded bg-blue-500" />
-        <span className="text-[5px] text-slate-600 font-medium">Perspective</span>
+    const LogoGrid3x2 = () => (
+      <div className="grid grid-cols-3 gap-1.5">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <LogoPlaceholder key={i} />
+        ))}
       </div>
     );
     
-    const TestimonialAvatar = () => (
-      <div className="flex items-center gap-1">
-        <div className="w-4 h-4 rounded-full bg-gradient-to-br from-slate-300 to-slate-400" />
-        <div>
-          <div className="h-0.5 w-8 bg-slate-700 rounded" />
-          <div className="h-0.5 w-10 bg-slate-400 rounded mt-0.5" />
-        </div>
+    const TrustTitle = () => (
+      <div className="h-2 w-20 bg-slate-800 rounded" />
+    );
+    
+    const TrustSubtext = () => (
+      <div className="space-y-0.5">
+        <div className="h-1 w-24 bg-slate-400 rounded" />
+        <div className="h-1 w-20 bg-slate-300 rounded" />
       </div>
     );
     
-    const TestimonialCard = ({ hasStars = true, grayBg = false }: { hasStars?: boolean; grayBg?: boolean }) => (
-      <div className={cn(
-        "p-1.5 rounded flex flex-col gap-1",
-        grayBg ? "bg-slate-50 border border-slate-100" : "bg-white border border-slate-100"
-      )}>
-        {hasStars && <YellowStarRating />}
-        <div className="h-1 w-full bg-slate-600 rounded" />
-        <div className="h-0.5 w-4/5 bg-slate-400 rounded" />
-        <TestimonialAvatar />
-      </div>
-    );
-    
-    // Variant implementations...
+    // Variant implementations based on id...
   }
 );
+```
+
+Update `getPreviewComponent` to use new multi-variant component:
+
+```tsx
+case 'social_proof':
+  return <TrustPreview template={template} />;
 ```
 
 ---
 
 ## New Preview Component Structure
 
-### Single Centered
+### Hero + Logos + CTA
 - White background
-- Blue logo at top
-- Large quote placeholder (dark bars)
-- Centered avatar + name/role
+- Centered title + subtext
+- 2 rows of logos (5 + 5)
+- Blue CTA button at bottom
 
-### Single + Stars
+### Gray Card Centered
+- White outer background
+- Gray card container (rounded)
+- Centered title + subtext + logo row inside card
+
+### Centered Simple
 - White background
-- 5-star yellow rating at top
-- Large quote placeholder
-- Centered avatar + name/role
+- Centered title + subtext
+- Single row of 5-6 logos
 
-### Single Full Image
-- Dark gradient background (simulating image overlay)
-- Blue logo
-- White quote text
-- Avatar + name in white
+### Centered Gray BG
+- Full gray background
+- Centered title + subtext
+- Single row of logos
 
-### Single Image (Rounded)
-- Similar to full image but with rounded container
-- Inset padding showing outer background
-
-### Split - Text Left
+### Split Gray Card
 - 50/50 layout
-- Logo + quote + avatar on left
-- Image placeholder on right
+- Title + subtext on left (white)
+- Gray card with 3x2 logo grid on right
 
-### Split - Image Left
+### Split White
 - 50/50 layout
-- Image placeholder on left
-- Quote + avatar on right
+- Title + subtext on left
+- 3x2 logo grid on right (no card)
 
-### Grid Yellow Stars
-- Title + subtext centered
-- 3 white cards with yellow stars, quote, avatar
+### Split Gray BG
+- Gray background
+- 50/50 layout
+- Title + subtext left, logos right
 
-### Grid Cards
-- Title + subtext centered
-- 3 gray-50 cards with stars, quote, avatar
+### Split Outline
+- 50/50 layout
+- Title + subtext left
+- White card with thin border containing logos on right
 
-### Grid No Cards
-- Title + subtext centered
-- 3 columns without borders, stars above, quote, extended text, name
+### Compact Bar
+- Single horizontal row
+- Title on left, 3 logos inline on right
+- White background, minimal padding
 
-### Grid Photo Overlay
-- Title + subtext centered
-- 3 photo cards with gradient overlay at bottom containing text
-
-### Grid Photo Below
-- Title + subtext centered
-- 3 photo placeholders above
-- Quote + name text below each photo
+### Compact Dark
+- Same as compact bar
+- Dark or blue background
+- White/light text and logo placeholders
 
 ---
 
 ## Implementation Order
 
 1. **Update `sectionTemplates.ts`**:
-   - Remove `testimonialSingle` and `testimonialCarousel`
-   - Add 11 new testimonial templates with proper `createNode` functions
+   - Remove 4 existing social_proof templates (socialProofStars, socialProofLogos, socialProofStats, socialProofBadges)
+   - Add 10 new trust templates with proper `createNode` functions
    - Update `allSectionTemplates` array
-   - Update `sectionTemplatesByCategory.testimonials` array
+   - Update `sectionTemplatesByCategory.social_proof` array
 
 2. **Update `HighTicketPreviewCard.tsx`**:
-   - Replace simple `TestimonialsPreview` with multi-variant component
-   - Add shared components (YellowStarRating, BlueLogo, TestimonialAvatar, TestimonialCard)
-   - Implement all 11 variant layouts
-   - Update `getPreviewComponent` to pass template object
+   - Replace `SocialProofPreview` with new multi-variant `TrustPreview` component
+   - Add shared components (LogoPlaceholder, LogoRow, LogoGrid3x2, TrustTitle, TrustSubtext)
+   - Implement all 10 variant layouts
+   - Update `getPreviewComponent` to use new component
+
+---
+
+## Helper Components for Previews
+
+```tsx
+// Single logo placeholder bar
+const LogoPlaceholder = ({ width = 'w-8' }: { width?: string }) => (
+  <div className={cn("h-3 rounded bg-slate-300", width)} />
+);
+
+// Row of 5 logos
+const LogoRow = ({ count = 5 }: { count?: number }) => (
+  <div className="flex items-center justify-center gap-2">
+    {Array.from({ length: count }).map((_, i) => (
+      <LogoPlaceholder key={i} />
+    ))}
+  </div>
+);
+
+// 3x2 logo grid
+const LogoGrid3x2 = () => (
+  <div className="grid grid-cols-3 gap-1.5">
+    {Array.from({ length: 6 }).map((_, i) => (
+      <LogoPlaceholder key={i} />
+    ))}
+  </div>
+);
+
+// Title bar
+const TrustTitle = () => (
+  <div className="h-2 w-20 bg-slate-800 rounded" />
+);
+
+// Subtext lines
+const TrustSubtext = () => (
+  <div className="space-y-0.5">
+    <div className="h-1 w-24 bg-slate-400 rounded" />
+    <div className="h-1 w-20 bg-slate-300 rounded" />
+  </div>
+);
+
+// Blue CTA button
+const BlueButton = () => (
+  <div className="h-4 w-14 bg-blue-500 rounded" />
+);
+```
+
+---
+
+## Color Palette
+
+| Variant | Background | Cards | Logos |
+|---------|------------|-------|-------|
+| Hero + Logos + CTA | White | - | Slate-200/300 |
+| Gray Card Centered | White | Gray-50/100 | Slate-300 |
+| Centered Simple | White | - | Slate-300 |
+| Centered Gray BG | Slate-50/100 | - | Slate-300 |
+| Split Gray Card | White | Gray-50 | Slate-300 |
+| Split White | White | - | Slate-300 |
+| Split Gray BG | Slate-50 | - | Slate-300 |
+| Split Outline | White | White + border | Slate-300 |
+| Compact Bar | White | - | Slate-300 |
+| Compact Dark | Slate-800 | - | White/30% |
 
 ---
 
 ## Result
 
 After implementation:
-- "Testimonials" category expanded from 2 to 11 Perspective-style templates
-- Light-themed previews matching the visual language of other sections
-- Variety of layouts: single quotes, splits, and 3-column grids
-- Yellow star ratings and blue logo accents for brand consistency
-- Photo overlay and text-below variants for visual variety
+- "Trust" category expanded from 4 basic to 10 Perspective-style templates
+- Light-themed previews matching the visual language of Hero, Team, Testimonials, etc.
+- Multiple layout options: hero combos, centered, splits, and compact bars
+- Consistent grayscale logo placeholders matching reference designs
+- Professional "Companies that rely on us" social proof sections
 
