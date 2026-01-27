@@ -1362,5 +1362,61 @@
   position: relative;
 }
 
+/* ============================================ */
+/* PREVIEW MODE STYLES - Single Source of Truth */
+/* ============================================ */
+
+/* Preview button active state - uses success color for clear "on" indication */
+.toolbar-preview-active {
+  @apply bg-[hsl(var(--builder-success)/0.15)] text-[hsl(var(--builder-success))];
+  box-shadow: 0 0 0 1px hsl(var(--builder-success) / 0.4);
+}
+
+.toolbar-preview-active:hover {
+  @apply bg-[hsl(var(--builder-success)/0.2)];
+}
+
+.toolbar-preview-active:hover .preview-exit-text {
+  color: hsl(var(--builder-success));
+}
+
+/* Preview indicator dot */
+.preview-indicator-dot {
+  @apply w-2 h-2 rounded-full;
+  background: hsl(var(--builder-success));
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Exit text within preview button */
+.preview-exit-text {
+  color: hsl(var(--builder-text-muted));
+  transition: color 0.15s ease;
+}
+
+/* Focus states for all preview controls */
+.toolbar-preview-btn:focus-visible {
+  @apply outline-none ring-2;
+  ring-color: hsl(var(--builder-accent));
+  ring-offset: 2px;
+  ring-offset-color: hsl(var(--builder-surface));
+}
+
+/* Empty state improvements for better contrast */
+.canvas-empty-state-title {
+  @apply text-lg font-semibold;
+  color: hsl(var(--builder-text));
+}
+
+.canvas-empty-state-description {
+  @apply mt-2 text-sm;
+  color: hsl(var(--builder-text-secondary));
+}
+
+/* Slider accent normalization - ensure consistency with toolbar */
+[data-lovable-slider="true"] [data-orientation="horizontal"] > span[role="slider"],
+[data-lovable-slider="true"] span[data-disabled] + span {
+  background: hsl(var(--builder-accent));
+}
+
 /* ===== Mobile-First Builder Styles ===== */
 @import './builder/styles/mobile.css';
