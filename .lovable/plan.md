@@ -1,416 +1,369 @@
 
 
-# Comprehensive Funnel Builder Enhancement Plan
+# Comprehensive Funnel Builder System Analysis
 
-## Overview
+## Executive Summary
 
-Based on my investigation, I've identified **multiple issues and enhancement opportunities** across three main areas:
-
-1. **AI Color/Gradient Monotony** - Templates and AI always default to the same purple-pink (#8B5CF6 → #D946EF) gradient
-2. **Redundant Element Types** - `video-thumbnail` and `video` are two separate elements that should be unified
-3. **Button Style Confusion** - Outline/fill/solid logic is complex and has edge cases
-4. **Missing Full-Funnel AI Generation** - AI generates single sections, not complete funnel flows
+After extensive investigation of the funnel builder codebase, I've identified **23 distinct issues** across 6 categories that are degrading the user experience and making the builder feel inconsistent and incomplete. This document provides a complete audit with actionable fixes.
 
 ---
 
-## Part 1: Fix AI Color Palette Monotony
+## Category 1: Font & Typography Inconsistencies
 
-### Problem
-The AI Copilot and templates always fall back to the same purple-pink gradient:
+### Issue 1.1: Empty State Uses System Font Instead of Builder Font
+
+**Evidence (Screenshot)**: The "Add a Section" button text appears in a different font than the rest of the builder UI.
+
+**Root Cause**: The empty state button in `CanvasRenderer.tsx` (lines 5333-5344) uses Tailwind's default `font-medium` without inheriting from the builder's font system.
+
+**Code Location**:
+```
+src/flow-canvas/builder/components/CanvasRenderer.tsx:5336
+```
+
+**Current Code**:
+```tsx
+className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all shadow-sm"
+```
+
+**Missing**: No explicit font-family. The builder defines `'DM Sans', 'Inter'` in `index.css` but the canvas content doesn't inherit it when rendered in isolation.
+
+**Fix Required**: Add `font-family: inherit` or explicit DM Sans reference to empty state components.
+
+---
+
+### Issue 1.2: Canvas Content Font Isolation
+
+The device frame renders in an isolated context where the global font-family doesn't cascade properly.
+
+**Root Cause**: The `.device-frame` CSS in `index.css:447-459` doesn't explicitly set font inheritance.
+
+**Affected Areas**:
+- Empty state "Add a Section" button
+- "Add content" subtle button
+- Form debug panel text
+
+---
+
+## Category 2: AI Copilot Scope Issues
+
+### Issue 2.1: AI Can Modify Builder Code Instead of Funnel Content
+
+**User Complaint**: "The AI sometimes will literally edit the fucking builder itself"
+
+**Root Cause**: The AI prompts in `supabase/functions/ai-copilot/prompts.ts` don't have explicit guardrails preventing it from generating code that modifies the builder infrastructure.
+
+**Evidence**: The prompts focus on content generation but lack explicit constraints like:
+- "Never generate React component code"
+- "Only modify content within elements, not structural code"
+- "Output must be valid FlowCanvas JSON, never JSX"
+
+**Fix Required**: Add explicit negative constraints to the system prompts.
+
+---
+
+### Issue 2.2: No Input Validation on AI Output
+
+The AI service (`src/lib/ai/aiCopilotService.ts`) doesn't validate that generated output conforms to the expected schema before applying it.
+
+**Risk**: Malformed AI output can break the page state.
+
+---
+
+## Category 3: Redundant & Confusing Element Types
+
+### Issue 3.1: Video vs Video-Thumbnail Duplication (PARTIALLY FIXED)
+
+**Status**: Merged in recent changes, but legacy data still exists.
+
+**Current State**: The `case 'video': case 'video-thumbnail':` block in `CanvasRenderer.tsx:2221-2222` handles both, but:
+- Templates still create `video-thumbnail` type
+- Inspector logic differs between types
+- No automatic migration of old data
+
+**Remaining Work**:
+- Update all templates to use `video` with `displayMode` prop
+- Add data migration for existing funnels
+- Unify inspector controls
+
+---
+
+### Issue 3.2: Button Style Complexity (Overlapping Controls)
+
+**Current Controls**:
+1. `buttonStyle`: 'solid' | 'outline' | 'ghost'
+2. `fillType`: 'solid' | 'gradient' | 'none'
+3. `variant`: 'primary' | 'secondary' | 'nav-pill' | 'footer-link' | 'ghost' | 'link'
+4. `backgroundColor`, `borderWidth`, `borderColor` - all can override
+
+**Result**: Confusing UX where 4+ controls affect the same visual outcome.
+
+**Edge Cases Found**:
+- Setting `borderWidth: 0` on outline button → still shows border
+- Setting `fillType: none` + `buttonStyle: solid` → undefined behavior
+- Shadow appears unexpectedly on outline buttons
+
+**Code Location**: `CanvasRenderer.tsx:1500-1700`
+
+---
+
+### Issue 3.3: Input Icon Type Inconsistency
+
+**Evidence**: `CaptureIconType` in `infostack.ts:97` defines icons as strings:
 ```typescript
-// gradientHelpers.ts:21
+export type CaptureIconType = 'user' | 'user-circle' | 'mail' | 'at-sign' | 'phone' | 'smartphone' | 'none';
+```
+
+But the `getCaptureInputIcon` helper uses different mappings, causing icon mismatches.
+
+---
+
+## Category 4: Missing Critical Elements
+
+### Issue 4.1: No Social Proof Elements
+
+**Missing from BlockPickerPanel**:
+- Twitter/X embed
+- TikTok embed
+- Instagram post embed
+- Facebook reviews widget
+- Google reviews widget (beyond basic Trustpilot)
+
+**Current Social Proof**: Only `avatar-group`, `testimonial`, and `trustpilot` blocks.
+
+---
+
+### Issue 4.2: No Table Element
+
+Cannot create pricing comparison tables, feature matrices, or data tables.
+
+---
+
+### Issue 4.3: No Accordion/FAQ Component Rendering
+
+FAQ block exists in templates but `type: 'text'` with `variant: 'faq'` doesn't have dedicated rendering logic - it just shows as plain text.
+
+---
+
+### Issue 4.4: Missing Interactive Elements
+
+- **Rating/Scale**: No star rating input
+- **Slider/Range**: No numeric slider input
+- **Date Range**: Only single date, no range picker
+- **Multi-File Upload**: Only single file
+- **Signature Field**: None
+- **Address Autocomplete**: None
+- **Rich Text Editor**: None (only basic text)
+
+---
+
+### Issue 4.5: No Spacer/Divider Size Controls
+
+The `divider` element exists but lacks:
+- Height/thickness control
+- Style options (solid, dashed, gradient)
+- Width control (full, partial, centered)
+
+---
+
+## Category 5: Inspector & Control Issues
+
+### Issue 5.1: Step Background Toggle Truncation
+
+**User Screenshot Evidence**: The "Solid | GradientImage | Video | Pattern" toggle is cramped.
+
+**Root Cause**: `.toggle-pill-option-compact` class has insufficient width for these labels.
+
+**Location**: Inspector panel CSS
+
+---
+
+### Issue 5.2: Gradient Editor Limitations
+
+- No gradient direction presets (45°, 90°, 135°, etc. quick picks)
+- No saved gradient presets
+- Radial gradients have no center position control
+- No multi-stop management UI (add/remove stops)
+
+---
+
+### Issue 5.3: Shadow Control Gaps
+
+- No inset shadow option
+- No multi-layer shadow support
+- Shadow color always derived from background (no custom color)
+- No spread control
+
+---
+
+### Issue 5.4: No Animation Preview
+
+Animation settings exist in `AnimationSettings` type but no live preview in editor - user must enter preview mode to see result.
+
+---
+
+## Category 6: Runtime & Preview Parity Issues
+
+### Issue 6.1: Preview Font Sizing Mismatch
+
+**Memory Reference**: The live preview uses public font sizing which matches runtime, but editor uses scaled-down fonts.
+
+**Result**: Elements appear smaller in editor than in final output.
+
+---
+
+### Issue 6.2: Flow Container Runtime Gaps
+
+**Evidence in types**:
+```typescript
+export type ApplicationStepType = 'welcome' | 'question' | 'capture' | 'booking' | 'ending';
+```
+
+But `booking` type has no dedicated runtime renderer - it just shows the Calendly embed placeholder.
+
+---
+
+### Issue 6.3: Loader Element Doesn't Execute
+
+The `loader` element type shows the UI but `autoAdvance: true` doesn't trigger actual step progression in runtime.
+
+---
+
+## Category 7: Template & Default Issues
+
+### Issue 7.1: Same Default Gradient Everywhere
+
+**Root Cause (ADDRESSED but incomplete)**: The `gradientHelpers.ts` now has `getVariedDefaultGradient()` but many templates still hardcode:
+```typescript
 return 'linear-gradient(135deg, #8B5CF6 0%, #D946EF 100%)';
-
-// templateThemeUtils.ts:247
-const primaryColor = settings?.primary_color || '#8B5CF6';
 ```
 
-Every hero, badge, and gradient-text element defaults to this same palette.
-
-### Solution
-
-#### 1.1: Create a Dynamic Color Palette System
-
-Create a new file `supabase/functions/ai-copilot/colorPalettes.ts`:
-
-```typescript
-export const COLOR_PALETTES = {
-  // Warm/Energetic
-  sunset: { primary: '#F97316', accent: '#EF4444', gradient: ['#F97316', '#EF4444'] },
-  coral: { primary: '#FB7185', accent: '#F43F5E', gradient: ['#FB7185', '#F43F5E'] },
-  amber: { primary: '#F59E0B', accent: '#D97706', gradient: ['#F59E0B', '#EAB308'] },
-  
-  // Cool/Professional
-  ocean: { primary: '#0EA5E9', accent: '#06B6D4', gradient: ['#0EA5E9', '#06B6D4'] },
-  sapphire: { primary: '#3B82F6', accent: '#6366F1', gradient: ['#3B82F6', '#8B5CF6'] },
-  teal: { primary: '#14B8A6', accent: '#0D9488', gradient: ['#14B8A6', '#0D9488'] },
-  
-  // Rich/Premium
-  violet: { primary: '#8B5CF6', accent: '#A855F7', gradient: ['#8B5CF6', '#D946EF'] },
-  rose: { primary: '#E11D48', accent: '#BE185D', gradient: ['#E11D48', '#DB2777'] },
-  emerald: { primary: '#10B981', accent: '#059669', gradient: ['#10B981', '#047857'] },
-  
-  // Neutral/Minimal
-  slate: { primary: '#475569', accent: '#64748B', gradient: ['#334155', '#475569'] },
-  zinc: { primary: '#3F3F46', accent: '#52525B', gradient: ['#27272A', '#3F3F46'] }
-};
-
-export function selectPaletteForIndustry(industry: string): typeof COLOR_PALETTES[keyof typeof COLOR_PALETTES] {
-  const mapping: Record<string, keyof typeof COLOR_PALETTES> = {
-    saas: 'sapphire',
-    coaching: 'coral',
-    ecommerce: 'amber',
-    agency: 'slate',
-    newsletter: 'teal',
-    event: 'rose',
-    fitness: 'emerald',
-    finance: 'ocean'
-  };
-  return COLOR_PALETTES[mapping[industry] || 'violet'];
-}
-```
-
-#### 1.2: Update AI Prompts to Use Industry-Aware Palettes
-
-Modify `supabase/functions/ai-copilot/prompts.ts` to inject color guidance:
-
-```typescript
-// Add to getRelevantKnowledge() function
-if (context?.industry) {
-  const palette = selectPaletteForIndustry(context.industry);
-  knowledge += `\n=== COLOR PALETTE ===\nPrimary: ${palette.primary}\nAccent: ${palette.accent}\nGradient: ${palette.gradient.join(' → ')}\n`;
-}
-```
-
-#### 1.3: Update Template Theme Utils
-
-Modify `templateThemeUtils.ts` to generate varied gradients:
-
-```typescript
-export function generateAccentGradient(primaryColor: string): [string, string] {
-  // Instead of always shifting +40 degrees, use a palette-aware approach
-  const palettes = Object.values(COLOR_PALETTES);
-  const matchedPalette = palettes.find(p => p.primary.toLowerCase() === primaryColor.toLowerCase());
-  
-  if (matchedPalette) {
-    return matchedPalette.gradient as [string, string];
-  }
-  
-  // Fallback to hue shift for custom colors
-  const shifted = shiftHue(primaryColor, 40);
-  return [primaryColor, shifted];
-}
-```
+**Remaining Hardcodes Found**:
+- `PremiumElementInspector.tsx:139-146` - `defaultGradient` uses purple-pink
+- Multiple section templates in `sectionTemplates/` folder
 
 ---
 
-## Part 2: Unify Video Elements
+### Issue 7.2: Form Templates Missing Consent Checkbox
 
-### Problem
-Currently there are **two separate video-related elements**:
-1. **`video`** - Full video embed with iframe (lines 2221-2287)
-2. **`video-thumbnail`** - Static thumbnail with play button (lines 3103-3168)
-
-This causes confusion:
-- Templates use `video-thumbnail` for placeholders
-- Inspector has different controls for each
-- Users don't understand which to use
-
-### Solution: Merge into Single Video Element
-
-#### 2.1: Consolidate to Single `video` Element Type
-
-Update `CanvasRenderer.tsx` to handle both modes in one element:
-
-```typescript
-case 'video':
-  const videoUrl = element.props?.videoSettings?.url || element.props?.videoUrl;
-  const thumbnailUrl = element.props?.thumbnailUrl;
-  const displayMode = element.props?.displayMode || (videoUrl ? 'embed' : 'thumbnail');
-  
-  // Thumbnail mode (no URL yet, or explicitly set to thumbnail)
-  if (displayMode === 'thumbnail' || !videoUrl) {
-    // Render thumbnail with play button overlay
-    // On click in runtime → open video modal or inline play
-  }
-  
-  // Embed mode (has URL)
-  else {
-    // Render iframe embed
-  }
-```
-
-#### 2.2: Update Inspector for Unified Video
-
-Create single video inspector section:
-- **Source Tab**: URL input, auto-detect platform
-- **Display Tab**: Thumbnail image (auto-generated from URL or custom)
-- **Playback Tab**: Autoplay, mute, loop toggles
-- **Style Tab**: Overlay, play button style, border radius
-
-#### 2.3: Migrate Existing `video-thumbnail` Elements
-
-Add migration function:
-```typescript
-// In CanvasRenderer or during page load
-if (element.type === 'video-thumbnail') {
-  // Convert to unified video type
-  element.type = 'video';
-  element.props = {
-    ...element.props,
-    displayMode: 'thumbnail',
-    videoSettings: { url: element.props?.videoUrl }
-  };
-}
-```
+Only `Contact Info` template includes privacy checkbox. Other form templates (Email, Phone, Name) should also default with optional consent.
 
 ---
 
-## Part 3: Simplify Button Style System
+## Priority Matrix
 
-### Problem
-Button styling has **too many overlapping controls**:
-- `buttonStyle`: 'solid' | 'outline' | 'ghost'
-- `fillType`: 'solid' | 'gradient' | 'none'
-- `variant`: 'primary' | 'secondary' | 'nav-pill' | 'footer-link' | 'ghost' | 'link'
-- `backgroundColor`, `borderWidth`, `borderColor` all override each other
-
-Edge cases:
-- Setting `borderWidth: 0` doesn't always remove the border
-- Shadow appears on outline buttons unexpectedly
-- `fillType: none` conflicts with `buttonStyle: solid`
-
-### Solution: Unified Button Style Model
-
-#### 3.1: Single Source of Truth
-
-Create unified button style type:
-```typescript
-interface UnifiedButtonStyle {
-  // PRIMARY control - determines base appearance
-  appearance: 'filled' | 'outline' | 'ghost' | 'link';
-  
-  // Fill settings (only for 'filled' appearance)
-  fillType: 'solid' | 'gradient';
-  fillColor?: string;
-  fillGradient?: GradientValue;
-  
-  // Border settings (for 'outline', or explicit on 'filled')
-  borderWidth: number; // px, 0 = none
-  borderColor?: string;
-  borderStyle: 'solid' | 'dashed' | 'dotted';
-  
-  // Text
-  textColor?: string; // auto-contrast if not set
-  
-  // Shape
-  borderRadius: number | 'pill';
-  
-  // Effects
-  shadow: 'none' | 'sm' | 'md' | 'lg' | 'custom';
-  customShadow?: string;
-}
-```
-
-#### 3.2: Simplify Inspector UI
-
-Replace multiple controls with single **Appearance** selector:
-
-```
-┌─────────────────────────────────────────┐
-│  Appearance                              │
-│  [Filled] [Outline] [Ghost] [Link]       │
-├─────────────────────────────────────────┤
-│  Fill (when Filled selected)             │
-│  [Solid ⬤] [Gradient ◐]                  │
-│  Color: [picker]                         │
-├─────────────────────────────────────────┤
-│  Border                                  │
-│  Width: [slider 0-6px]                   │
-│  Color: [picker]                         │
-│  Style: [solid] [dashed] [dotted]        │
-└─────────────────────────────────────────┘
-```
-
-#### 3.3: Update Rendering Logic
-
-Simplify the button rendering in `CanvasRenderer.tsx`:
-```typescript
-case 'button':
-  const appearance = element.props?.appearance || 'filled';
-  
-  const getButtonStyles = (): React.CSSProperties => {
-    switch (appearance) {
-      case 'filled':
-        return {
-          background: element.props?.fillType === 'gradient' 
-            ? gradientToCSS(element.props?.fillGradient) 
-            : element.props?.fillColor || primaryColor,
-          border: `${element.props?.borderWidth || 0}px solid ${element.props?.borderColor || 'transparent'}`,
-          color: element.props?.textColor || getContrastTextColor(effectiveBg),
-        };
-      case 'outline':
-        return {
-          background: 'transparent',
-          border: `${element.props?.borderWidth || 2}px solid ${element.props?.borderColor || primaryColor}`,
-          color: element.props?.textColor || primaryColor,
-        };
-      case 'ghost':
-        return {
-          background: 'transparent',
-          border: 'none',
-          color: element.props?.textColor || primaryColor,
-        };
-      case 'link':
-        return {
-          background: 'transparent',
-          border: 'none',
-          color: element.props?.textColor || primaryColor,
-          textDecoration: 'underline',
-        };
-    }
-  };
-```
+| Priority | Issue | Impact | Effort |
+|----------|-------|--------|--------|
+| P0 | AI editing builder code | Critical UX | Medium |
+| P0 | Font inconsistency | Visual quality | Low |
+| P0 | Button style confusion | User frustration | High |
+| P1 | Missing social elements | Feature gap | Medium |
+| P1 | FAQ rendering broken | Feature broken | Low |
+| P1 | Divider controls missing | Incomplete | Low |
+| P1 | Video/thumbnail unification | Technical debt | Medium |
+| P2 | Shadow/gradient controls | Power users | Medium |
+| P2 | Animation preview | Polish | Medium |
+| P2 | Form consent defaults | Best practice | Low |
+| P3 | Table element | Feature request | High |
+| P3 | Signature field | Niche need | Medium |
 
 ---
 
-## Part 4: Enable Full Funnel AI Generation
+## Recommended Implementation Order
 
-### Problem
-Currently the AI generates **single sections** only. Users want to say "build me a coaching funnel" and get a complete multi-page flow.
+### Phase 1: Critical Fixes (Week 1)
+1. Fix font inheritance in empty states
+2. Add AI output validation + guardrails
+3. Simplify button controls to single "Appearance" selector
 
-### Solution: Full Funnel Generation Mode
+### Phase 2: Element Completeness (Week 2)
+4. Add FAQ dedicated rendering
+5. Add divider styling controls
+6. Complete video unification
+7. Add missing input types (rating, slider)
 
-#### 4.1: Add Funnel Templates to AI Knowledge
+### Phase 3: Premium Features (Week 3)
+8. Social embeds (Twitter, Instagram, etc.)
+9. Table element
+10. Enhanced gradient controls
+11. Multi-layer shadows
 
-Enhance `designExamples.ts` with complete funnel structures:
+### Phase 4: Polish (Week 4)
+12. Animation preview in editor
+13. Inspector layout refinements
+14. Template gradient variety
+15. Form consent defaults
 
-```typescript
-export const FULL_FUNNEL_TEMPLATES = {
-  coaching_vsl: {
-    name: "Coaching VSL Funnel",
-    pages: [
-      {
-        name: "Watch Free Training",
-        sections: ["credibility-bar", "hero-video", "trust-badges", "cta-button"]
-      },
-      {
-        name: "Book Your Call", 
-        sections: ["headline", "benefits-list", "calendar-embed", "testimonial"]
-      },
-      {
-        name: "Application Submitted",
-        sections: ["thank-you", "next-steps", "social-share"]
-      }
-    ]
-  },
-  lead_magnet: {
-    name: "Lead Magnet Funnel",
-    pages: [
-      {
-        name: "Get Your Free Guide",
-        sections: ["hero-split", "lead-form", "preview-image"]
-      },
-      {
-        name: "Thank You",
-        sections: ["confirmation", "download-button", "bonus-offer"]
-      }
-    ]
-  },
-  // ... more funnel types
-};
+---
+
+## Technical Implementation Details
+
+### Fix 1: Font Inheritance
+
+```css
+/* Add to index.css */
+.device-frame,
+.device-frame * {
+  font-family: 'DM Sans', 'Inter', system-ui, sans-serif;
+}
+
+/* Or scoped to content */
+.builder-v2-canvas {
+  font-family: inherit;
+}
 ```
 
-#### 4.2: Add "Generate Full Funnel" Mode to AI Copilot
-
-Update `AIGenerateModal.tsx`:
-- Add toggle: "Generate Section" vs "Generate Full Funnel"
-- When "Full Funnel" selected, show funnel type picker
-- Generate all pages with proper flow connections
-
-#### 4.3: Update AI Prompt for Multi-Page Generation
+### Fix 2: AI Guardrails
 
 Add to `prompts.ts`:
 ```typescript
-const GENERATE_FUNNEL_PROMPT = `
-You are generating a COMPLETE multi-page funnel, not just a single section.
+const AI_GUARDRAILS = `
+=== CRITICAL CONSTRAINTS ===
+You are ONLY allowed to generate:
+1. FlowCanvas JSON structures (steps, frames, stacks, blocks, elements)
+2. Content text (headlines, body, button labels)
+3. Style values (colors, spacing, fonts)
 
-For each page, include:
-1. Page name and purpose
-2. 3-6 sections in conversion-optimized order
-3. Button actions that connect to next pages
-4. Consistent styling across all pages
+You are NEVER allowed to generate:
+- React component code (JSX, TSX)
+- Import statements
+- TypeScript interfaces
+- Function definitions
+- Any code that modifies the builder infrastructure
 
-Funnel structure:
-${JSON.stringify(FULL_FUNNEL_TEMPLATES[funnelType], null, 2)}
+If a user asks you to modify the builder itself, politely decline and explain you can only modify funnel content.
 `;
 ```
 
----
+### Fix 3: Unified Button System
 
-## Part 5: Fix Console Warnings
-
-### Issue Found
-```
-Warning: Function components cannot be given refs. 
-Check the render method of `UnifiedElementToolbar`.
-```
-
-### Solution
-Wrap `Tooltip` children with `forwardRef`:
-
+Replace current button logic with:
 ```typescript
-// In UnifiedElementToolbar.tsx
-const TooltipButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ children, ...props }, ref) => (
-    <button ref={ref} {...props}>{children}</button>
-  )
-);
+type ButtonAppearance = 'filled' | 'outline' | 'ghost' | 'link';
 
-// Use TooltipButton as Tooltip.Trigger child
+interface UnifiedButtonProps {
+  appearance: ButtonAppearance;
+  fillType?: 'solid' | 'gradient'; // Only for 'filled'
+  fillColor?: string;
+  fillGradient?: GradientValue;
+  textColor?: string;
+  borderWidth?: number;
+  borderColor?: string;
+  borderRadius?: number | 'pill';
+  shadow?: 'none' | 'sm' | 'md' | 'lg';
+}
 ```
 
 ---
 
-## Implementation Order
+## Summary
 
-| Phase | Task | Effort |
-|-------|------|--------|
-| 1 | Create color palette system | 2-3 hours |
-| 2 | Unify video elements | 3-4 hours |
-| 3 | Simplify button styling | 4-5 hours |
-| 4 | Full funnel generation | 4-5 hours |
-| 5 | Fix console warnings | 1 hour |
+The funnel builder has a solid foundation but suffers from:
 
----
+1. **Inconsistency** - Different fonts, control behaviors, and defaults across similar elements
+2. **Redundancy** - Multiple ways to achieve the same visual result (especially buttons)
+3. **Incompleteness** - Missing common elements (tables, social embeds, advanced inputs)
+4. **AI Scope Creep** - No guardrails preventing AI from generating structural code
 
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `supabase/functions/ai-copilot/colorPalettes.ts` | Industry-aware color palette system |
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `supabase/functions/ai-copilot/prompts.ts` | Inject color palette and funnel generation prompts |
-| `src/flow-canvas/builder/utils/templateThemeUtils.ts` | Use varied gradients |
-| `src/flow-canvas/builder/utils/gradientHelpers.ts` | Remove hardcoded purple-pink default |
-| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Unify video types, simplify button logic |
-| `src/flow-canvas/builder/components/inspectors/PremiumElementInspector.tsx` | Merge video-thumbnail into video |
-| `src/flow-canvas/builder/components/UnifiedElementToolbar.tsx` | Fix forwardRef warning |
-| `src/flow-canvas/builder/components/modals/AIGenerateModal.tsx` | Add full funnel generation mode |
-
----
-
-## Expected Outcomes
-
-After implementation:
-
-1. **Color Variety**: AI generates different palettes based on industry (blue for SaaS, coral for coaching, etc.)
-2. **Unified Video**: Single video element with smart thumbnail/embed switching
-3. **Clear Button Styling**: One "Appearance" control that does what users expect
-4. **Full Funnel Generation**: "Build me a coaching funnel" creates complete multi-page flow
-5. **Clean Console**: No more ref warnings
+Implementing the fixes in priority order will transform the builder from "functional but frustrating" to "polished and professional."
 
