@@ -69,7 +69,7 @@ function findNodeById(node: CanvasNode, nodeId: string): CanvasNode | null {
 
 // Import unified presets from single source of truth
 import { 
-  inspectorColorPresets as COLOR_PRESETS,
+  inspectorColorPresetsFlat as COLOR_PRESETS,
   inspectorGradientPresets as GRADIENT_PRESETS,
   inspectorFontSizes as FONT_SIZES,
   fontWeightOptions as FONT_WEIGHTS,

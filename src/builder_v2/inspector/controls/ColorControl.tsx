@@ -16,7 +16,7 @@ interface ColorControlProps {
 }
 
 // Import unified presets from single source of truth
-import { inspectorColorPresets as COLOR_PRESETS } from '@/flow-canvas/builder/utils/presets';
+import { inspectorColorPresetsFlat as COLOR_PRESETS } from '@/flow-canvas/builder/utils/presets';
 
 export function ColorControl({ value, onChange, label }: ColorControlProps) {
   const [isOpen, setIsOpen] = useState(false);

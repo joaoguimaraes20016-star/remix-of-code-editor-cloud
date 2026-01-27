@@ -28,7 +28,7 @@ import {
   overflowOptions
 } from '../utils/labels';
 import { 
-  backgroundColorPresets, 
+  backgroundColorPresetsFlat as backgroundColorPresets, 
   textColorPresets, 
   elementColorPresets,
   highlightPresets,

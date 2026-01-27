@@ -34,24 +34,43 @@ export const compactColorPresets = [
 ];
 
 // ===========================================
-// INSPECTOR COLOR PALETTE - 25 colors for side panel
+// INSPECTOR COLOR PALETTE - Organized by category for clarity
 // ===========================================
-export const inspectorColorPresets = [
-  '#ffffff', '#f8fafc', '#e2e8f0', '#94a3b8', '#64748b',
-  '#334155', '#1e293b', '#0f172a', '#000000', 'transparent',
-  '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899',
-  '#f43f5e', '#ef4444', '#f97316', '#eab308', '#84cc16',
-  '#22c55e', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6',
+// Grouped semantically: Neutrals → Brand → Warm → Cool
+export const inspectorColorPresets = {
+  // Row 1: Pure neutrals (most common)
+  neutrals: ['#ffffff', '#f8fafc', '#e2e8f0', '#94a3b8', '#64748b', '#334155', '#1e293b', '#000000'],
+  // Row 2: Brand purples & pinks
+  brand: ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e'],
+  // Row 3: Warm tones (reds, oranges, yellows)
+  warm: ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#fbbf24'],
+  // Row 4: Cool tones (greens, cyans, blues)
+  cool: ['#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6'],
+};
+
+// Flat array for backward compatibility
+export const inspectorColorPresetsFlat = [
+  ...inspectorColorPresets.neutrals,
+  ...inspectorColorPresets.brand,
+  ...inspectorColorPresets.warm,
+  ...inspectorColorPresets.cool,
 ];
 
-// Quick color presets for BACKGROUNDS (solid colors) - vibrant & useful
-export const backgroundColorPresets = [
-  // Clean neutrals
-  '#FFFFFF', '#F8FAFC', '#F1F5F9', 
+// Quick color presets for BACKGROUNDS (solid colors) - organized by intent
+export const backgroundColorPresets = {
+  // Light backgrounds
+  light: ['#FFFFFF', '#F8FAFC', '#F1F5F9'],
   // Dark backgrounds
-  '#1E293B', '#0F172A', '#030712',
-  // Vibrant colors
-  '#8B5CF6', '#3B82F6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#EC4899',
+  dark: ['#1E293B', '#0F172A', '#030712'],
+  // Accent backgrounds
+  accent: ['#8B5CF6', '#3B82F6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444'],
+};
+
+// Flat array for backward compatibility
+export const backgroundColorPresetsFlat = [
+  ...backgroundColorPresets.light,
+  ...backgroundColorPresets.dark,
+  ...backgroundColorPresets.accent,
 ];
 
 // Quick color presets for TEXT - high contrast, readable
