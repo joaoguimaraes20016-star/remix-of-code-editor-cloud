@@ -8,9 +8,7 @@ import { MobileActionBar } from './MobileActionBar';
 import { TouchStepList } from './TouchStepCard';
 import { MobileBottomSheet, ControlGroup, TouchInput, TouchSegmentedControl } from './MobileBottomSheet';
 import { AIBuilderCopilot } from './AIBuilderCopilot';
-import { BlockPickerPanel } from './BlockPickerPanel';
 import { SectionPicker } from './SectionPicker';
-import { InlineSectionPicker } from './InlineSectionPicker';
 import { useHistory } from '../hooks/useHistory';
 import { 
   deepClone, 
@@ -153,14 +151,9 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   const [showGrid, setShowGrid] = useState(false);
   const [replayAnimationKey, setReplayAnimationKey] = useState(0);
   
-  // Block picker state - for left panel integration
-  const [blockPickerOpen, setBlockPickerOpen] = useState(false);
+  // Section picker state - unified modal for adding sections
+  const [sectionPickerOpen, setSectionPickerOpen] = useState(false);
   const [mobileBlockPickerOpen, setMobileBlockPickerOpen] = useState(false);
-  const [blockPickerTargetStackId, setBlockPickerTargetStackId] = useState<string | null>(null);
-  const [blockPickerMode, setBlockPickerMode] = useState<'blocks' | 'sections'>('blocks');
-  
-  // Inline section picker state - opens directly on canvas for intuitive UX
-  const [inlineSectionPickerOpen, setInlineSectionPickerOpen] = useState(false);
   
   // Mobile bottom sheet state for element editing
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
@@ -350,11 +343,9 @@ export const EditorShell: React.FC<EditorShellProps> = ({
 
   // Handle selection with shift for multi-select
   const handleSelect = useCallback((newSelection: SelectionState, isShiftHeld = false) => {
-    // Auto-close block picker when user selects content on canvas
-    if (newSelection.id && blockPickerOpen) {
-      setBlockPickerOpen(false);
-      setBlockPickerTargetStackId(null);
-      setBlockPickerMode('blocks');
+    // Auto-close section picker when user selects content on canvas
+    if (newSelection.id && sectionPickerOpen) {
+      setSectionPickerOpen(false);
     }
     
     // Clear step element selection when selecting something different
@@ -392,7 +383,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
       setSelection(newSelection);
       onSelect(newSelection);
     }
-  }, [onSelect, blockPickerOpen, selection.id]);
+  }, [onSelect, sectionPickerOpen, selection.id]);
 
   // Clear selection
   const handleClearSelection = useCallback(() => {
@@ -402,16 +393,14 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     onSelect({ type: null, id: null, path: [] });
   }, [onSelect]);
   
-  // Escape key to close block picker and clear selection
+  // Escape key to close section picker and clear selection
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        // First priority: close block picker if open
-        if (blockPickerOpen) {
-          setBlockPickerOpen(false);
-          setBlockPickerTargetStackId(null);
-          setBlockPickerMode('blocks');
+        // First priority: close section picker if open
+        if (sectionPickerOpen) {
+          setSectionPickerOpen(false);
           return;
         }
         // Second priority: clear any selection (this will close floating toolbars)
@@ -424,7 +413,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [blockPickerOpen, selection.id, handleClearSelection]);
+  }, [sectionPickerOpen, selection.id, handleClearSelection]);
 
   // Step operations
   const handleStepSelect = useCallback((stepId: string) => {
@@ -1043,31 +1032,12 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     setIsPublishOpen(false);
   }, [page, onPublish]);
 
-  // Add frame handler
+  // Add frame handler - opens SectionPicker modal for template selection
   const handleAddFrame = useCallback(() => {
-    if (!activeStepId) return;
-    
-    const updatedPage = deepClone(page);
-    const step = updatedPage.steps.find(s => s.id === activeStepId);
-    if (step) {
-      step.frames.push({
-        id: generateId(),
-        label: 'Section',
-        stacks: [{
-          id: generateId(),
-          label: 'Main Stack',
-          direction: 'vertical',
-          blocks: [],
-          props: {},
-        }],
-        props: {},
-      });
-      handlePageUpdate(updatedPage);
-      toast.success('Section added');
-    }
-  }, [activeStepId, page, handlePageUpdate]);
+    setSectionPickerOpen(true);
+  }, []);
 
-  // Add section from template (via inline picker)
+  // Add section from template (via SectionPicker)
   const handleAddSectionFromTemplate = useCallback((templateId: string) => {
     if (!activeStepId) return;
     
@@ -1083,7 +1053,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
       step.frames.push(frame);
       handlePageUpdate(updatedPage);
       toast.success('Section added');
-      setInlineSectionPickerOpen(false);
+      setSectionPickerOpen(false);
     }
   }, [activeStepId, page, handlePageUpdate]);
 
@@ -1496,20 +1466,17 @@ export const EditorShell: React.FC<EditorShellProps> = ({
         return;
       }
       
-      // 'B' - Open Block Picker Panel
+      // 'B' - Open Section Picker
       if (e.key === 'b' && !modifier && !e.shiftKey && !previewMode && !readOnly) {
         e.preventDefault();
-        setBlockPickerOpen(true);
-        setBlockPickerMode('blocks');
+        setSectionPickerOpen(true);
       }
       
       // 'Escape' - Step up selection hierarchy or close picker
       if (e.key === 'Escape') {
         e.preventDefault();
-        if (blockPickerOpen) {
-          setBlockPickerOpen(false);
-          setBlockPickerTargetStackId(null);
-          setBlockPickerMode('blocks');
+        if (sectionPickerOpen) {
+          setSectionPickerOpen(false);
         } else if (selection.type === 'element' && selection.path.length >= 2) {
           // Step up from element to block
           const blockIndex = selection.path.findIndex((p, i) => p === 'block' && selection.path[i + 1]);
@@ -1641,7 +1608,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     previewMode, 
     readOnly, 
     selection, 
-    blockPickerOpen, 
+    sectionPickerOpen, 
     handleClearSelection, 
     handleDeleteElement, 
     handleDeleteBlock, 
@@ -1762,77 +1729,37 @@ export const EditorShell: React.FC<EditorShellProps> = ({
           </div>
         )}
         
-        {/* Left Panel - Desktop */}
+        {/* Left Panel - Desktop (Navigation Only) */}
         {!previewMode && !isMobile && leftPanelOpen && (
           <div className="w-60 shrink-0 h-full overflow-hidden flex flex-col border-r border-builder-border bg-builder-surface">
-            {blockPickerOpen ? (
-              <BlockPickerPanel
-                onAddBlock={(block, options) => {
-                  if (options?.type === 'section') {
-                    // Add as a new section (frame)
-                    handleAddBlock(block, undefined, { type: 'section' });
-                  } else if (blockPickerTargetStackId) {
-                    // Add to specific stack at the end
-                    handleAddBlock(block, { stackId: blockPickerTargetStackId, index: Infinity });
-                  } else {
-                    // Add to first stack of active step
-                    handleAddBlock(block);
-                  }
-                  setBlockPickerOpen(false);
-                  setBlockPickerTargetStackId(null);
-                  setBlockPickerMode('blocks');
-                }}
-                onClose={() => {
-                  setBlockPickerOpen(false);
-                  setBlockPickerTargetStackId(null);
-                  setBlockPickerMode('blocks');
-                }}
-                targetSectionId={blockPickerTargetStackId}
-                hideSecionsTab={!!blockPickerTargetStackId}
-                initialTab={blockPickerMode === 'sections' ? 'sections' : 'blocks'}
-                activeApplicationFlowBlockId={findApplicationFlowBlock()?.id || null}
-                onAddApplicationFlowStep={(step) => {
-                  handleAddApplicationFlowStep(step);
-                  setBlockPickerOpen(false);
-                  setBlockPickerTargetStackId(null);
-                  setBlockPickerMode('blocks');
-                }}
-                onCreateApplicationFlowWithStep={(step) => {
-                  handleCreateApplicationFlowWithStep(step);
-                  setBlockPickerOpen(false);
-                  setBlockPickerTargetStackId(null);
-                  setBlockPickerMode('blocks');
-                }}
-                targetStackId={blockPickerTargetStackId}
-                onOpenAIGenerate={() => {
-                  setBlockPickerOpen(false);
-                  setIsAIGenerateOpen(true);
-                }}
-                onClosePanel={() => setLeftPanelOpen(false)}
-              />
-            ) : (
-              <LeftPanel
-                steps={page.steps}
-                activeStepId={activeStepId}
-                selection={selection}
-                onStepSelect={handleStepSelect}
-                onAddStep={handleAddStep}
-                onDeleteStep={handleDeleteStep}
-                onDuplicateStep={handleDuplicateStep}
-                onAddBlankStep={handleAddBlankStep}
-                onReorderSteps={handleReorderSteps}
-                onMoveStepUp={handleMoveStepUp}
-                onMoveStepDown={handleMoveStepDown}
-                onSelectFrame={handleSelectFrame}
-                onSelectBlock={handleSelectBlock}
-                onSelectElement={handleSelectElement}
-                onRenameStep={handleRenameStep}
-                onOpenImagePicker={() => setIsSocialImagePickerOpen(true)}
-                onClosePanel={() => setLeftPanelOpen(false)}
-              />
-            )}
+            <LeftPanel
+              steps={page.steps}
+              activeStepId={activeStepId}
+              selection={selection}
+              onStepSelect={handleStepSelect}
+              onAddStep={handleAddStep}
+              onDeleteStep={handleDeleteStep}
+              onDuplicateStep={handleDuplicateStep}
+              onAddBlankStep={handleAddBlankStep}
+              onReorderSteps={handleReorderSteps}
+              onMoveStepUp={handleMoveStepUp}
+              onMoveStepDown={handleMoveStepDown}
+              onSelectFrame={handleSelectFrame}
+              onSelectBlock={handleSelectBlock}
+              onSelectElement={handleSelectElement}
+              onRenameStep={handleRenameStep}
+              onOpenImagePicker={() => setIsSocialImagePickerOpen(true)}
+              onClosePanel={() => setLeftPanelOpen(false)}
+            />
           </div>
         )}
+        
+        {/* Section Picker Modal - unified for all "Add Section" triggers */}
+        <SectionPicker
+          isOpen={sectionPickerOpen}
+          onClose={() => setSectionPickerOpen(false)}
+          onSelectTemplate={handleAddSectionFromTemplate}
+        />
         
         {/* Left Panel - Mobile Bottom Sheet (Touch-First Step List) */}
         {isMobile && !previewMode && (
@@ -1901,8 +1828,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             onReorderBlocks={handleReorderBlocks}
             onReorderElements={handleReorderElements}
             onOpenBlockPalette={() => {
-              setBlockPickerOpen(true);
-              setBlockPickerMode('blocks');
+              // Block picking is now inline via BlockAdder popover in canvas
+              // This callback kept for compatibility but no longer opens a panel
             }}
             onAddBlock={handleAddBlock}
             onDuplicateBlock={handleDuplicateBlock}
@@ -1928,14 +1855,12 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             onDeleteFrame={handleDeleteFrame}
             onAddFrameAt={handleAddFrameAt}
             onRenameFrame={handleRenameFrame}
-            onOpenBlockPickerInPanel={(stackId) => {
-              setBlockPickerTargetStackId(stackId);
-              setBlockPickerMode('blocks');
-              setBlockPickerOpen(true);
+            onOpenBlockPickerInPanel={() => {
+              // Block picking is now inline - this triggers section picker as fallback
+              setSectionPickerOpen(true);
             }}
             onOpenSectionPicker={() => {
-              // Open inline picker directly on canvas for intuitive UX
-              setInlineSectionPickerOpen(true);
+              setSectionPickerOpen(true);
             }}
             onNextStep={() => {
               const currentIndex = page.steps.findIndex(s => s.id === activeStepId);
@@ -1958,14 +1883,7 @@ export const EditorShell: React.FC<EditorShellProps> = ({
             }}
           />
           
-          {/* Inline Section Picker - appears on canvas for intuitive UX */}
-          {!previewMode && (
-            <InlineSectionPicker
-              isOpen={inlineSectionPickerOpen}
-              onClose={() => setInlineSectionPickerOpen(false)}
-              onSelectTemplate={handleAddSectionFromTemplate}
-            />
-          )}
+          {/* Section picker is now rendered above the canvas area (after left panel) */}
         </div>
 
         {/* Right Panel */}
