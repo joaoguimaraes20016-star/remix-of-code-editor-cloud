@@ -1,424 +1,638 @@
 
-
-# Funnel Builder Critical Audit Fix Plan
+# Builder V2 UI Polish: Dark Theme Consistency & Visual Refinements
 
 ## Executive Summary
 
-This plan addresses **9 critical to high-severity bugs** in the funnel builder that cause:
-- **Data loss** on lead submission
-- **Validation bypass** through navigation
-- **Answer overwrites** with default radio/checkbox names
-- **Identity field corruption** from heuristic overrides
-- **Missing draft tracking** on arrow navigation
-- **Consent compliance gaps**
-- **International phone truncation**
-- **Security vulnerabilities** (arbitrary URL schemes)
-- **Schema drift** between submission pipelines
+This plan addresses **22 micro UI bugs** across 6 categories identified in the builder audit. The core issue is that `EditorLayout.css` contains **hardcoded light-mode hex values** (`#f1f5f9`, `#ffffff`, `#334155`) within a dark-themed builder, creating visual "light islands" that break theme cohesion.
+
+The fixes are organized into 3 tiers by impact and effort.
 
 ---
 
-## A. Critical Bugs (Data Loss / Revenue Loss)
+## Issue Categories Overview
 
-### Issue 1: Stale Form Data on Submit
+| Category | Issues | Impact | Files |
+|----------|--------|--------|-------|
+| A. Micro UI Bugs | 7 | High - Visual breaks | EditorLayout.css, primitives.css |
+| B. Visual Inconsistencies | 4 | Medium - Brand mismatch | EditorLayout.css, types.ts |
+| C. Interaction Polish | 3 | Low - Animation jitter | EditorLayout.css |
+| D. Responsive Glitches | 3 | Medium - Layout breaks | EditorLayout.css |
+| E. Premium Feel | 2 | Medium - "Cheap" appearance | EditorLayout.css |
 
-**Problem**: `handleFormSubmit` calls `setFormData` then immediately reads `formData` in `submitLead`, which uses stale closure state.
+---
 
-**Location**: `src/flow-canvas/components/FlowCanvasRenderer.tsx:2077-2086`
-```typescript
-const handleFormSubmit = useCallback(async (values: Record<string, string>) => {
-  setFormData(prev => ({ ...prev, ...values }));  // Async state update
-  const success = await submitLead({ submitMode: 'submit' });  // Uses stale formData
-  // ...
-}, [submitLead]);
+## Tier 1: Critical Dark Theme Alignment (10 fixes)
+
+### A1-A3: Panel Tabs, Device Selector, Canvas Toolbar
+
+**Problem**: These components use light-mode colors on dark panels:
+
+```css
+/* Current - WRONG */
+.builder-panel-tabs { background: #f1f5f9; }  /* Light gray on dark panel */
+.builder-tab--active { background: #ffffff; color: #0f172a; }
+.builder-device-selector { background: #f1f5f9; }
+.builder-device-btn--active { background: #ffffff; }
+.builder-canvas-toolbar { background: #ffffff; }
 ```
 
-**Fix**: Pass submitted values directly to `submitLead` instead of relying on state:
+**Fix**: Replace with dark builder tokens:
+
+```css
+/* Updated - Correct */
+.builder-panel-tabs { 
+  background: var(--builder-hover-bg); /* #1f2024 */
+}
+
+.builder-tab {
+  color: var(--builder-text-secondary);
+}
+
+.builder-tab:hover {
+  color: var(--builder-text-primary);
+}
+
+.builder-tab--active {
+  background: var(--builder-active-bg); /* #252629 */
+  color: var(--builder-text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.builder-device-selector {
+  background: var(--builder-hover-bg);
+}
+
+.builder-device-btn {
+  color: var(--builder-text-muted);
+}
+
+.builder-device-btn--active {
+  background: var(--builder-active-bg);
+  color: var(--builder-text-primary);
+}
+
+.builder-canvas-toolbar {
+  background: var(--builder-panel-bg);
+  border-bottom: 1px solid var(--builder-panel-border);
+}
+
+.builder-nav-btn {
+  border: 1px solid var(--builder-panel-border);
+  color: var(--builder-text-muted);
+}
+
+.builder-nav-btn:hover:not(:disabled) {
+  background: var(--builder-hover-bg);
+  color: var(--builder-text-primary);
+}
+
+.builder-canvas-title {
+  color: var(--builder-text-primary);
+}
+```
+
+**Lines to modify**: 700-730, 745-790, 791-821
+
+---
+
+### A2: Page List Low-Contrast Styling
+
+**Problem**: Page list uses light hover/active backgrounds and dark text:
+
+```css
+/* Current - WRONG */
+.builder-page-item:hover { background: #f1f5f9; }
+.builder-page-item--active { background: #eef2ff; }
+.builder-page-name { color: #334155; }
+.builder-page-index { background: #e2e8f0; color: #64748b; }
+```
+
+**Fix**:
+
+```css
+.builder-page-item:hover {
+  background: var(--builder-hover-bg);
+}
+
+.builder-page-item--active {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.builder-page-name {
+  color: var(--builder-text-primary);
+}
+
+.builder-page-index {
+  background: var(--builder-active-bg);
+  color: var(--builder-text-secondary);
+}
+
+.builder-page-item--active .builder-page-index {
+  background: var(--builder-accent);
+  color: #ffffff;
+}
+```
+
+**Lines to modify**: 905-978
+
+---
+
+### A4: Content Card Missing Background
+
+**Problem**: `.builder-content-card` has no background but expects light text:
+
+```css
+/* Current - Missing background */
+.builder-content-card {
+  display: flex;
+  /* No background! */
+}
+```
+
+**Fix in primitives.css**:
+
+```css
+.builder-content-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  gap: 0;
+  text-align: center;
+  overflow: hidden;
+  /* Add proper light background for card content */
+  background: #ffffff;
+  border-radius: 16px;
+}
+```
+
+**File**: `src/builder_v2/components/primitives/primitives.css`, lines 489-497
+
+---
+
+### A6: Selection Overlay Radius Mismatch
+
+**Problem**: Overlay uses hardcoded 8px radius while step cards use 24px:
+
+```css
+/* Current */
+.builder-v2-node-overlay { border-radius: 8px; }  /* Too small! */
+.element-wrapper-overlay { border-radius: 8px; }
+
+/* Step cards use 24px */
+.step-card { border-radius: 24px; }
+```
+
+**Fix**: Use `inherit` or larger value:
+
+```css
+.builder-v2-node-overlay {
+  border-radius: inherit;
+}
+
+.element-wrapper-overlay {
+  border-radius: inherit;
+}
+```
+
+**Lines to modify**: 246-254, 1066-1074
+
+---
+
+### A7 + E2: Theme Popovers to Dark
+
+**Problem**: Action menus and text toolbars are bright white:
+
+```css
+/* Current - WRONG */
+.element-action-menu {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.text-edit-toolbar {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+```
+
+**Fix**:
+
+```css
+.element-action-menu {
+  background: var(--builder-panel-bg);
+  border: 1px solid var(--builder-panel-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.element-action-btn {
+  color: var(--builder-text-secondary);
+}
+
+.element-action-btn:hover:not(:disabled) {
+  background: var(--builder-hover-bg);
+  color: var(--builder-text-primary);
+}
+
+.text-edit-toolbar {
+  background: var(--builder-panel-bg);
+  border: 1px solid var(--builder-panel-border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.text-edit-btn {
+  color: var(--builder-text-secondary);
+}
+
+.text-edit-btn:hover {
+  background: var(--builder-hover-bg);
+  color: var(--builder-text-primary);
+}
+
+.text-edit-dropdown-menu {
+  background: var(--builder-panel-bg);
+  border: 1px solid var(--builder-panel-border);
+}
+
+.text-edit-dropdown-item {
+  color: var(--builder-text-primary);
+}
+
+.text-edit-dropdown-item:hover {
+  background: var(--builder-hover-bg);
+}
+```
+
+**Lines to modify**: 1124-1170, 1192-1297
+
+---
+
+## Tier 2: Visual Consistency & Brand Alignment (6 fixes)
+
+### B1: Replace Hardcoded Builder Tokens
+
+**Problem**: Builder tokens in `:root` use hex values, ignoring global HSL tokens:
+
+```css
+/* Current - Hardcoded */
+:root {
+  --builder-bg: #17181c;
+  --builder-accent: #3b82f6;
+}
+```
+
+**Fix**: Reference global HSL variables (from index.css):
+
+```css
+:root {
+  /* Map to global tokens using HSL */
+  --builder-bg: hsl(var(--builder-bg, 220 13% 8%));
+  --builder-panel-bg: hsl(var(--builder-surface, 220 13% 10%));
+  --builder-accent: hsl(var(--primary, 217 91% 60%));
+  --builder-text-primary: hsl(var(--builder-text, 210 20% 96%));
+  --builder-text-secondary: hsl(var(--builder-text-secondary, 210 15% 80%));
+  --builder-text-muted: hsl(var(--builder-text-muted, 215 12% 62%));
+  --builder-hover-bg: hsl(var(--builder-surface-hover, 220 13% 14%));
+  --builder-active-bg: hsl(var(--builder-surface-active, 220 13% 18%));
+  --builder-panel-border: hsl(var(--builder-border, 220 13% 16%));
+}
+```
+
+**Lines to modify**: 8-35
+
+---
+
+### B2: Default Step Design to Theme Tokens
+
+**Problem**: DEFAULT_DESIGN uses hardcoded colors:
+
 ```typescript
-const handleFormSubmit = useCallback(async (values: Record<string, string>) => {
-  // Merge synchronously for payload
-  const mergedData = { ...formData, ...values };
-  setFormData(prev => ({ ...prev, ...values }));
+// Current - Hardcoded
+export const DEFAULT_DESIGN: StepDesign = {
+  backgroundColor: '#0f0f0f',
+  buttonColor: '#6366f1',
+};
+```
+
+**Fix**: Use CSS variable references:
+
+```typescript
+export const DEFAULT_DESIGN: StepDesign = {
+  backgroundColor: 'hsl(var(--builder-bg))',
+  textColor: 'hsl(var(--builder-text))',
+  buttonColor: 'hsl(var(--primary))',
+  buttonTextColor: 'hsl(var(--primary-foreground))',
+  fontSize: 'medium',
+  borderRadius: 12,
+};
+```
+
+**File**: `src/builder_v2/components/steps/types.ts`, lines 51-58
+
+---
+
+### B3: CTA Gradient to Theme Tokens
+
+**Problem**: Primary CTA uses hardcoded purple gradient:
+
+```css
+/* Current */
+.builder-cta-button--primary {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+}
+```
+
+**Fix**:
+
+```css
+.builder-cta-button--primary {
+  background: var(--gradient-button, linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%));
+  box-shadow: 0 4px 14px hsl(var(--primary) / 0.35);
+}
+
+.builder-cta-button--primary:hover {
+  box-shadow: 0 6px 20px hsl(var(--primary) / 0.45);
+}
+```
+
+**File**: `src/builder_v2/components/primitives/primitives.css`, lines 114-123
+
+---
+
+### B4: Unify Font Family
+
+**Problem**: Builder uses `'Inter'` while app uses system fonts.
+
+**Fix**: Remove the Google Fonts import and align to global font token:
+
+```css
+/* Remove line 1: @import url('https://fonts.googleapis.com/css2?family=Inter...'); */
+
+.builder-shell {
+  font-family: var(--font-sans, 'DM Sans', 'Inter', system-ui, sans-serif);
+}
+```
+
+**Lines to modify**: 1, 574-580
+
+---
+
+### A5: Normalize Mixed Image Option Layout
+
+**Problem**: When `hasImages` is true but some options lack images, they render inconsistently:
+
+```tsx
+// Current - Only applies card class if BOTH hasImages AND option.image
+className={cn(
+  "step-option",
+  hasImages && option.image && "step-option--card"  // Problem: non-image items stay as list
+)}
+```
+
+**Fix**: When `hasImages`, all options should use card layout (with placeholder if no image):
+
+```tsx
+// Fixed - All options get card layout when any has image
+className={cn(
+  "step-option",
+  hasImages && "step-option--card"  // All cards when ANY has image
+)}
+
+// And add placeholder image handling:
+{hasImages && (
+  <div 
+    className="step-option-image"
+    style={{
+      backgroundImage: option.image ? `url(${option.image})` : 'none',
+      backgroundColor: option.image ? undefined : 'rgba(255,255,255,0.06)',
+      borderRadius: `${d.borderRadius}px ${d.borderRadius}px 0 0`,
+    }}
+  >
+    {!option.image && option.emoji && (
+      <span className="step-option-placeholder-emoji">{option.emoji}</span>
+    )}
+  </div>
+)}
+```
+
+**File**: `src/builder_v2/components/steps/MultiChoiceStep.tsx`, lines 56-95
+
+Also add CSS for the emoji placeholder:
+
+```css
+.step-option-placeholder-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 32px;
+}
+```
+
+**File**: `src/builder_v2/canvas/canvas-experience.css`, after line 307
+
+---
+
+## Tier 3: Animation & Responsive Polish (6 fixes)
+
+### C1: Panel Collapse Double Transition
+
+**Problem**: Both `grid-template-columns` and `width/opacity` animate, causing jitter:
+
+```css
+/* Current - Double animation */
+.builder-shell {
+  transition: grid-template-columns 250ms...;
+}
+.builder-panel {
+  transition: width 200ms ease, opacity 200ms ease;
+}
+```
+
+**Fix**: Remove panel width/opacity transition, rely only on grid:
+
+```css
+.builder-panel {
+  transition: none; /* Grid handles the transition */
+}
+
+.builder-panel--collapsed {
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+```
+
+**Lines to modify**: 596-610
+
+---
+
+### C2: Collision-Aware Toolbar Positioning
+
+**Problem**: Hover toolbars clip at canvas edges.
+
+**Fix**: Add CSS that flips toolbar to bottom when near top:
+
+```css
+.builder-v2-hover-toolbar {
+  /* Existing styles */
+}
+
+/* Flip to bottom when near top edge */
+.builder-v2-node--near-top > .builder-v2-hover-toolbar {
+  top: auto;
+  bottom: -32px;
+}
+```
+
+This requires a small JS check in the component to add `--near-top` class when element is close to viewport top.
+
+---
+
+### C3: Drag Handle Visibility During Drag
+
+**Problem**: Handle fades out when dragging:
+
+**Fix**:
+
+```css
+.builder-page-item-wrapper--dragging .builder-page-drag-handle {
+  opacity: 1 !important;
+}
+```
+
+**Lines to modify**: After line 936
+
+---
+
+### D1-D2: Responsive Device Frames
+
+**Problem**: Fixed widths overflow on narrow viewports.
+
+**Fix**:
+
+```css
+.device-frame--phone {
+  width: min(375px, calc(100vw - 560px)); /* 560 = left + right panels + padding */
+}
+
+.device-frame--tablet {
+  width: min(768px, calc(100vw - 560px));
+}
+
+.device-frame--phone .device-screen,
+.device-frame--tablet .device-screen,
+.device-frame--desktop .device-screen {
+  max-height: calc(100vh - 200px);
+}
+```
+
+**Lines to modify**: 42-82, 105-126, 146-206
+
+---
+
+### D3: Responsive Panel Behavior
+
+**Problem**: Panels don't adapt on narrow viewports.
+
+**Fix**: Add breakpoint for overlay mode:
+
+```css
+@media (max-width: 1024px) {
+  .builder-shell {
+    grid-template-columns: 0 1fr 0; /* Panels collapsed by default */
+  }
   
-  // Pass merged data directly
-  const success = await submitLeadWithData(mergedData, { submitMode: 'submit' });
-  if (success) {
-    setIsComplete(true);
-  }
-}, [formData, submitLeadWithData]);
-```
-
-Create a new variant `submitLeadWithData(data, options)` that accepts explicit form data instead of reading from state.
-
-**Files to modify**:
-- `src/flow-canvas/components/FlowCanvasRenderer.tsx` (~30 lines)
-
----
-
-### Issue 2: Navigation Bypasses Validation Engine
-
-**Problem**: Arrow navigation and `go-to-step` actions directly call `setCurrentStepIndex`, bypassing `FlowContainerProvider.emitIntent()` and validation rules.
-
-**Location**: `src/flow-canvas/components/FlowCanvasRenderer.tsx:2207-2230`
-```typescript
-<button onClick={() => setCurrentStepIndex(prev => Math.max(0, prev - 1))} ...>
-  <ChevronUp />
-</button>
-<button onClick={() => setCurrentStepIndex(prev => Math.min(totalSteps - 1, prev + 1))} ...>
-  <ChevronDown />
-</button>
-```
-
-**Fix**: 
-1. All navigation must go through `FlowContainerProvider`
-2. Derive `currentStepIndex` from `FlowContainerContext.currentStepId`
-3. Use `emitIntent({ type: 'next-step' })` and `emitIntent({ type: 'prev-step' })` instead of direct state manipulation
-
-```typescript
-// Replace arrows with intent-based navigation
-const { emitIntent, currentStepIndex, canProgress, formValues } = useFlowContainer();
-
-<button 
-  onClick={() => emitIntent({ type: 'prev-step' })}
-  disabled={!canProgress.prev}
->
-  <ChevronUp />
-</button>
-<button 
-  onClick={() => emitIntent({ type: 'next-step' })}
-  disabled={!canProgress.next}
->
-  <ChevronDown />
-</button>
-```
-
-**Files to modify**:
-- `src/flow-canvas/components/FlowCanvasRenderer.tsx` (~50 lines)
-- May need to expose `formValues` from `FlowContainerContext` for runtime use
-
----
-
-## B. High-Risk Logic Errors
-
-### Issue 3: Radio/Checkbox Groups Overwrite Answers
-
-**Problem**: Default name is hardcoded to `'radio'` or `'checkbox'`, causing collisions.
-
-**Location**: `src/flow-canvas/components/FlowCanvasRenderer.tsx:1128, 1139`
-```typescript
-const radioName = (element.props.name as string) || 'radio';  // ALL radios share same key!
-const checkboxName = (element.props.name as string) || 'checkbox';
-```
-
-**Fix**: Use element ID as fallback:
-```typescript
-const radioName = (element.props.name as string) || `radio_${element.id}`;
-const checkboxName = (element.props.name as string) || `checkbox_${element.id}`;
-```
-
-**Files to modify**:
-- `src/flow-canvas/components/FlowCanvasRenderer.tsx` (~4 lines)
-
----
-
-### Issue 4: Identity Field Heuristics Override Explicit Keys
-
-**Problem**: Auto-detection overwrites explicit `fieldKey` values, corrupting field mapping.
-
-**Location**: `src/flow-canvas/components/FlowCanvasRenderer.tsx:1101-1116`
-```typescript
-const rawFieldKey = (element.props.fieldKey as string) || element.id;
-// ...heuristic detection...
-let fieldKey = rawFieldKey;
-if (inputType === 'email' || placeholder.includes('email')) {
-  fieldKey = 'email';  // OVERWRITES explicit rawFieldKey!
-}
-```
-
-**Fix**: Only apply heuristics when no explicit fieldKey is set:
-```typescript
-const explicitFieldKey = element.props.fieldKey as string | undefined;
-let fieldKey = explicitFieldKey || element.id;
-
-// Only apply heuristics if no explicit key was set
-if (!explicitFieldKey) {
-  const placeholder = ((element.props.placeholder as string) || '').toLowerCase();
-  const inputType = ((element.props.type as string) || 'text').toLowerCase();
-  
-  if (inputType === 'email' || placeholder.includes('email')) {
-    fieldKey = 'email';
-  } else if (inputType === 'tel' || placeholder.includes('phone')) {
-    fieldKey = 'phone';
-  } else if (placeholder.includes('name') && !placeholder.includes('company')) {
-    fieldKey = 'name';
-  }
-}
-```
-
-**Files to modify**:
-- `src/flow-canvas/components/FlowCanvasRenderer.tsx` (~15 lines)
-
----
-
-## C. Event & Data Inconsistencies
-
-### Issue 5: Draft Saves Missing on Arrow Navigation
-
-**Problem**: Draft saves only happen in `handleButtonClick`, not on arrow/go-to-step navigation.
-
-**Location**: Arrow navigation at line 2207-2230 never calls `saveDraft()`.
-
-**Fix**: Create a unified step transition handler that always saves drafts:
-```typescript
-const handleStepChange = useCallback(async (newIndex: number) => {
-  // Save draft with current form data before transitioning
-  await saveDraftWithCurrentData();
-  setCurrentStepIndex(newIndex);
-}, [saveDraftWithCurrentData]);
-
-// Use in arrows:
-<button onClick={() => handleStepChange(Math.max(0, currentStepIndex - 1))}>
-```
-
-Better yet, integrate with `FlowContainerContext.emitIntent()` which should handle draft saves automatically on step transitions.
-
-**Files to modify**:
-- `src/flow-canvas/components/FlowCanvasRenderer.tsx` (~20 lines)
-- Optionally: `src/flow-canvas/builder/contexts/FlowContainerContext.tsx` (add onStepChange callback)
-
----
-
-## D. UX / Conversion Issues
-
-### Issue 6: Consent Not Enforced During Submission
-
-**Problem**: Consent checkbox only shows when `privacyPolicyUrl` is set, and submission never validates consent.
-
-**Location**: 
-- `src/flow-canvas/shared/hooks/useConsentRequired.ts:52-53`
-- `src/flow-canvas/components/FlowCanvasRenderer.tsx` (submission logic)
-
-**Fix - Two-part solution**:
-
-1. **Show consent UI when identity is collected** (with or without privacy URL):
-```typescript
-// In useConsentRequired.ts
-const showConsentCheckbox = requiresConsent; // Always show if identity collected
-
-// Generate fallback message if no URL
-let consentMessage = privacyPolicyUrl 
-  ? 'I agree to the Privacy Policy'
-  : 'I consent to having my information stored and processed';
-```
-
-2. **Block submission if consent required but not given**:
-```typescript
-// In handleFormSubmit / submitLead
-const { requiresConsent } = useConsentRequired({ steps, privacyPolicyUrl });
-
-if (requiresConsent && !consentState.agreed) {
-  setConsentError('Please accept the consent checkbox to continue');
-  return { error: 'Consent required' };
-}
-```
-
-**Files to modify**:
-- `src/flow-canvas/shared/hooks/useConsentRequired.ts` (~5 lines)
-- `src/flow-canvas/components/FlowCanvasRenderer.tsx` (~15 lines)
-
----
-
-## E. Performance / Data Integrity
-
-### Issue 7: US-Only Phone Formatting Truncates International Numbers
-
-**Problem**: Phone formatting strips all digits after 10 and forces US pattern.
-
-**Location**:
-- `src/flow-canvas/shared/components/ApplicationStepRenderer.tsx:480-485`
-- `src/builder_v2/runtime/RuntimePrimitives.tsx:233-246`
-
-**Fix**: Detect international prefix and preserve raw input:
-```typescript
-function formatPhone(input: string): string {
-  // Preserve the original input if it starts with + (international)
-  if (input.startsWith('+')) {
-    // Allow international format - just clean non-digit except leading +
-    return '+' + input.slice(1).replace(/[^\d]/g, '');
+  .builder-panel--left,
+  .builder-panel--right {
+    position: fixed;
+    top: 0;
+    height: 100vh;
+    z-index: 50;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
   }
   
-  // US formatting for domestic numbers
-  const digits = input.replace(/\D/g, '');
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  if (digits.length <= 10) return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+  .builder-panel--left {
+    left: 0;
+    width: 280px;
+    transform: translateX(-100%);
+  }
   
-  // Allow more than 10 digits (could be intl without +)
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
-```
-
-Also remove `maxLength={14}` constraint from phone inputs to allow longer international numbers.
-
-**Files to modify**:
-- `src/flow-canvas/shared/components/ApplicationStepRenderer.tsx` (~10 lines)
-- `src/builder_v2/runtime/RuntimePrimitives.tsx` (~10 lines)
-
----
-
-## F. Security Risks
-
-### Issue 8: URL Actions Allow Arbitrary Schemes (XSS/Open Redirect)
-
-**Problem**: User-configured URLs are used directly in `window.location.href` without validation.
-
-**Location**: `src/flow-canvas/components/FlowCanvasRenderer.tsx:1041-1083`
-```typescript
-case 'url':
-case 'redirect':
-  if (redirectUrl) {
-    window.location.href = redirectUrl;  // No validation!
+  .builder-panel--right {
+    right: 0;
+    width: 320px;
+    transform: translateX(100%);
   }
-```
-
-**Fix**: Add URL scheme allowlist:
-```typescript
-// Create helper
-function sanitizeNavigationUrl(url: string): string | null {
-  if (!url) return null;
   
-  try {
-    const parsed = new URL(url, window.location.origin);
-    const allowedSchemes = ['http:', 'https:', 'mailto:', 'tel:'];
-    
-    if (!allowedSchemes.includes(parsed.protocol)) {
-      console.warn(`[Security] Blocked navigation to disallowed scheme: ${parsed.protocol}`);
-      return null;
-    }
-    
-    return parsed.href;
-  } catch {
-    // Relative URL - allow it (will use current origin)
-    if (url.startsWith('/') || url.startsWith('#')) {
-      return url;
-    }
-    console.warn(`[Security] Blocked navigation to invalid URL: ${url}`);
-    return null;
+  .builder-panel--left.builder-panel--visible,
+  .builder-panel--right.builder-panel--visible {
+    transform: translateX(0);
   }
-}
-
-// Use in handlers:
-case 'url':
-case 'redirect':
-  const safeUrl = sanitizeNavigationUrl(redirectUrl);
-  if (safeUrl) {
-    if (openNewTab) {
-      window.open(safeUrl, '_blank', 'noopener,noreferrer');
-    } else {
-      window.location.href = safeUrl;
-    }
-  }
-  break;
-```
-
-**Files to modify**:
-- `src/flow-canvas/components/FlowCanvasRenderer.tsx` (~30 lines)
-
----
-
-## G. Architectural Improvements
-
-### Issue 9: Consolidate Submission Pipelines
-
-**Problem**: `useApplicationSubmit` and `useUnifiedLeadSubmit` have divergent payload schemas and consent handling.
-
-**Current differences**:
-| Field | useApplicationSubmit | useUnifiedLeadSubmit |
-|-------|---------------------|---------------------|
-| Consent | `consent.email`, `consent.sms` | `consent.agreed`, `consent.email_consent`, `consent.sms_consent` |
-| Step tracking | `source.stepIds[]` | `step_id`, `step_ids[]`, `step_type`, `step_intent` |
-| Idempotency key prefix | `appSubmit:` | `submitReq:` |
-
-**Fix - Normalize to single contract**:
-
-1. Create shared payload normalizer used by both hooks:
-```typescript
-// src/flow-canvas/shared/hooks/normalizeSubmitPayload.ts
-export function normalizeToBackendPayload(
-  answers: Record<string, any>,
-  identity: LeadIdentity,
-  consent: LeadConsent,
-  source: LeadSource,
-  metadata?: LeadMetadata
-): BackendSubmitPayload {
-  return {
-    // Standard fields
-    answers: { ...answers, ...identity },
-    name: identity.name,
-    email: identity.email,
-    phone: identity.phone,
-    
-    // Normalized consent
-    consent: consent.agreed ? {
-      agreed: true,
-      timestamp: consent.timestamp || new Date().toISOString(),
-      email_consent: consent.email ?? false,
-      sms_consent: consent.sms ?? false,
-      privacy_policy_url: consent.privacyPolicyUrl,
-    } : undefined,
-    
-    // Normalized source tracking
-    step_id: source.stepId || source.stepIds?.[0],
-    step_ids: source.stepIds,
-    step_type: source.stepType,
-    step_intent: source.stepIntent,
-    page_id: source.pageId,
-    last_step_index: source.lastStepIndex,
-    
-    // Metadata
-    utm_source: metadata?.utm_source,
-    utm_medium: metadata?.utm_medium,
-    utm_campaign: metadata?.utm_campaign,
-    calendly_booking: metadata?.calendly_booking,
-  };
 }
 ```
 
-2. Both hooks import and use this normalizer before calling `submit-funnel-lead`.
-
-**Files to modify**:
-- Create `src/flow-canvas/shared/hooks/normalizeSubmitPayload.ts` (new file, ~50 lines)
-- Update `src/flow-canvas/shared/hooks/useApplicationSubmit.ts` (~10 lines)
-- Update `src/flow-canvas/shared/hooks/useUnifiedLeadSubmit.ts` (~10 lines)
+**Lines to modify**: Add after line 624
 
 ---
 
-## Implementation Priority
+### E1: Soften Dashed Borders
 
-| Issue | Priority | Risk | Effort | Dependency |
-|-------|----------|------|--------|------------|
-| 1 - Stale form data | **P0** | Data loss | 30 min | None |
-| 3 - Radio/checkbox names | **P0** | Data corruption | 5 min | None |
-| 4 - Identity field keys | **P0** | Data corruption | 10 min | None |
-| 8 - URL sanitization | **P1** | Security | 20 min | None |
-| 7 - Phone formatting | **P1** | Data integrity | 15 min | None |
-| 2 - Navigation validation | **P1** | Logic bypass | 60 min | FlowContainer |
-| 5 - Draft on arrows | **P1** | Analytics | 20 min | Issue 2 |
-| 6 - Consent enforcement | **P2** | Compliance | 30 min | None |
-| 9 - Unified submissions | **P2** | Tech debt | 45 min | None |
+**Problem**: Bright dashed borders feel like dev UI:
+
+```css
+/* Current */
+.builder-add-step-btn {
+  border: 1px dashed #cbd5e1;
+}
+```
+
+**Fix**:
+
+```css
+.builder-add-step-btn {
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+}
+
+.builder-add-step-btn:hover {
+  border-color: var(--builder-accent);
+  border-style: solid;
+}
+
+.step-card--empty {
+  border: 2px dashed rgba(255, 255, 255, 0.08);
+}
+```
+
+**Lines to modify**: 1017-1043, also canvas-experience.css lines 338-358
 
 ---
 
 ## Files Summary
 
-| File | Issues | Changes |
-|------|--------|---------|
-| `src/flow-canvas/components/FlowCanvasRenderer.tsx` | 1,2,3,4,5,8 | ~150 lines |
-| `src/flow-canvas/shared/components/ApplicationStepRenderer.tsx` | 7 | ~10 lines |
-| `src/builder_v2/runtime/RuntimePrimitives.tsx` | 7 | ~10 lines |
-| `src/flow-canvas/shared/hooks/useConsentRequired.ts` | 6 | ~5 lines |
-| `src/flow-canvas/shared/hooks/normalizeSubmitPayload.ts` | 9 | NEW (~50 lines) |
-| `src/flow-canvas/shared/hooks/useApplicationSubmit.ts` | 9 | ~10 lines |
-| `src/flow-canvas/shared/hooks/useUnifiedLeadSubmit.ts` | 9 | ~10 lines |
+| File | Changes | Priority |
+|------|---------|----------|
+| `src/builder_v2/EditorLayout.css` | ~200 lines | P0 |
+| `src/builder_v2/components/primitives/primitives.css` | ~30 lines | P0 |
+| `src/builder_v2/components/steps/types.ts` | ~8 lines | P1 |
+| `src/builder_v2/components/steps/MultiChoiceStep.tsx` | ~20 lines | P1 |
+| `src/builder_v2/canvas/canvas-experience.css` | ~25 lines | P1 |
+
+---
+
+## Implementation Order
+
+1. **EditorLayout.css token replacement** (Tier 1, A1-A3, A6, A7, E2) - Biggest visual impact
+2. **Panel tabs + device selector dark theme** (Tier 1)
+3. **Page list styling fixes** (Tier 1, A2)
+4. **Popover theming** (Tier 1, A7 + E2)
+5. **Content card background** (Tier 1, A4)
+6. **Selection overlay radius** (Tier 1, A6)
+7. **DEFAULT_DESIGN tokens** (Tier 2, B2)
+8. **CTA gradient tokens** (Tier 2, B3)
+9. **Mixed option layout** (Tier 2, A5)
+10. **Animation polish** (Tier 3, C1-C3)
+11. **Responsive frames** (Tier 3, D1-D3)
 
 ---
 
@@ -426,28 +640,25 @@ export function normalizeToBackendPayload(
 
 After implementation:
 
-**Data Integrity**
-- [ ] Submit form with values just entered → all values captured (not stale)
-- [ ] Two radio groups without names → each saves independently
-- [ ] Input with explicit `fieldKey="company_email"` → saves as `company_email` not `email`
-- [ ] Enter international phone `+44 20 1234 5678` → all digits preserved
+**Dark Theme Consistency**
+- [ ] Panel tabs match dark panel background (no light chips)
+- [ ] Device selector buttons are dark-themed
+- [ ] Canvas toolbar is dark, not white
+- [ ] Page list text is readable (light on dark)
+- [ ] Popovers match dark theme
 
-**Validation & Navigation**
-- [ ] Click arrow up/down → validation rules still enforced
-- [ ] Skip required step via arrows → blocked with error message
-- [ ] Draft saved on arrow navigation → verified in database
+**Visual Quality**
+- [ ] Selection outlines match component corner radius
+- [ ] Content cards have visible background
+- [ ] CTA buttons use brand gradient
+- [ ] Dashed borders are subtle, not harsh
 
-**Security**
-- [ ] Button URL `javascript:alert(1)` → navigation blocked
-- [ ] Button URL `data:text/html,...` → navigation blocked
-- [ ] Button URL `https://example.com` → works normally
+**Responsive**
+- [ ] Device frames don't overflow on 1280px viewport
+- [ ] Panels overlay on 1024px and below
+- [ ] Device screen heights adapt to viewport
 
-**Consent**
-- [ ] Flow with email field but no privacy URL → consent checkbox shown
-- [ ] Submit without checking consent → submission blocked
-- [ ] Submit with consent checked → submission succeeds with consent record
-
-**Submission Consistency**
-- [ ] Submit from FlowCanvas → check payload schema
-- [ ] Submit from ApplicationEngine → check payload schema matches
-
+**Animation**
+- [ ] Panel collapse is smooth (no jitter)
+- [ ] Drag handles stay visible while dragging
+- [ ] Hover toolbars don't clip at edges
