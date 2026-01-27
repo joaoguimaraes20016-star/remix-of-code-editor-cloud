@@ -1,6 +1,6 @@
 // CaptureNodeWrapper - Shared layout wrapper for all node types
 // Handles title, description, alignment, spacing, and button rendering
-// USES UNIFIED FlowButton component - NO SPECIAL CASING
+// USES UNIFIED UnifiedButton component - NO SPECIAL CASING
 
 import React from 'react';
 import { CaptureNode } from '@/flow-canvas/types/captureFlow';
@@ -10,7 +10,7 @@ import {
   getAlignClass,
   getSpacingClass,
 } from '../../utils/stepRenderHelpers';
-import { FlowButton, presetToVariant } from '../FlowButton';
+import { UnifiedButton, presetToVariant } from '@/components/builder/UnifiedButton';
 
 interface CaptureNodeWrapperProps {
   node: CaptureNode;
@@ -88,9 +88,9 @@ export const CaptureNodeWrapper: React.FC<CaptureNodeWrapperProps> = ({
         </p>
       )}
 
-      {/* Continue button - UNIFIED FlowButton component */}
+      {/* Continue button - UNIFIED UnifiedButton component */}
       {!hideButton && (
-        <FlowButton
+        <UnifiedButton
           variant={presetToVariant(settings.buttonPreset)}
           onClick={(e) => {
             // Form submission is handled by the form onSubmit
@@ -98,7 +98,7 @@ export const CaptureNodeWrapper: React.FC<CaptureNodeWrapperProps> = ({
           }}
         >
           {settings.buttonText || 'Continue'}
-        </FlowButton>
+        </UnifiedButton>
       )}
     </form>
   );

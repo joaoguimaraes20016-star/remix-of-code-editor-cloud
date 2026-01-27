@@ -2,6 +2,8 @@
  * PerspectiveSectionPicker - Premium two-panel section picker
  * Inspired by Perspective's high-fidelity template gallery
  * Designed for high-ticket coaching funnels
+ * 
+ * Uses unified builder tokens for consistent styling.
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -136,16 +138,16 @@ export function PerspectiveSectionPicker({
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             className={cn(
               "relative flex overflow-hidden rounded-2xl",
-              "bg-[hsl(var(--coaching-dark))] border border-[hsl(var(--coaching-border))]",
+              "bg-builder-bg border border-builder-border",
               "shadow-2xl shadow-black/50",
               "w-[800px] max-w-[90vw] h-[600px] max-h-[80vh]"
             )}
           >
             {/* Left Panel - Categories */}
-            <div className="w-[200px] flex-shrink-0 border-r border-[hsl(var(--coaching-border))] bg-[hsl(var(--coaching-surface))]">
+            <div className="w-[200px] flex-shrink-0 border-r border-builder-border bg-builder-surface">
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-4 border-b border-[hsl(var(--coaching-border))]">
-                <h3 className="text-sm font-semibold text-[hsl(var(--coaching-text))]">
+              <div className="flex items-center justify-between px-4 py-4 border-b border-builder-border">
+                <h3 className="text-sm font-semibold text-builder-text">
                   Add Section
                 </h3>
               </div>
@@ -157,9 +159,9 @@ export function PerspectiveSectionPicker({
                     return (
                       <div
                         key={category.id}
-                        className="mx-3 my-3 border-t border-[hsl(var(--coaching-border))]"
+                        className="mx-3 my-3 border-t border-builder-border"
                       >
-                        <span className="block px-1 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--coaching-muted))]">
+                        <span className="block px-1 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-builder-text-muted">
                           Sections
                         </span>
                       </div>
@@ -178,17 +180,17 @@ export function PerspectiveSectionPicker({
                       className={cn(
                         "flex items-center gap-3 w-full px-4 py-2.5 text-left transition-all group",
                         isActive
-                          ? "bg-[hsl(var(--coaching-accent)/0.15)] text-[hsl(var(--coaching-accent))]"
+                          ? "bg-builder-accent/15 text-builder-accent"
                           : hasTemplates
-                            ? "text-[hsl(var(--coaching-text))] hover:bg-[hsl(var(--coaching-border)/0.5)]"
-                            : "text-[hsl(var(--coaching-muted))] cursor-not-allowed opacity-50"
+                            ? "text-builder-text hover:bg-builder-surface-hover"
+                            : "text-builder-text-muted cursor-not-allowed opacity-50"
                       )}
                     >
                       {Icon && (
                         <Icon
                           size={16}
                           className={cn(
-                            isActive ? "text-[hsl(var(--coaching-accent))]" : "text-[hsl(var(--coaching-muted))]"
+                            isActive ? "text-builder-accent" : "text-builder-text-muted"
                           )}
                         />
                       )}
@@ -209,20 +211,20 @@ export function PerspectiveSectionPicker({
             </div>
 
             {/* Right Panel - Template Gallery */}
-            <div className="flex-1 flex flex-col bg-[hsl(var(--coaching-dark))]">
+            <div className="flex-1 flex flex-col bg-builder-bg">
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--coaching-border))]">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-builder-border">
                 <div>
-                  <h3 className="text-base font-semibold text-[hsl(var(--coaching-text))]">
+                  <h3 className="text-base font-semibold text-builder-text">
                     {SECTION_CATEGORIES.find(c => c.id === activeCategory)?.label || 'Templates'}
                   </h3>
-                  <p className="text-xs text-[hsl(var(--coaching-muted))] mt-0.5">
+                  <p className="text-xs text-builder-text-muted mt-0.5">
                     {templates.length} template{templates.length !== 1 ? 's' : ''} available
                   </p>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg text-[hsl(var(--coaching-muted))] hover:text-[hsl(var(--coaching-text))] hover:bg-[hsl(var(--coaching-border)/0.5)] transition-colors"
+                  className="p-2 rounded-lg text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-hover transition-colors"
                 >
                   <X size={18} />
                 </button>
@@ -242,13 +244,13 @@ export function PerspectiveSectionPicker({
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                    <div className="w-16 h-16 rounded-2xl bg-[hsl(var(--coaching-border)/0.3)] flex items-center justify-center mb-4">
-                      <Package size={28} className="text-[hsl(var(--coaching-muted))]" />
+                    <div className="w-16 h-16 rounded-2xl bg-builder-surface flex items-center justify-center mb-4">
+                      <Package size={28} className="text-builder-text-muted" />
                     </div>
-                    <p className="text-sm font-medium text-[hsl(var(--coaching-muted))]">
+                    <p className="text-sm font-medium text-builder-text-muted">
                       No templates in this category
                     </p>
-                    <p className="text-xs text-[hsl(var(--coaching-muted)/0.7)] mt-1">
+                    <p className="text-xs text-builder-text-dim mt-1">
                       Try selecting a different category
                     </p>
                   </div>

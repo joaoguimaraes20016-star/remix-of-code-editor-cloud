@@ -4,7 +4,11 @@
 /**
  * StepIntent for legacy funnel system.
  * 
- * Note: This differs from the canonical StepIntent in '@/flow-canvas/types/infostack'.
+ * NOTE: This uses legacy names for backwards compatibility with existing code.
+ * The canonical StepIntent in '@/flow-canvas/types/infostack' uses:
+ * - 'capture' | 'qualify' | 'schedule' | 'convert' | 'complete'
+ * 
+ * Mapping:
  * - 'collect' here maps to 'qualify' in the canonical definition
  * - Future unification should migrate to canonical types
  */

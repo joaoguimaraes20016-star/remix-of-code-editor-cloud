@@ -13,10 +13,10 @@
 export type PageType = 'landing' | 'optin' | 'appointment' | 'thank_you';
 
 /**
- * Explicit intent for a funnel step. Drives layout + spacing decisions.
- */
-/**
- * StepIntent for builder_v2 module - maps to canonical intents
+ * StepIntent for builder_v2 module.
+ * 
+ * NOTE: This uses legacy names for backwards compatibility with existing code.
+ * The canonical StepIntent in '@/flow-canvas/types/infostack' uses different values:
  * 
  * Mapping:
  * - 'optin' → 'capture' (user provides contact info)
@@ -24,7 +24,6 @@ export type PageType = 'landing' | 'optin' | 'appointment' | 'thank_you';
  * - 'checkout' → 'convert' (payment/conversion step)
  * - 'thank_you' → 'complete' (final confirmation step)
  * 
- * Note: builder_v2 uses legacy names for backwards compatibility.
  * New code should use canonical types from '@/flow-canvas/types/infostack'.
  */
 export type StepIntent = 'optin' | 'content' | 'checkout' | 'thank_you';

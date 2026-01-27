@@ -1,8 +1,11 @@
 /**
  * HighTicketPreviewCard - Premium visual preview cards
  * Rich previews that look like actual high-ticket coaching funnels
+ * 
+ * All preview components use forwardRef to prevent React warnings.
  */
 
+import React from 'react';
 import { Plus, Star, Play, Calendar, CheckCircle2, Quote, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SectionTemplate } from '@/builder_v2/templates/sectionTemplates';
@@ -13,47 +16,49 @@ interface HighTicketPreviewCardProps {
 }
 
 // Hero preview - Dark gradient with headline and CTA
-function HeroPreview({ variant }: { variant?: string }) {
-  const hasButton = variant !== 'simple';
-  
-  return (
-    <div className="w-full h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 flex flex-col justify-center items-center gap-2">
-      {/* Badge */}
-      <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
-        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-        <div className="h-1 w-8 bg-emerald-400/60 rounded" />
+const HeroPreview = React.forwardRef<HTMLDivElement, { variant?: string }>(
+  ({ variant }, ref) => {
+    const hasButton = variant !== 'simple';
+    
+    return (
+      <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 flex flex-col justify-center items-center gap-2">
+        {/* Badge */}
+        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          <div className="h-1 w-8 bg-emerald-400/60 rounded" />
+        </div>
+        {/* Headline */}
+        <div className="h-4 w-32 bg-gradient-to-r from-white to-white/80 rounded mt-1" />
+        <div className="h-2 w-40 bg-white/30 rounded" />
+        {/* CTA Button */}
+        {hasButton && (
+          <div className="h-6 w-20 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg mt-2 shadow-lg shadow-blue-500/30" />
+        )}
       </div>
-      {/* Headline */}
-      <div className="h-4 w-32 bg-gradient-to-r from-white to-white/80 rounded mt-1" />
-      <div className="h-2 w-40 bg-white/30 rounded" />
-      {/* CTA Button */}
-      {hasButton && (
-        <div className="h-6 w-20 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg mt-2 shadow-lg shadow-blue-500/30" />
-      )}
-    </div>
-  );
-}
+    );
+  }
+);
+HeroPreview.displayName = 'HeroPreview';
 
 // Content preview - Text blocks with heading
-function ContentPreview() {
-  return (
-    <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-4 flex flex-col gap-2">
-      {/* Heading */}
-      <div className="h-3 w-24 bg-white/90 rounded" />
-      {/* Text lines */}
-      <div className="space-y-1.5 mt-1">
-        <div className="h-1.5 w-full bg-white/30 rounded" />
-        <div className="h-1.5 w-5/6 bg-white/25 rounded" />
-        <div className="h-1.5 w-4/5 bg-white/20 rounded" />
-      </div>
+const ContentPreview = React.forwardRef<HTMLDivElement>((_, ref) => (
+  <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-4 flex flex-col gap-2">
+    {/* Heading */}
+    <div className="h-3 w-24 bg-white/90 rounded" />
+    {/* Text lines */}
+    <div className="space-y-1.5 mt-1">
+      <div className="h-1.5 w-full bg-white/30 rounded" />
+      <div className="h-1.5 w-5/6 bg-white/25 rounded" />
+      <div className="h-1.5 w-4/5 bg-white/20 rounded" />
     </div>
-  );
-}
+  </div>
+));
+ContentPreview.displayName = 'ContentPreview';
 
 // CTA preview - Gradient banner with button
-function CTAPreview({ hasText }: { hasText?: boolean }) {
-  return (
-    <div className="w-full h-full bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 p-4 flex flex-col justify-center items-center gap-2">
+const CTAPreview = React.forwardRef<HTMLDivElement, { hasText?: boolean }>(
+  ({ hasText }, ref) => (
+    <div ref={ref} className="w-full h-full bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 p-4 flex flex-col justify-center items-center gap-2">
       {hasText && (
         <>
           <div className="h-2.5 w-28 bg-white/90 rounded" />
@@ -64,13 +69,14 @@ function CTAPreview({ hasText }: { hasText?: boolean }) {
         <div className="h-2 w-14 bg-blue-600 rounded" />
       </div>
     </div>
-  );
-}
+  )
+);
+CTAPreview.displayName = 'CTAPreview';
 
 // Media preview - Video player placeholder
-function MediaPreview({ type }: { type: 'video' | 'image' }) {
-  return (
-    <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex items-center justify-center">
+const MediaPreview = React.forwardRef<HTMLDivElement, { type: 'video' | 'image' }>(
+  ({ type }, ref) => (
+    <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex items-center justify-center">
       {type === 'video' ? (
         <div className="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center backdrop-blur">
           <Play size={24} className="text-white/80 ml-1" />
@@ -83,13 +89,14 @@ function MediaPreview({ type }: { type: 'video' | 'image' }) {
         </div>
       )}
     </div>
-  );
-}
+  )
+);
+MediaPreview.displayName = 'MediaPreview';
 
 // Embed preview - Calendar widget
-function EmbedPreview({ type }: { type: 'calendar' | 'empty' }) {
-  return (
-    <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex items-center justify-center">
+const EmbedPreview = React.forwardRef<HTMLDivElement, { type: 'calendar' | 'empty' }>(
+  ({ type }, ref) => (
+    <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex items-center justify-center">
       {type === 'calendar' ? (
         <div className="bg-white/10 rounded-lg p-3 border border-white/10 backdrop-blur">
           <div className="flex items-center gap-2 mb-2">
@@ -114,105 +121,101 @@ function EmbedPreview({ type }: { type: 'calendar' | 'empty' }) {
         </div>
       )}
     </div>
-  );
-}
+  )
+);
+EmbedPreview.displayName = 'EmbedPreview';
 
 // Social Proof preview - Trust badges and ratings
-function SocialProofPreview() {
-  return (
-    <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col items-center justify-center gap-2">
-      {/* Star rating */}
-      <div className="flex items-center gap-0.5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Star key={i} size={12} className="fill-yellow-400 text-yellow-400" />
-        ))}
-      </div>
-      <div className="h-1.5 w-16 bg-white/40 rounded" />
-      {/* Logo bar */}
-      <div className="flex items-center gap-2 mt-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="w-8 h-4 rounded bg-white/15" />
-        ))}
-      </div>
+const SocialProofPreview = React.forwardRef<HTMLDivElement>((_, ref) => (
+  <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col items-center justify-center gap-2">
+    {/* Star rating */}
+    <div className="flex items-center gap-0.5">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star key={i} size={12} className="fill-yellow-400 text-yellow-400" />
+      ))}
     </div>
-  );
-}
+    <div className="h-1.5 w-16 bg-white/40 rounded" />
+    {/* Logo bar */}
+    <div className="flex items-center gap-2 mt-2">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="w-8 h-4 rounded bg-white/15" />
+      ))}
+    </div>
+  </div>
+));
+SocialProofPreview.displayName = 'SocialProofPreview';
 
 // Features preview - Grid with icons
-function FeaturesPreview() {
-  return (
-    <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3">
-      <div className="h-2 w-20 bg-white/80 rounded mb-3 mx-auto" />
-      <div className="grid grid-cols-3 gap-2">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex flex-col items-center gap-1">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500/30 to-indigo-500/30 flex items-center justify-center">
-              <CheckCircle2 size={12} className="text-blue-400" />
-            </div>
-            <div className="h-1 w-8 bg-white/30 rounded" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Testimonials preview - Quote card
-function TestimonialsPreview() {
-  return (
-    <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col items-center justify-center">
-      <Quote size={20} className="text-white/20 mb-2" />
-      <div className="space-y-1 w-full px-2">
-        <div className="h-1.5 w-full bg-white/30 rounded" />
-        <div className="h-1.5 w-4/5 bg-white/25 rounded mx-auto" />
-      </div>
-      <div className="flex items-center gap-2 mt-3">
-        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-400" />
-        <div className="space-y-0.5">
-          <div className="h-1.5 w-12 bg-white/60 rounded" />
-          <div className="h-1 w-8 bg-white/30 rounded" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Team preview - Member grid
-function TeamPreview() {
-  return (
-    <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col items-center justify-center">
-      <div className="h-2 w-16 bg-white/80 rounded mb-3" />
-      <div className="flex items-center gap-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex flex-col items-center gap-1">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
-              <Users size={12} className="text-white/40" />
-            </div>
-            <div className="h-1 w-6 bg-white/30 rounded" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// FAQ preview - Accordion style
-function FAQPreview() {
-  return (
-    <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col gap-2">
-      <div className="h-2 w-16 bg-white/80 rounded mb-1" />
+const FeaturesPreview = React.forwardRef<HTMLDivElement>((_, ref) => (
+  <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3">
+    <div className="h-2 w-20 bg-white/80 rounded mb-3 mx-auto" />
+    <div className="grid grid-cols-3 gap-2">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-2 px-2 py-1.5 rounded bg-white/5 border border-white/10"
-        >
-          <Plus size={10} className="text-white/40" />
-          <div className="h-1.5 flex-1 bg-white/30 rounded" />
+        <div key={i} className="flex flex-col items-center gap-1">
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500/30 to-indigo-500/30 flex items-center justify-center">
+            <CheckCircle2 size={12} className="text-blue-400" />
+          </div>
+          <div className="h-1 w-8 bg-white/30 rounded" />
         </div>
       ))}
     </div>
-  );
-}
+  </div>
+));
+FeaturesPreview.displayName = 'FeaturesPreview';
+
+// Testimonials preview - Quote card
+const TestimonialsPreview = React.forwardRef<HTMLDivElement>((_, ref) => (
+  <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col items-center justify-center">
+    <Quote size={20} className="text-white/20 mb-2" />
+    <div className="space-y-1 w-full px-2">
+      <div className="h-1.5 w-full bg-white/30 rounded" />
+      <div className="h-1.5 w-4/5 bg-white/25 rounded mx-auto" />
+    </div>
+    <div className="flex items-center gap-2 mt-3">
+      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-400" />
+      <div className="space-y-0.5">
+        <div className="h-1.5 w-12 bg-white/60 rounded" />
+        <div className="h-1 w-8 bg-white/30 rounded" />
+      </div>
+    </div>
+  </div>
+));
+TestimonialsPreview.displayName = 'TestimonialsPreview';
+
+// Team preview - Member grid
+const TeamPreview = React.forwardRef<HTMLDivElement>((_, ref) => (
+  <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col items-center justify-center">
+    <div className="h-2 w-16 bg-white/80 rounded mb-3" />
+    <div className="flex items-center gap-3">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="flex flex-col items-center gap-1">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
+            <Users size={12} className="text-white/40" />
+          </div>
+          <div className="h-1 w-6 bg-white/30 rounded" />
+        </div>
+      ))}
+    </div>
+  </div>
+));
+TeamPreview.displayName = 'TeamPreview';
+
+// FAQ preview - Accordion style
+const FAQPreview = React.forwardRef<HTMLDivElement>((_, ref) => (
+  <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex flex-col gap-2">
+    <div className="h-2 w-16 bg-white/80 rounded mb-1" />
+    {Array.from({ length: 3 }).map((_, i) => (
+      <div
+        key={i}
+        className="flex items-center gap-2 px-2 py-1.5 rounded bg-white/5 border border-white/10"
+      >
+        <Plus size={10} className="text-white/40" />
+        <div className="h-1.5 flex-1 bg-white/30 rounded" />
+      </div>
+    ))}
+  </div>
+));
+FAQPreview.displayName = 'FAQPreview';
 
 // Get preview component based on template category/type
 function getPreviewComponent(template: SectionTemplate) {
@@ -249,10 +252,10 @@ export function HighTicketPreviewCard({ template, onAdd }: HighTicketPreviewCard
       onClick={onAdd}
       className={cn(
         "group relative aspect-[4/3] rounded-xl overflow-hidden transition-all duration-200",
-        "bg-[hsl(var(--coaching-surface))] border-2 border-[hsl(var(--coaching-border))]",
-        "hover:border-[hsl(var(--coaching-accent))] hover:scale-[1.02]",
-        "hover:shadow-xl hover:shadow-[hsl(var(--coaching-accent)/0.15)]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--coaching-accent))]"
+        "bg-builder-surface border-2 border-builder-border",
+        "hover:border-builder-accent hover:scale-[1.02]",
+        "hover:shadow-xl hover:shadow-builder-accent/15",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-builder-accent"
       )}
     >
       {/* Preview Content */}
@@ -267,7 +270,7 @@ export function HighTicketPreviewCard({ template, onAdd }: HighTicketPreviewCard
       )}>
         {/* Add Button */}
         <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="w-8 h-8 rounded-full bg-[hsl(var(--coaching-accent))] flex items-center justify-center shadow-lg">
+          <div className="w-8 h-8 rounded-full bg-builder-accent flex items-center justify-center shadow-lg">
             <Plus size={16} className="text-white" />
           </div>
         </div>
