@@ -1,240 +1,236 @@
 
-# Complete Visual Refactor - Removing BlockPickerPanel
 
-## The Root Cause
+# Simplify Section Picker - Match Perspective's Clean Style
 
-Looking at the codebase, I found **why the old panel is still appearing**:
+## Current vs Target
 
-1. **`handleAddFrame` creates empty sections** instead of opening the SectionPicker
-2. **`onOpenBlockPalette` triggers `setBlockPickerOpen(true)`** which shows BlockPickerPanel
-3. **Canvas "Add content" buttons call `onOpenBlockPalette`** - the old behavior
-4. **`blockPickerOpen` state conditionally renders BlockPickerPanel** instead of LeftPanel
+| Current Issues | Perspective Style |
+|----------------|-------------------|
+| 10 categories with descriptions | Clean labels only, no descriptions |
+| Template count badges | No counts - just chevrons for expandable |
+| Varied icons | Simple, consistent icon squares |
+| No grouping headers | "Sections" header to group categories |
+| Dark builder theme | Light/clean white panel |
 
-The architecture still has the old system running alongside the new components that were created.
+## Visual Target
 
----
-
-## What Needs to Change
-
-### 1. TopToolbar "+" Button → Opens SectionPicker Modal
-
-**Current behavior:**
-```
-+ button → onAddFrame → handleAddFrame → adds empty section
-```
-
-**New behavior:**
-```
-+ button → onAddFrame → setInlineSectionPickerOpen(true) → opens SectionPicker modal
-```
-
-### 2. Remove BlockPickerPanel from Left Panel
-
-**Current (EditorShell lines 1768-1812):**
-```tsx
-{blockPickerOpen ? (
-  <BlockPickerPanel ... />  // 2259 lines of legacy code
-) : (
-  <LeftPanel ... />
-)}
-```
-
-**New:**
-```tsx
-<LeftPanel ... />  // Always show navigation panel
-// BlockPickerPanel removed entirely
-```
-
-### 3. Canvas "Add content" → Opens BlockAdder Popover
-
-**Current:**
-```
-"Add content" button → onOpenBlockPalette → opens BlockPickerPanel in left panel
-```
-
-**New:**
-```
-"Add content" button → opens BlockAdder popover inline
-```
-
----
-
-## Implementation Plan
-
-### Step 1: Change TopToolbar Behavior
-
-**File: `EditorShell.tsx`**
-
-Update `handleAddFrame` to open the section picker modal instead of adding an empty section:
-
-```tsx
-// BEFORE
-const handleAddFrame = useCallback(() => {
-  // Creates empty section directly
-  step.frames.push({ id: generateId(), ... });
-}, [...]);
-
-// AFTER  
-const handleAddFrame = useCallback(() => {
-  // Opens section picker modal for template selection
-  setInlineSectionPickerOpen(true);
-}, []);
-```
-
-### Step 2: Remove BlockPickerPanel Conditional
-
-**File: `EditorShell.tsx`**
-
-Remove the conditional that switches between BlockPickerPanel and LeftPanel:
-
-```tsx
-// BEFORE (lines 1766-1833)
-{!previewMode && !isMobile && leftPanelOpen && (
-  <div className="w-60 ...">
-    {blockPickerOpen ? (
-      <BlockPickerPanel ... />
-    ) : (
-      <LeftPanel ... />
-    )}
-  </div>
-)}
-
-// AFTER
-{!previewMode && !isMobile && leftPanelOpen && (
-  <div className="w-60 ...">
-    <LeftPanel ... />
-  </div>
-)}
-```
-
-### Step 3: Remove blockPickerOpen State
-
-**File: `EditorShell.tsx`**
-
-Remove all related state and handlers:
-- `const [blockPickerOpen, setBlockPickerOpen] = useState(false);`
-- `const [blockPickerTargetStackId, setBlockPickerTargetStackId] = useState<string | null>(null);`
-- `const [blockPickerMode, setBlockPickerMode] = useState<'blocks' | 'sections'>('blocks');`
-
-### Step 4: Update Canvas onOpenBlockPalette
-
-**File: `EditorShell.tsx`**
-
-Change what happens when canvas triggers block palette:
-
-```tsx
-// BEFORE
-onOpenBlockPalette={() => {
-  setBlockPickerOpen(true);
-  setBlockPickerMode('blocks');
-}}
-
-// AFTER - Remove this entirely or change to BlockAdder
-onOpenBlockPalette={undefined}  // Remove prop
-```
-
-### Step 5: Update CanvasRenderer to Use BlockAdder
-
-**File: `CanvasRenderer.tsx`**
-
-Replace internal "Add content" buttons with the new `BlockAdder` component:
-
-```tsx
-// Import BlockAdder
-import { BlockAdder } from './BlockAdder';
-
-// Replace "Add content" triggers with:
-<BlockAdder 
-  onAddBlock={(blockType) => onAddBlock?.(createBlockFromType(blockType))}
-  variant="inline"
-/>
-```
-
-### Step 6: Delete BlockPickerPanel Import
-
-**File: `EditorShell.tsx`**
-
-Remove the import:
-```tsx
-// DELETE
-import { BlockPickerPanel } from './BlockPickerPanel';
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│                                                                        │
+│   ┌─────┐                                                              │
+│   │  T  │  Basic blocks                                          ›    │
+│   └─────┘                                                              │
+│                                                                        │
+│   ┌─────┐                                                              │
+│   │  ✦  │  Interactive blocks                                    ›    │
+│   └─────┘                                                              │
+│                                                                        │
+│   ───────────────────────────────────────────────────────────────────  │
+│   Sections                                                             │
+│   ───────────────────────────────────────────────────────────────────  │
+│                                                                        │
+│   ┌─────┐                                                              │
+│   │  ■  │  Hero                                                  ›    │
+│   └─────┘                                                              │
+│                                                                        │
+│   ┌─────┐                                                              │
+│   │  ▪  │  Product                                               ›    │
+│   └─────┘                                                              │
+│                                                                        │
+│   ┌─────┐                                                              │
+│   │  ═  │  Call to action                                        ›    │
+│   └─────┘                                                              │
+│                                                                        │
+│   ┌─────┐                                                              │
+│   │  ■  │  About us                                              ›    │
+│   └─────┘                                                              │
+│                                                                        │
+│   ┌─────┐                                                              │
+│   │  ▪▪ │  Quiz                                                  ›    │
+│   └─────┘                                                              │
+│                                                                        │
+│   ┌─────┐                                                              │
+│   │  ▪■ │  Team                                                  ›    │
+│   └─────┘                                                              │
+│                                                                        │
+│   ┌─────┐                                                              │
+│   │  ═  │  Testimonials                                          ›    │
+│   └─────┘                                                              │
+│                                                                        │
+│   ┌─────┐                                                              │
+│   │  ▪■ │  Trust                                                 ›    │
+│   └─────┘                                                              │
+│                                                                        │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Files to Modify
+## New Category Structure
+
+Simplify from 10 to 8 categories that match common funnel needs:
+
+| Category | Icon Style | Description (internal only) |
+|----------|------------|----------------------------|
+| **Basic blocks** | "T" letter | Text, heading, spacer |
+| **Interactive blocks** | Sparkles | Buttons, forms, inputs |
+| **Hero** | Solid square | Opening sections |
+| **Features** | Small squares grid | Benefits, lists |
+| **Call to action** | Horizontal bars | Conversion CTAs |
+| **Quiz** | Grid squares | Single/multi choice |
+| **Team** | Person squares | About, founder |
+| **Testimonials** | Quote bars | Customer quotes |
+| **Trust** | Grid squares | Logos, ratings, proof |
+
+---
+
+## Implementation Changes
+
+### 1. Update SectionPicker.tsx - Clean Panel Design
+
+**Changes:**
+- Remove description text from category items
+- Remove template count badges
+- Add "Sections" group header
+- Use consistent icon squares (rounded, light fill)
+- Light background instead of dark builder surface
+- Clean chevron arrows
+
+### 2. Category Icon Components
+
+Create simple, consistent icon squares:
+
+```tsx
+// Simple icon square component
+function CategoryIcon({ icon }: { icon: string }) {
+  return (
+    <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+      {/* Simple icon representation */}
+    </div>
+  );
+}
+```
+
+### 3. Simplified Category Row
+
+```tsx
+// Clean row without descriptions or counts
+<button className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-50">
+  <CategoryIcon icon={category.icon} />
+  <span className="flex-1 text-sm font-medium text-gray-900">
+    {category.label}
+  </span>
+  <ChevronRight size={16} className="text-gray-400" />
+</button>
+```
+
+---
+
+## File Changes
+
+### SectionPicker.tsx - Full Restructure
+
+```tsx
+// Simplified category config - NO descriptions
+const BLOCK_CATEGORIES = [
+  { id: 'basic', label: 'Basic blocks', icon: 'T' },
+  { id: 'interactive', label: 'Interactive blocks', icon: 'sparkles' },
+];
+
+const SECTION_CATEGORIES = [
+  { id: 'hero', label: 'Hero', icon: 'square' },
+  { id: 'features', label: 'Features', icon: 'grid' },
+  { id: 'cta', label: 'Call to action', icon: 'bars' },
+  { id: 'quiz', label: 'Quiz', icon: 'squares' },
+  { id: 'team', label: 'Team', icon: 'people' },
+  { id: 'testimonials', label: 'Testimonials', icon: 'bars' },
+  { id: 'trust', label: 'Trust', icon: 'grid' },
+];
+```
+
+**Visual Structure:**
+```text
+Left Panel (Clean White):
+├── Basic blocks → Basic elements
+├── Interactive blocks → Forms, buttons
+├── ─────────────────────
+├── Sections (header)
+├── ─────────────────────
+├── Hero
+├── Features
+├── Call to action
+├── Quiz
+├── Team
+├── Testimonials
+└── Trust
+
+Right Panel (Template Gallery):
+├── Header with category name
+└── Grid of visual preview cards
+```
+
+---
+
+## Key Style Differences
+
+| Current | New (Perspective-style) |
+|---------|------------------------|
+| Dark builder-surface background | Clean white/light gray |
+| 18px complex Lucide icons | Simple 10x10 filled rectangles |
+| Description text under label | Label only |
+| Template count badges | Clean chevron only |
+| No grouping | "Sections" header divider |
+| Accent color active states | Subtle blue highlight |
+
+---
+
+## Technical Implementation
+
+### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `EditorShell.tsx` | Remove BlockPickerPanel logic, update handleAddFrame |
-| `CanvasRenderer.tsx` | Replace "Add content" with BlockAdder |
-| `StackRenderer.tsx` | Use BlockAdder component |
+| `SectionPicker.tsx` | Complete visual overhaul - light theme, simplified items, grouping header |
 
-## Files to Delete (After Verification)
+### New Icon Style
 
-| File | Reason |
-|------|--------|
-| `BlockPickerPanel.tsx` | 2259 lines of redundant code |
+Instead of complex Lucide icons, use simple SVG shapes that match Perspective:
 
----
+```tsx
+// Hero icon - solid square
+<div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+  <div className="w-5 h-5 rounded bg-blue-400" />
+</div>
 
-## Result After Changes
+// Quiz icon - 4 small squares
+<div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+  <div className="grid grid-cols-2 gap-0.5">
+    <div className="w-2 h-2 rounded-sm bg-blue-400" />
+    <div className="w-2 h-2 rounded-sm bg-blue-400" />
+    <div className="w-2 h-2 rounded-sm bg-blue-400" />
+    <div className="w-2 h-2 rounded-sm bg-blue-400" />
+  </div>
+</div>
 
-### User Experience Flow
-
-```text
-1. User opens editor
-   └─► Left panel shows Pages + Layers (navigation only)
-
-2. User clicks "+" in toolbar
-   └─► SectionPicker modal opens with premium templates
-
-3. User clicks inside a section
-   └─► BlockAdder popover appears with 10 block types
-
-4. User clicks "Add Section" between sections
-   └─► SectionPicker modal opens
-
-5. Empty canvas
-   └─► EmptyCanvasState shows with Quick Picks + "Browse All"
-```
-
-### Visual Structure (After)
-
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│ TopToolbar: [+] opens SectionPicker modal                        │
-├────────────┬─────────────────────────────────┬───────────────────┤
-│            │                                 │                   │
-│  LEFT      │         CANVAS                  │      RIGHT        │
-│  PANEL     │                                 │      PANEL        │
-│            │  ┌───────────────────────────┐  │                   │
-│  Pages     │  │ SECTION                   │  │  Inspector        │
-│  ────────  │  │                           │  │                   │
-│  • Home    │  │  Content...               │  │                   │
-│  • Step 2  │  │                           │  │                   │
-│            │  │  [+ Add content] ← opens  │  │                   │
-│  ────────  │  │     BlockAdder popover    │  │                   │
-│  Layers    │  └───────────────────────────┘  │                   │
-│  ────────  │                                 │                   │
-│  • Section │  ─────[ + Add Section ]─────    │                   │
-│    • Text  │         opens modal             │                   │
-│    • CTA   │                                 │                   │
-│            │                                 │                   │
-└────────────┴─────────────────────────────────┴───────────────────┘
+// CTA icon - horizontal bars
+<div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+  <div className="flex flex-col gap-0.5">
+    <div className="w-5 h-1.5 rounded bg-blue-400" />
+    <div className="w-3 h-1.5 rounded bg-blue-400" />
+  </div>
+</div>
 ```
 
 ---
 
-## Success Criteria
+## Result
 
-After this refactor:
+After this change, the section picker will:
 
-| Before | After |
-|--------|-------|
-| Left panel switches to BlockPickerPanel | Left panel always shows navigation |
-| "+" adds empty section | "+" opens SectionPicker modal |
-| Canvas "Add content" opens panel | Canvas "Add content" opens popover |
-| 40+ blocks in overwhelming list | 10 blocks in clean popover |
-| 2259-line BlockPickerPanel | Deleted |
-| Confusion about sections vs blocks | Clear hierarchy |
+1. Match Perspective's clean, simple aesthetic
+2. Remove visual clutter (descriptions, counts)
+3. Have clear grouping (Blocks vs Sections)
+4. Use consistent, simple icon style
+5. Feel lighter and more approachable
+6. Still show rich previews in the right panel when a category is selected
+
