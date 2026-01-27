@@ -36,76 +36,76 @@ interface SectionPickerProps {
   onAddSection: (node: CanvasNode) => void;
 }
 
-// Category definitions - Blue-unified color palette
+// F16: Category definitions - Title Case normalized, B3: Theme-aware colors
 const sectionCategories = [
   { 
     id: 'hero', 
     name: 'Hero', 
     icon: Sparkles,
-    color: 'bg-gradient-to-br from-blue-500 to-blue-600',
+    colorClass: 'section-picker-icon--primary',
     templates: ['hero-simple', 'hero-button', 'hero-card-image']
   },
   { 
     id: 'product', 
     name: 'Product', 
     icon: LayoutGrid,
-    color: 'bg-gradient-to-br from-indigo-500 to-blue-500',
+    colorClass: 'section-picker-icon--accent',
     templates: ['features-list', 'content-heading-text']
   },
   { 
     id: 'cta', 
-    name: 'Call to action', 
+    name: 'Call to Action',  // F16: Title Case
     icon: MousePointerClick,
-    color: 'bg-gradient-to-br from-blue-400 to-cyan-500',
+    colorClass: 'section-picker-icon--cta',
     templates: ['cta-simple', 'cta-text']
   },
   { 
     id: 'about', 
-    name: 'About us', 
+    name: 'About Us',  // F16: Title Case
     icon: Users,
-    color: 'bg-gradient-to-br from-cyan-500 to-teal-500',
+    colorClass: 'section-picker-icon--secondary',
     templates: ['content-text', 'content-heading-text']
   },
   { 
     id: 'quiz', 
     name: 'Quiz', 
     icon: HelpCircle,
-    color: 'bg-gradient-to-br from-sky-400 to-blue-500',
+    colorClass: 'section-picker-icon--primary',
     templates: ['form-multi-choice']
   },
   { 
     id: 'team', 
     name: 'Team', 
     icon: Users,
-    color: 'bg-gradient-to-br from-emerald-500 to-teal-500',
+    colorClass: 'section-picker-icon--secondary',
     templates: ['content-heading-text']
   },
   { 
     id: 'testimonials', 
     name: 'Testimonials', 
     icon: Quote,
-    color: 'bg-gradient-to-br from-blue-400 to-indigo-500',
+    colorClass: 'section-picker-icon--accent',
     templates: ['social-badges']
   },
   { 
     id: 'trust', 
     name: 'Trust', 
     icon: Shield,
-    color: 'bg-gradient-to-br from-slate-500 to-slate-600',
+    colorClass: 'section-picker-icon--muted',
     templates: ['social-badges', 'features-list']
   },
   { 
     id: 'media', 
     name: 'Media', 
     icon: Video,
-    color: 'bg-gradient-to-br from-sky-500 to-blue-600',
+    colorClass: 'section-picker-icon--primary',
     templates: ['media-video', 'media-image']
   },
   { 
     id: 'form', 
     name: 'Form', 
     icon: Mail,
-    color: 'bg-gradient-to-br from-blue-500 to-blue-600',
+    colorClass: 'section-picker-icon--primary',
     templates: ['form-email', 'form-phone', 'form-full', 'form-calendar', 'legal-consent', 'legal-optin']
   },
 ];
@@ -213,26 +213,26 @@ function BlockPreview({ type }: { type: string }) {
   }
 }
 
-// Individual block item
+// Individual block item - B3: Theme-aware styling
 function BlockItem({ name, icon: Icon, preview, onClick }: { name: string; icon: typeof Type; preview: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-slate-50/80 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all group min-h-[80px]"
+      className="section-picker-block-item focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--builder-accent)]"
     >
       <div className="h-10 flex items-center justify-center">
         <BlockPreview type={preview} />
       </div>
-      <span className="text-[11px] font-medium text-slate-600">{name}</span>
+      <span className="text-[11px] font-medium text-[var(--builder-text-secondary)]">{name}</span>
     </button>
   );
 }
 
-// Expandable category row with template grid
+// Expandable category row with template grid - B3: Theme-aware styling
 function CategoryRow({ 
   name, 
   icon: Icon, 
-  color,
+  colorClass,
   isExpanded, 
   onToggle, 
   onSelectTemplate,
@@ -240,7 +240,7 @@ function CategoryRow({
 }: { 
   name: string; 
   icon: typeof Sparkles;
-  color: string;
+  colorClass: string;
   isExpanded: boolean;
   onToggle: () => void;
   onSelectTemplate: (template: SectionTemplate) => void;
@@ -251,18 +251,18 @@ function CategoryRow({
       <button
         onClick={onToggle}
         className={cn(
-          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
-          isExpanded ? "bg-slate-100" : "hover:bg-slate-50"
+          "section-picker-category-btn focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--builder-accent)]",
+          isExpanded && "section-picker-category-btn--active"
         )}
       >
-        <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-white", color)}>
+        <div className={cn("section-picker-category-icon", colorClass)}>
           <Icon size={14} />
         </div>
-        <span className="flex-1 text-left text-sm font-medium text-slate-700">{name}</span>
+        <span className="flex-1 text-left text-sm font-medium text-[var(--builder-text-primary)]">{name}</span>
         <ChevronRight 
           size={16} 
           className={cn(
-            "text-slate-400 transition-transform",
+            "text-[var(--builder-text-muted)] transition-transform",
             isExpanded && "rotate-90"
           )} 
         />
@@ -316,36 +316,36 @@ export function SectionPicker({ onAddSection }: SectionPickerProps) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="section-picker">
       <ScrollArea className="flex-1">
         <div className="p-3">
           {/* Header */}
-          <h3 className="text-sm font-semibold text-slate-900 mb-3">Add section</h3>
+          <h3 className="text-sm font-semibold text-[var(--builder-text-primary)] mb-3">Add section</h3>
           
-          {/* Blocks Section */}
+          {/* Blocks Section - A2: Renamed to "sections" to match behavior */}
           <div className="space-y-1 mb-4">
-            {/* Basic Blocks */}
+            {/* Basic Sections */}
             <button
               onClick={() => setExpandedBlock(expandedBlock === 'basic' ? null : 'basic')}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
-                expandedBlock === 'basic' ? "bg-slate-100" : "hover:bg-slate-50"
+                "section-picker-category-btn focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--builder-accent)]",
+                expandedBlock === 'basic' && "section-picker-category-btn--active"
               )}
             >
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-br from-slate-500 to-slate-700 text-white">
+              <div className="section-picker-category-icon section-picker-icon--muted">
                 <Type size={14} />
               </div>
-              <span className="flex-1 text-left text-sm font-medium text-slate-700">Basic blocks</span>
+              <span className="flex-1 text-left text-sm font-medium text-[var(--builder-text-primary)]">Basic Sections</span>
               <ChevronRight 
                 size={16} 
                 className={cn(
-                  "text-slate-400 transition-transform",
+                  "text-[var(--builder-text-muted)] transition-transform",
                   expandedBlock === 'basic' && "rotate-90"
                 )} 
               />
             </button>
             {expandedBlock === 'basic' && (
-              <div className="grid grid-cols-2 gap-2 p-2 bg-slate-50/50 rounded-lg">
+              <div className="section-picker-block-grid">
                 {basicBlocks.map((block) => (
                   <BlockItem
                     key={block.id}
@@ -358,28 +358,28 @@ export function SectionPicker({ onAddSection }: SectionPickerProps) {
               </div>
             )}
 
-            {/* Interactive Blocks */}
+            {/* Form Sections */}
             <button
               onClick={() => setExpandedBlock(expandedBlock === 'interactive' ? null : 'interactive')}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
-                expandedBlock === 'interactive' ? "bg-slate-100" : "hover:bg-slate-50"
+                "section-picker-category-btn focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--builder-accent)]",
+                expandedBlock === 'interactive' && "section-picker-category-btn--active"
               )}
             >
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
+              <div className="section-picker-category-icon section-picker-icon--primary">
                 <Sparkles size={14} />
               </div>
-              <span className="flex-1 text-left text-sm font-medium text-slate-700">Interactive blocks</span>
+              <span className="flex-1 text-left text-sm font-medium text-[var(--builder-text-primary)]">Form Sections</span>
               <ChevronRight 
                 size={16} 
                 className={cn(
-                  "text-slate-400 transition-transform",
+                  "text-[var(--builder-text-muted)] transition-transform",
                   expandedBlock === 'interactive' && "rotate-90"
                 )} 
               />
             </button>
             {expandedBlock === 'interactive' && (
-              <div className="grid grid-cols-2 gap-2 p-2 bg-slate-50/50 rounded-lg">
+              <div className="section-picker-block-grid">
                 {interactiveBlocks.map((block) => (
                   <BlockItem
                     key={block.id}
@@ -394,7 +394,7 @@ export function SectionPicker({ onAddSection }: SectionPickerProps) {
           </div>
 
           {/* Sections divider */}
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+          <div className="text-[11px] font-semibold text-[var(--builder-text-muted)] uppercase tracking-wider mb-2">
             Sections
           </div>
 
@@ -405,7 +405,7 @@ export function SectionPicker({ onAddSection }: SectionPickerProps) {
                 key={category.id}
                 name={category.name}
                 icon={category.icon}
-                color={category.color}
+                colorClass={category.colorClass}
                 isExpanded={expandedSection === category.id}
                 onToggle={() => setExpandedSection(expandedSection === category.id ? null : category.id)}
                 onSelectTemplate={handleAddTemplate}

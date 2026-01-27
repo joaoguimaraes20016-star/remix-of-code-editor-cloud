@@ -9,6 +9,7 @@
 import { useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import type { Page, CanvasNode } from '../types';
+import { FileText } from 'lucide-react';
 
 import { resolveFunnelLayout } from '../layout/funnelLayout';
 import { resolvePageIntent, generateIntentVariables } from '../layout/stepIntentResolver';
@@ -66,12 +67,14 @@ function extractRequiredFields(node: CanvasNode): string[] {
 }
 
 /**
- * Empty state shown when no pages exist.
+ * G17: Empty state with branded icon instead of emoji
  */
 function NoPageState() {
   return (
     <div className="builder-v2-preview-empty">
-      <div className="builder-v2-preview-empty-icon">📄</div>
+      <div className="builder-v2-preview-empty-icon">
+        <FileText size={48} />
+      </div>
       <h3 className="builder-v2-preview-empty-title">No pages in draft</h3>
       <p className="builder-v2-preview-empty-description">
         Add pages to your funnel to see the preview.

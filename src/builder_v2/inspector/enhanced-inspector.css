@@ -91,6 +91,7 @@
   color: var(--builder-text-primary, hsl(210 20% 96%));
 }
 
+/* B7: Destructive actions use theme tokens */
 .ei-delete-btn {
   display: flex;
   align-items: center;
@@ -98,17 +99,17 @@
   width: 28px;
   height: 28px;
   background: transparent;
-  border: 1px solid hsl(0 72% 51% / 0.3);
-  border-radius: 6px;
-  color: hsl(0 72% 51%);
+  border: 1px solid hsl(var(--destructive, 0 72% 51%) / 0.3);
+  border-radius: var(--builder-radius-sm, 6px);
+  color: hsl(var(--destructive, 0 72% 51%));
   cursor: pointer;
   transition: all 150ms ease;
 }
 
 .ei-delete-btn:hover {
-  background: hsl(0 72% 51% / 0.15);
-  border-color: hsl(0 72% 51% / 0.5);
-  color: hsl(0 72% 58%);
+  background: hsl(var(--destructive, 0 72% 51%) / 0.15);
+  border-color: hsl(var(--destructive, 0 72% 51%) / 0.5);
+  color: hsl(var(--destructive, 0 72% 51%));
 }
 
 /* ============================================================================
