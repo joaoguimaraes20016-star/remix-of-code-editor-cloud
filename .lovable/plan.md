@@ -1,462 +1,710 @@
 
 
-# AI Copilot Enhancement: World-Class UI/UX Knowledge System
+# Enhancing Your AI Copilot to Lovable-Level Intelligence
 
 ## Executive Summary
 
-The current AI Copilot (`supabase/functions/ai-copilot/prompts.ts`) has solid funnel generation prompts but lacks **comprehensive UI/UX design knowledge**. We need to inject the best website design patterns, psychological principles, and visual design rules so the AI truly understands what makes a "good format."
+Your builder already has **excellent foundations** - you've built a comprehensive knowledge system with UI principles, anti-patterns, and design examples. To reach Lovable-level intelligence, we need to add 5 key enhancements that Lovable uses but your system currently lacks.
 
 ---
 
-## Current State Analysis
+## Current State Assessment
 
-### What Exists
+### What You Have (Solid Foundation)
 
-| Component | Location | Current Capability |
-|-----------|----------|-------------------|
-| AI Copilot Edge Function | `supabase/functions/ai-copilot/index.ts` | Routes tasks to Lovable AI |
-| System Prompts | `supabase/functions/ai-copilot/prompts.ts` | 766 lines of prompts for suggest/generate/rewrite/analyze |
-| Funnel Type Guidance | `prompts.ts:51-121` | Basic guidance per funnel type (VSL, webinar, etc.) |
-| Premium Elements | `prompts.ts:252-289` | Gradient text, stats, avatar groups, badges |
-| Brand Kits | `prompts.ts:293-330` | 3 color presets (dark premium, light bold, dark luxury) |
-| Content Snapshot | `src/lib/ai/contentSnapshotExtractor.ts` | Extracts page content for context |
+| Component | Status | Quality |
+|-----------|--------|---------|
+| `uiKnowledge.ts` | 553 lines of design principles | Excellent |
+| `antiPatterns.ts` | UI/Copy/Structural anti-patterns | Good |
+| `designExamples.ts` | Hero, Feature, Pricing patterns | Good |
+| `prompts.ts` | Context-aware prompt injection | Good |
+| Content Snapshot Extractor | Page content analysis | Good |
+| Contrast Context | Color luminance calculations | Good |
 
-### What's Missing
+### What You're Missing (Lovable's Edge)
 
-1. **No UI/UX Design Principles** - No knowledge of spacing, typography scales, visual hierarchy
-2. **No Psychology of Conversion** - Missing Cialdini principles, attention patterns, F-pattern
-3. **No Component Design Standards** - No button best practices, form UX, card patterns
-4. **No Accessibility Guidelines** - No WCAG rules, contrast requirements, touch targets
-5. **No Responsive Design Knowledge** - No mobile-first patterns, breakpoint logic
-6. **No Modern Design Trends** - Missing glassmorphism, neumorphism, micro-interactions
+1. **Prompt Patterns Library** - Structured templates users can invoke
+2. **Aesthetic Vocabulary System** - Buzzword-to-style mappings
+3. **Component-Level Generation** - Atomic design primitives
+4. **Industry-Specific Knowledge** - Vertical-aware design rules
+5. **Dynamic Quality Scoring** - Post-generation validation
 
 ---
 
-## The Solution: UI/UX Knowledge Base
+## The 5 Enhancements
 
-Create a comprehensive knowledge injection system that teaches the AI:
+### Enhancement 1: Aesthetic Vocabulary System
 
-### Knowledge Domain 1: Visual Design Fundamentals
+Lovable understands design buzzwords like "minimal," "premium," "cinematic," "playful." We need to create a mapping from these aesthetic terms to concrete design tokens.
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    VISUAL HIERARCHY                          │
-├─────────────────────────────────────────────────────────────┤
-│ Size       → Larger = more important                        │
-│ Weight     → Bolder = more important                        │
-│ Color      → High contrast = more important                 │
-│ Position   → Top-left = first (F-pattern reading)           │
-│ Whitespace → More space = more importance                   │
-│ Depth      → Shadows/layers = elevated importance           │
-└─────────────────────────────────────────────────────────────┘
+**New File**: `supabase/functions/ai-copilot/aestheticVocabulary.ts`
+
+```typescript
+export const AESTHETIC_VOCABULARY = {
+  // Mood/Vibe Terms
+  minimal: {
+    description: "Clean, uncluttered, lots of whitespace",
+    spacing: "generous (32-96px sections)",
+    colors: "neutral palette, max 2 accent colors",
+    typography: "light weight, generous line-height",
+    borders: "none or hairline (1px)",
+    shadows: "subtle or none",
+    radius: "none to small (0-4px)",
+    animation: "subtle, slow (300-500ms)"
+  },
+  
+  premium: {
+    description: "Luxurious, sophisticated, high-end",
+    spacing: "very generous (48-128px sections)",
+    colors: "dark backgrounds, gold/silver accents",
+    typography: "serif headlines, light weights",
+    borders: "thin, subtle gradients",
+    shadows: "layered, soft (20-40px blur)",
+    radius: "small (4-8px)",
+    animation: "elegant, eased (400-600ms)"
+  },
+  
+  bold: {
+    description: "Striking, confident, attention-grabbing",
+    spacing: "compact with purposeful breaks",
+    colors: "high contrast, vibrant primaries",
+    typography: "extra-bold (800-900), uppercase headlines",
+    borders: "thick (2-4px), solid colors",
+    shadows: "hard, offset shadows",
+    radius: "none or full pill",
+    animation: "snappy, quick (150-250ms)"
+  },
+  
+  playful: {
+    description: "Fun, energetic, friendly",
+    spacing: "varied, asymmetrical",
+    colors: "bright, saturated, multi-color",
+    typography: "rounded fonts, mixed sizes",
+    borders: "dashed or dotted, colorful",
+    shadows: "colored shadows, offset",
+    radius: "large (16-24px)",
+    animation: "bouncy, spring physics"
+  },
+  
+  cinematic: {
+    description: "Dramatic, immersive, movie-like",
+    spacing: "full-viewport sections",
+    colors: "deep blacks, dramatic contrast",
+    typography: "display fonts, large scale",
+    borders: "none, rely on contrast",
+    shadows: "dramatic, directional",
+    radius: "none",
+    animation: "parallax, fade reveals"
+  },
+  
+  glassmorphism: {
+    description: "Translucent, layered, modern",
+    spacing: "standard (24-48px)",
+    colors: "semi-transparent (5-15% opacity)",
+    typography: "clean sans-serif",
+    borders: "subtle white/10-20%",
+    shadows: "backdrop-blur (12-24px)",
+    radius: "medium-large (12-20px)",
+    animation: "smooth, subtle depth shifts"
+  },
+  
+  neobrutalist: {
+    description: "Raw, unconventional, anti-design",
+    spacing: "irregular, breaking grid",
+    colors: "harsh combinations, often clashing",
+    typography: "mono or display, varied sizes",
+    borders: "thick black (3-6px)",
+    shadows: "hard offset (no blur)",
+    radius: "none",
+    animation: "jarring, intentionally rough"
+  }
+};
+
+export function getAestheticRules(buzzwords: string[]): string {
+  const rules: string[] = [];
+  
+  for (const word of buzzwords) {
+    const aesthetic = AESTHETIC_VOCABULARY[word.toLowerCase()];
+    if (aesthetic) {
+      rules.push(`
+${word.toUpperCase()} AESTHETIC:
+- Spacing: ${aesthetic.spacing}
+- Colors: ${aesthetic.colors}
+- Typography: ${aesthetic.typography}
+- Borders: ${aesthetic.borders}
+- Shadows: ${aesthetic.shadows}
+- Border Radius: ${aesthetic.radius}
+- Animation: ${aesthetic.animation}
+      `);
+    }
+  }
+  
+  return rules.join('\n');
+}
 ```
 
-### Knowledge Domain 2: Typography Scale
+---
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    TYPE SCALE (1.25 ratio)                   │
-├─────────────────────────────────────────────────────────────┤
-│ Display     → 48-72px, ultra bold, 1 per page               │
-│ H1          → 36-48px, bold, page title                     │
-│ H2          → 28-36px, semibold, section headers            │
-│ H3          → 20-24px, medium, subsections                  │
-│ Body        → 16-18px, regular, main content                │
-│ Small       → 14px, secondary info                          │
-│ Caption     → 12px, metadata only                           │
-├─────────────────────────────────────────────────────────────┤
-│ Line Height → 1.5-1.6 for body, 1.2-1.3 for headlines       │
-│ Max Width   → 65-75 characters per line (optimal reading)   │
-└─────────────────────────────────────────────────────────────┘
+### Enhancement 2: Industry-Specific Knowledge
+
+Lovable generates different designs for SaaS vs e-commerce vs coaching. We need vertical-aware design rules.
+
+**New File**: `supabase/functions/ai-copilot/industryKnowledge.ts`
+
+```typescript
+export const INDUSTRY_PATTERNS = {
+  saas: {
+    name: "SaaS / Software",
+    heroStyle: "Split layout - text left, product screenshot right",
+    trustSignals: ["Logo bar (enterprise clients)", "Uptime stats", "Security badges"],
+    colorPsychology: "Blue/Purple for trust + innovation",
+    ctaPatterns: ["Free trial", "Start free", "See demo", "Book a call"],
+    keyElements: ["Feature grid", "Pricing table", "Integration logos", "Product screenshots"],
+    avoidElements: ["Heavy imagery", "Long paragraphs", "Emotional appeals"],
+    socialProof: "Customer logos > testimonials",
+    pricingStyle: "3-tier with annual discount"
+  },
+  
+  coaching: {
+    name: "Coaching / Personal Brand",
+    heroStyle: "Center-aligned with personal photo",
+    trustSignals: ["Media logos", "Certifications", "Results testimonials"],
+    colorPsychology: "Warm tones for approachability OR dark premium",
+    ctaPatterns: ["Book a call", "Apply now", "Get the free guide", "Watch the training"],
+    keyElements: ["About/story section", "Transformation testimonials", "Video content"],
+    avoidElements: ["Generic stock photos", "Tech jargon"],
+    socialProof: "Transformation testimonials with before/after",
+    pricingStyle: "Application-based OR single high-ticket"
+  },
+  
+  ecommerce: {
+    name: "E-commerce / Product",
+    heroStyle: "Product-centric with lifestyle imagery",
+    trustSignals: ["Review stars", "Units sold", "Secure payment badges"],
+    colorPsychology: "Matches product/brand, clean backgrounds",
+    ctaPatterns: ["Add to cart", "Buy now", "Shop collection", "Get yours"],
+    keyElements: ["Product gallery", "Size/variant selectors", "Urgency indicators"],
+    avoidElements: ["Long-form copy", "Multiple CTAs per product"],
+    socialProof: "Star ratings + review count",
+    pricingStyle: "Clear price, strikethrough for sales"
+  },
+  
+  agency: {
+    name: "Agency / Services",
+    heroStyle: "Bold statement + work showcase",
+    trustSignals: ["Client logos", "Case study results", "Awards"],
+    colorPsychology: "Black/white with single accent OR bold creative",
+    ctaPatterns: ["Start a project", "Get a quote", "Let's talk", "See our work"],
+    keyElements: ["Portfolio grid", "Process section", "Team photos"],
+    avoidElements: ["Generic service descriptions", "Stock imagery"],
+    socialProof: "Case studies with metrics",
+    pricingStyle: "Quote-based / Custom"
+  },
+  
+  newsletter: {
+    name: "Newsletter / Content",
+    heroStyle: "Minimal - headline + email capture",
+    trustSignals: ["Subscriber count", "Where featured", "Sample content"],
+    colorPsychology: "Clean, readable, single accent",
+    ctaPatterns: ["Subscribe free", "Get it in your inbox", "Join X readers"],
+    keyElements: ["Content preview", "Single email input", "Benefits bullets"],
+    avoidElements: ["Too many fields", "Distracting elements"],
+    socialProof: "Subscriber count, reader testimonials",
+    pricingStyle: "Free or simple paid tier"
+  },
+  
+  event: {
+    name: "Event / Webinar",
+    heroStyle: "Date-prominent with countdown",
+    trustSignals: ["Speaker credentials", "Attendee count", "Company logos"],
+    colorPsychology: "Energetic, urgent (orange, red accents)",
+    ctaPatterns: ["Register now", "Save your spot", "Claim your seat"],
+    keyElements: ["Countdown timer", "Agenda/schedule", "Speaker bios"],
+    avoidElements: ["Buried registration", "Unclear date/time"],
+    socialProof: "Past attendee testimonials, registrant count",
+    pricingStyle: "Free OR early bird discount"
+  }
+};
+
+export function getIndustryGuidance(industry: string): string {
+  const pattern = INDUSTRY_PATTERNS[industry.toLowerCase()];
+  if (!pattern) return '';
+  
+  return `
+=== INDUSTRY-SPECIFIC DESIGN (${pattern.name}) ===
+
+Hero Layout: ${pattern.heroStyle}
+Color Psychology: ${pattern.colorPsychology}
+
+Trust Signals to Include:
+${pattern.trustSignals.map(t => `- ${t}`).join('\n')}
+
+Recommended CTAs:
+${pattern.ctaPatterns.map(c => `- "${c}"`).join('\n')}
+
+Key Elements:
+${pattern.keyElements.map(e => `- ${e}`).join('\n')}
+
+Elements to AVOID:
+${pattern.avoidElements.map(a => `- ${a}`).join('\n')}
+
+Social Proof Style: ${pattern.socialProof}
+Pricing Approach: ${pattern.pricingStyle}
+`;
+}
 ```
 
-### Knowledge Domain 3: Spacing System (8px Grid)
+---
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    SPACING SCALE                             │
-├─────────────────────────────────────────────────────────────┤
-│ xs: 4px   → Tight groups, icon padding                      │
-│ sm: 8px   → Related elements                                │
-│ md: 16px  → Default component spacing                       │
-│ lg: 24px  → Section subsections                             │
-│ xl: 32px  → Section breaks                                  │
-│ 2xl: 48px → Major section divisions                         │
-│ 3xl: 64px → Page section padding                            │
-│ 4xl: 96px → Hero section padding                            │
-├─────────────────────────────────────────────────────────────┤
-│ Rule: Related items = less space, unrelated = more space    │
-└─────────────────────────────────────────────────────────────┘
+### Enhancement 3: Component Atoms Library
+
+Lovable thinks in atomic components. We need a structured library of primitives.
+
+**New File**: `supabase/functions/ai-copilot/componentAtoms.ts`
+
+```typescript
+export const COMPONENT_ATOMS = {
+  // === INPUT ATOMS ===
+  inputs: {
+    email: {
+      width: "280-320px",
+      placeholder: "you@example.com",
+      autocomplete: "email",
+      validation: "email format",
+      label: "Email address"
+    },
+    name: {
+      width: "200-280px",
+      placeholder: "Jane Smith",
+      autocomplete: "name",
+      label: "Full name"
+    },
+    phone: {
+      width: "200-240px",
+      placeholder: "+1 (555) 000-0000",
+      autocomplete: "tel",
+      type: "tel",
+      label: "Phone number"
+    }
+  },
+  
+  // === BUTTON ATOMS ===
+  buttons: {
+    primary: {
+      minHeight: "48px",
+      padding: "12-16px vertical, 24-48px horizontal",
+      fontWeight: "600-700",
+      textTransform: "none or uppercase",
+      states: ["default", "hover (+10% darker)", "active (scale 0.98)", "disabled (50% opacity)"]
+    },
+    secondary: {
+      style: "outline or muted fill",
+      usage: "alternative actions, back buttons",
+      contrast: "lower than primary"
+    },
+    ghost: {
+      style: "text only, minimal padding",
+      usage: "tertiary actions, links that need button shape"
+    }
+  },
+  
+  // === CARD ATOMS ===
+  cards: {
+    basic: {
+      padding: "24-32px",
+      radius: "8-16px",
+      shadow: "subtle (0 4px 12px rgba(0,0,0,0.08))",
+      border: "1px subtle or none"
+    },
+    feature: {
+      structure: "icon → title → description",
+      iconSize: "32-48px",
+      titleSize: "18-20px",
+      descriptionSize: "14-16px"
+    },
+    testimonial: {
+      structure: "quote → avatar + name + title",
+      quoteSize: "16-18px",
+      quoteStyle: "italic or larger",
+      avatarSize: "48-64px"
+    },
+    pricing: {
+      structure: "tier name → price → description → features → CTA",
+      highlight: "scale 1.05 OR border accent OR badge",
+      featureList: "checkmarks, 5-8 items"
+    }
+  },
+  
+  // === BADGE ATOMS ===
+  badges: {
+    info: { bg: "blue-100", text: "blue-700", icon: "info" },
+    success: { bg: "green-100", text: "green-700", icon: "check" },
+    warning: { bg: "yellow-100", text: "yellow-700", icon: "alert-triangle" },
+    error: { bg: "red-100", text: "red-700", icon: "x-circle" },
+    neutral: { bg: "gray-100", text: "gray-700", icon: null }
+  },
+  
+  // === AVATAR ATOMS ===
+  avatars: {
+    sizes: {
+      xs: "24px",
+      sm: "32px",
+      md: "48px",
+      lg: "64px",
+      xl: "96px"
+    },
+    group: {
+      overlap: "-8px to -12px",
+      max: "5 visible + count badge",
+      border: "2px white ring"
+    }
+  },
+  
+  // === SPACING ATOMS ===
+  spacing: {
+    inlineElements: "4-8px",
+    relatedGroups: "16px",
+    subsections: "24-32px",
+    sections: "48-96px",
+    majorBreaks: "96-128px"
+  }
+};
+
+export function getComponentGuidance(componentType: string): string {
+  const atoms = COMPONENT_ATOMS[componentType];
+  if (!atoms) return '';
+  
+  return JSON.stringify(atoms, null, 2);
+}
 ```
 
-### Knowledge Domain 4: Color Psychology
+---
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    COLOR MEANING                             │
-├─────────────────────────────────────────────────────────────┤
-│ Blue       → Trust, security, professionalism (finance, B2B)│
-│ Green      → Growth, health, success, go/confirm            │
-│ Red        → Urgency, energy, passion, stop/danger          │
-│ Orange     → Friendly, confident, creative, CTAs            │
-│ Purple     → Luxury, creativity, wisdom, premium            │
-│ Yellow     → Optimism, attention, caution                   │
-│ Black      → Luxury, power, sophistication                  │
-│ White      → Clean, minimal, spacious                       │
-├─────────────────────────────────────────────────────────────┤
-│ 60-30-10 Rule: Primary 60%, Secondary 30%, Accent 10%       │
-│ Contrast: 4.5:1 minimum for text (WCAG AA)                  │
-│ Dark Mode: Reduce saturation, never pure black (#000)       │
-└─────────────────────────────────────────────────────────────┘
+### Enhancement 4: Dynamic Quality Validator
+
+Lovable validates output quality before returning. We need a scoring system.
+
+**Add to**: `supabase/functions/ai-copilot/prompts.ts`
+
+```typescript
+export const QUALITY_VALIDATION_PROMPT = `
+After generating, validate your output against these criteria:
+
+HIERARCHY CHECK (Critical):
+□ Only ONE H1 per page/step
+□ Headlines are 2-3x body text size
+□ Visual weight decreases: H1 → H2 → body → caption
+□ One primary CTA per section (highest contrast)
+
+SPACING CHECK:
+□ All values divisible by 4 or 8
+□ Related items: 8-16px
+□ Sections: 48-96px
+□ Hero sections: 96-128px vertical padding
+
+ACCESSIBILITY CHECK:
+□ Touch targets ≥44px
+□ Contrast ratio ≥4.5:1 for text
+□ No color-only information
+□ All images have alt text intent
+
+COPY CHECK:
+□ Headlines <10 words
+□ Body lines <75 characters
+□ CTAs use action verbs
+□ No "Submit", "Click Here", "Learn More"
+□ No emojis or special characters
+
+MOBILE CHECK:
+□ Single column on <640px
+□ Font sizes ≥16px
+□ Full-width CTAs
+□ Stacked layouts
+
+If ANY check fails, fix before responding.
+`;
 ```
 
-### Knowledge Domain 5: Button Design Rules
+---
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    BUTTON BEST PRACTICES                     │
-├─────────────────────────────────────────────────────────────┤
-│ Primary CTA    → High contrast, full color, largest         │
-│ Secondary      → Outline or muted, smaller                  │
-│ Ghost          → Text-only, for tertiary actions            │
-├─────────────────────────────────────────────────────────────┤
-│ Touch Target   → Min 44x44px (mobile), 48x48px ideal        │
-│ Padding        → Horizontal 2-3x vertical padding           │
-│ Border Radius  → 4-8px (professional), 12-16px (friendly)   │
-│ Text           → Action verbs ("Get", "Start", "Join")      │
-│ Never          → "Click here", "Submit", generic text       │
-├─────────────────────────────────────────────────────────────┤
-│ Hover          → Darken 10% or lift with shadow             │
-│ Active         → Darken 15% or scale 98%                    │
-│ Disabled       → 50% opacity, no pointer                    │
-└─────────────────────────────────────────────────────────────┘
-```
+### Enhancement 5: Prompt Pattern Templates
 
-### Knowledge Domain 6: Form UX Patterns
+Lovable users benefit from reusable prompt patterns. We should provide built-in templates.
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    FORM DESIGN                               │
-├─────────────────────────────────────────────────────────────┤
-│ Labels         → Always visible, above field (not inside)   │
-│ Placeholders   → Hint text, never replace labels            │
-│ Field Width    → Match expected content length              │
-│ Grouping       → Related fields together                    │
-│ Error States   → Red border + icon + message below field    │
-│ Success        → Green check on valid input                 │
-├─────────────────────────────────────────────────────────────┤
-│ Mobile         → Single column, large touch targets         │
-│ Keyboard       → Proper input types (email, tel, etc.)      │
-│ Progress       → Show step indicators for multi-step        │
-│ Reduce         → Ask only what you NEED                     │
-└─────────────────────────────────────────────────────────────┘
-```
+**New File**: `supabase/functions/ai-copilot/promptPatterns.ts`
 
-### Knowledge Domain 7: Conversion Psychology
+```typescript
+export const PROMPT_PATTERNS = {
+  // === SECTION PATTERNS ===
+  hero_split: `
+Create a split hero section:
+- Left column (55-60%): eyebrow badge, H1 headline, subheadline (2 lines max), CTA button group
+- Right column (40-45%): product image or illustration
+- Avatar group below CTA showing "Join X others"
+- Background: subtle gradient or pattern
+`,
+  
+  hero_centered: `
+Create a centered hero section:
+- Centered alignment, max-width 800px
+- Eyebrow badge with icon
+- H1 headline with gradient accent on key phrase
+- Subheadline (single paragraph, max 2 lines)
+- Single prominent CTA button
+- Trust bar below: logos or stats
+- Full viewport height
+`,
+  
+  feature_grid: `
+Create a feature section:
+- Section header: eyebrow + H2 + optional subtext
+- 3-4 column grid on desktop (2 tablet, 1 mobile)
+- Each card: icon (32-40px) → title (18px, semibold) → description (14-16px)
+- Cards have subtle shadows, lift on hover
+- Icons use consistent style (outline or filled)
+`,
+  
+  testimonial_carousel: `
+Create a testimonial section:
+- Section header: H2 with social proof count
+- 3 testimonial cards in horizontal scroll on mobile, grid on desktop
+- Each card: large quote (16-18px italic) → 5-star rating → avatar + name + title
+- Include specific results/numbers in quotes
+- Cards have distinct styling (shadow or border)
+`,
+  
+  pricing_table: `
+Create a pricing section:
+- Toggle at top: Monthly / Annual (show savings %)
+- 3 tiers side by side
+- Middle tier highlighted: larger, border accent, "Most Popular" badge
+- Each tier: name → price → tagline → feature list (5-8 checkmarks) → CTA
+- Feature list alternates checked/unchecked to show tier differences
+`,
+  
+  faq_accordion: `
+Create an FAQ section:
+- H2 header with "Got questions?" or similar
+- 5-8 questions in accordion format
+- Questions are clickable, expand to show answer
+- Include questions about: pricing, timeline, guarantee, support
+- Optional: contact CTA below for unaddressed questions
+`,
+  
+  cta_final: `
+Create a final CTA section:
+- Full-width background (gradient or contrasting color)
+- Centered content, max-width 600px
+- H2 repeating main value proposition
+- Urgency element: countdown, limited spots, or bonus
+- Single large CTA button
+- Small guarantee/trust text below button
+- Remove all navigation distractions
+`
+};
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    CIALDINI PRINCIPLES                       │
-├─────────────────────────────────────────────────────────────┤
-│ Reciprocity    → Give value first (free guide, tool)        │
-│ Scarcity       → Limited time/spots ("Only 5 left")         │
-│ Authority      → Expert positioning, credentials            │
-│ Consistency    → Micro-commitments before big ask           │
-│ Liking         → Relatable, friendly, personable            │
-│ Social Proof   → Numbers, testimonials, logos               │
-├─────────────────────────────────────────────────────────────┤
-│ F-Pattern      → Users scan top-left to right, then down    │
-│ Z-Pattern      → For image-heavy, minimal text pages        │
-│ Gutenberg      → Terminal area (bottom-right) = CTA spot    │
-│ Fitt's Law     → Bigger + closer = easier to click          │
-│ Hick's Law     → Fewer choices = faster decisions           │
-└─────────────────────────────────────────────────────────────┘
-```
+export function getPromptPattern(patternName: string): string {
+  return PROMPT_PATTERNS[patternName] || '';
+}
 
-### Knowledge Domain 8: Section Patterns
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    SECTION ARCHETYPES                        │
-├─────────────────────────────────────────────────────────────┤
-│ Hero           → Headline + Subheadline + CTA + Visual      │
-│                  80-100vh, above fold, one clear action     │
-│                                                              │
-│ Social Proof   → Logos, testimonials, stats bar             │
-│                  Build trust before asking for action       │
-│                                                              │
-│ Features       → 3-4 columns, icon + title + description    │
-│                  Benefits > Features in copy                │
-│                                                              │
-│ Testimonials   → Photo + Quote + Name + Title + Company     │
-│                  Specific results beat generic praise       │
-│                                                              │
-│ Pricing        → 3 tiers, highlight recommended tier        │
-│                  Anchor high, show savings                  │
-│                                                              │
-│ FAQ            → Accordion, anticipate objections           │
-│                  Use to overcome buying hesitation          │
-│                                                              │
-│ Final CTA      → Repeat main offer, urgency, guarantee      │
-│                  Remove all other distractions              │
-└─────────────────────────────────────────────────────────────┘
+export function listAvailablePatterns(): string[] {
+  return Object.keys(PROMPT_PATTERNS);
+}
 ```
 
 ---
 
 ## Implementation Plan
 
-### Phase 1: Create Knowledge Base File
-
-Create `supabase/functions/ai-copilot/uiKnowledge.ts` containing all design knowledge as structured constants:
-
-```typescript
-// supabase/functions/ai-copilot/uiKnowledge.ts
-
-export const UI_KNOWLEDGE = {
-  VISUAL_HIERARCHY: `...`,
-  TYPOGRAPHY_SCALE: `...`,
-  SPACING_SYSTEM: `...`,
-  COLOR_PSYCHOLOGY: `...`,
-  BUTTON_RULES: `...`,
-  FORM_PATTERNS: `...`,
-  CONVERSION_PSYCHOLOGY: `...`,
-  SECTION_ARCHETYPES: `...`,
-  ACCESSIBILITY: `...`,
-  RESPONSIVE_DESIGN: `...`,
-  MICRO_INTERACTIONS: `...`,
-  MODERN_TRENDS: `...`,
-};
-
-export function getRelevantKnowledge(task: string, context: any): string {
-  // Return contextually relevant knowledge for the task
-}
-```
-
-### Phase 2: Enhance System Prompts
-
-Modify `prompts.ts` to inject UI knowledge into each prompt:
-
-```typescript
-// Enhanced GENERATE_PROMPT
-const GENERATE_PROMPT = `${BASE_CONTEXT}
-
-=== UI/UX DESIGN KNOWLEDGE ===
-${UI_KNOWLEDGE.VISUAL_HIERARCHY}
-${UI_KNOWLEDGE.SPACING_SYSTEM}
-${UI_KNOWLEDGE.BUTTON_RULES}
-
-=== GENERATION RULES ===
-1. Every section must follow visual hierarchy principles
-2. Spacing must use the 8px grid system
-3. CTAs must be action-oriented with proper sizing
-...
-`;
-```
-
-### Phase 3: Add Anti-Patterns List
-
-Add explicit "never do this" rules:
-
-```typescript
-export const UI_ANTI_PATTERNS = `
-=== NEVER DO THESE ===
-- Center-align body text (left-align for readability)
-- Use pure black (#000000) on pure white (too harsh)
-- Make buttons smaller than 44x44px on mobile
-- Put placeholder text as the only label
-- Use more than 3 font families
-- Use font sizes below 14px for body text
-- Create CTAs that say "Submit" or "Click Here"
-- Put important content below the fold without scroll indicator
-- Use low-contrast color combinations (< 4.5:1 ratio)
-- Create walls of text without visual breaks
-- Hide navigation on desktop
-- Auto-play videos with sound
-- Use carousel as primary content display
-`;
-```
-
-### Phase 4: Add Design Quality Scoring
-
-Create a quality validation system:
-
-```typescript
-export const DESIGN_QUALITY_CHECKLIST = `
-Before generating, validate:
-[ ] Headline is benefit-focused, under 10 words
-[ ] CTA uses action verb + benefit
-[ ] Spacing follows 8px grid
-[ ] Color contrast meets 4.5:1 minimum
-[ ] Section has clear hierarchy (H1 → H2 → body → CTA)
-[ ] Mobile touch targets are 44px minimum
-[ ] Forms have visible labels above inputs
-[ ] Social proof appears before main CTA
-[ ] Max 65-75 characters per line for body text
-[ ] One primary CTA per section
-`;
-```
-
-### Phase 5: Create Design Example Bank
-
-Add reference implementations:
-
-```typescript
-export const DESIGN_EXAMPLES = {
-  HERO_PATTERNS: [
-    {
-      name: "Split Hero",
-      layout: "Left text (60%), Right image (40%)",
-      elements: ["Badge", "H1", "Subheadline", "CTA", "Social proof row"],
-      bestFor: ["SaaS", "Professional services", "B2B"]
-    },
-    {
-      name: "Center-Stack Hero", 
-      layout: "Centered, stacked vertically",
-      elements: ["Logo bar", "H1 with gradient accent", "Subheadline", "CTA pair", "Stats row"],
-      bestFor: ["Events", "Product launches", "Webinars"]
-    },
-    // ... more patterns
-  ],
-  // ... more section types
-};
-```
-
----
-
-## File Changes Summary
-
 ### Files to Create
 
 | File | Purpose | Est. Lines |
 |------|---------|------------|
-| `supabase/functions/ai-copilot/uiKnowledge.ts` | Comprehensive UI/UX knowledge base | ~400 |
-| `supabase/functions/ai-copilot/antiPatterns.ts` | Design anti-patterns to avoid | ~100 |
-| `supabase/functions/ai-copilot/designExamples.ts` | Reference implementations | ~200 |
+| `supabase/functions/ai-copilot/aestheticVocabulary.ts` | Buzzword-to-design mappings | ~200 |
+| `supabase/functions/ai-copilot/industryKnowledge.ts` | Vertical-specific design rules | ~250 |
+| `supabase/functions/ai-copilot/componentAtoms.ts` | Atomic design primitives | ~180 |
+| `supabase/functions/ai-copilot/promptPatterns.ts` | Reusable section templates | ~150 |
 
 ### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `supabase/functions/ai-copilot/prompts.ts` | Import and inject UI knowledge into all prompts |
-| `supabase/functions/ai-copilot/index.ts` | No changes needed (prompts handle knowledge) |
+| `supabase/functions/ai-copilot/prompts.ts` | Add quality validation, import new knowledge |
+| `supabase/functions/ai-copilot/uiKnowledge.ts` | Add `getRelevantKnowledge` enhancements |
+| `src/lib/ai/aiCopilotService.ts` | Add industry and aesthetic context to `PageContext` |
+
+---
+
+## Integration Flow
+
+```text
+User Prompt: "Create a hero for my coaching business, premium feel"
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    CONTEXT EXTRACTION                        │
+├─────────────────────────────────────────────────────────────┤
+│ 1. Detect industry: "coaching" → INDUSTRY_PATTERNS.coaching │
+│ 2. Detect aesthetic: "premium" → AESTHETIC_VOCABULARY.premium│
+│ 3. Detect section: "hero" → PROMPT_PATTERNS.hero_split      │
+│ 4. Get atoms: buttons, avatars, badges                       │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    PROMPT INJECTION                          │
+├─────────────────────────────────────────────────────────────┤
+│ Base Prompt +                                                │
+│ Industry Guidance (coaching patterns) +                      │
+│ Aesthetic Rules (premium tokens) +                           │
+│ Section Pattern (hero structure) +                           │
+│ Component Atoms (sizing, spacing) +                          │
+│ Anti-Patterns (what to avoid) +                              │
+│ Quality Checklist (validation)                               │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    AI GENERATION                             │
+├─────────────────────────────────────────────────────────────┤
+│ AI generates with full context:                              │
+│ - Warm colors (coaching psychology)                          │
+│ - Generous spacing (premium aesthetic)                       │
+│ - Personal photo focus (coaching pattern)                    │
+│ - Transformation testimonials (industry-specific)            │
+│ - "Book a call" CTA (coaching-optimized)                     │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    QUALITY VALIDATION                        │
+├─────────────────────────────────────────────────────────────┤
+│ Before returning, AI validates:                              │
+│ ✓ Single H1                                                  │
+│ ✓ Spacing follows 8px grid                                   │
+│ ✓ CTA uses action verb                                       │
+│ ✓ Touch targets ≥44px                                        │
+│ ✓ No anti-patterns present                                   │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Expected Outcomes
 
-### Before
+### Before Enhancement
 
 ```
-User: "Create a hero section for my coaching business"
-
-AI Output: Generic hero with "Welcome to My Site" headline, 
-random colors, no spacing consistency, generic "Learn More" button
-```
-
-### After
-
-```
-User: "Create a hero section for my coaching business"
+User: "Create a hero for my coaching business"
 
 AI Output:
-- Credibility badge above headline ("Trusted by 500+ entrepreneurs")
-- Benefit-focused H1 with power words ("Scale Your Business Without Burnout")
-- Specific subheadline (65 chars max, addresses pain point)
-- High-contrast CTA with action verb ("Start Your Free Strategy Call")
-- 48px vertical rhythm, proper hierarchy
-- Avatar group for social proof
-- Mobile-optimized with 44px+ touch targets
+- Generic "Welcome to Our Site" headline
+- Blue color scheme (SaaS default)
+- "Learn More" CTA
+- Stock photo of laptop
+- No industry-specific patterns
+```
+
+### After Enhancement
+
+```
+User: "Create a hero for my coaching business, premium feel"
+
+AI Output:
+- "Transform Your Business in 90 Days" headline (benefit-focused)
+- Warm/premium color palette (gold, dark backgrounds)
+- "Book Your Strategy Call" CTA (coaching-specific)
+- Personal photo placement (industry pattern)
+- Transformation testimonial preview
+- Generous spacing (48-96px) per premium aesthetic
+- Dark mode with reduced saturation
+- Avatar group with "Join 500+ entrepreneurs"
 ```
 
 ---
 
-## Knowledge Categories to Include
+## Technical Notes
 
-1. **Visual Hierarchy** - Size, weight, color, position, whitespace
-2. **Typography** - Scale, line height, max width, pairing
-3. **Spacing** - 8px grid, proximity rules, breathing room
-4. **Color** - Psychology, 60-30-10 rule, contrast, dark mode
-5. **Buttons** - Sizing, padding, states, copy patterns
-6. **Forms** - Labels, errors, progress, mobile optimization
-7. **Psychology** - Cialdini, reading patterns, cognitive load
-8. **Sections** - Hero, features, testimonials, pricing, FAQ
-9. **Accessibility** - WCAG, contrast, focus states, screen readers
-10. **Responsive** - Mobile-first, breakpoints, touch targets
-11. **Micro-interactions** - Hover, transitions, feedback
-12. **Modern Trends** - Glassmorphism, gradients, illustrations
+### Context Extraction Logic
 
----
-
-## Technical Implementation Notes
-
-### Knowledge Injection Strategy
+Add to `src/lib/ai/aiCopilotService.ts`:
 
 ```typescript
-// In prompts.ts getSystemPrompt()
-export function getSystemPrompt(task, context, mode, userPrompt): string {
-  // Get base prompt for task
-  let prompt = getBasePrompt(task, mode);
+interface EnhancedPageContext extends PageContext {
+  // New fields for enhanced intelligence
+  detectedIndustry?: string;
+  detectedAesthetics?: string[];
+  requestedPattern?: string;
+}
+
+function extractIndustryFromPrompt(prompt: string): string | undefined {
+  const industries = ['saas', 'coaching', 'ecommerce', 'agency', 'newsletter', 'event'];
+  const keywords = {
+    saas: ['software', 'app', 'platform', 'tool', 'saas', 'b2b'],
+    coaching: ['coaching', 'coach', 'mentor', 'course', 'training', 'consulting'],
+    ecommerce: ['product', 'shop', 'store', 'buy', 'cart', 'ecommerce'],
+    agency: ['agency', 'studio', 'services', 'creative', 'design agency'],
+    newsletter: ['newsletter', 'subscribe', 'email list', 'content'],
+    event: ['event', 'webinar', 'conference', 'workshop', 'summit']
+  };
   
-  // Inject relevant knowledge based on task
-  const knowledge = getRelevantKnowledge(task, context);
-  prompt = prompt.replace('{{UI_KNOWLEDGE}}', knowledge);
-  
-  // Inject anti-patterns for generate tasks
-  if (task === 'generate') {
-    prompt = prompt.replace('{{ANTI_PATTERNS}}', UI_ANTI_PATTERNS);
+  for (const [industry, words] of Object.entries(keywords)) {
+    if (words.some(w => prompt.toLowerCase().includes(w))) {
+      return industry;
+    }
   }
+  return undefined;
+}
+
+function extractAestheticsFromPrompt(prompt: string): string[] {
+  const aesthetics = ['minimal', 'premium', 'bold', 'playful', 'cinematic', 'glassmorphism'];
+  return aesthetics.filter(a => prompt.toLowerCase().includes(a));
+}
+```
+
+### Prompt Assembly
+
+The final system prompt is assembled dynamically:
+
+```typescript
+function assembleSystemPrompt(task: string, context: EnhancedPageContext, userPrompt: string): string {
+  let prompt = BASE_PROMPT;
+  
+  // Add core knowledge
+  prompt += getRelevantKnowledge(task, context);
+  
+  // Add industry-specific guidance
+  if (context.detectedIndustry) {
+    prompt += getIndustryGuidance(context.detectedIndustry);
+  }
+  
+  // Add aesthetic rules
+  if (context.detectedAesthetics?.length) {
+    prompt += getAestheticRules(context.detectedAesthetics);
+  }
+  
+  // Add pattern template
+  if (context.requestedPattern) {
+    prompt += getPromptPattern(context.requestedPattern);
+  }
+  
+  // Add anti-patterns
+  prompt += getAntiPatternsForTask(task);
+  
+  // Add quality validation
+  prompt += QUALITY_VALIDATION_PROMPT;
   
   return prompt;
 }
 ```
 
-### Context-Aware Knowledge Selection
-
-```typescript
-function getRelevantKnowledge(task: string, context: any): string {
-  const knowledge: string[] = [];
-  
-  // Always include core principles
-  knowledge.push(UI_KNOWLEDGE.VISUAL_HIERARCHY);
-  knowledge.push(UI_KNOWLEDGE.SPACING_SYSTEM);
-  
-  // Task-specific knowledge
-  if (task === 'generate') {
-    if (context.blockType === 'hero') {
-      knowledge.push(UI_KNOWLEDGE.HERO_PATTERNS);
-    }
-    if (context.hasForm) {
-      knowledge.push(UI_KNOWLEDGE.FORM_PATTERNS);
-    }
-    if (context.hasCTA) {
-      knowledge.push(UI_KNOWLEDGE.BUTTON_RULES);
-    }
-  }
-  
-  if (task === 'analyze') {
-    knowledge.push(UI_KNOWLEDGE.CONVERSION_PSYCHOLOGY);
-    knowledge.push(DESIGN_QUALITY_CHECKLIST);
-  }
-  
-  return knowledge.join('\n\n');
-}
-```
-
 ---
 
-## Success Metrics
+## Summary
 
-After implementation, the AI Copilot should:
+This enhancement transforms your AI Copilot from a "generic design assistant" into an "industry-aware design expert" that:
 
-- [ ] Never generate centered body text blocks
-- [ ] Always use 8px-based spacing values
-- [ ] Create headlines under 10 words with power words
-- [ ] Generate CTAs with action verbs ("Get", "Start", "Join", "Unlock")
-- [ ] Include social proof elements in hero sections
-- [ ] Maintain 4.5:1 contrast ratio minimum
-- [ ] Suggest proper section ordering (credibility before ask)
-- [ ] Generate mobile-appropriate touch targets (44px+)
-- [ ] Use proper typography scale (not random sizes)
-- [ ] Apply color psychology appropriately to context
+1. **Understands aesthetic vocabulary** - "premium," "bold," "minimal" become concrete design tokens
+2. **Knows industry patterns** - SaaS vs coaching vs e-commerce generate different designs
+3. **Thinks in atoms** - Precise component specifications for consistency
+4. **Validates quality** - Self-checks before outputting
+5. **Provides templates** - Reusable patterns users can invoke
+
+The result: AI-generated designs that feel professionally crafted for the specific use case, not generic templates.
 
