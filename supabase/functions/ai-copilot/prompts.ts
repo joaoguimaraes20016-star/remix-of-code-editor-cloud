@@ -12,6 +12,10 @@
 import { UI_KNOWLEDGE, getRelevantKnowledge } from './uiKnowledge.ts';
 import { getAntiPatternsForTask } from './antiPatterns.ts';
 import { HERO_PATTERNS, FEATURE_PATTERNS, formatExamplesAsContext } from './designExamples.ts';
+import { extractAestheticsFromPrompt, getAestheticRules } from './aestheticVocabulary.ts';
+import { extractIndustryFromPrompt, getIndustryGuidance } from './industryKnowledge.ts';
+import { getAtomicDesignRules } from './componentAtoms.ts';
+import { getPatternGuidanceForPrompt } from './promptPatterns.ts';
 
 export type TaskType = 'suggest' | 'generate' | 'rewrite' | 'analyze';
 export type GenerationMode = 'block' | 'funnel' | 'settings' | 'workflow';
