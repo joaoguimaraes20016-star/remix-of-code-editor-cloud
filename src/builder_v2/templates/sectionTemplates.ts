@@ -1,6 +1,6 @@
 /**
- * Section Templates - Pre-built section blocks for the builder
- * Each template creates a section with pre-configured content
+ * Section Templates - High-Converting Templates for Funnel Builder
+ * Organized into clear categories for the unified Section Picker
  */
 
 import type { CanvasNode } from '../types';
@@ -15,24 +15,143 @@ export interface SectionTemplate {
   id: string;
   name: string;
   description: string;
-  /** 
-   * Section categories - LAYOUT ONLY
-   * - 'embed' replaces 'form' for calendar/widget containers
-   * - Form inputs are now INTERACTIVE BLOCKS, not sections
-   */
-  category: 'hero' | 'content' | 'cta' | 'media' | 'embed' | 'social_proof' | 'features';
+  category: 'hero' | 'content' | 'cta' | 'media' | 'embed' | 'social_proof' | 'features' | 'testimonials' | 'team' | 'faq';
   icon: string;
   createNode: () => CanvasNode;
 }
 
 // ============================================================================
-// HERO SECTIONS
+// HERO SECTIONS (5 templates)
+// Opening hooks - headline, subtext, CTA for high-ticket offers
 // ============================================================================
 
-export const heroSimple: SectionTemplate = {
-  id: 'hero-simple',
-  name: 'Simple Hero',
-  description: 'Headline + subtext',
+export const heroImpact: SectionTemplate = {
+  id: 'hero-impact',
+  name: 'Impact Hero',
+  description: 'Bold headline with urgency badge and CTA',
+  category: 'hero',
+  icon: 'layout',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'hero' },
+    children: [
+      {
+        id: genId('badge'),
+        type: 'badge',
+        props: { text: '🔥 Limited spots available', variant: 'urgent' },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Transform Your Business in 90 Days', level: 'h1' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'Join 500+ entrepreneurs who scaled to 6-figures using our proven system.' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 24 },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Apply Now →', variant: 'primary', action: 'next', size: 'lg' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const heroVideo: SectionTemplate = {
+  id: 'hero-video',
+  name: 'Video Hero',
+  description: 'VSL player with headline below',
+  category: 'hero',
+  icon: 'play',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'hero' },
+    children: [
+      {
+        id: genId('video'),
+        type: 'video_embed',
+        props: { url: '', placeholder: 'Add your VSL video URL' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 20 },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Watch: How We Help Coaches Scale', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Book Your Strategy Call', variant: 'primary', action: 'next' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const heroAuthority: SectionTemplate = {
+  id: 'hero-authority',
+  name: 'Authority Hero',
+  description: 'Photo with credentials and headline',
+  category: 'hero',
+  icon: 'user',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'hero' },
+    children: [
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Expert photo', width: 120, height: 120, rounded: true },
+        children: [],
+      },
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Hi, I\'m [Your Name]', level: 'h1' },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'I\'ve helped 1,000+ coaches build 6 and 7-figure businesses. Let me show you how.' },
+        children: [],
+      },
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Work With Me', variant: 'primary', action: 'next' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const heroMinimal: SectionTemplate = {
+  id: 'hero-minimal',
+  name: 'Minimal Hero',
+  description: 'Clean text-only with CTA',
   category: 'hero',
   icon: 'type',
   createNode: () => ({
@@ -49,34 +168,7 @@ export const heroSimple: SectionTemplate = {
       {
         id: genId('paragraph'),
         type: 'paragraph',
-        props: { text: 'Add a compelling subtext that supports your headline.' },
-        children: [],
-      },
-    ],
-  }),
-};
-
-export const heroWithButton: SectionTemplate = {
-  id: 'hero-button',
-  name: 'Hero + CTA',
-  description: 'Headline, subtext, and button',
-  category: 'hero',
-  icon: 'layout',
-  createNode: () => ({
-    id: genId('section'),
-    type: 'section',
-    props: { variant: 'hero' },
-    children: [
-      {
-        id: genId('heading'),
-        type: 'heading',
-        props: { text: 'Your headline here', level: 'h1' },
-        children: [],
-      },
-      {
-        id: genId('paragraph'),
-        type: 'paragraph',
-        props: { text: 'Add a compelling subtext that supports your headline.' },
+        props: { text: 'A compelling subtext that supports your headline and drives action.' },
         children: [],
       },
       {
@@ -95,10 +187,10 @@ export const heroWithButton: SectionTemplate = {
   }),
 };
 
-export const heroCardWithImage: SectionTemplate = {
-  id: 'hero-card-image',
-  name: 'Hero Card + Image',
-  description: 'Clean card hero (Framer-style)',
+export const heroSplit: SectionTemplate = {
+  id: 'hero-split',
+  name: 'Split Hero',
+  description: 'Image left, text right layout',
   category: 'hero',
   icon: 'layout',
   createNode: () => ({
@@ -112,9 +204,9 @@ export const heroCardWithImage: SectionTemplate = {
         props: { backgroundColor: '#ffffff', borderRadius: 20, shadow: true, padding: 0 },
         children: [
           {
-            id: genId('header'),
-            type: 'header_bar',
-            props: { backgroundColor: '#111827' },
+            id: genId('image'),
+            type: 'image',
+            props: { src: '', alt: 'Hero image', aspectRatio: '16:9' },
             children: [],
           },
           {
@@ -125,25 +217,19 @@ export const heroCardWithImage: SectionTemplate = {
               {
                 id: genId('heading'),
                 type: 'heading',
-                props: { text: 'More Success with Less Effort', level: 'h1' },
+                props: { text: 'Achieve More in Less Time', level: 'h1' },
                 children: [],
               },
               {
                 id: genId('paragraph'),
                 type: 'paragraph',
-                props: { text: 'With our tailored solutions, reach your goals faster.' },
-                children: [],
-              },
-              {
-                id: genId('spacer'),
-                type: 'spacer',
-                props: { height: 12 },
+                props: { text: 'Our tailored approach helps you reach your goals faster.' },
                 children: [],
               },
               {
                 id: genId('button'),
                 type: 'cta_button',
-                props: { label: 'Learn more', variant: 'primary', fullWidth: false },
+                props: { label: 'Learn More', variant: 'primary', fullWidth: false },
                 children: [],
               },
             ],
@@ -155,13 +241,14 @@ export const heroCardWithImage: SectionTemplate = {
 };
 
 // ============================================================================
-// CONTENT SECTIONS
+// CONTENT SECTIONS (2 templates)
+// Text blocks and feature explanations
 // ============================================================================
 
 export const contentText: SectionTemplate = {
   id: 'content-text',
   name: 'Text Block',
-  description: 'Simple text content',
+  description: 'Simple paragraph content',
   category: 'content',
   icon: 'align-left',
   createNode: () => ({
@@ -172,7 +259,7 @@ export const contentText: SectionTemplate = {
       {
         id: genId('paragraph'),
         type: 'paragraph',
-        props: { text: 'Add your content here. This is a simple text section for longer form content.' },
+        props: { text: 'Add your content here. This is a simple text section for longer form content that explains your offer in detail.' },
         children: [],
       },
     ],
@@ -182,7 +269,7 @@ export const contentText: SectionTemplate = {
 export const contentHeadingText: SectionTemplate = {
   id: 'content-heading-text',
   name: 'Heading + Text',
-  description: 'Section title with text',
+  description: 'Section with title and body',
   category: 'content',
   icon: 'text',
   createNode: () => ({
@@ -199,7 +286,7 @@ export const contentHeadingText: SectionTemplate = {
       {
         id: genId('paragraph'),
         type: 'paragraph',
-        props: { text: 'Add your content here to explain this section in more detail.' },
+        props: { text: 'Explain your offer, methodology, or value proposition in detail here.' },
         children: [],
       },
     ],
@@ -207,13 +294,14 @@ export const contentHeadingText: SectionTemplate = {
 };
 
 // ============================================================================
-// CTA SECTIONS
+// CTA SECTIONS (3 templates)
+// Conversion-focused call-to-action sections
 // ============================================================================
 
 export const ctaSimple: SectionTemplate = {
   id: 'cta-simple',
   name: 'Simple CTA',
-  description: 'Just a button',
+  description: 'Button only',
   category: 'cta',
   icon: 'mouse-pointer-click',
   createNode: () => ({
@@ -224,40 +312,73 @@ export const ctaSimple: SectionTemplate = {
       {
         id: genId('button'),
         type: 'cta_button',
-        props: { label: 'Continue', variant: 'primary', action: 'next' },
+        props: { label: 'Continue', variant: 'primary', action: 'next', size: 'lg' },
         children: [],
       },
     ],
   }),
 };
 
-export const ctaWithText: SectionTemplate = {
-  id: 'cta-text',
-  name: 'CTA + Text',
-  description: 'Button with supporting text',
+export const ctaUrgency: SectionTemplate = {
+  id: 'cta-urgency',
+  name: 'CTA + Urgency',
+  description: 'Button with scarcity text',
   category: 'cta',
-  icon: 'square-mouse-pointer',
+  icon: 'clock',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
     props: { variant: 'cta' },
     children: [
       {
-        id: genId('paragraph'),
-        type: 'paragraph',
-        props: { text: 'Ready to get started? Click below.' },
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Claim Your Spot', variant: 'primary', action: 'next', size: 'lg' },
         children: [],
       },
       {
         id: genId('spacer'),
         type: 'spacer',
-        props: { height: 16 },
+        props: { height: 12 },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: '⏰ Only 5 spots left this week', variant: 'small', align: 'center' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const ctaDual: SectionTemplate = {
+  id: 'cta-dual',
+  name: 'Dual CTA',
+  description: 'Primary and secondary options',
+  category: 'cta',
+  icon: 'mouse-pointer-click',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'cta' },
+    children: [
+      {
+        id: genId('button'),
+        type: 'cta_button',
+        props: { label: 'Yes, I Want This', variant: 'primary', action: 'next', size: 'lg' },
+        children: [],
+      },
+      {
+        id: genId('spacer'),
+        type: 'spacer',
+        props: { height: 12 },
         children: [],
       },
       {
         id: genId('button'),
         type: 'cta_button',
-        props: { label: 'Get Started', variant: 'primary', action: 'next' },
+        props: { label: 'Not right now', variant: 'ghost', action: 'dismiss' },
         children: [],
       },
     ],
@@ -265,7 +386,8 @@ export const ctaWithText: SectionTemplate = {
 };
 
 // ============================================================================
-// MEDIA SECTIONS
+// MEDIA SECTIONS (2 templates)
+// Video and image content
 // ============================================================================
 
 export const mediaVideo: SectionTemplate = {
@@ -311,15 +433,14 @@ export const mediaImage: SectionTemplate = {
 };
 
 // ============================================================================
-// EMBED SECTIONS (Layout containers for external widgets)
-// These are STRUCTURAL sections - they contain embed placeholders, NOT data collection
-// For interactive data collection, use INTERACTIVE BLOCKS via the block picker
+// EMBED SECTIONS (2 templates)
+// Calendar embeds and widgets
 // ============================================================================
 
 export const embedCalendar: SectionTemplate = {
   id: 'embed-calendar',
   name: 'Calendar Embed',
-  description: 'Container for calendar widget',
+  description: 'Calendly, Cal.com, or similar',
   category: 'embed',
   icon: 'calendar',
   createNode: () => ({
@@ -339,10 +460,10 @@ export const embedCalendar: SectionTemplate = {
 
 export const embedEmpty: SectionTemplate = {
   id: 'embed-empty',
-  name: 'Empty Container',
-  description: 'Flexible embed container',
+  name: 'Custom Embed',
+  description: 'Empty container for any widget',
   category: 'embed',
-  icon: 'square',
+  icon: 'code',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
@@ -352,121 +473,78 @@ export const embedEmpty: SectionTemplate = {
 };
 
 // ============================================================================
-// DEPRECATED FORM SECTIONS
-// These exist for backwards compatibility only. New code should use:
-// - Interactive blocks from the block picker (email, phone, name, choices)
-// - The unified ApplicationEngine for multi-step flows
+// SOCIAL PROOF SECTIONS (4 templates)
+// Trust indicators and credibility builders
 // ============================================================================
 
-/**
- * @deprecated Use interactive blocks instead. 
- * Add an email input via the block picker, not as a section.
- */
-export const formEmail: SectionTemplate = {
-  id: 'form-email',
-  name: 'Email Input (Legacy)',
-  description: 'Use Interactive Blocks instead',
-  category: 'embed',
-  icon: 'mail',
+export const socialProofStars: SectionTemplate = {
+  id: 'social-stars',
+  name: 'Star Rating',
+  description: '5-star rating with review count',
+  category: 'social_proof',
+  icon: 'star',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'form', deprecated: true },
+    props: { variant: 'content', align: 'center' },
     children: [
       {
-        id: genId('input'),
-        type: 'email_input',
-        props: { placeholder: 'Enter your email', fieldName: 'email', required: true },
+        id: genId('info'),
+        type: 'rating_display',
+        props: { rating: 5, count: 127, source: 'Google Reviews' },
         children: [],
       },
     ],
   }),
 };
 
-/**
- * @deprecated Use interactive blocks instead.
- */
-export const formPhone: SectionTemplate = {
-  id: 'form-phone',
-  name: 'Phone Input (Legacy)',
-  description: 'Use Interactive Blocks instead',
-  category: 'embed',
-  icon: 'phone',
+export const socialProofLogos: SectionTemplate = {
+  id: 'social-logos',
+  name: 'Logo Bar',
+  description: '"As seen in" brand logos',
+  category: 'social_proof',
+  icon: 'building',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'form', deprecated: true },
+    props: { variant: 'content', align: 'center' },
     children: [
       {
-        id: genId('input'),
-        type: 'phone_input',
-        props: { placeholder: 'Enter your phone', fieldName: 'phone' },
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'As seen in', variant: 'small', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('logos'),
+        type: 'logo_bar',
+        props: { logos: [], grayscale: true },
         children: [],
       },
     ],
   }),
 };
 
-/**
- * @deprecated Use full-identity interactive step instead.
- */
-export const formFull: SectionTemplate = {
-  id: 'form-full',
-  name: 'Contact Form (Legacy)',
-  description: 'Use Interactive Blocks instead',
-  category: 'embed',
-  icon: 'clipboard-list',
+export const socialProofStats: SectionTemplate = {
+  id: 'social-stats',
+  name: 'Results Stats',
+  description: '3-column achievement numbers',
+  category: 'social_proof',
+  icon: 'trending-up',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'form', deprecated: true },
+    props: { variant: 'content' },
     children: [
       {
-        id: genId('input'),
-        type: 'text_input',
-        props: { placeholder: 'Your name', fieldName: 'name', required: true },
-        children: [],
-      },
-      {
-        id: genId('input'),
-        type: 'email_input',
-        props: { placeholder: 'Email address', fieldName: 'email', required: true },
-        children: [],
-      },
-      {
-        id: genId('input'),
-        type: 'phone_input',
-        props: { placeholder: 'Phone number', fieldName: 'phone' },
-        children: [],
-      },
-    ],
-  }),
-};
-
-/**
- * @deprecated Use single-choice or multi-choice interactive step instead.
- */
-export const formMultiChoice: SectionTemplate = {
-  id: 'form-multi-choice',
-  name: 'Multiple Choice (Legacy)',
-  description: 'Use Interactive Blocks instead',
-  category: 'embed',
-  icon: 'list',
-  createNode: () => ({
-    id: genId('section'),
-    type: 'section',
-    props: { variant: 'options', deprecated: true },
-    children: [
-      {
-        id: genId('options'),
-        type: 'option_grid',
+        id: genId('stats'),
+        type: 'stats_grid',
         props: {
-          options: [
-            { id: 'opt1', label: 'Option A', emoji: '✨' },
-            { id: 'opt2', label: 'Option B', emoji: '🚀' },
-            { id: 'opt3', label: 'Option C', emoji: '💡' },
+          items: [
+            { value: '$10M+', label: 'Revenue Generated' },
+            { value: '500+', label: 'Happy Clients' },
+            { value: '97%', label: 'Success Rate' },
           ],
-          autoAdvance: true,
         },
         children: [],
       },
@@ -474,38 +552,10 @@ export const formMultiChoice: SectionTemplate = {
   }),
 };
 
-/**
- * @deprecated Use embedCalendar instead.
- */
-export const formCalendar: SectionTemplate = {
-  id: 'form-calendar',
-  name: 'Calendar Booking (Legacy)',
-  description: 'Use Embed → Calendar instead',
-  category: 'embed',
-  icon: 'calendar',
-  createNode: () => ({
-    id: genId('section'),
-    type: 'section',
-    props: { variant: 'embed', deprecated: true },
-    children: [
-      {
-        id: genId('calendar'),
-        type: 'calendar_embed',
-        props: { url: '', placeholder: 'Paste your Calendly or Cal.com link' },
-        children: [],
-      },
-    ],
-  }),
-};
-
-// ============================================================================
-// SOCIAL PROOF SECTIONS
-// ============================================================================
-
 export const socialProofBadges: SectionTemplate = {
   id: 'social-badges',
   name: 'Trust Badges',
-  description: 'Info cards with icons',
+  description: 'Guarantee and security icons',
   category: 'social_proof',
   icon: 'shield-check',
   createNode: () => ({
@@ -518,7 +568,7 @@ export const socialProofBadges: SectionTemplate = {
         type: 'info_card',
         props: {
           items: [
-            { icon: '✓', text: '100% Satisfaction Guaranteed' },
+            { icon: '✓', text: '100% Money-Back Guarantee' },
             { icon: '🔒', text: 'Your data is secure' },
             { icon: '⚡', text: 'Instant access' },
           ],
@@ -530,7 +580,8 @@ export const socialProofBadges: SectionTemplate = {
 };
 
 // ============================================================================
-// FEATURES SECTIONS
+// FEATURES SECTIONS (2 templates)
+// Benefits and what's included
 // ============================================================================
 
 export const featuresList: SectionTemplate = {
@@ -547,7 +598,7 @@ export const featuresList: SectionTemplate = {
       {
         id: genId('heading'),
         type: 'heading',
-        props: { text: 'What you get', level: 'h2' },
+        props: { text: 'What\'s Included', level: 'h2' },
         children: [],
       },
       {
@@ -555,9 +606,43 @@ export const featuresList: SectionTemplate = {
         type: 'info_card',
         props: {
           items: [
-            { icon: '✓', text: 'Feature one explained here' },
-            { icon: '✓', text: 'Feature two explained here' },
-            { icon: '✓', text: 'Feature three explained here' },
+            { icon: '✓', text: 'Weekly 1-on-1 coaching calls' },
+            { icon: '✓', text: 'Private community access' },
+            { icon: '✓', text: 'Done-for-you templates' },
+            { icon: '✓', text: 'Lifetime updates' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
+};
+
+export const featuresGrid: SectionTemplate = {
+  id: 'features-grid',
+  name: 'Features Grid',
+  description: '3-column benefit cards',
+  category: 'features',
+  icon: 'grid',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'content' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Why Choose Us', level: 'h2', align: 'center' },
+        children: [],
+      },
+      {
+        id: genId('grid'),
+        type: 'feature_grid',
+        props: {
+          items: [
+            { icon: '🚀', title: 'Fast Results', description: 'See improvements in just 30 days' },
+            { icon: '💎', title: 'Premium Quality', description: 'Enterprise-grade solutions' },
+            { icon: '🎯', title: 'Proven System', description: 'Battle-tested methodology' },
           ],
         },
         children: [],
@@ -567,36 +652,29 @@ export const featuresList: SectionTemplate = {
 };
 
 // ============================================================================
-// CONSENT SECTIONS
-// NOTE: Consent is now handled as a first-class property of interactive steps.
-// The full-identity step type includes consent checkbox automatically.
-// These sections are kept for backwards compatibility only.
+// TESTIMONIALS SECTIONS (2 templates)
+// Customer quotes and success stories
 // ============================================================================
 
-/**
- * @deprecated Consent is now a property of interactive steps, not a section.
- * Use the full-identity step type which includes consent handling.
- */
-export const legalConsent: SectionTemplate = {
-  id: 'legal-consent',
-  name: 'Privacy Consent (Legacy)',
-  description: 'Use Interactive Blocks with consent',
-  category: 'embed',
-  icon: 'shield-check',
+export const testimonialSingle: SectionTemplate = {
+  id: 'testimonial-single',
+  name: 'Single Testimonial',
+  description: 'Quote with photo and name',
+  category: 'testimonials',
+  icon: 'quote',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'form', deprecated: true },
+    props: { variant: 'content', align: 'center' },
     children: [
       {
-        id: genId('consent'),
-        type: 'consent_checkbox',
+        id: genId('testimonial'),
+        type: 'testimonial_card',
         props: {
-          label: 'I agree to receive communications and accept the',
-          linkText: 'Privacy Policy',
-          linkUrl: '/legal/privacy',
-          required: true,
-          fieldName: 'consent',
+          quote: '"This program completely transformed my business. I went from struggling to $50K months in just 90 days."',
+          author: 'Sarah M.',
+          title: 'Agency Owner',
+          image: '',
         },
         children: [],
       },
@@ -604,55 +682,32 @@ export const legalConsent: SectionTemplate = {
   }),
 };
 
-/**
- * @deprecated Use full-identity interactive step instead.
- * The unified ApplicationEngine handles opt-in forms with proper consent.
- */
-export const legalOptInForm: SectionTemplate = {
-  id: 'legal-optin',
-  name: 'Opt-In Form (Legacy)',
-  description: 'Use full-identity Interactive Block',
-  category: 'embed',
-  icon: 'clipboard-list',
+export const testimonialCarousel: SectionTemplate = {
+  id: 'testimonial-carousel',
+  name: 'Testimonial Stack',
+  description: 'Multiple success stories',
+  category: 'testimonials',
+  icon: 'users',
   createNode: () => ({
     id: genId('section'),
     type: 'section',
-    props: { variant: 'form', deprecated: true },
+    props: { variant: 'content' },
     children: [
       {
         id: genId('heading'),
         type: 'heading',
-        props: { text: 'Get instant access', level: 'h2' },
+        props: { text: 'What Our Clients Say', level: 'h2', align: 'center' },
         children: [],
       },
       {
-        id: genId('input'),
-        type: 'email_input',
-        props: { placeholder: 'Enter your email', fieldName: 'email', required: true },
-        children: [],
-      },
-      {
-        id: genId('consent'),
-        type: 'consent_checkbox',
+        id: genId('testimonials'),
+        type: 'testimonial_stack',
         props: {
-          label: 'I agree to receive emails and accept the',
-          linkText: 'Privacy Policy',
-          linkUrl: '/legal/privacy',
-          required: true,
-          fieldName: 'consent',
+          items: [
+            { quote: '"Game-changing program!"', author: 'John D.', title: 'Coach' },
+            { quote: '"Best investment I ever made."', author: 'Lisa K.', title: 'Consultant' },
+          ],
         },
-        children: [],
-      },
-      {
-        id: genId('spacer'),
-        type: 'spacer',
-        props: { height: 16 },
-        children: [],
-      },
-      {
-        id: genId('button'),
-        type: 'cta_button',
-        props: { label: 'Get Access Now', variant: 'primary', action: 'submit' },
         children: [],
       },
     ],
@@ -660,70 +715,159 @@ export const legalOptInForm: SectionTemplate = {
 };
 
 // ============================================================================
-// EXPORTS
+// FAQ SECTION (1 template)
+// Common questions and answers
 // ============================================================================
 
-// IDs of legacy templates to hide from the UI
-const HIDDEN_LEGACY_IDS = [
-  'form-email', 
-  'form-phone', 
-  'form-full', 
-  'form-multi-choice',
-  'form-calendar',
-  'legal-consent',
-  'legal-optin',
-];
-
-export const allSectionTemplates: SectionTemplate[] = [
-  // Hero
-  heroSimple,
-  heroWithButton,
-  heroCardWithImage,
-  // Content
-  contentText,
-  contentHeadingText,
-  // CTA
-  ctaSimple,
-  ctaWithText,
-  // Media
-  mediaVideo,
-  mediaImage,
-  // Embed (structural containers for widgets)
-  embedCalendar,
-  embedEmpty,
-  // Social Proof
-  socialProofBadges,
-  // Features
-  featuresList,
-  // NOTE: Legacy templates removed from UI - use interactive blocks instead
-].filter(t => !HIDDEN_LEGACY_IDS.includes(t.id));
-
-export const sectionTemplatesByCategory = {
-  hero: [heroSimple, heroWithButton, heroCardWithImage],
-  content: [contentText, contentHeadingText],
-  cta: [ctaSimple, ctaWithText],
-  media: [mediaVideo, mediaImage],
-  embed: [embedCalendar, embedEmpty],
-  social_proof: [socialProofBadges],
-  features: [featuresList],
+export const faqSection: SectionTemplate = {
+  id: 'faq-accordion',
+  name: 'FAQ Accordion',
+  description: 'Expandable Q&A list',
+  category: 'faq',
+  icon: 'help-circle',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'content' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Frequently Asked Questions', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('faq'),
+        type: 'faq_accordion',
+        props: {
+          items: [
+            { question: 'How long does it take to see results?', answer: 'Most clients see significant improvements within 30 days.' },
+            { question: 'Is there a money-back guarantee?', answer: 'Yes! We offer a 30-day 100% money-back guarantee.' },
+            { question: 'What if I have questions?', answer: 'Our support team is available 24/7 via chat and email.' },
+          ],
+        },
+        children: [],
+      },
+    ],
+  }),
 };
 
-/**
- * @deprecated Legacy form templates - for backwards compatibility only
- * New code should use interactive blocks from the block picker
- */
-export const legacySectionTemplates = {
-  form: [formEmail, formPhone, formFull, formMultiChoice, formCalendar, legalConsent, legalOptInForm],
+// ============================================================================
+// TEAM SECTION (1 template)
+// About and team introduction
+// ============================================================================
+
+export const teamSection: SectionTemplate = {
+  id: 'team-intro',
+  name: 'Team Intro',
+  description: 'About the founders/team',
+  category: 'team',
+  icon: 'users',
+  createNode: () => ({
+    id: genId('section'),
+    type: 'section',
+    props: { variant: 'content', align: 'center' },
+    children: [
+      {
+        id: genId('heading'),
+        type: 'heading',
+        props: { text: 'Meet Your Coach', level: 'h2' },
+        children: [],
+      },
+      {
+        id: genId('image'),
+        type: 'image',
+        props: { src: '', alt: 'Team photo', width: 100, height: 100, rounded: true },
+        children: [],
+      },
+      {
+        id: genId('paragraph'),
+        type: 'paragraph',
+        props: { text: 'With over 10 years of experience helping entrepreneurs scale, I\'ve developed a proven system that works.' },
+        children: [],
+      },
+    ],
+  }),
+};
+
+// ============================================================================
+// EXPORTS - All templates organized for the Section Picker
+// ============================================================================
+
+export const allSectionTemplates: SectionTemplate[] = [
+  // Hero (5)
+  heroImpact,
+  heroVideo,
+  heroAuthority,
+  heroMinimal,
+  heroSplit,
+  // Content (2)
+  contentText,
+  contentHeadingText,
+  // CTA (3)
+  ctaSimple,
+  ctaUrgency,
+  ctaDual,
+  // Media (2)
+  mediaVideo,
+  mediaImage,
+  // Embed (2)
+  embedCalendar,
+  embedEmpty,
+  // Social Proof (4)
+  socialProofStars,
+  socialProofLogos,
+  socialProofStats,
+  socialProofBadges,
+  // Features (2)
+  featuresList,
+  featuresGrid,
+  // Testimonials (2)
+  testimonialSingle,
+  testimonialCarousel,
+  // FAQ (1)
+  faqSection,
+  // Team (1)
+  teamSection,
+];
+
+export const sectionTemplatesByCategory = {
+  hero: [heroImpact, heroVideo, heroAuthority, heroMinimal, heroSplit],
+  content: [contentText, contentHeadingText],
+  cta: [ctaSimple, ctaUrgency, ctaDual],
+  media: [mediaVideo, mediaImage],
+  embed: [embedCalendar, embedEmpty],
+  social_proof: [socialProofStars, socialProofLogos, socialProofStats, socialProofBadges],
+  features: [featuresList, featuresGrid],
+  testimonials: [testimonialSingle, testimonialCarousel],
+  faq: [faqSection],
+  team: [teamSection],
 };
 
 export const categoryLabels: Record<string, string> = {
-  hero: 'Hero Sections',
+  hero: 'Hero',
   content: 'Content',
   cta: 'Call to Action',
   media: 'Media',
-  embed: 'Embed & Widgets',
+  embed: 'Embed',
   social_proof: 'Social Proof',
   features: 'Features',
+  testimonials: 'Testimonials',
+  faq: 'FAQ',
+  team: 'Team',
+};
+
+export const categoryDescriptions: Record<string, string> = {
+  hero: 'Opening sections that hook visitors',
+  content: 'Text and information blocks',
+  cta: 'Conversion buttons and actions',
+  media: 'Video and image content',
+  embed: 'Calendars and external widgets',
+  social_proof: 'Trust indicators and credibility',
+  features: 'Benefits and what\'s included',
+  testimonials: 'Customer success stories',
+  faq: 'Common questions answered',
+  team: 'About and introductions',
 };
 
 export const categoryIcons: Record<string, string> = {
@@ -731,7 +875,10 @@ export const categoryIcons: Record<string, string> = {
   content: 'type',
   cta: 'mouse-pointer-click',
   media: 'play',
-  embed: 'code',
-  social_proof: 'shield-check',
-  features: 'check-circle',
+  embed: 'calendar',
+  social_proof: 'star',
+  features: 'package',
+  testimonials: 'quote',
+  faq: 'help-circle',
+  team: 'users',
 };
