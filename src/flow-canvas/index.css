@@ -448,6 +448,8 @@
   /* IMPORTANT: overflow-visible allows toolbars to render outside frame bounds */
   .device-frame {
     @apply relative rounded-2xl;
+    /* Ensure font inheritance for all content */
+    font-family: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
     /* Allow toolbar overflow - toolbars now use portals but this helps with transitions */
     overflow: visible;
     /* Clip only the inner content, not positioned elements */
@@ -456,6 +458,15 @@
       0 0 0 1px hsl(var(--canvas-frame-border) / 0.3),
       0 25px 50px -12px rgba(0, 0, 0, 0.4),
       0 0 80px -20px hsl(var(--builder-accent) / 0.15);
+  }
+  
+  /* Ensure font cascades to all device frame content */
+  .device-frame *,
+  .device-frame button,
+  .device-frame input,
+  .device-frame textarea,
+  .device-frame select {
+    font-family: inherit;
   }
   
   /* Inner content wrapper clips overflow but allows positioned toolbars */

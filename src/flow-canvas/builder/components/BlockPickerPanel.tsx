@@ -522,14 +522,18 @@ const informativeBlocks: BlockTemplate[] = [
       id: generateId(),
       type: 'custom',
       label: 'FAQ',
-      elements: [{ id: generateId(), type: 'text', content: 'Q: What is included?\nA: Everything you need to get started.\n\nQ: How long does it take?\nA: Results typically within 30 days.', props: { 
-        variant: 'faq',
-        items: [
-          { question: 'What is included?', answer: 'Everything you need to get started.' },
-          { question: 'How long does it take?', answer: 'Results typically within 30 days.' },
-          { question: 'Is there a guarantee?', answer: 'Yes, 30-day money back guarantee.' },
-        ]
-      } }],
+      elements: [{ 
+        id: generateId(), 
+        type: 'faq', 
+        content: '', 
+        props: { 
+          items: [
+            { question: 'What is included?', answer: 'Everything you need to get started.' },
+            { question: 'How long does it take?', answer: 'Results typically within 30 days.' },
+            { question: 'Is there a guarantee?', answer: 'Yes, 30-day money back guarantee.' },
+          ]
+        } 
+      }],
       props: {},
     }),
   },
@@ -1358,7 +1362,13 @@ const faqSections: BlockTemplate[] = [
       label: 'FAQ',
       elements: [
         { id: generateId(), type: 'heading', content: 'Frequently Asked Questions', props: { level: 2, align: 'center' } },
-        { id: generateId(), type: 'text', content: 'Q: What is included?\nA: Everything you need to get started.\n\nQ: How long does it take?\nA: Results typically within 30 days.\n\nQ: Is there a guarantee?\nA: Yes, 30-day money back guarantee.', props: { variant: 'faq' } },
+        { id: generateId(), type: 'faq', content: '', props: { 
+          items: [
+            { question: 'What is included?', answer: 'Everything you need to get started.' },
+            { question: 'How long does it take?', answer: 'Results typically within 30 days.' },
+            { question: 'Is there a guarantee?', answer: 'Yes, 30-day money back guarantee.' },
+          ]
+        } },
       ],
       props: {},
     }),

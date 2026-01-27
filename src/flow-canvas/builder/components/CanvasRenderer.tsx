@@ -2351,9 +2351,15 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         }
       }
 
-      case 'divider':
+      case 'divider': {
         const dividerColor = element.styles?.borderColor || (isDarkTheme ? '#374151' : '#e5e7eb');
         const dividerHeight = element.styles?.height || '1px';
+        const dividerWidth = (element.props?.dividerWidth as string) || '100%';
+        const dividerStyle = (element.props?.dividerStyle as string) || 'solid';
+        const dividerAlign = (element.props?.dividerAlign as string) || 'center';
+        
+        // Compute alignment classes
+        const alignClass = dividerAlign === 'left' ? 'mr-auto' : dividerAlign === 'right' ? 'ml-auto' : 'mx-auto';
         
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
@@ -2384,15 +2390,18 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
             {/* Element drag handle integrated into toolbar */}
             <div className="w-full py-4" onClick={(e) => { e.stopPropagation(); onSelect(); }}>
               <div 
-                className="w-full" 
+                className={alignClass}
                 style={{ 
-                  backgroundColor: dividerColor,
-                  height: dividerHeight,
+                  backgroundColor: dividerStyle === 'solid' ? dividerColor : undefined,
+                  borderTop: dividerStyle !== 'solid' ? `${dividerHeight} ${dividerStyle} ${dividerColor}` : undefined,
+                  height: dividerStyle === 'solid' ? dividerHeight : 0,
+                  width: dividerWidth,
                 }}
               />
             </div>
           </div>
         );
+      }
 
       case 'spacer':
         const spacerHeight = element.styles?.height || '48px';
@@ -2430,6 +2439,89 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
             </div>
           </div>
         );
+
+      // FAQ Accordion element - proper rendering with expand/collapse
+      case 'faq': {
+        const faqItems = (element.props?.items as Array<{ question: string; answer: string }>) || [];
+        const [openIndex, setOpenIndex] = useState<number | null>(0);
+        
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'w-full relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="faq"
+                elementLabel="FAQ"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div 
+              className="w-full space-y-2 px-4 py-3"
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            >
+              {faqItems.length > 0 ? faqItems.map((item, index) => (
+                <div 
+                  key={index} 
+                  className={cn(
+                    "rounded-lg border transition-all",
+                    isDarkTheme 
+                      ? "border-gray-700 bg-gray-800/50" 
+                      : "border-gray-200 bg-gray-50"
+                  )}
+                >
+                  <button
+                    className={cn(
+                      "w-full flex items-center justify-between px-4 py-3 text-left font-medium transition-colors",
+                      isDarkTheme ? "text-white hover:bg-gray-700/50" : "text-gray-900 hover:bg-gray-100"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!readOnly) {
+                        setOpenIndex(openIndex === index ? null : index);
+                      }
+                    }}
+                  >
+                    <span>{item.question}</span>
+                    <svg 
+                      className={cn(
+                        "w-5 h-5 transition-transform",
+                        openIndex === index && "rotate-180"
+                      )} 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {openIndex === index && (
+                    <div className={cn(
+                      "px-4 pb-4 text-sm leading-relaxed",
+                      isDarkTheme ? "text-gray-300" : "text-gray-600"
+                    )}>
+                      {item.answer}
+                    </div>
+                  )}
+                </div>
+              )) : (
+                <div className={cn(
+                  "text-sm text-center py-4",
+                  isDarkTheme ? "text-gray-500" : "text-gray-400"
+                )}>
+                  Add FAQ items in the inspector
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
 
       case 'icon':
         const iconName = element.content || 'star';
@@ -5334,10 +5426,12 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                         onClick={() => onOpenSectionPicker()}
                         className={cn(
                           "inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all shadow-sm",
+                          "font-sans", // Explicit font-sans for Tailwind inheritance
                           isBackgroundDark
                             ? "bg-white text-gray-900 hover:bg-gray-100"
                             : "bg-gray-900 text-white hover:bg-gray-800"
                         )}
+                        style={{ fontFamily: 'inherit' }}
                       >
                         <Plus size={18} />
                         Add Section

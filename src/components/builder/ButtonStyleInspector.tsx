@@ -189,12 +189,23 @@ export const ButtonStyleInspector: React.FC<ButtonStyleInspectorProps> = ({
         backgroundColor: bg,
       });
     } else {
+      // Use industry-varied gradients instead of always purple-pink
+      const GRADIENT_PALETTES = [
+        { start: '#3B82F6', end: '#8B5CF6' }, // Sapphire
+        { start: '#F97316', end: '#EF4444' }, // Sunset
+        { start: '#10B981', end: '#047857' }, // Emerald
+        { start: '#0EA5E9', end: '#06B6D4' }, // Ocean
+        { start: '#E11D48', end: '#DB2777' }, // Rose
+        { start: '#8B5CF6', end: '#D946EF' }, // Violet (original)
+      ];
+      const randomPalette = GRADIENT_PALETTES[Math.floor(Math.random() * GRADIENT_PALETTES.length)];
+      
       const gradient = settings.gradient || {
         type: 'linear' as const,
         angle: 135,
         stops: [
-          { color: primaryColor, position: 0 },
-          { color: '#D946EF', position: 100 },
+          { color: primaryColor || randomPalette.start, position: 0 },
+          { color: randomPalette.end, position: 100 },
         ],
       };
       onChange({ 
@@ -324,8 +335,8 @@ export const ButtonStyleInspector: React.FC<ButtonStyleInspectorProps> = ({
                   style={{ 
                     background: settings.gradient 
                       ? gradientToCSS(settings.gradient) 
-                      : `linear-gradient(135deg, ${primaryColor}, #D946EF)` 
-                  }} 
+                      : `linear-gradient(135deg, ${primaryColor || '#3B82F6'}, #8B5CF6)` 
+                  }}
                 />
                 <span className="text-xs text-muted-foreground">Edit</span>
               </button>
