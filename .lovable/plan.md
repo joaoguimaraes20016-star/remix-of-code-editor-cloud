@@ -1,309 +1,441 @@
 
-# Full Visual Refactor - Simplified "Add Content" Experience
 
-## Problem Analysis
+# Complete Funnel Builder System Refactor
 
-After reviewing the codebase, I found **7 different ways to add content** that overlap and confuse users:
+## The Problem: Why It's Confusing Right Now
 
-| Current Entry Point | Location | What It Does |
-|---------------------|----------|--------------|
-| "+" button in TopToolbar | Header | Opens BlockPickerPanel in left panel |
-| Layers icon in TopToolbar | Header | Opens section picker |
-| BlockPickerPanel | Left Panel | 2259-line monster with blocks + sections tabs |
-| InlineSectionPicker | Canvas popover | Opens PerspectiveSectionPicker modal |
-| AddSectionPopover | Canvas | 1440-line component with categories |
-| "Add content" button | Empty section | Opens BlockPickerPanel |
-| PerspectiveSectionPicker | Modal overlay | Premium template gallery |
+Looking at your screenshots, I can see the current state has **multiple overlapping systems** that don't work together clearly:
 
-**This is the core of the confusion** - too many overlapping entry points with inconsistent behaviors.
+### What You're Seeing Now
+
+```text
+LEFT PANEL ("Add Content")               CANVAS                          RIGHT PANEL
+┌─────────────────────────┐    ┌─────────────────────────────┐    ┌──────────────────────┐
+│ ← Add Content       X   │    │  "Welcome to Your Funnel"   │    │  Section             │
+│ ┌─────────────────────┐ │    │                             │    │  ──────────────────  │
+│ │ 🔍 Search content...│ │    │  + Add content              │    │  General             │
+│ └─────────────────────┘ │    │  ─────────────────────      │    │  Section Name        │
+│                         │    │                             │    │  Section Width       │
+│ ▼ Informative     4     │    │  + Add Section              │    │  Spacing             │
+│ ▼ Embed           5     │    │                             │    │  Section Background  │
+│ ▼ Questions       4     │    │  ─────────────────────      │    │                      │
+│ ▼ Forms           9     │    │  "Add your content here"    │    │                      │
+│ ▼ Scheduling      2     │    │                             │    │                      │
+│ ▼ Flows           1     │    │  + Add content              │    │                      │
+│ ▼ Premium         5     │    │  ─────────────────────      │    │                      │
+│ ▼ Basic Blocks   12     │    │                             │    │                      │
+│                         │    │  + (dotted circle)          │    │                      │
+└─────────────────────────┘    └─────────────────────────────┘    └──────────────────────┘
+```
+
+**Problems:**
+1. "Add Content" panel has 40+ items across 8 categories - overwhelming
+2. Canvas has "Add content" AND "Add Section" - what's the difference?
+3. No visual previews in the left panel - just text lists
+4. Categories like "Questions", "Forms", "Embed" overlap conceptually
+5. "Premium" and "Basic Blocks" are confusing labels
+6. No guidance on what to add for high-converting funnels
 
 ---
 
-## Target Experience
+## The Solution: Clear Three-Level Hierarchy
 
-A **single, unified adding experience** inspired by Notion/Linear/Perspective:
+### New Mental Model
 
 ```text
+FUNNEL → STEPS → SECTIONS → BLOCKS
+
 ┌──────────────────────────────────────────────────────────────────────┐
-│                           EMPTY CANVAS                               │
+│ STEP 1: Home                                                         │
+│ ┌────────────────────────────────────────────────────────────────┐   │
+│ │ SECTION: Hero                                                  │   │
+│ │ ┌────────────────────────────────────────────────────────────┐ │   │
+│ │ │ BLOCK: Headline    │ BLOCK: Subtext   │ BLOCK: CTA Button │ │   │
+│ │ └────────────────────────────────────────────────────────────┘ │   │
+│ └────────────────────────────────────────────────────────────────┘   │
 │                                                                      │
-│            ┌──────────────────────────────────────────┐              │
-│            │                                          │              │
-│            │      Click to add your first section     │              │
-│            │                                          │              │
-│            │  ┌─────────┐  ┌─────────┐  ┌─────────┐   │              │
-│            │  │  Hero   │  │   CTA   │  │  Form   │   │              │
-│            │  │ [img]   │  │ [img]   │  │ [img]   │   │              │
-│            │  └─────────┘  └─────────┘  └─────────┘   │              │
-│            │                                          │              │
-│            │        [ Browse All Templates ]          │              │
-│            │                                          │              │
-│            └──────────────────────────────────────────┘              │
-│                                                                      │
+│ ┌────────────────────────────────────────────────────────────────┐   │
+│ │ SECTION: Social Proof                                          │   │
+│ │ ┌────────────────────────────────────────────────────────────┐ │   │
+│ │ │ BLOCK: Star Rating │ BLOCK: Testimonial                    │ │   │
+│ │ └────────────────────────────────────────────────────────────┘ │   │
+│ └────────────────────────────────────────────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-After adding content:
+### Two Simple Adding Actions
+
+| Action | What It Does | Where It Shows |
+|--------|--------------|----------------|
+| **Add Section** | Adds a new container (Hero, CTA, Form, etc.) | Modal with visual previews |
+| **Add Block** | Adds content inside a section | Inline popover with 10 options |
+
+---
+
+## New System Architecture
+
+### 1. Simplified Left Panel (Navigation Only)
+
 ```text
-┌──────────────────────────────────────────────────────────────────────┐
-│  ╔════════════════════════════════════════════════════════════════╗  │
-│  ║  SECTION 1 - HERO                              [+ Add Below]   ║  │
-│  ╠════════════════════════════════════════════════════════════════╣  │
-│  ║                                                                ║  │
-│  ║       Your Headline Here                                       ║  │
-│  ║       Supporting text                                          ║  │
-│  ║                                                                ║  │
-│  ║       ┌─────────────────┐                                      ║  │
-│  ║       │ + Add Content   │  ← Inline block adder                ║  │
-│  ║       └─────────────────┘                                      ║  │
-│  ║                                                                ║  │
-│  ╚════════════════════════════════════════════════════════════════╝  │
-│                                                                      │
-│                      ┌─────────────────┐                             │
-│                      │  + Add Section  │  ← Between sections         │
-│                      └─────────────────┘                             │
-│                                                                      │
-└──────────────────────────────────────────────────────────────────────┘
+LEFT PANEL - NAVIGATION FOCUSED
+┌─────────────────────────────────┐
+│ ← Pages                     X   │
+│                                 │
+│ ┌─────────────────────────────┐ │
+│ │ 🏠 Home                    ›│ │  ← Current step
+│ └─────────────────────────────┘ │
+│ ┌─────────────────────────────┐ │
+│ │ 📄 Qualification           ›│ │
+│ └─────────────────────────────┘ │
+│ ┌─────────────────────────────┐ │
+│ │ 📄 Booking                 ›│ │
+│ └─────────────────────────────┘ │
+│                                 │
+│ ┌─────────────────────────────┐ │
+│ │ + Add Step                  │ │
+│ └─────────────────────────────┘ │
+│                                 │
+│ ─────────────────────────────── │
+│                                 │
+│ ▼ Layers                        │  ← Collapsible tree view
+│   Section: Hero                 │
+│     ├ Headline                  │
+│     ├ Subtext                   │
+│     └ CTA Button                │
+│   Section: Social Proof         │
+│     ├ Star Rating               │
+│     └ Quote                     │
+└─────────────────────────────────┘
+```
+
+**What's removed:**
+- All "Add Content" block categories
+- Search functionality for blocks
+- The confusion of blocks vs sections in the same panel
+
+### 2. New Section Picker (Premium Visual Modal)
+
+When user clicks "Add Section" anywhere, they get this modal:
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  Add Section                                                              ×  │
+├────────────────────────┬─────────────────────────────────────────────────────┤
+│                        │                                                     │
+│  LAYOUT SECTIONS       │   ┌──────────────────┐  ┌──────────────────┐       │
+│  ───────────────       │   │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │  │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │       │
+│                        │   │ ░░░░░░░░░░░░░░░░ │  │ ░░ ▓▓▓▓▓▓▓▓ ░░░░ │       │
+│  ● Hero           ›  3 │   │ ░░░ [CTA] ░░░░░░ │  │ ░░ ░░░░░░░░ ░░░░ │       │
+│    Opening sections    │   │ ★★★★★            │  │ ░░░ [CTA] ░░░░░░ │       │
+│                        │   ├──────────────────┤  ├──────────────────┤       │
+│  ○ CTA             › 2 │   │ Simple Hero      │  │ Hero + CTA       │       │
+│    Conversion buttons  │   │ Headline + text  │  │ With button      │       │
+│                        │   └──────────────────┘  └──────────────────┘       │
+│  ○ Media           › 2 │                                                     │
+│    Video & images      │   ┌──────────────────┐                             │
+│                        │   │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │                             │
+│  ○ Embed           › 2 │   │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │                             │
+│    Calendars & forms   │   │ ▓▓▓▓ IMAGE ▓▓▓▓▓ │                             │
+│                        │   │ ░░░░░░░░░░░░░░░░ │                             │
+│  ○ Social Proof    › 1 │   ├──────────────────┤                             │
+│    Trust indicators    │   │ Hero + Image     │                             │
+│                        │   │ Card layout      │                             │
+│  ○ Features        › 1 │   └──────────────────┘                             │
+│    Benefits & lists    │                                                     │
+│                        │                                                     │
+│  ───────────────       │                                                     │
+│  CONVERSION SECTIONS   │   3 templates • Click to add                       │
+│  ───────────────       │                                                     │
+│                        │                                                     │
+│  ○ Lead Capture    › 3 │                                                     │
+│    Email, phone, name  │                                                     │
+│                        │                                                     │
+│  ○ Qualification   › 4 │                                                     │
+│    Questions & choices │                                                     │
+│                        │                                                     │
+│  ○ Booking         › 2 │                                                     │
+│    Calendar embeds     │                                                     │
+│                        │                                                     │
+└────────────────────────┴─────────────────────────────────────────────────────┘
+```
+
+### 3. Inline Block Adder (Inside Sections)
+
+When user clicks "+ Add content" inside a section:
+
+```text
+                    ┌─────────────────────────────────────┐
+                    │  ADD BLOCK                          │
+                    │                                     │
+                    │  ┌─────────┐  ┌─────────┐          │
+                    │  │   T     │  │   H     │          │
+                    │  │  Text   │  │ Heading │          │
+                    │  └─────────┘  └─────────┘          │
+                    │  ┌─────────┐  ┌─────────┐          │
+                    │  │   🖼    │  │   ▶     │          │
+                    │  │  Image  │  │  Video  │          │
+                    │  └─────────┘  └─────────┘          │
+                    │  ┌─────────┐  ┌─────────┐          │
+                    │  │   →     │  │   ✉     │          │
+                    │  │ Button  │  │  Form   │          │
+                    │  └─────────┘  └─────────┘          │
+                    │  ┌─────────┐  ┌─────────┐          │
+                    │  │   •     │  │   "     │          │
+                    │  │  List   │  │  Quote  │          │
+                    │  └─────────┘  └─────────┘          │
+                    └─────────────────────────────────────┘
 ```
 
 ---
 
-## Refactor Plan
+## High-Converting Template System
 
-### Phase 1: Create Unified Content Adder Component
+### Template Categories (Restructured)
 
-**Create `UnifiedContentAdder.tsx`** - ONE component for all adding:
+| Old Category | New Category | Purpose |
+|--------------|--------------|---------|
+| Hero | **Hero** | Opening hook - headline, subtext, CTA |
+| Content | **Content** | Text blocks, features |
+| CTA | **CTA** | Conversion buttons |
+| Media | **Media** | Videos, images |
+| Embed | **Booking** | Calendly, Cal.com |
+| Questions | **Qualification** | Single/multi choice |
+| Forms | **Lead Capture** | Email, phone, name |
+| Premium | *(merged into above)* | - |
+| Basic Blocks | *(moved to block adder)* | - |
 
-```typescript
-interface UnifiedContentAdderProps {
-  mode: 'section' | 'block';  // What are we adding?
-  position?: 'inline' | 'modal' | 'panel';  // Where to show UI?
-  targetStackId?: string;  // Which stack gets the block?
-  onAdd: (content: Block | Frame) => void;
-  onClose: () => void;
-}
-```
+### New Template Library (High-Ticket Focused)
 
-This component decides presentation based on context:
-- **Empty canvas** → Full-width inline picker with visual previews
-- **Between sections** → Small inline button that expands to picker
-- **Inside section** → Compact block picker for elements
-
-### Phase 2: Simplify to 3 Clear Adding Modes
-
-| Mode | Trigger | What Opens |
-|------|---------|------------|
-| **Add Section** | Click "+ Section" or dotted area | Section template gallery |
-| **Add Block** | Click "+ Add" inside section | Block picker (text, image, button, form) |
-| **Add Element** | Block-specific | Inline editing / element picker |
-
-### Phase 3: Create Premium Empty State
-
-**Create `EmptyCanvasState.tsx`**:
-
-```tsx
-function EmptyCanvasState({ onAddSection }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full">
-      {/* Visual guide */}
-      <div className="text-center max-w-lg">
-        <h2 className="text-xl font-semibold text-builder-text">
-          Start Building Your Funnel
-        </h2>
-        <p className="mt-2 text-builder-text-muted">
-          Choose a section template to begin, or start from scratch
-        </p>
-      </div>
-      
-      {/* Quick picks - 3 most common */}
-      <div className="grid grid-cols-3 gap-4 mt-8">
-        <QuickSectionCard type="hero" label="Hero" />
-        <QuickSectionCard type="cta" label="Call to Action" />
-        <QuickSectionCard type="form" label="Lead Form" />
-      </div>
-      
-      {/* Browse all */}
-      <button onClick={onAddSection} className="mt-6">
-        Browse All Templates
-      </button>
-    </div>
-  );
-}
-```
-
-### Phase 4: Consolidate Left Panel
-
-**Remove BlockPickerPanel from left panel entirely.**
-
-Left panel becomes ONLY for:
-- Page/Step navigation
-- Layers tree
-- Assets (if needed)
-
-Adding content happens ON THE CANVAS, not in a side panel.
-
-### Phase 5: Simplify Section Picker
-
-**Merge into single `SectionPicker` component**:
-
+**Hero Sections (5 templates):**
 ```text
-src/flow-canvas/builder/components/
-├── SectionPicker/
-│   ├── index.tsx              # Main export
-│   ├── SectionPicker.tsx      # Two-panel picker (current PerspectiveSectionPicker)
-│   ├── QuickPicks.tsx         # 3-up quick section cards
-│   ├── TemplateGallery.tsx    # Full gallery view
-│   └── templates/
-│       ├── heroTemplates.ts
-│       ├── ctaTemplates.ts
-│       └── formTemplates.ts
+1. Impact Hero          - Bold headline + urgency badge + CTA
+2. Video Hero           - VSL player + headline below
+3. Authority Hero       - Photo + credentials + headline
+4. Minimal Hero         - Clean text-only + CTA
+5. Split Hero           - Image left, text right
 ```
 
-### Phase 6: Simplify Block Adder
+**Social Proof Sections (4 templates):**
+```text
+1. Testimonial Carousel - Quote cards with photos
+2. Logo Bar             - "As seen in" logos
+3. Star Rating          - 5-star + review count
+4. Results Stats        - 3-column numbers ($10M+, 500+, etc.)
+```
 
-**Create `BlockAdder.tsx`** - Compact inline block picker:
+**Lead Capture Sections (4 templates):**
+```text
+1. Email Only           - Minimal friction capture
+2. Name + Email         - Personalization ready
+3. Full Contact         - Name, email, phone
+4. Quiz Lead            - Gamified capture
+```
 
-```tsx
-function BlockAdder({ stackId, onAdd }) {
-  const [isOpen, setIsOpen] = useState(false);
-  
-  const blocks = [
-    { type: 'text', icon: Type, label: 'Text' },
-    { type: 'heading', icon: Heading, label: 'Heading' },
-    { type: 'image', icon: Image, label: 'Image' },
-    { type: 'button', icon: MousePointer, label: 'Button' },
-    { type: 'video', icon: Video, label: 'Video' },
-    { type: 'form', icon: Mail, label: 'Form Field' },
-  ];
-  
-  return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger>
-        <Plus size={14} /> Add content
-      </PopoverTrigger>
-      <PopoverContent>
-        <div className="grid grid-cols-3 gap-2">
-          {blocks.map(block => (
-            <button key={block.type} onClick={() => onAdd(block)}>
-              <block.icon size={20} />
-              <span>{block.label}</span>
-            </button>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
+**Qualification Sections (4 templates):**
+```text
+1. Single Choice        - Radio button options
+2. Multiple Choice      - Checkbox options
+3. Budget Qualifier     - Price range selector
+4. Timeline Qualifier   - Urgency indicator
+```
+
+**CTA Sections (3 templates):**
+```text
+1. Simple CTA           - Button only
+2. CTA + Urgency        - Button + scarcity text
+3. Dual CTA             - Primary + secondary options
+```
+
+**Booking Sections (3 templates):**
+```text
+1. Calendar Embed       - Calendly/Cal.com
+2. Application Form     - Longer qualification
+3. Call Scheduler       - Time slot picker
 ```
 
 ---
 
-## Files to Create
+## Technical Implementation
+
+### Files to Create
 
 | File | Purpose |
 |------|---------|
-| `src/flow-canvas/builder/components/SectionPicker/index.tsx` | Unified section picker exports |
-| `src/flow-canvas/builder/components/SectionPicker/SectionPicker.tsx` | Main two-panel picker |
-| `src/flow-canvas/builder/components/SectionPicker/QuickPicks.tsx` | Quick 3-up section cards |
-| `src/flow-canvas/builder/components/SectionPicker/TemplateGallery.tsx` | Template grid view |
-| `src/flow-canvas/builder/components/BlockAdder.tsx` | Compact inline block picker |
-| `src/flow-canvas/builder/components/EmptyCanvasState.tsx` | Empty state with quick picks |
-| `src/flow-canvas/builder/components/AddSectionButton.tsx` | Between-section add button |
+| `SectionPicker/SectionPicker.tsx` | Already created - needs template updates |
+| `SectionPicker/TemplateGallery.tsx` | Grid of visual preview cards |
+| `SectionPicker/categories.ts` | Category definitions with descriptions |
+| `templates/heroTemplates.ts` | 5 hero section definitions |
+| `templates/socialProofTemplates.ts` | 4 social proof definitions |
+| `templates/leadCaptureTemplates.ts` | 4 lead capture definitions |
+| `templates/qualificationTemplates.ts` | 4 qualification definitions |
+| `templates/ctaTemplates.ts` | 3 CTA definitions |
+| `templates/bookingTemplates.ts` | 3 booking definitions |
 
-## Files to Modify
+### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `EditorShell.tsx` | Remove BlockPickerPanel from left panel, simplify state |
-| `LeftPanel.tsx` | Remove "Add Content" buttons, focus on navigation only |
-| `TopToolbar.tsx` | Remove redundant "+ Block" button, keep only "+ Section" |
-| `CanvasRenderer.tsx` | Integrate EmptyCanvasState, use BlockAdder in stacks |
-| `StackRenderer.tsx` | Replace current "Add content" with BlockAdder |
+| `LeftPanel.tsx` | Remove all block picking, focus on pages + layers |
+| `EditorShell.tsx` | Remove BlockPickerPanel integration |
+| `TopToolbar.tsx` | Single "+" button opens SectionPicker |
+| `BlockAdder.tsx` | Already created - wire to sections |
+| `sectionTemplates.ts` | Replace with new high-converting templates |
+| `HighTicketPreviewCard.tsx` | Update previews to match new templates |
 
-## Files to Delete/Deprecate
+### Files to Delete
 
-| File | Action |
+| File | Reason |
 |------|--------|
-| `BlockPickerPanel.tsx` | **Deprecate** - redirect to SectionPicker |
-| `AddSectionPopover.tsx` | **Delete** - merged into SectionPicker |
-| `InlineSectionPicker.tsx` | **Delete** - wrapper no longer needed |
-| `BlockPickerGrid.tsx` | **Delete** - mobile-specific, merge into BlockAdder |
+| `BlockPickerPanel.tsx` | Replaced by SectionPicker + BlockAdder |
+| `AddSectionPopover.tsx` | Merged into SectionPicker |
+| `InlineSectionPicker.tsx` | Merged into SectionPicker |
 
 ---
 
-## Visual Hierarchy (After Refactor)
+## Visual Style Guide
+
+### Template Preview Cards
+
+All previews use the "high-ticket coaching" aesthetic:
+
+```css
+/* Premium coaching palette */
+--template-dark: hsl(220 20% 8%);      /* Deep dark background */
+--template-surface: hsl(220 15% 12%);   /* Card background */
+--template-accent: hsl(217 91% 60%);    /* Blue accent */
+--template-gold: hsl(45 90% 55%);       /* Premium gold */
+--template-emerald: hsl(160 70% 45%);   /* Success green */
+
+/* Preview card styling */
+.template-preview {
+  aspect-ratio: 4/3;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--template-dark), var(--template-surface));
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.template-preview:hover {
+  border-color: var(--template-accent);
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+```
+
+### Empty State Design
 
 ```text
-EMPTY STATE
-    └── "Start Building" with Quick Picks (Hero, CTA, Form)
-    └── "Browse All Templates" → Opens SectionPicker modal
-
-CANVAS WITH CONTENT
-    └── Section Action Bar
-        └── "Add Section Above/Below" → Opens SectionPicker modal
-    └── Inside Section
-        └── "+" Add Content button → Opens BlockAdder popover
-    └── Between Sections
-        └── Dotted line + "+" → Opens SectionPicker modal
-
-LEFT PANEL (Simplified)
-    └── Pages tab (navigation only)
-    └── Layers tab (tree view only)
-    └── NO adding functionality
-
-TOP TOOLBAR (Simplified)
-    └── Undo/Redo
-    └── Device modes
-    └── "+ Section" button → Opens SectionPicker modal
-    └── Preview
-    └── Publish
+┌────────────────────────────────────────────────────────────────┐
+│                                                                │
+│                    ┌────────────────────┐                      │
+│                    │                    │                      │
+│                    │   📱              │                      │
+│                    │                    │                      │
+│                    └────────────────────┘                      │
+│                                                                │
+│              Start Building Your Funnel                        │
+│                                                                │
+│     Choose a section template to create high-converting        │
+│              landing pages in minutes                          │
+│                                                                │
+│   ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │
+│   │   █████████  │  │   █████████  │  │   █████████  │        │
+│   │   ░░░░░░░░░  │  │   ███ EMAIL  │  │   ███CHOICE  │        │
+│   │   [  CTA  ]  │  │   ░░░░░░░░░  │  │   ███CHOICE  │        │
+│   ├──────────────┤  ├──────────────┤  ├──────────────┤        │
+│   │  Hero        │  │  Lead Form   │  │  Quiz        │        │
+│   └──────────────┘  └──────────────┘  └──────────────┘        │
+│                                                                │
+│              [ Browse All Templates ]                          │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Implementation Order
+## User Flow After Refactor
+
+### Adding a Hero Section
 
 ```text
-Step 1: Create SectionPicker module
-   └─► Move PerspectiveSectionPicker logic
-   └─► Add QuickPicks for empty state
-   └─► Standardize template data
+1. User clicks "+ Add Section" (canvas or toolbar)
+   ↓
+2. SectionPicker modal opens
+   ↓
+3. "Hero" category is selected by default
+   ↓
+4. User sees 5 visual preview cards
+   ↓
+5. User clicks "Hero + CTA" template
+   ↓
+6. Section appears on canvas with:
+   - Headline: "Your headline here"
+   - Subtext: "Supporting text"
+   - CTA Button: "Get Started"
+   ↓
+7. User clicks any element to edit in place
+```
 
-Step 2: Create BlockAdder component
-   └─► Compact popover with 6-8 common blocks
-   └─► Replace all "Add content" buttons
+### Adding a Form Field Inside a Section
 
-Step 3: Create EmptyCanvasState
-   └─► Beautiful empty state with quick picks
-   └─► "Browse All Templates" link
-
-Step 4: Update EditorShell
-   └─► Remove BlockPickerPanel from left panel
-   └─► Connect new components
-
-Step 5: Update LeftPanel
-   └─► Remove adding functionality
-   └─► Focus on navigation
-
-Step 6: Update CanvasRenderer
-   └─► Integrate EmptyCanvasState
-   └─► Use BlockAdder in StackRenderer
-
-Step 7: Cleanup
-   └─► Delete deprecated components
-   └─► Remove dead code paths
+```text
+1. User clicks "+ Add content" inside a section
+   ↓
+2. BlockAdder popover appears (10 block types)
+   ↓
+3. User clicks "Form" block
+   ↓
+4. Email input appears in the section
+   ↓
+5. User configures in right panel:
+   - Field type (email, phone, name, text)
+   - Placeholder text
+   - Required toggle
 ```
 
 ---
 
-## Success Criteria
+## Success Metrics
 
 After this refactor:
 
-1. **ONE way to add sections** - SectionPicker modal
-2. **ONE way to add blocks** - BlockAdder popover inside sections
-3. **Clear visual hierarchy** - Empty state guides users naturally
-4. **Left panel for navigation only** - Not for adding content
-5. **Consistent premium aesthetic** - All pickers use builder tokens
-6. **Reduced code** - Delete ~3000+ lines of redundant components
-7. **Perspective-style feel** - Visual previews everywhere
+| Before | After |
+|--------|-------|
+| 40+ items in Add Content | 10 blocks in inline picker |
+| 8 confusing categories | 6 clear purpose-driven categories |
+| No visual previews | Every template has a rich preview |
+| Text-only block lists | Perspective-style visual gallery |
+| "What's the difference?" | Clear Section vs Block hierarchy |
+| Generic templates | High-ticket coaching focused |
+
+---
+
+## Implementation Priority
+
+```text
+Phase 1: Template Library (Foundation)
+├─► Create 23 high-converting templates
+├─► Update HighTicketPreviewCard previews
+└─► Organize into 6 categories
+
+Phase 2: Section Picker (Main Interface)
+├─► Update SectionPicker with new categories
+├─► Connect to new template library
+└─► Ensure visual previews work
+
+Phase 3: Left Panel Cleanup
+├─► Remove block picking entirely
+├─► Focus on pages + layers only
+└─► Clean navigation experience
+
+Phase 4: Canvas Integration
+├─► Wire BlockAdder to sections
+├─► Remove redundant "Add Content" triggers
+└─► Test full flow
+
+Phase 5: Cleanup
+├─► Delete deprecated files
+├─► Remove dead code
+└─► Document the system
+```
+
