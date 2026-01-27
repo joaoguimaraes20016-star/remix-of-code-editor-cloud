@@ -3707,6 +3707,7 @@ export type Database = {
         Args: { contact_row: Database["public"]["Tables"]["contacts"]["Row"] }
         Returns: string
       }
+      get_funnel_team_id: { Args: { p_funnel_id: string }; Returns: string }
       get_team_role: {
         Args: { _team_id: string; _user_id: string }
         Returns: string
