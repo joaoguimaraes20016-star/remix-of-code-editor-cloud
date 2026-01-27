@@ -1,183 +1,181 @@
 
+# Rebuild Interactive Blocks with Distinct Visual Style
 
-# Match Core Components to Interactive Block Style
+## Problem Identified
 
-## Current Problem
+From the screenshot, there are two issues:
 
-The Core Components icons (Text, Button, Image, List, etc.) are simpler in style than the interactive blocks. Looking at the reference:
+1. **Content Bug**: "Interactive blocks" category is showing "Core Components" (Text, Button, Image, List) instead of Questions and Forms
+2. **Design Issue**: The Interactive blocks should have a completely different visual style than Basic blocks - not just different icons
 
-**Interactive Block Structure (what we want everywhere):**
+## Reference Analysis
+
+From the earlier Perspective reference images, Interactive blocks should have:
+
+| Feature | Basic Blocks | Interactive Blocks |
+|---------|--------------|-------------------|
+| **Title Bar** | Simple colored line | Semantic colored bar |
+| **Preview** | Abstract icons | Realistic form/input mockups |
+| **Layout** | Generic tile grid | Input/form-like previews |
+| **Colors** | Soft pastels | Category-specific colors (green for checkbox, blue for radio, etc.) |
+| **Detail Level** | Low-fidelity | High-fidelity mockups |
+
+Interactive blocks from Perspective show:
+- **Multiple-Choice**: Green checkbox rows with actual checkmark
+- **Choice**: Blue radio button rows  
+- **Quiz**: Two image cards side by side
+- **Form**: Stacked input fields with purple accent
+- **Appointment**: Teal calendar grid
+- **Upload**: Dashed upload area with icon
+- **Message**: Text area mockup
+- **Date**: Calendar with navigation
+- **Dropdown**: Select box with dropdown options
+- **Payment**: Card inputs with credit card logo
+
+---
+
+## Architecture Change
+
+### Current Problem
+The `BlockGrid` component handles both categories but uses the same `BlockTileCard` component for both - leading to visual similarity.
+
+### Solution
+Create **two distinct grid components** with different visual treatments:
+
+1. **BasicBlockGrid** - Simple tile cards for content blocks
+2. **InteractiveBlockGrid** - High-fidelity form mockups for CTA blocks
+
+---
+
+## File Changes
+
+### 1. Create `InteractiveBlockGrid.tsx`
+
+A new component specifically for interactive blocks with:
+- Higher-fidelity mockups
+- Form-like visual treatments
+- Interactive preview states
+
+```tsx
+// Questions section
+const QUESTION_BLOCKS = [
+  { id: 'multiple-choice', name: 'Multiple-Choice', ... },
+  { id: 'choice', name: 'Choice', ... },
+  { id: 'quiz', name: 'Quiz', ... },
+  { id: 'video-question', name: 'Video question', ... },
+];
+
+// Forms section
+const FORM_BLOCKS = [
+  { id: 'form-block', name: 'Form', ... },
+  { id: 'appointment', name: 'Appointment', ... },
+  { id: 'upload', name: 'Upload', ... },
+  { id: 'message', name: 'Message', ... },
+  { id: 'date', name: 'Date', ... },
+  { id: 'dropdown', name: 'Dropdown', ... },
+  { id: 'payment', name: 'Payment', ... },
+];
+```
+
+### 2. Create `InteractiveBlockIcons.tsx`
+
+High-fidelity mockup components that look like actual form elements:
+
+| Block | Mockup Style |
+|-------|--------------|
+| Multiple-Choice | Checkbox list with green checkmark, stacked options |
+| Choice | Radio button list with blue filled dot, stacked options |
+| Quiz | Side-by-side image cards with quiz-style selection |
+| Video question | Video thumbnail with question overlay |
+| Form | Stacked labeled input fields |
+| Appointment | Calendar widget with time slots |
+| Upload | Dashed upload zone with upload icon |
+| Message | Multi-line text area |
+| Date | Date picker with calendar grid |
+| Dropdown | Select input with dropdown menu |
+| Payment | Credit card form with card number, expiry, CVV |
+
+### 3. Create `InteractiveBlockCard.tsx`
+
+Different card component for interactive blocks:
+- Larger preview area
+- More realistic form mockups
+- Different aspect ratio (less square, more form-like)
+
+### 4. Update `SectionPicker.tsx`
+
+```tsx
+// Render different grid based on category
+{activeCategory === 'content' && (
+  <BasicBlockGrid onAddBlock={handleAddBlock} />
+)}
+{activeCategory === 'cta' && (
+  <InteractiveBlockGrid onAddBlock={handleAddBlock} />
+)}
+```
+
+### 5. Rename and Restructure
+
+| Current File | New Purpose |
+|--------------|-------------|
+| `BlockGrid.tsx` → `BasicBlockGrid.tsx` | Only handles content category |
+| `BlockIcons.tsx` → `BasicBlockIcons.tsx` | Only basic block icons |
+| NEW `InteractiveBlockGrid.tsx` | Handles cta category |
+| NEW `InteractiveBlockIcons.tsx` | Interactive form mockups |
+| NEW `InteractiveBlockCard.tsx` | Card component for interactive blocks |
+
+---
+
+## Visual Specifications
+
+### Interactive Block Card Design
+
 ```text
-┌─────────────────────────┐
-│  ═══════════════════    │  ← Title bar (colored line)
-│                         │
-│   ┌─────────────────┐   │
-│   │ Component       │   │  ← Rich visual preview
-│   │ Preview         │   │
-│   └─────────────────┘   │
-│                         │
-│        Label            │
-└─────────────────────────┘
+┌────────────────────────────────────────┐
+│  ════════════════════                  │  ← Semantic title bar
+│                                        │
+│   ┌──────────────────────────────┐     │
+│   │ ☑ Option selected            │     │  ← Realistic form preview
+│   └──────────────────────────────┘     │
+│   ┌──────────────────────────────┐     │
+│   │ ○ Option not selected        │     │
+│   └──────────────────────────────┘     │
+│                                        │
+│          Multiple-Choice               │  ← Block name
+└────────────────────────────────────────┘
 ```
 
-**Current Core Component Structure (too simple):**
-```text
-┌─────────────────────────┐
-│                         │
-│   Simple Icon           │  ← Just the icon, no title bar
-│                         │
-│        Label            │
-└─────────────────────────┘
-```
+### Card Styling Differences
+
+| Property | Basic Block Card | Interactive Block Card |
+|----------|-----------------|----------------------|
+| Aspect ratio | 1:1 (square) | ~3:4 (taller) |
+| Preview height | 40-60px | 80-100px |
+| Background | Single pastel color | White with colored accent |
+| Border | None | Subtle border |
+| Preview style | Abstract icon | Form mockup |
 
 ---
 
-## Visual Reference Analysis
+## Implementation Order
 
-From the reference images, here's the exact pattern:
-
-| Block | Title Bar Color | Preview Style |
-|-------|----------------|---------------|
-| Multiple-Choice | Green/olive line | Checkbox rows with checkmark |
-| Choice | Blue line | Radio button rows |
-| Quiz | Gray line | Two image cards side by side |
-| Video question | Blue line | Video thumbnail with person |
-| Form | Purple/indigo line | Input fields stacked |
-| Appointment | Teal line | Calendar grid |
-| Upload | Purple line | Dashed upload box |
-| Message | Cyan line | Text area box |
-| Date | Gray line | Calendar with nav arrows |
-| Dropdown | Amber line | Select box + options |
-| Payment | Amber line | Card inputs + Mastercard logo |
-
----
-
-## Core Components - Updated Icons
-
-Apply the same structure to content blocks:
-
-| Block | Title Bar Color | Preview Style |
-|-------|----------------|---------------|
-| **Text** | Gray line | Text paragraph lines |
-| **Button** | Blue line | Styled button shape |
-| **Image** | Gray line | Image placeholder with landscape |
-| **List** | Purple line | Bullet point rows |
-| **Divider** | Gray line | Horizontal line with arrows |
-| **Logo Bar** | Yellow line | Colorful shapes row |
-| **Reviews** | Yellow line | Stars + avatars |
-| **Spacer** | Gray line | Vertical arrows |
-| **Video** | Dark/gray line | Video player frame |
-| **Testimonial** | Orange line | Quote card with avatar |
-| **FAQ** | Green line | Accordion rows |
-| **Team** | Blue line | Person avatar circle |
-| **Calendar** | Blue line | Calendar grid |
-| **HTML** | Gray line | Code brackets |
-| **Form** | Green line | Input fields |
-
----
-
-## Implementation
-
-### Update BlockIcons.tsx
-
-Each icon needs the structure:
-1. Title bar line at top (centered, colored)
-2. Rich visual preview in center
-3. Same proportions as interactive blocks
-
-**Example - Updated TextIcon:**
-```tsx
-export function TextIcon() {
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      {/* Title bar */}
-      <div className="w-12 h-1.5 bg-slate-300 rounded" />
-      {/* Rich preview */}
-      <div className="flex flex-col gap-1 items-center">
-        <div className="w-14 h-2 bg-slate-400 rounded" />
-        <div className="w-12 h-1.5 bg-slate-300 rounded" />
-        <div className="w-10 h-1.5 bg-slate-300 rounded" />
-      </div>
-    </div>
-  );
-}
-```
-
-**Example - Updated ButtonIcon:**
-```tsx
-export function ButtonIcon() {
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      {/* Title bar */}
-      <div className="w-10 h-1.5 bg-blue-300 rounded" />
-      {/* Rich preview - styled button */}
-      <div className="px-5 py-2 bg-blue-500 rounded-lg text-white text-xs font-medium shadow-sm">
-        Button
-      </div>
-    </div>
-  );
-}
-```
-
-**Example - Updated ImageIcon:**
-```tsx
-export function ImageIcon() {
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      {/* Title bar */}
-      <div className="w-10 h-1.5 bg-slate-300 rounded" />
-      {/* Rich preview - landscape image placeholder */}
-      <div className="w-14 h-10 bg-gradient-to-br from-slate-200 to-slate-300 rounded-lg overflow-hidden">
-        <div className="w-full h-full bg-gradient-to-t from-slate-400/40 to-transparent" />
-      </div>
-    </div>
-  );
-}
-```
-
----
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `BlockIcons.tsx` | Update all Core Component icons to include title bar + consistent preview structure |
-
----
-
-## Icon Updates Summary
-
-### Core Components (8 icons to update)
-
-1. **TextIcon** → Add gray title bar, keep text lines preview
-2. **ButtonIcon** → Add blue title bar, keep button preview  
-3. **ImageIcon** → Add gray title bar, use gradient landscape preview
-4. **ListIcon** → Add purple title bar, keep bullet rows
-5. **DividerIcon** → Add gray title bar, keep arrow + line
-6. **LogoBarIcon** → Add yellow title bar, keep colorful shapes
-7. **ReviewsIcon** → Add yellow title bar, keep stars + avatars
-8. **SpacerIcon** → Add gray title bar, keep vertical arrows
-
-### Media Elements (4 icons to update)
-
-9. **VideoIcon** → Add dark title bar, enhance player preview
-10. **TestimonialIcon** → Add orange title bar, enhance card
-11. **FAQIcon** → Add green title bar, keep accordion rows
-12. **TeamIcon** → Already has structure, verify consistency
-
-### Embed Blocks (3 icons to update)
-
-13. **CalendarIcon** → Already has structure (blue header), verify
-14. **HTMLIcon** → Add gray title bar, enhance code preview
-15. **FormIcon** → Add green title bar, keep input fields
+1. **Create `InteractiveBlockIcons.tsx`** - All 11 high-fidelity mockups
+2. **Create `InteractiveBlockCard.tsx`** - Taller card with more preview space
+3. **Create `InteractiveBlockGrid.tsx`** - Questions + Forms layout
+4. **Update `SectionPicker.tsx`** - Conditional rendering
+5. **Rename `BlockGrid.tsx` → `BasicBlockGrid.tsx`** - Clarity
+6. **Update exports in `index.tsx`**
 
 ---
 
 ## Result
 
-After this update, all blocks will have:
-- Consistent title bar + preview structure
-- Visual parity with interactive blocks
-- Same height/proportion feel across all cards
-- Clear visual hierarchy within each tile
+After these changes:
 
+| Before | After |
+|--------|-------|
+| Same card style for all blocks | Distinct visual language per category |
+| Basic icons for interactive blocks | High-fidelity form mockups |
+| Same aspect ratio | Taller cards for interactive |
+| Content bug (showing wrong category) | Correct content per category |
+| Confusing similarity | Clear visual distinction |
