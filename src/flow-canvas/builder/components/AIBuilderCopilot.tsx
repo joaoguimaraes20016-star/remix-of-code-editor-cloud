@@ -32,6 +32,8 @@ import { supabase } from '@/integrations/supabase/client';
 interface AIBuilderCopilotPanelProps extends AICopilotProps {
   isExpanded: boolean;
   onToggle: () => void;
+  /** Explicit close handler - preferred over toggle for dismissal */
+  onClose?: () => void;
   /** Callback to add a block to the canvas */
   onAddBlock?: (block: Block, position?: { stackId: string; index: number }, options?: { type?: 'block' | 'section'; createSectionIfNeeded?: boolean }) => void;
   /** Callback to remove a block (for undo) */
@@ -182,7 +184,9 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
   onUpdatePage,
   isExpanded,
   onToggle,
+  onClose,
 }) => {
+  const panelRef = useRef<HTMLDivElement>(null);
   const [prompt, setPrompt] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
@@ -203,6 +207,51 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
   
   // Track detected mode for response handling
   const detectedModeRef = useRef<GenerationMode>('block');
+
+  // Click outside to close panel
+  useEffect(() => {
+    if (!isExpanded) return;
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        // Use explicit close handler if available, otherwise toggle
+        if (onClose) {
+          onClose();
+        } else {
+          onToggle();
+        }
+      }
+    };
+    
+    // Small delay to prevent immediate close from the trigger click
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isExpanded, onClose, onToggle]);
+
+  // Escape key to close panel
+  useEffect(() => {
+    if (!isExpanded) return;
+    
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (onClose) {
+          onClose();
+        } else {
+          onToggle();
+        }
+      }
+    };
+    
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isExpanded, onClose, onToggle]);
 
   // Fetch suggestions when panel expands
   useEffect(() => {
@@ -513,10 +562,13 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
   };
 
   return (
-    <div className={cn(
-      'fixed bottom-6 left-6 w-80 bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))] rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 z-40',
-      isExpanded ? 'max-h-[500px]' : 'h-12'
-    )}>
+    <div 
+      ref={panelRef}
+      className={cn(
+        'fixed bottom-6 left-6 w-80 bg-[hsl(var(--builder-surface))] border border-[hsl(var(--builder-border))] rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 z-40',
+        isExpanded ? 'max-h-[500px]' : 'h-12'
+      )}
+    >
       {/* Header */}
       <button
         onClick={onToggle}

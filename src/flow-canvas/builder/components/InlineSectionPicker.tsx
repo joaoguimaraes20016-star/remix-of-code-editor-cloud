@@ -45,18 +45,18 @@ const quickCategories = [
     templates: ['cta-simple', 'cta-text']
   },
   { 
-    id: 'form', 
-    name: 'Form', 
+    id: 'embed', 
+    name: 'Embed', 
     icon: Mail,
-    description: 'Capture leads',
-    templates: ['form-email', 'form-phone', 'form-full']
+    description: 'Calendar & widgets',
+    templates: ['embed-calendar', 'embed-empty']
   },
   { 
-    id: 'quiz', 
-    name: 'Quiz', 
+    id: 'social', 
+    name: 'Social Proof', 
     icon: HelpCircle,
-    description: 'Multi-choice',
-    templates: ['form-multi-choice']
+    description: 'Trust badges',
+    templates: ['social-badges']
   },
   { 
     id: 'media', 

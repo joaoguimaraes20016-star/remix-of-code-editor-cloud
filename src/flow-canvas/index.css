@@ -341,6 +341,7 @@
   }
 
   /* Block type badge - uses purple (block level color) */
+  /* Hidden by default - only shows on hover/select */
   .block-type-badge {
     @apply absolute -top-6 left-2 px-2 py-0.5 text-[9px] font-medium uppercase tracking-wide
            text-white/90 rounded whitespace-nowrap
@@ -351,7 +352,7 @@
     transform: translateY(2px);
   }
 
-  /* Show on hover/select */
+  /* Show on hover/select - but ONLY in edit mode */
   .group\/block:hover > .block-type-badge,
   .builder-block-selected > .block-type-badge {
     @apply opacity-100;
@@ -361,6 +362,14 @@
   /* Hide when child element selected */
   .builder-block-selected:has(.builder-element-selected) > .block-type-badge {
     @apply opacity-0;
+  }
+  
+  /* Hide badges in preview mode */
+  .builder-v2-canvas--preview .block-type-badge,
+  .builder-v2-canvas--preview .section-type-badge,
+  [data-preview-mode="true"] .block-type-badge,
+  [data-preview-mode="true"] .section-type-badge {
+    display: none !important;
   }
   
   /* All block badges use purple consistently */
@@ -575,7 +584,12 @@
   }
 
   .toggle-pill-option {
-    @apply px-3 py-1.5 text-xs font-medium rounded-md transition-colors;
+    @apply px-3 py-1.5 text-xs font-medium rounded-md transition-colors min-w-0;
+  }
+  
+  /* Compact variant for 5+ option toggles */
+  .toggle-pill-option-compact {
+    @apply px-2 py-1.5 text-xs font-medium rounded-md transition-colors min-w-0;
   }
 
   .toggle-pill-option-active {
