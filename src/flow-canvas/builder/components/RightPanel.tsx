@@ -255,11 +255,14 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   );
 };
 
+// ISSUE 8 FIX: Standardized typography hierarchy
 const FieldGroup: React.FC<{ label: string; children: React.ReactNode; hint?: string }> = ({ label, children, hint }) => (
   <div className="space-y-1.5">
-    <Label className="text-xs text-builder-text-muted">{label}</Label>
+    {/* Primary label - 11px, medium weight, secondary color */}
+    <Label className="text-[11px] font-medium text-builder-text-secondary">{label}</Label>
     {children}
-    {hint && <p className="text-[10px] text-builder-text-dim">{hint}</p>}
+    {/* Hint text - 9px, normal weight, dim color - clearly smaller than label */}
+    {hint && <p className="text-[9px] text-builder-text-dim leading-tight">{hint}</p>}
   </div>
 );
 
@@ -3178,21 +3181,31 @@ const StepInspector: React.FC<{ step: Step; onUpdate: (updates: Partial<Step>) =
             </div>
           )}
 
+          {/* ISSUE 6 FIX: Gradient editor styled as control, not CTA */}
           {bgType === 'gradient' && (
             <GradientPickerPopover
               value={step.background?.gradient}
               onChange={handleBgGradientChange}
             >
-              <button 
-                className="w-full h-12 rounded-lg border border-builder-border hover:ring-2 hover:ring-builder-accent transition-all"
-                style={{ 
-                  background: step.background?.gradient 
-                    ? gradientToCSS(step.background.gradient) 
-                    : 'linear-gradient(135deg, #667eea, #764ba2)' 
-                }}
-              >
-                <span className="text-xs text-white font-medium drop-shadow-sm">Click to edit gradient</span>
-              </button>
+              <div className="flex items-center gap-3 p-2 rounded-lg border border-builder-border hover:border-builder-accent/50 hover:bg-builder-surface-hover transition-all cursor-pointer group">
+                {/* Gradient preview swatch */}
+                <div 
+                  className="w-12 h-8 rounded-md border border-builder-border flex-shrink-0"
+                  style={{ 
+                    background: step.background?.gradient 
+                      ? gradientToCSS(step.background.gradient) 
+                      : 'linear-gradient(135deg, #667eea, #764ba2)' 
+                  }}
+                />
+                {/* Label */}
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs text-builder-text-muted group-hover:text-builder-text transition-colors">
+                    Edit Gradient
+                  </span>
+                </div>
+                {/* Edit indicator */}
+                <ChevronRight className="w-3.5 h-3.5 text-builder-text-dim group-hover:text-builder-text transition-colors" />
+              </div>
             </GradientPickerPopover>
           )}
 

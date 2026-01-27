@@ -25,7 +25,7 @@ export const CollapsibleSection = React.forwardRef<HTMLDivElement, CollapsibleSe
       <div ref={ref} className={cn("border-b border-builder-border", className)}>
         <button 
           onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
-          className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-builder-surface-hover transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-builder-surface-hover transition-colors"
           type="button"
         >
           <div className="flex items-center gap-2">
@@ -39,7 +39,7 @@ export const CollapsibleSection = React.forwardRef<HTMLDivElement, CollapsibleSe
           )}
         </button>
         {isOpen && (
-          <div className="px-3 pb-3 space-y-3">
+          <div className="px-4 pb-4 pt-0 space-y-3">
             {children}
           </div>
         )}

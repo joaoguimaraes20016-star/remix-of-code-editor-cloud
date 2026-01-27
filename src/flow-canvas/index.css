@@ -294,10 +294,16 @@
     outline-offset: 2px;
   }
   
-  /* Element = Pink solid ring - uses outline to avoid conflicting with button's boxShadow */
+  /* ISSUE 3 FIX: Element = Pink solid ring - increased offset to avoid double-border halo */
   .builder-element-selected {
     outline: 2px solid hsl(var(--selection-element));
-    outline-offset: 2px;
+    outline-offset: 4px; /* Increased from 2px for clear separation */
+  }
+  
+  /* Button-specific selection styling - dashed for visual distinction */
+  .builder-v2-canvas button.builder-element-selected {
+    outline-style: dashed;
+    outline-offset: 5px;
   }
   
   /* Parent hint when child selected - subtle, uses child's color */
@@ -578,9 +584,11 @@
   /* TOGGLE PILLS - ALWAYS VISIBLE TEXT          */
   /* ============================================ */
 
+  /* ISSUE 7 FIX: Toggle pills with improved active state contrast */
   .toggle-pill {
-    @apply inline-flex items-center p-0.5 rounded-md;
+    @apply inline-flex items-center p-0.5 rounded-lg;
     background-color: hsl(var(--builder-surface-hover));
+    border: 1px solid hsl(var(--builder-border-subtle));
   }
 
   .toggle-pill-option {
@@ -592,19 +600,22 @@
     @apply px-2 py-1.5 text-xs font-medium rounded-md transition-colors min-w-0;
   }
 
+  /* Active state - stronger visual distinction */
   .toggle-pill-option-active {
     background: hsl(var(--builder-accent));
-    @apply text-white;
+    @apply text-white font-medium;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
+  /* Inactive state - more muted to create contrast */
   .toggle-pill-option-inactive {
-    color: hsl(var(--builder-text-secondary)) !important;
+    color: hsl(var(--builder-text-dim)) !important;
     background-color: transparent !important;
   }
   
   .toggle-pill-option-inactive:hover {
     color: hsl(var(--builder-text)) !important;
-    background-color: hsl(var(--builder-surface-active)) !important;
+    background-color: hsl(var(--builder-surface-hover)) !important;
   }
 
   /* Color swatch */
@@ -938,9 +949,30 @@
     to { transform: rotate(360deg); }
   }
 
-  /* Visual Indicator Badges */
+  /* ISSUE 5 FIX: Visual Indicator Badges with proper container */
   .indicator-badge {
     @apply w-4 h-4 rounded-full flex items-center justify-center shadow-sm;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  /* Container for badges - anchored to element corner */
+  .indicator-badge-container {
+    @apply absolute -top-1.5 -right-1.5 flex gap-0.5;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  /* ISSUE 9 FIX: Inspector helper callout - matches control card styling */
+  .inspector-hint-callout {
+    @apply p-2.5 rounded-lg border;
+    border-color: hsl(var(--builder-border));
+    background-color: hsl(var(--builder-surface-hover) / 0.5);
+  }
+
+  .inspector-hint-callout p {
+    @apply text-[10px] leading-relaxed m-0;
+    color: hsl(var(--builder-text-dim));
   }
 
   /* State tabs for RightPanel */
