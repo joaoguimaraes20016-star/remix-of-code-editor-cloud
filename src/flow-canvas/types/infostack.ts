@@ -2,6 +2,7 @@
 
 // Import shared types
 import type { ButtonAction } from '@/flow-canvas/shared/types/buttonAction';
+import type { StyleTokens } from '@/builder/tokens';
 
 export type StepIntent = 'capture' | 'qualify' | 'schedule' | 'convert' | 'complete';
 export type StepType = 'form' | 'content' | 'quiz' | 'booking' | 'checkout' | 'thankyou';
@@ -436,6 +437,11 @@ export interface Element {
   animation?: AnimationSettings;
   stateStyles?: ElementStyles;
   responsive?: ResponsiveOverrides;
+  /**
+   * Style tokens for guaranteed 1:1 style mapping.
+   * When set, these take precedence over legacy prop-based styling.
+   */
+  tokens?: StyleTokens;
 }
 
 export interface Block {
