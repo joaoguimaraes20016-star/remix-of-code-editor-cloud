@@ -18,6 +18,9 @@ export const SingleChoiceNode: React.FC<CaptureNodeRendererProps> = ({
   const selectedId = typeof value === 'string' ? value : '';
   const choices = node.settings.choices || [];
 
+  // Detect if any choices have images for perspective card layout
+  const hasImages = choices.some(c => c.imageUrl);
+
   const handleSelect = (choiceId: string) => {
     onChange(choiceId);
     // Auto-advance on selection for single choice
@@ -34,46 +37,77 @@ export const SingleChoiceNode: React.FC<CaptureNodeRendererProps> = ({
       onSelect={onSelect}
       hideButton // Auto-advance on selection
     >
-      <div className="flex flex-col gap-2 w-full">
-        {choices.map((choice) => (
-          <button
-            key={choice.id}
-            type="button"
-            onClick={() => !isPreview && handleSelect(choice.id)}
-            className={cn(
-              'flex items-center gap-3 p-4 rounded-lg border transition-all text-left',
-              'hover:border-primary/50 hover:bg-accent/50',
-              selectedId === choice.id
-                ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                : 'border-border bg-background',
-            )}
-            disabled={isPreview}
-          >
-            {/* Radio indicator */}
-            <div
+      <div className={cn(
+        "w-full",
+        hasImages ? "grid grid-cols-2 gap-4" : "flex flex-col gap-2"
+      )}>
+        {choices.map((choice) => {
+          const isChoiceSelected = selectedId === choice.id;
+          const hasImage = hasImages && choice.imageUrl;
+          
+          return (
+            <button
+              key={choice.id}
+              type="button"
+              onClick={() => !isPreview && handleSelect(choice.id)}
               className={cn(
-                'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0',
-                selectedId === choice.id
-                  ? 'border-primary'
-                  : 'border-muted-foreground/40',
+                'transition-all text-left',
+                hasImage
+                  ? 'flex flex-col rounded-xl overflow-hidden border'
+                  : 'flex items-center gap-3 p-4 rounded-lg border',
+                'hover:border-primary/50 hover:bg-accent/50',
+                isChoiceSelected
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                  : 'border-border bg-background',
               )}
+              disabled={isPreview}
             >
-              {selectedId === choice.id && (
-                <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+              {/* Image card layout */}
+              {hasImage && (
+                <div 
+                  className="w-full aspect-[4/3] bg-cover bg-center"
+                  style={{ backgroundImage: `url(${choice.imageUrl})` }}
+                />
               )}
-            </div>
 
-            {/* Emoji */}
-            {choice.emoji && (
-              <span className="text-lg">{choice.emoji}</span>
-            )}
+              {/* Label area */}
+              <div className={cn(
+                hasImage 
+                  ? "p-3 bg-primary text-primary-foreground w-full"
+                  : "flex items-center gap-3"
+              )}>
+                {/* Radio indicator - only for non-image layout */}
+                {!hasImage && (
+                  <div
+                    className={cn(
+                      'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0',
+                      isChoiceSelected
+                        ? 'border-primary'
+                        : 'border-muted-foreground/40',
+                    )}
+                  >
+                    {isChoiceSelected && (
+                      <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                    )}
+                  </div>
+                )}
 
-            {/* Label */}
-            <span className="text-sm font-medium text-foreground">
-              {choice.label}
-            </span>
-          </button>
-        ))}
+                {/* Emoji - only for non-image layout */}
+                {!hasImage && choice.emoji && (
+                  <span className="text-lg">{choice.emoji}</span>
+                )}
+
+                {/* Label */}
+                <span className={cn(
+                  "text-sm font-medium",
+                  hasImage ? "text-center w-full" : "text-foreground"
+                )}>
+                  {choice.label}
+                </span>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </CaptureNodeWrapper>
   );

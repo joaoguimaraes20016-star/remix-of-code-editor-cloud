@@ -229,7 +229,7 @@ export function LivePreviewMode({
                   settings={funnel.settings}
                   design={stepDesign}
                   stepType={currentStep?.step_type || 'welcome'}
-                  isPreview={device === 'mobile'}
+                  isPreview={false}
                   onButtonClick={() => {
                     if (currentStepIndex < steps.length - 1) {
                       setCurrentStepIndex(prev => prev + 1);

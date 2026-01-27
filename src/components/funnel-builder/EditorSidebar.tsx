@@ -129,8 +129,8 @@ export function EditorSidebar({
     if (!selectedElementId) return 'Element';
     if (selectedElementId === 'headline') return 'Headline';
     if (selectedElementId === 'subtext') return 'Subtext';
-    if (selectedElementId === 'button') return 'Button';
-    if (selectedElementId === 'input') return 'Input Field';
+    if (selectedElementId === 'button' || selectedElementId === 'button_text') return 'Button';
+    if (selectedElementId === 'input' || selectedElementId === 'placeholder') return 'Input Field';
     if (selectedElementId === 'options') return 'Options';
     if (selectedElementId === 'video') return 'Video';
     if (selectedElementId === 'opt_in_form') return 'Contact Form';
