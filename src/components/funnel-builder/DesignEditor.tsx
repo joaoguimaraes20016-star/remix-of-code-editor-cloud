@@ -95,13 +95,6 @@ const OPTION_HOVER_OPTIONS = [
   { value: 'lift', label: 'Lift' },
 ];
 
-const OPTION_HOVER_OPTIONS = [
-  { value: 'none', label: 'None' },
-  { value: 'scale', label: 'Scale' },
-  { value: 'glow', label: 'Glow' },
-  { value: 'lift', label: 'Lift' },
-];
-
 export function DesignEditor({ step, design, onUpdateDesign, onOpenImagePicker, highlightedSection }: DesignEditorProps) {
   const elementOrder =
     step.content.element_order && step.content.element_order.length > 0

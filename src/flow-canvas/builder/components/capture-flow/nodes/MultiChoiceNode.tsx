@@ -19,6 +19,9 @@ export const MultiChoiceNode: React.FC<CaptureNodeRendererProps> = ({
   const selectedIds = Array.isArray(value) ? value : [];
   const choices = node.settings.choices || [];
 
+  // Detect if any choices have images for perspective card layout
+  const hasImages = choices.some(c => c.imageUrl);
+
   const handleToggle = (choiceId: string) => {
     if (isPreview) return;
     
@@ -38,9 +41,13 @@ export const MultiChoiceNode: React.FC<CaptureNodeRendererProps> = ({
       isSelected={isSelected}
       onSelect={onSelect}
     >
-      <div className="flex flex-col gap-2 w-full">
+      <div className={cn(
+        "w-full",
+        hasImages ? "grid grid-cols-2 gap-4" : "flex flex-col gap-2"
+      )}>
         {choices.map((choice) => {
           const isChecked = selectedIds.includes(choice.id);
+          const hasImage = hasImages && choice.imageUrl;
           
           return (
             <button
@@ -48,7 +55,10 @@ export const MultiChoiceNode: React.FC<CaptureNodeRendererProps> = ({
               type="button"
               onClick={() => handleToggle(choice.id)}
               className={cn(
-                'flex items-center gap-3 p-4 rounded-lg border transition-all text-left',
+                'transition-all text-left',
+                hasImage
+                  ? 'flex flex-col rounded-xl overflow-hidden border'
+                  : 'flex items-center gap-3 p-4 rounded-lg border',
                 'hover:border-primary/50 hover:bg-accent/50',
                 isChecked
                   ? 'border-primary bg-primary/5 ring-1 ring-primary'
@@ -56,29 +66,54 @@ export const MultiChoiceNode: React.FC<CaptureNodeRendererProps> = ({
               )}
               disabled={isPreview}
             >
-              {/* Checkbox indicator */}
-              <div
-                className={cn(
-                  'w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-colors',
-                  isChecked
-                    ? 'border-primary bg-primary'
-                    : 'border-muted-foreground/40 bg-background',
-                )}
-              >
-                {isChecked && (
-                  <Check className="w-3 h-3 text-primary-foreground" />
-                )}
-              </div>
-
-              {/* Emoji */}
-              {choice.emoji && (
-                <span className="text-lg">{choice.emoji}</span>
+              {/* Image card layout */}
+              {hasImage && (
+                <div 
+                  className="w-full aspect-[4/3] bg-cover bg-center"
+                  style={{ backgroundImage: `url(${choice.imageUrl})` }}
+                />
               )}
 
-              {/* Label */}
-              <span className="text-sm font-medium text-foreground">
-                {choice.label}
-              </span>
+              {/* Label area */}
+              <div className={cn(
+                hasImage 
+                  ? "p-3 bg-primary text-primary-foreground w-full flex items-center justify-center gap-2"
+                  : "flex items-center gap-3"
+              )}>
+                {/* Checkbox indicator */}
+                <div
+                  className={cn(
+                    'w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-colors',
+                    isChecked
+                      ? hasImage 
+                        ? 'border-primary-foreground bg-primary-foreground'
+                        : 'border-primary bg-primary'
+                      : hasImage
+                        ? 'border-primary-foreground/40 bg-transparent'
+                        : 'border-muted-foreground/40 bg-background',
+                  )}
+                >
+                  {isChecked && (
+                    <Check className={cn(
+                      "w-3 h-3",
+                      hasImage ? "text-primary" : "text-primary-foreground"
+                    )} />
+                  )}
+                </div>
+
+                {/* Emoji - only for non-image layout */}
+                {!hasImage && choice.emoji && (
+                  <span className="text-lg">{choice.emoji}</span>
+                )}
+
+                {/* Label */}
+                <span className={cn(
+                  "text-sm font-medium",
+                  hasImage ? "text-center" : "text-foreground"
+                )}>
+                  {choice.label}
+                </span>
+              </div>
             </button>
           );
         })}

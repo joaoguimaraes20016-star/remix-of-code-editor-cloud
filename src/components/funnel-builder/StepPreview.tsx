@@ -613,8 +613,8 @@ export function StepPreview({
               onChange={(val) => handleTextChange('button_text', val)}
               className="text-center"
               style={{ color: buttonTextColor }}
-              isSelected={selectedElementId === elementId}
-              onSelect={() => onSelectElement(elementId)}
+              isSelected={selectedElementId === 'button_text' || selectedElementId === elementId}
+              onSelect={() => onSelectElement('button_text')}
               onEditingChange={(editing) => setEditingElement(editing ? elementId : null)}
             />
           </button>
