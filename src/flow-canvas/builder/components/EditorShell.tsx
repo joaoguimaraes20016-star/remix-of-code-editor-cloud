@@ -10,6 +10,7 @@ import { MobileBottomSheet, ControlGroup, TouchInput, TouchSegmentedControl } fr
 import { BlockPickerGrid } from './BlockPickerGrid';
 import { AIBuilderCopilot } from './AIBuilderCopilot';
 import { BlockPickerPanel } from './BlockPickerPanel';
+import { InlineSectionPicker } from './InlineSectionPicker';
 import { useHistory } from '../hooks/useHistory';
 import { 
   deepClone, 
@@ -18,6 +19,8 @@ import {
   createBlankStep,
   generateId 
 } from '../utils/helpers';
+import { allSectionTemplates } from '@/builder_v2/templates/sectionTemplates';
+import { convertTemplateToFrame } from '../utils/templateConverter';
 import {
   CollaboratorsModal,
   SEOSettingsModal,
@@ -155,6 +158,9 @@ export const EditorShell: React.FC<EditorShellProps> = ({
   const [mobileBlockPickerOpen, setMobileBlockPickerOpen] = useState(false);
   const [blockPickerTargetStackId, setBlockPickerTargetStackId] = useState<string | null>(null);
   const [blockPickerMode, setBlockPickerMode] = useState<'blocks' | 'sections'>('blocks');
+  
+  // Inline section picker state - opens directly on canvas for intuitive UX
+  const [inlineSectionPickerOpen, setInlineSectionPickerOpen] = useState(false);
   
   // Mobile bottom sheet state for element editing
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
@@ -1044,6 +1050,26 @@ export const EditorShell: React.FC<EditorShellProps> = ({
     }
   }, [activeStepId, page, handlePageUpdate]);
 
+  // Add section from template (via inline picker)
+  const handleAddSectionFromTemplate = useCallback((templateId: string) => {
+    if (!activeStepId) return;
+    
+    const frame = convertTemplateToFrame(templateId);
+    if (!frame) {
+      toast.error('Template not found');
+      return;
+    }
+    
+    const updatedPage = deepClone(page);
+    const step = updatedPage.steps.find(s => s.id === activeStepId);
+    if (step) {
+      step.frames.push(frame);
+      handlePageUpdate(updatedPage);
+      toast.success('Section added');
+      setInlineSectionPickerOpen(false);
+    }
+  }, [activeStepId, page, handlePageUpdate]);
+
   // Delete frame handler - now allows deleting the last section (0 sections allowed)
   const handleDeleteFrame = useCallback((frameId: string) => {
     if (!activeStepId) return;
@@ -1899,8 +1925,8 @@ export const EditorShell: React.FC<EditorShellProps> = ({
               setBlockPickerOpen(true);
             }}
             onOpenSectionPicker={() => {
-              setBlockPickerOpen(true);
-              setBlockPickerMode('sections');
+              // Open inline picker directly on canvas for intuitive UX
+              setInlineSectionPickerOpen(true);
             }}
             onNextStep={() => {
               const currentIndex = page.steps.findIndex(s => s.id === activeStepId);
@@ -1922,6 +1948,15 @@ export const EditorShell: React.FC<EditorShellProps> = ({
               }
             }}
           />
+          
+          {/* Inline Section Picker - appears on canvas for intuitive UX */}
+          {!previewMode && (
+            <InlineSectionPicker
+              isOpen={inlineSectionPickerOpen}
+              onClose={() => setInlineSectionPickerOpen(false)}
+              onSelectTemplate={handleAddSectionFromTemplate}
+            />
+          )}
         </div>
 
         {/* Right Panel */}
