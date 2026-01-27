@@ -32,6 +32,16 @@
   /* Dark content area */
   --builder-content-bg: linear-gradient(180deg, hsl(225 14% 5%) 0%, hsl(225 12% 7%) 100%);
   --builder-content-surface: hsl(0 0% 100% / 0.03);
+  
+  /* Premium coaching palette - for section picker */
+  --coaching-dark: 220 20% 8%;
+  --coaching-surface: 220 15% 12%;
+  --coaching-border: 220 10% 20%;
+  --coaching-gold: 45 90% 55%;
+  --coaching-emerald: 160 70% 45%;
+  --coaching-accent: 220 80% 60%;
+  --coaching-text: 0 0% 95%;
+  --coaching-muted: 0 0% 60%;
 }
 
 /* ============================================================================
