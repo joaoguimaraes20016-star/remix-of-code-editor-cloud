@@ -1755,7 +1755,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               disabled={isButtonDisabled}
               aria-disabled={isButtonDisabled}
             >
-              {element.props?.showIcon !== false && element.props?.iconPosition === 'left' && renderButtonIcon()}
+              {element.props?.showIcon === true && element.props?.iconPosition === 'left' && renderButtonIcon()}
               <InlineTextEditor
                 value={element.content || 'Get started'}
                 onChange={handleContentChange}
@@ -1764,7 +1764,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 className="text-inherit"
                 elementId={element.id}
               />
-              {element.props?.showIcon !== false && element.props?.iconPosition !== 'left' && renderButtonIcon()}
+              {element.props?.showIcon === true && element.props?.iconPosition !== 'left' && renderButtonIcon()}
             </button>
             {/* Blocked reason display - shown when intent was rejected */}
             {getButtonBlockedReason && (
@@ -2415,25 +2415,51 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 const IconComponent = getButtonIconComponent(element.content || 'Star');
                 // BUG FIX #6: For gradient icons, wrap in a div with mask
                 if (isGradientIcon) {
+                  // Create unique gradient ID for this element
+                  const gradientId = `icon-gradient-${element.id}`;
+                  const gradientAngle = iconGradient.angle || 135;
+                  const stops = iconGradient.stops || [];
+                  
+                  // Calculate gradient direction based on angle
+                  const angleRad = (gradientAngle - 90) * (Math.PI / 180);
+                  const x1 = 50 - Math.cos(angleRad) * 50;
+                  const y1 = 50 - Math.sin(angleRad) * 50;
+                  const x2 = 50 + Math.cos(angleRad) * 50;
+                  const y2 = 50 + Math.sin(angleRad) * 50;
+                  
                   return (
-                    <div 
-                      style={{
-                        width: iconSize,
-                        height: iconSize,
-                        background: gradientToCSS(iconGradient),
-                        WebkitMask: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3C/svg%3E")`,
-                        mask: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3C/svg%3E")`,
-                      }}
+                    <svg 
+                      width={iconSize} 
+                      height={iconSize} 
+                      viewBox="0 0 24 24"
+                      style={{ display: 'block' }}
                     >
+                      <defs>
+                        <linearGradient 
+                          id={gradientId} 
+                          x1={`${x1}%`} 
+                          y1={`${y1}%`} 
+                          x2={`${x2}%`} 
+                          y2={`${y2}%`}
+                        >
+                          {stops.map((stop, i) => (
+                            <stop 
+                              key={i} 
+                              offset={`${stop.position}%`} 
+                              stopColor={stop.color} 
+                            />
+                          ))}
+                        </linearGradient>
+                      </defs>
                       <IconComponent 
                         style={{ 
-                          width: '100%', 
-                          height: '100%',
-                          // Make icon act as mask
-                          color: 'transparent',
+                          width: 24, 
+                          height: 24,
+                          fill: `url(#${gradientId})`,
+                          stroke: `url(#${gradientId})`,
                         }} 
                       />
-                    </div>
+                    </svg>
                   );
                 }
                 return <IconComponent style={iconStyle} />;
