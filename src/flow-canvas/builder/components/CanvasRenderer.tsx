@@ -783,13 +783,13 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
   // Inject state styles CSS
   const stateStylesCSS = generateStateStylesCSS();
   
-  // Helper to render visual indicator badges
+  // ISSUE 5 FIX: Helper to render visual indicator badges with proper container
   const renderIndicatorBadges = () => {
     if (readOnly || (!hasConditionalLogic && !hasAnimation && !hasResponsiveOverrides && !hasStateStyles)) {
       return null;
     }
     return (
-      <div className="absolute -top-2 -right-2 flex gap-0.5 z-10">
+      <div className="indicator-badge-container">
         {hasConditionalLogic && (
           <span className="indicator-badge bg-blue-500" title="Has conditional visibility">
             <Eye className="w-2.5 h-2.5 text-white" />
@@ -1591,8 +1591,16 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           background: 'none',
         };
         
-        // For outline mode, use foreground color; for filled, use the actual bg
-        const effectiveBgForContrast = isOutlineMode ? (isDarkTheme ? '#1f2937' : '#ffffff') : (buttonBg || primaryColor);
+        // ISSUE 4 FIX: Compute effective background for contrast - gradient-aware
+        const effectiveBgForContrast = (() => {
+          if (isOutlineMode) return isDarkTheme ? '#1f2937' : '#ffffff';
+          // For gradients, use the first stop color for contrast calculation
+          if (isGradient && buttonGradientValue?.stops?.length) {
+            return buttonGradientValue.stops[0].color;
+          }
+          return buttonBg || primaryColor;
+        })();
+        
         const buttonShadowStyle = getButtonShadowStyle();
         // Outline buttons get no shadow; filled buttons get shadow
         const defaultShadow = (isNavPill || isFooterLink || isGhostButton || isOutlineMode) 
@@ -1607,26 +1615,32 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         const customWidth = element.props?.customWidth as number | undefined;
         const buttonWidth = isFullWidth ? '100%' : customWidth ? `${customWidth}px` : 'fit-content';
         
-        // Text color: outline uses user-set color OR theme foreground, filled uses contrast or user-set
-        // BUG FIX #1: Outline mode now respects user's textColor setting
-        const buttonTextColor = isNavPill 
-          ? (isDarkTheme ? '#ffffff' : '#1f2937')
-          : isFooterLink 
-            ? (isDarkTheme ? '#9ca3af' : '#6b7280')
-            : isOutlineMode
-              ? (element.props?.textColor as string || (isDarkTheme ? '#ffffff' : '#18181b')) // User color OR default
-              : (element.props?.textColor as string || getContrastTextColor(effectiveBgForContrast));
+        // ISSUE 4 FIX: Text color with gradient-aware contrast
+        const buttonTextColor = (() => {
+          // User-specified color always takes precedence
+          const userTextColor = element.props?.textColor as string | undefined;
+          if (userTextColor) return userTextColor;
+          // Special variants
+          if (isNavPill) return isDarkTheme ? '#ffffff' : '#1f2937';
+          if (isFooterLink) return isDarkTheme ? '#9ca3af' : '#6b7280';
+          // Outline mode default
+          if (isOutlineMode) return isDarkTheme ? '#ffffff' : '#18181b';
+          // Gradient or solid - compute contrast
+          return getContrastTextColor(effectiveBgForContrast);
+        })();
         
-        // Border for outline mode - BUG FIX #3: Allow user-defined border settings
+        // Border for outline mode - ISSUE 1 FIX: Allow explicit '0' or '0px' values
         const outlineBorderColor = isDarkTheme ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)';
         const userBorderWidth = element.styles?.borderWidth as string | undefined;
         const userBorderColor = element.styles?.borderColor as string | undefined;
+        const hasExplicitBorderWidth = userBorderWidth !== undefined && userBorderWidth !== '';
         
-        // BUG FIX #2: Allow shadows on outline buttons when explicitly set by user
-        const hasShadowSetting = element.props?.shadow && element.props?.shadow !== 'none';
-        const effectiveShadow = hasShadowSetting 
-          ? (buttonShadowStyle.boxShadow || 'none')
-          : ((isOutlineMode || isNavPill || isFooterLink || isGhostButton) ? 'none' : (buttonShadowStyle.boxShadow || 'none'));
+        // ISSUE 2 FIX: Shadow logic - respect explicit 'none' vs undefined
+        const shadowProp = element.props?.shadow as string | undefined;
+        const hasExplicitShadow = shadowProp !== undefined; // User has set a value
+        const effectiveShadow = hasExplicitShadow
+          ? (shadowProp === 'none' ? 'none' : (buttonShadowStyle.boxShadow || 'none'))
+          : ((isOutlineMode || isNavPill || isFooterLink || isGhostButton) ? 'none' : defaultShadow);
         
         // SINGLE VISUAL SURFACE RULE:
         // - Outline mode: transparent bg + border, optional shadow if set
@@ -1637,14 +1651,16 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           color: buttonTextColor,
           // Width is controlled by the button element itself (unified: fullWidth or customWidth)
           width: buttonWidth,
-          // BUG FIX #2: Shadows now work on outline buttons when explicitly set
+          // ISSUE 2 FIX: Shadows respect explicit 'none' setting
           boxShadow: effectiveShadow,
-          // BUG FIX #3: Respect user border settings, fallback to mode defaults
-          borderWidth: userBorderWidth || (isOutlineMode ? '2px' : (isNavPill ? '1px' : '0')),
+          // ISSUE 1 FIX: Respect user border settings including explicit '0' or '0px'
+          borderWidth: hasExplicitBorderWidth 
+            ? userBorderWidth  // User value takes precedence (including '0px')
+            : (isOutlineMode ? '2px' : (isNavPill ? '1px' : '0')),
           borderColor: userBorderColor || (isOutlineMode 
             ? outlineBorderColor 
             : (isNavPill ? (isDarkTheme ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)') : 'transparent')),
-          borderStyle: (userBorderWidth || isOutlineMode || isNavPill) ? 'solid' : 'none',
+          borderStyle: (hasExplicitBorderWidth || isOutlineMode || isNavPill) ? 'solid' : 'none',
           borderRadius: isNavPill ? '9999px' : (element.styles?.borderRadius || '12px'),
           transition: `transform ${transitionDuration}ms ease, box-shadow ${transitionDuration}ms ease`,
           // Apply custom dimensions (height only; width is unified above)
