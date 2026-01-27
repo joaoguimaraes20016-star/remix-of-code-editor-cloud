@@ -21,12 +21,19 @@ import { CanvasEditor } from './canvas/CanvasEditor';
 import { PreviewCanvas } from './canvas/PreviewCanvas';
 import { DraftPreviewCanvas } from './canvas/DraftPreviewCanvas';
 import { DocumentSwitcher } from './components/DocumentSwitcher';
-import { editorModes } from './editorMode';
+import { editorModes, type EditorMode } from './editorMode';
 import { Inspector } from './inspector/Inspector';
 import { EditorStoreAdapter } from './state/editorStoreAdapter';
 import { MultiDocumentProvider, useMultiDocumentStore } from './state/multiDocStore';
 import { StructureTree } from './structure/StructureTree';
 import { useKeyboardShortcuts } from './state/useKeyboardShortcuts';
+
+/** F14: Humanized mode display labels */
+const modeDisplayLabels: Record<EditorMode, string> = {
+  structure: 'Structure',
+  canvas: 'Edit',
+  preview: 'Test',
+};
 
 /**
  * Main editor shell with multi-document support.
@@ -147,16 +154,17 @@ function MultiDocEditorShellContent() {
           {/* Document Switcher */}
           <DocumentSwitcher />
           
-          {/* Mode Toggle */}
+          {/* Mode Toggle - D11: Styled mode buttons with humanized labels */}
           <div className="builder-v2-mode-toggle">
             {editorModes.map((nextMode) => (
               <button
                 key={nextMode}
                 type="button"
+                className="builder-v2-mode-toggle-btn"
                 aria-pressed={mode === nextMode}
                 onClick={() => setMode(nextMode)}
               >
-                {nextMode}
+                {modeDisplayLabels[nextMode]}
               </button>
             ))}
           </div>
@@ -171,7 +179,8 @@ function MultiDocEditorShellContent() {
               <p>No pages available.</p>
             ) : (
               <div>
-                <div style={styles.pageListHeader}>Pages</div>
+                {/* F15: Unified "Steps" terminology */}
+                <div className="builder-v2-panel-section-header">Steps</div>
                 {pages.map((page) => {
                   const isActive = page.id === activePageId;
 
@@ -181,24 +190,10 @@ function MultiDocEditorShellContent() {
                       type="button"
                       aria-pressed={isActive}
                       onClick={() => setActivePage(page.id)}
-                      style={{
-                        width: '100%',
-                        textAlign: 'left',
-                        padding: '10px 12px',
-                        marginBottom: '8px',
-                        borderRadius: '10px',
-                        background: isActive
-                          ? 'rgba(99, 102, 241, 0.2)'
-                          : 'rgba(255, 255, 255, 0.04)',
-                        border: isActive
-                          ? '1px solid rgba(99, 102, 241, 0.7)'
-                          : '1px solid rgba(255, 255, 255, 0.12)',
-                        color: '#f5f7fa',
-                        cursor: 'pointer',
-                      }}
+                      className={`builder-v2-page-button ${isActive ? 'builder-v2-page-button--active' : ''}`}
                     >
-                      <div style={{ fontSize: 14, fontWeight: 600 }}>{page.name}</div>
-                      <div style={{ fontSize: 12, opacity: 0.8 }}>Type: {page.type}</div>
+                      <div className="builder-v2-page-button-title">{page.name}</div>
+                      <div className="builder-v2-page-button-meta">Type: {page.type}</div>
                     </button>
                   );
                 })}
@@ -219,15 +214,15 @@ function MultiDocEditorShellContent() {
           >
             {/* Phase 14: Show publish controls when not in structure mode */}
             {!isPreviewMode && (
-              <div style={styles.publishControls}>
-                <span style={{ fontSize: 12, opacity: 0.7 }}>
+              <div className="builder-v2-publish-status">
+                <span className="builder-v2-publish-status-text">
                   {isPublished ? '✓ Published' : 'Not published'}
                 </span>
               </div>
             )}
             {isPreviewMode && (
-              <p style={{ opacity: 0.6, fontSize: 13 }}>
-                Preview mode - Structure tree disabled
+              <p className="builder-v2-placeholder-text">
+                Test mode - Structure tree disabled
               </p>
             )}
             {mode === 'canvas' && (
@@ -239,23 +234,24 @@ function MultiDocEditorShellContent() {
 
       <section className="builder-v2-panel builder-v2-panel--center">
         <header className="builder-v2-panel-header">
-          {isPreviewMode ? 'Preview' : 'Canvas'}
-          {/* Phase 14: Publish button in header */}
+          {/* A1: Clarify that "Test" mode renders draft, not published */}
+          {isPreviewMode ? 'Test Draft' : 'Canvas'}
+          {/* Phase 14: Publish button in header - C9: using CSS classes instead of inline styles */}
           {!isPreviewMode && (
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+            <div className="builder-v2-header-actions">
               {isPublished ? (
                 <>
                   <button
                     type="button"
                     onClick={publishDocument}
-                    style={styles.headerButton}
+                    className="builder-v2-header-button"
                   >
                     Re-publish
                   </button>
                   <button
                     type="button"
                     onClick={unpublishDocument}
-                    style={{ ...styles.headerButton, ...styles.headerButtonDanger }}
+                    className="builder-v2-header-button builder-v2-header-button--danger"
                   >
                     Unpublish
                   </button>
@@ -264,7 +260,7 @@ function MultiDocEditorShellContent() {
                 <button
                   type="button"
                   onClick={publishDocument}
-                  style={{ ...styles.headerButton, ...styles.headerButtonPrimary }}
+                  className="builder-v2-header-button builder-v2-header-button--primary"
                 >
                   Publish
                 </button>
@@ -339,40 +335,4 @@ function MultiDocEditorShellContent() {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  pageListHeader: {
-    fontSize: '12px',
-    fontWeight: 600,
-    color: 'rgba(255, 255, 255, 0.6)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    marginBottom: '8px',
-    marginTop: '16px',
-  },
-  publishControls: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-  },
-  headerButton: {
-    padding: '4px 10px',
-    fontSize: 11,
-    fontWeight: 500,
-    borderRadius: 4,
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    background: 'rgba(255, 255, 255, 0.05)',
-    color: 'rgba(255, 255, 255, 0.8)',
-    cursor: 'pointer',
-  },
-  headerButtonPrimary: {
-    background: 'rgba(34, 197, 94, 0.2)',
-    borderColor: 'rgba(34, 197, 94, 0.5)',
-    color: 'rgb(134, 239, 172)',
-  },
-  headerButtonDanger: {
-    background: 'rgba(239, 68, 68, 0.1)',
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    color: 'rgba(252, 165, 165, 0.9)',
-  },
-};
+/** G18: Removed inline styles - now using CSS classes in EditorLayout.css */

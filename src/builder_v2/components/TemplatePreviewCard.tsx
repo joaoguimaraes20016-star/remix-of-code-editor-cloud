@@ -12,27 +12,28 @@ interface TemplatePreviewCardProps {
   onAdd: () => void;
 }
 
+// B3: Theme-aware template preview card
 export function TemplatePreviewCard({ template, onAdd }: TemplatePreviewCardProps) {
   return (
     <button
       onClick={onAdd}
-      className="group relative w-full rounded-lg border border-slate-200 bg-white overflow-hidden transition-all hover:border-primary/50 hover:shadow-md"
+      className="template-preview-card group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--builder-accent)]"
     >
       {/* Preview area */}
-      <div className="relative h-24 bg-gradient-to-br from-slate-900 to-slate-800 p-3 overflow-hidden">
+      <div className="template-preview-card-preview">
         <TemplatePreview template={template} />
         
         {/* Hover overlay with add button */}
-        <div className="absolute inset-0 bg-primary/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-            <Plus size={16} className="text-primary" />
+        <div className="template-preview-card-overlay">
+          <div className="template-preview-card-add-icon">
+            <Plus size={16} />
           </div>
         </div>
       </div>
       
       {/* Template name */}
       <div className="px-2 py-1.5 text-center">
-        <span className="text-[11px] font-medium text-slate-600 truncate block">
+        <span className="text-[11px] font-medium text-[var(--builder-text-secondary)] truncate block">
           {template.name}
         </span>
       </div>

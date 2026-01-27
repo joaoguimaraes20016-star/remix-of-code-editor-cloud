@@ -26,6 +26,7 @@ import { StepStack } from '../runtime/StepStack';
 import './canvas.css';
 import '../styles/visual-parity.css';
 import { renderTree } from './renderNode';
+import { FileText } from 'lucide-react';
 
 type PreviewCanvasProps = {
   /** The published snapshot to render, or null if never published */
@@ -33,12 +34,14 @@ type PreviewCanvasProps = {
 };
 
 /**
- * Empty state shown when no published snapshot exists.
+ * G17: Empty state with branded icon instead of emoji
  */
 function NothingPublishedState() {
   return (
     <div className="builder-v2-preview-empty">
-      <div className="builder-v2-preview-empty-icon">📄</div>
+      <div className="builder-v2-preview-empty-icon">
+        <FileText size={48} />
+      </div>
       <h3 className="builder-v2-preview-empty-title">Nothing published yet</h3>
       <p className="builder-v2-preview-empty-description">
         Publish your document to see a preview of the live version.

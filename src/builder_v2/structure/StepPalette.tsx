@@ -12,17 +12,17 @@ import {
 import { cn } from '@/lib/utils';
 import { STEP_DEFINITIONS } from '@/lib/funnel/stepDefinitions';
 
-// Theme-aligned step type colors using HSL tokens
+// B4: Step type colors using CSS custom properties for theme consistency
 const STEP_TYPE_CONFIG = [
-  { type: 'welcome', icon: Play, color: 'hsl(239 84% 67%)' },       // Primary indigo
-  { type: 'text_question', icon: MessageSquare, color: 'hsl(250 84% 67%)' },
-  { type: 'multi_choice', icon: List, color: 'hsl(270 76% 65%)' },
-  { type: 'email_capture', icon: Mail, color: 'hsl(330 80% 60%)' },
-  { type: 'phone_capture', icon: Phone, color: 'hsl(350 89% 60%)' },
-  { type: 'opt_in', icon: UserCheck, color: 'hsl(25 95% 53%)' },
-  { type: 'video', icon: Video, color: 'hsl(45 93% 47%)' },
-  { type: 'embed', icon: Code, color: 'hsl(142 71% 45%)' },
-  { type: 'thank_you', icon: CheckCircle, color: 'hsl(168 76% 42%)' },
+  { type: 'welcome', icon: Play, colorVar: '--step-color-welcome' },
+  { type: 'text_question', icon: MessageSquare, colorVar: '--step-color-question' },
+  { type: 'multi_choice', icon: List, colorVar: '--step-color-choice' },
+  { type: 'email_capture', icon: Mail, colorVar: '--step-color-email' },
+  { type: 'phone_capture', icon: Phone, colorVar: '--step-color-phone' },
+  { type: 'opt_in', icon: UserCheck, colorVar: '--step-color-optin' },
+  { type: 'video', icon: Video, colorVar: '--step-color-video' },
+  { type: 'embed', icon: Code, colorVar: '--step-color-embed' },
+  { type: 'thank_you', icon: CheckCircle, colorVar: '--step-color-thanks' },
 ] as const;
 
 interface StepPaletteProps {
@@ -37,7 +37,7 @@ export function StepPalette({ onAddStep, compact = false }: StepPaletteProps) {
         <span className="step-palette-title">Add Step</span>
       </div>
       <div className="step-palette-grid">
-        {STEP_TYPE_CONFIG.map(({ type, icon: Icon, color }) => {
+        {STEP_TYPE_CONFIG.map(({ type, icon: Icon, colorVar }) => {
           const def = STEP_DEFINITIONS[type as keyof typeof STEP_DEFINITIONS];
           if (!def) return null;
           
@@ -51,7 +51,10 @@ export function StepPalette({ onAddStep, compact = false }: StepPaletteProps) {
             >
               <div
                 className="step-palette-icon"
-                style={{ backgroundColor: `${color}20`, color }}
+                style={{ 
+                  backgroundColor: `hsl(var(${colorVar}) / 0.15)`, 
+                  color: `hsl(var(${colorVar}))` 
+                }}
               >
                 <Icon size={compact ? 16 : 20} />
               </div>
