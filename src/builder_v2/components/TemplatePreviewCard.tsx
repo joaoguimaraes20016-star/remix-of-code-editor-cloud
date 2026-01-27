@@ -92,26 +92,37 @@ function TemplatePreview({ template }: { template: SectionTemplate }) {
     );
   }
 
-  // Embed templates (calendar, widgets)
-  if (category === 'embed') {
-    if (id.includes('calendar')) {
+  // About Us templates
+  if (category === 'about_us') {
+    if (id.includes('contact')) {
       return (
         <div className="flex flex-col items-center justify-center h-full gap-1">
-          <div className="w-10 h-8 rounded bg-white/20 border border-white/30 grid grid-cols-7 gap-[1px] p-1">
-            {[...Array(14)].map((_, i) => (
-              <div key={i} className="w-1 h-1 rounded-sm bg-white/30" />
+          <div className="h-1.5 w-12 bg-white/70 rounded" />
+          <div className="flex gap-2 mt-1">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="w-2 h-2 rounded-full bg-blue-400/70" />
             ))}
           </div>
-          <div className="h-1 w-8 bg-white/40 rounded" />
         </div>
       );
     }
-    // Empty container
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="w-14 h-10 rounded border-2 border-dashed border-white/30 flex items-center justify-center">
-          <div className="w-4 h-4 text-white/40">+</div>
+    if (id.includes('split')) {
+      return (
+        <div className="flex gap-2 h-full items-center">
+          <div className="w-10 h-8 rounded bg-white/20" />
+          <div className="flex-1 space-y-1">
+            <div className="h-1.5 w-10 bg-white/70 rounded" />
+            <div className="h-1 w-14 bg-white/40 rounded" />
+          </div>
         </div>
+      );
+    }
+    // Default about layout
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-1">
+        <div className="h-1.5 w-16 bg-white/70 rounded" />
+        <div className="h-1 w-20 bg-white/40 rounded" />
+        <div className="w-full h-6 rounded bg-white/20 mt-1" />
       </div>
     );
   }

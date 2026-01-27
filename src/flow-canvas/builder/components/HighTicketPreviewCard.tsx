@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Plus, Star, Calendar, CheckCircle2, Quote, Users, TrendingUp, HelpCircle, Sparkles, Shield } from 'lucide-react';
+import { Plus, Star, Calendar, CheckCircle2, Quote, Users, TrendingUp, HelpCircle, Sparkles, Shield, ChevronDown, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SectionTemplate } from '@/builder_v2/templates/sectionTemplates';
 
@@ -408,37 +408,210 @@ const CTAPreview = React.forwardRef<HTMLDivElement, { variant: string }>(
 );
 CTAPreview.displayName = 'CTAPreview';
 
-// Embed preview
-const EmbedPreview = React.forwardRef<HTMLDivElement, { type: 'calendar' | 'empty' }>(
-  ({ type }, ref) => (
-    <div ref={ref} className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 p-3 flex items-center justify-center">
-      {type === 'calendar' ? (
-        <div className="bg-white/10 rounded-lg p-3 border border-white/10 backdrop-blur">
-          <div className="flex items-center gap-2 mb-2">
-            <Calendar size={14} className="text-blue-400" />
-            <div className="h-1.5 w-16 bg-white/60 rounded" />
-          </div>
-          <div className="grid grid-cols-7 gap-0.5">
-            {Array.from({ length: 21 }).map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "w-2 h-2 rounded-sm",
-                  i === 8 || i === 15 ? "bg-blue-500" : "bg-white/20"
-                )}
-              />
+// About Us preview - 9 variants
+const AboutUsPreview = React.forwardRef<HTMLDivElement, { template: SectionTemplate }>(
+  ({ template }, ref) => {
+    const id = template.id;
+    
+    // Split + Icons: Image left, title + 3 icon features right
+    if (id.includes('split-icons')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex gap-3 items-center">
+          <div className="w-16 h-14 rounded bg-slate-200" />
+          <div className="flex-1 space-y-1.5">
+            <div className="h-2 w-16 bg-slate-700 rounded" />
+            {[
+              'bg-blue-500',
+              'bg-amber-500',
+              'bg-slate-400',
+            ].map((color, i) => (
+              <div key={i} className="flex items-start gap-1.5">
+                <div className={cn("w-2.5 h-2.5 rounded", color)} />
+                <div className="flex-1">
+                  <div className="h-1 w-10 bg-slate-600 rounded mb-0.5" />
+                  <div className="h-0.5 w-14 bg-slate-300 rounded" />
+                </div>
+              </div>
             ))}
           </div>
         </div>
-      ) : (
-        <div className="w-full h-full border-2 border-dashed border-white/20 rounded-lg flex items-center justify-center">
-          <Plus size={20} className="text-white/30" />
+      );
+    }
+    
+    // Split + FAQ: Title + FAQ left, image right
+    if (id.includes('split-faq')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex gap-3 items-center">
+          <div className="flex-1 space-y-1.5">
+            <div className="h-2 w-14 bg-slate-700 rounded" />
+            <div className="h-1 w-16 bg-slate-300 rounded" />
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-slate-50 rounded p-1 border border-slate-100 flex items-center justify-between">
+                <div className="h-1 w-12 bg-slate-500 rounded" />
+                <ChevronDown size={6} className="text-slate-400" />
+              </div>
+            ))}
+          </div>
+          <div className="w-14 h-14 rounded bg-slate-200" />
         </div>
-      )}
-    </div>
-  )
+      );
+    }
+    
+    // Full Image: Blue label + centered title + full-width image
+    if (id.includes('full-image')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="text-[6px] text-blue-500 font-medium">This is us</div>
+          <div className="h-2 w-20 bg-slate-700 rounded" />
+          <div className="h-1 w-24 bg-slate-300 rounded" />
+          <div className="w-full h-10 rounded bg-slate-200 mt-1" />
+        </div>
+      );
+    }
+    
+    // Logos: Centered title + logo bar
+    if (id.includes('logos')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col items-center justify-center gap-1.5">
+          <div className="h-2 w-20 bg-slate-700 rounded" />
+          <div className="h-1 w-24 bg-slate-300 rounded" />
+          <div className="flex gap-2 mt-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="w-6 h-3 rounded bg-slate-200" />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
+    // 2-Column Text
+    if (id.includes('2col-text')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex gap-3 items-start pt-4">
+          <div className="flex-1 space-y-1.5">
+            <div className="h-2 w-10 bg-slate-700 rounded" />
+            <div className="space-y-0.5">
+              <div className="h-0.5 w-full bg-slate-300 rounded" />
+              <div className="h-0.5 w-4/5 bg-slate-300 rounded" />
+              <div className="h-0.5 w-3/4 bg-slate-300 rounded" />
+            </div>
+          </div>
+          <div className="flex-1 space-y-1.5">
+            <div className="space-y-0.5">
+              <div className="h-0.5 w-full bg-slate-400 rounded" />
+              <div className="h-0.5 w-4/5 bg-slate-400 rounded" />
+            </div>
+            <div className="space-y-0.5">
+              <div className="h-0.5 w-full bg-slate-400 rounded" />
+              <div className="h-0.5 w-3/4 bg-slate-400 rounded" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Split + Image: Text left, image right
+    if (id.includes('split-image')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex gap-3 items-center">
+          <div className="flex-1 space-y-1.5">
+            <div className="h-2 w-16 bg-slate-700 rounded" />
+            <div className="space-y-0.5">
+              <div className="h-0.5 w-full bg-slate-300 rounded" />
+              <div className="h-0.5 w-4/5 bg-slate-300 rounded" />
+              <div className="h-0.5 w-3/4 bg-slate-300 rounded" />
+            </div>
+            <div className="space-y-0.5 mt-1">
+              <div className="h-0.5 w-full bg-slate-300 rounded" />
+              <div className="h-0.5 w-4/5 bg-slate-300 rounded" />
+            </div>
+          </div>
+          <div className="w-14 h-14 rounded bg-slate-200" />
+        </div>
+      );
+    }
+    
+    // Contact Info: Contact title + 3 contact rows
+    if (id === 'about-contact-info') {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex gap-3 items-center">
+          <div className="flex-1 space-y-1.5">
+            <div className="text-[6px] text-blue-500 font-medium">This is us</div>
+            <div className="h-2 w-12 bg-slate-700 rounded" />
+            <div className="h-1 w-18 bg-slate-300 rounded" />
+          </div>
+          <div className="flex-1 space-y-1.5">
+            {['mail', 'phone', 'pin'].map((icon) => (
+              <div key={icon} className="flex items-start gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-blue-500" />
+                <div className="flex-1">
+                  <div className="h-1 w-8 bg-slate-600 rounded mb-0.5" />
+                  <div className="h-0.5 w-12 bg-slate-300 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
+    // Contact + Image: Contact info + large image below
+    if (id.includes('contact-image')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col gap-2">
+          <div className="flex gap-2">
+            <div className="flex-1 space-y-1">
+              <div className="text-[6px] text-blue-500 font-medium">This is us</div>
+              <div className="h-1.5 w-10 bg-slate-700 rounded" />
+            </div>
+            <div className="flex-1 space-y-1">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <div className="h-0.5 w-8 bg-slate-400 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="w-full h-8 rounded bg-slate-200 flex-shrink-0" />
+        </div>
+      );
+    }
+    
+    // Contact + Map: Contact info + map below
+    if (id.includes('contact-map')) {
+      return (
+        <div ref={ref} className="w-full h-full bg-white p-3 flex flex-col gap-2">
+          <div className="flex gap-2">
+            <div className="flex-1 space-y-1">
+              <div className="text-[6px] text-blue-500 font-medium">This is us</div>
+              <div className="h-1.5 w-10 bg-slate-700 rounded" />
+            </div>
+            <div className="flex-1 space-y-1">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <div className="h-0.5 w-8 bg-slate-400 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="w-full h-8 rounded bg-green-100 border border-green-200 flex items-center justify-center flex-shrink-0">
+            <MapPin size={10} className="text-green-500" />
+          </div>
+        </div>
+      );
+    }
+    
+    // Fallback
+    return (
+      <div ref={ref} className="w-full h-full bg-white p-3 flex items-center justify-center">
+        <div className="w-10 h-10 rounded bg-slate-200" />
+      </div>
+    );
+  }
 );
-EmbedPreview.displayName = 'EmbedPreview';
+AboutUsPreview.displayName = 'AboutUsPreview';
 
 // Social Proof previews
 const SocialProofPreview = React.forwardRef<HTMLDivElement, { variant: string }>(
@@ -801,8 +974,8 @@ function getPreviewComponent(template: SectionTemplate) {
       if (id.includes('dual')) return <CTAPreview variant="dual" />;
       return <CTAPreview variant="simple" />;
     
-    case 'embed':
-      return <EmbedPreview type={id.includes('calendar') ? 'calendar' : 'empty'} />;
+    case 'about_us':
+      return <AboutUsPreview template={template} />;
     
     case 'social_proof':
       if (id.includes('stars')) return <SocialProofPreview variant="stars" />;
