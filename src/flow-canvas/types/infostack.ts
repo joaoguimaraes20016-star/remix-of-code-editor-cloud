@@ -61,7 +61,7 @@ export type BlockType =
   | 'custom'             // Empty/generic container (use for spacer, divider, faq elements)
   | 'booking'            // Calendar embed container
   | 'application-flow'   // Flow Container: Typeform-style multi-step experience
-  | 'capture-flow-embed' // @deprecated - Use 'application-flow' instead
+  | 'capture-flow-embed' // @deprecated - Use 'application-flow' instead. Kept for backwards compatibility.
   // Section template types - these create full Frame templates
   // They're kept as BlockTypes for backwards compatibility but conceptually are Frame templates
   | 'hero' 

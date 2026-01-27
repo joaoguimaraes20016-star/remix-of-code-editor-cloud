@@ -37,7 +37,7 @@ export const blockTypeLabels: Record<BlockType, string> = {
   custom: 'Content Block',
   booking: 'Booking',
   'application-flow': 'Multi-Step',
-  'capture-flow-embed': 'Multi-Step',  // @deprecated
+  'capture-flow-embed': 'Multi-Step',  // @deprecated - kept for backwards compatibility
   // Section template types (Frame templates)
   hero: 'Hero',
   feature: 'Feature',
