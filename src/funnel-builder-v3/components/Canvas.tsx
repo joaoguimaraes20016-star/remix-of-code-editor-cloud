@@ -7,6 +7,7 @@
 import { Screen, Block, FunnelSettings } from '../types/funnel';
 import { BlockRenderer } from './blocks/BlockRenderer';
 import { SortableBlockWrapper } from './blocks/SortableBlockWrapper';
+import { EmptyCanvasState } from './EmptyCanvasState';
 import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
 import { DeviceMode } from './Toolbar';
@@ -34,6 +35,8 @@ interface CanvasProps {
   previewMode: boolean;
   settings: FunnelSettings;
   deviceMode: DeviceMode;
+  onOpenSectionPicker?: () => void;
+  onQuickAdd?: (type: 'hero' | 'cta' | 'form') => void;
 }
 
 export function Canvas({
@@ -44,6 +47,8 @@ export function Canvas({
   previewMode,
   settings,
   deviceMode,
+  onOpenSectionPicker,
+  onQuickAdd,
 }: CanvasProps) {
   // DnD sensors
   const sensors = useSensors(
@@ -149,7 +154,16 @@ export function Canvas({
         {/* Blocks with DnD */}
         <div className="p-6 space-y-4 pl-10">
           {screen.blocks.length === 0 ? (
-            <EmptyState previewMode={previewMode} />
+            previewMode ? (
+              <div className="builder-v3-empty-page-state">
+                <p className="builder-v3-empty-page-label">This screen is empty</p>
+              </div>
+            ) : (
+              <EmptyCanvasState 
+                onQuickAdd={onQuickAdd || (() => {})}
+                onBrowseAll={onOpenSectionPicker || (() => {})}
+              />
+            )
           ) : (
             <DndContext
               sensors={sensors}
@@ -231,25 +245,6 @@ export function Canvas({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function EmptyState({ previewMode }: { previewMode: boolean }) {
-  if (previewMode) {
-    return (
-      <div className="builder-v3-empty-page-state">
-        <p className="builder-v3-empty-page-label">This screen is empty</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="builder-v3-empty-page-state">
-      <div className="builder-v3-empty-page-add-btn">
-        <Plus className="h-6 w-6" />
-      </div>
-      <p className="builder-v3-empty-page-label">Add blocks from the right panel</p>
     </div>
   );
 }

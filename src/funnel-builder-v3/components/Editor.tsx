@@ -16,6 +16,7 @@ import { Canvas } from './Canvas';
 import { PreviewCanvas } from './PreviewCanvas';
 import { RightPanel } from './RightPanel';
 import { Toolbar, DeviceMode, SaveStatus } from './Toolbar';
+import { SectionPicker } from './SectionPicker';
 import { cn } from '@/lib/utils';
 import { PanelLeftClose, PanelRightClose } from 'lucide-react';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -97,6 +98,9 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
   // Panel collapse state
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  
+  // Section picker state
+  const [sectionPickerOpen, setSectionPickerOpen] = useState(false);
   
   // Save status (for now, track based on isDirty)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -270,6 +274,60 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
     }
   }, [addBlocks, selectedScreenId, selectedBlockId]);
 
+  // Section picker handlers
+  const handleOpenSectionPicker = useCallback(() => {
+    setSectionPickerOpen(true);
+  }, []);
+
+  const handleSectionPickerSelect = useCallback((blockId: string) => {
+    if (!selectedScreenId) return;
+    
+    // Map block ID to BlockType for known types
+    const blockTypeMap: Record<string, BlockType> = {
+      'heading': 'heading',
+      'text': 'text',
+      'button': 'button',
+      'image': 'image',
+      'video': 'video',
+      'divider': 'divider',
+      'spacer': 'spacer',
+      'input': 'input',
+      'choice': 'choice',
+      'embed': 'embed',
+      'icon': 'icon',
+    };
+
+    const blockType = blockTypeMap[blockId];
+    if (blockType) {
+      addBlock(selectedScreenId, blockType, selectedBlockId || undefined);
+    } else {
+      // For template-based blocks, try to get template
+      const blocks = getTemplateBlocks(blockId);
+      if (blocks.length > 0) {
+        addBlocks(selectedScreenId, blocks, selectedBlockId || undefined);
+      }
+    }
+    
+    setSectionPickerOpen(false);
+  }, [addBlock, addBlocks, selectedScreenId, selectedBlockId]);
+
+  const handleQuickAdd = useCallback((type: 'hero' | 'cta' | 'form') => {
+    if (!selectedScreenId) return;
+    
+    // Map quick-add types to default blocks
+    switch (type) {
+      case 'hero':
+        addBlock(selectedScreenId, 'heading', selectedBlockId || undefined);
+        break;
+      case 'cta':
+        addBlock(selectedScreenId, 'button', selectedBlockId || undefined);
+        break;
+      case 'form':
+        addBlock(selectedScreenId, 'input', selectedBlockId || undefined);
+        break;
+    }
+  }, [addBlock, selectedScreenId, selectedBlockId]);
+
   const handleUpdateBlock = useCallback((updates: Partial<Block>) => {
     if (!selectedScreenId || !selectedBlockId) return;
     updateBlock(selectedScreenId, selectedBlockId, updates);
@@ -382,6 +440,8 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
               previewMode={false}
               settings={funnel.settings}
               deviceMode={deviceMode}
+              onOpenSectionPicker={handleOpenSectionPicker}
+              onQuickAdd={handleQuickAdd}
             />
           )}
 
@@ -421,6 +481,13 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
             <PanelRightClose className="h-4 w-4 rotate-180" />
           </button>
         )}
+
+        {/* Section Picker Modal */}
+        <SectionPicker
+          isOpen={sectionPickerOpen}
+          onClose={() => setSectionPickerOpen(false)}
+          onSelectBlock={handleSectionPickerSelect}
+        />
       </div>
     </TooltipProvider>
   );
