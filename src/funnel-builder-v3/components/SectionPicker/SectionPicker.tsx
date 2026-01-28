@@ -1,0 +1,208 @@
+/**
+ * SectionPicker - Perspective-style unified content picker for v3
+ * 
+ * Two main categories:
+ * - Content (display blocks)
+ * - Inputs & Forms (data collection blocks)
+ */
+
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, ChevronRight, Package } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { CategoryIcon } from './CategoryIcon';
+import { ContentBlockGrid } from './ContentBlockGrid';
+import { InputBlockGrid } from './InputBlockGrid';
+
+export interface SectionPickerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelectBlock: (blockId: string) => void;
+}
+
+// Block categories - simplified to just 2 for clarity
+const BLOCK_CATEGORIES = [
+  { id: 'content', label: 'Content', icon: 'text' as const, hint: 'Display only' },
+  { id: 'interactive', label: 'Inputs & Forms', icon: 'sparkles' as const, hint: 'Collects data' },
+] as const;
+
+// Check if category is a block category (shows tile grid)
+function isBlockCategory(categoryId: string): boolean {
+  return categoryId === 'content' || categoryId === 'interactive';
+}
+
+export function SectionPicker({
+  isOpen,
+  onClose,
+  onSelectBlock,
+}: SectionPickerProps) {
+  const [activeCategory, setActiveCategory] = useState<string>('content');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const showBlockGrid = isBlockCategory(activeCategory);
+
+  // Reset to content (blocks) when picker opens
+  useEffect(() => {
+    if (isOpen) {
+      setActiveCategory('content');
+    }
+  }, [isOpen]);
+
+  // Close on escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, onClose]);
+
+  // Close when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 100);
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [isOpen, onClose]);
+
+  const handleAddBlock = (blockId: string) => {
+    onSelectBlock(blockId);
+    onClose();
+  };
+
+  const renderCategoryButton = (
+    category: { id: string; label: string; icon: 'text' | 'sparkles' | 'square' | 'grid' | 'bars' | 'squares' | 'people' | 'quote'; hint?: string },
+    isActive: boolean
+  ) => {
+    return (
+      <button
+        key={category.id}
+        onClick={() => setActiveCategory(category.id)}
+        className={cn(
+          "flex items-center gap-3 w-full px-4 py-3 text-left transition-all rounded-lg mx-2",
+          "hover:bg-gray-50",
+          isActive && "bg-blue-50"
+        )}
+        style={{ width: 'calc(100% - 16px)' }}
+      >
+        <CategoryIcon icon={category.icon} isActive={isActive} />
+        <div className="flex-1">
+          <span className={cn(
+            "block text-sm font-medium",
+            isActive ? "text-blue-600" : "text-gray-900"
+          )}>
+            {category.label}
+          </span>
+          {category.hint && (
+            <span className="block text-[10px] text-gray-400">
+              {category.hint}
+            </span>
+          )}
+        </div>
+        <ChevronRight 
+          size={16} 
+          className={cn(
+            "transition-colors",
+            isActive ? "text-blue-400" : "text-gray-300"
+          )} 
+        />
+      </button>
+    );
+  };
+
+  const getCategoryLabel = () => {
+    return BLOCK_CATEGORIES.find(c => c.id === activeCategory)?.label || 'Blocks';
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        >
+          <motion.div
+            ref={containerRef}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            className={cn(
+              "relative flex overflow-hidden rounded-2xl",
+              "bg-white border border-gray-200",
+              "shadow-2xl",
+              "w-[900px] max-w-[92vw] h-[640px] max-h-[85vh]"
+            )}
+          >
+            {/* Left Panel - Categories */}
+            <div className="w-[260px] flex-shrink-0 border-r border-gray-100 bg-gray-50/50">
+              {/* Blocks Section */}
+              <div className="py-4">
+                <div className="px-6 pb-2">
+                  <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">
+                    Blocks
+                  </span>
+                </div>
+                {BLOCK_CATEGORIES.map((category) => 
+                  renderCategoryButton(category, activeCategory === category.id)
+                )}
+              </div>
+            </div>
+
+            {/* Right Panel - Block Grid */}
+            <div className="flex-1 flex flex-col bg-white">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {getCategoryLabel()}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Click to add to your page
+                  </p>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Content - Block Grid */}
+              <div className="flex-1 overflow-y-auto">
+                {activeCategory === 'content' ? (
+                  <ContentBlockGrid onAddBlock={handleAddBlock} />
+                ) : activeCategory === 'interactive' ? (
+                  <InputBlockGrid onAddBlock={handleAddBlock} />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                    <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
+                      <Package size={28} className="text-gray-400" />
+                    </div>
+                    <p className="text-sm font-medium text-gray-500">
+                      No blocks in this category
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
