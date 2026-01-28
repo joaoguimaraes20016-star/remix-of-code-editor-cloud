@@ -28,6 +28,10 @@ export type ElementType =
   // Extended types for flexibility
   | 'multiple-choice'
   | 'single-choice'
+  // Complex form elements
+  | 'form-group'         // Multi-field form container (name + email + phone)
+  | 'feature-list'       // List of features with icons
+  | 'testimonial'        // Testimonial card with author info
   // Premium elements for high-converting funnels
   | 'gradient-text'      // Text with gradient fill (bold accent phrases)
   | 'underline-text'     // Text with custom styled underline
