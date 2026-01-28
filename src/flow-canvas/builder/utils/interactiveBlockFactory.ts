@@ -82,7 +82,7 @@ export function createInteractiveBlock(blockId: string): Block | null {
 }
 
 /**
- * Multiple Choice Block - Perspective-style clean white cards with radio circles
+ * Multiple Choice Block - Perspective-style blue filled cards with emoji icons
  */
 function createMultipleChoiceBlock(): Block {
   return {
@@ -93,24 +93,14 @@ function createMultipleChoiceBlock(): Block {
       {
         id: generateId(),
         type: 'heading' as ElementType,
-        content: 'What goals do you hope to achieve?',
+        content: 'How did you hear about us?',
         props: {
-          level: 3,
-          fontSize: 'xl',
-          fontWeight: '600',
+          level: 2,
+          fontSize: '2xl',
+          fontWeight: 'bold',
           textAlign: 'center',
           textColor: '#111827',
-          lineHeight: '1.3',
-        }
-      },
-      {
-        id: generateId(),
-        type: 'text' as ElementType,
-        content: '(Multiple choice possible)',
-        props: {
-          fontSize: 'sm',
-          textAlign: 'center',
-          textColor: 'rgba(0, 0, 0, 0.5)',
+          lineHeight: '1.2',
         }
       },
       {
@@ -119,50 +109,34 @@ function createMultipleChoiceBlock(): Block {
         content: '',
         props: {
           options: [
-            { id: generateId(), label: 'Increase number of leads' },
-            { id: generateId(), label: 'Collect more qualified leads' },
-            { id: generateId(), label: 'Streamline lead collection' },
-            { id: generateId(), label: 'Simplify lead management' },
+            { id: generateId(), label: 'Social media', icon: '🎟️' },
+            { id: generateId(), label: 'Word of mouth', icon: '💬' },
+            { id: generateId(), label: 'Advertising', icon: '⭐' },
+            { id: generateId(), label: 'Search engine', icon: '👀' },
           ],
           layout: 'vertical',
-          multiSelect: true,
-          // Perspective-style white cards
-          cardStyle: 'outline',
-          cardBackgroundColor: '#FFFFFF',
-          cardTextColor: '#111827',
-          cardBorderColor: '#E5E7EB',
+          multiSelect: false,
+          // Perspective-style blue filled cards
+          cardStyle: 'filled',
+          cardBackgroundColor: '#2563EB',
+          cardTextColor: '#FFFFFF',
           cardBorderRadius: '16px',
-          cardPadding: '20px 24px',
-          gap: 12,
-          // Radio button on right
-          indicatorPosition: 'right',
-          indicatorStyle: 'circle',
+          cardPadding: '24px 28px',
+          gap: 16,
+          // Icon on left, no indicator
+          showIcon: true,
+          iconPosition: 'left',
+          iconSize: 24,
           hoverEffect: true,
-          hoverBackgroundColor: '#F9FAFB',
-          selectedBorderColor: '#2563EB',
-          selectedBackgroundColor: '#EFF6FF',
-        }
-      },
-      {
-        id: generateId(),
-        type: 'button' as ElementType,
-        content: 'Submit and proceed',
-        props: {
-          variant: 'primary',
-          size: 'lg',
+          hoverBackgroundColor: '#1D4ED8',
+          selectedBackgroundColor: '#1E40AF',
           fullWidth: true,
-          borderRadius: '16px',
-          backgroundColor: '#2563EB',
-          textColor: '#FFFFFF',
-          fontWeight: '600',
-          paddingVertical: 18,
         }
       },
     ],
     props: {
       alignment: 'stretch',
-      gap: 20,
-      maxWidth: '480px',
+      gap: 24,
     }
   };
 }
