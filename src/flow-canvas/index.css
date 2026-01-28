@@ -1750,5 +1750,354 @@
   color: rgba(255, 255, 255, 0.9);
 }
 
+/* ===================================================== */
+/* PERSPECTIVE-STYLE CLEAN LAYOUTS - Gap-based, no spacers */
+/* ===================================================== */
+
+/* Clean gap-based stack layout */
+.perspective-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--block-gap, 20px);
+}
+
+.perspective-stack-horizontal {
+  display: flex;
+  flex-direction: row;
+  gap: var(--block-gap, 20px);
+  flex-wrap: wrap;
+}
+
+/* Remove spacer visibility in runtime - spacers should be invisible */
+.flow-canvas-runtime .spacer-placeholder,
+.funnel-runtime .spacer-placeholder {
+  display: none;
+}
+
+/* Perspective-style choice cards - Vibrant blue with hover */
+.perspective-choice-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: #2563EB;
+  color: white;
+  font-weight: 500;
+  font-size: 15px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.perspective-choice-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  background: #1D4ED8;
+}
+
+.perspective-choice-card:active {
+  transform: translateY(0);
+}
+
+.perspective-choice-card.selected {
+  background: #1E40AF;
+  box-shadow: 0 0 0 2px #FFFFFF, 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.perspective-choice-card-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* Perspective-style image choice cards */
+.perspective-image-choice {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #FFFFFF;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.perspective-image-choice:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.perspective-image-choice.selected {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2), 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.perspective-image-choice img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+}
+
+.perspective-image-choice-label {
+  padding: 12px 16px;
+  font-weight: 500;
+  color: #111827;
+  text-align: center;
+}
+
+/* Clean form inputs - Perspective style */
+.perspective-input {
+  width: 100%;
+  padding: 16px 20px;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  font-size: 16px;
+  background: #FFFFFF;
+  color: #111827;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.perspective-input::placeholder {
+  color: #9CA3AF;
+}
+
+.perspective-input:focus {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+.perspective-input:hover:not(:focus) {
+  border-color: #D1D5DB;
+}
+
+/* Perspective-style textarea */
+.perspective-textarea {
+  width: 100%;
+  padding: 16px 20px;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  font-size: 16px;
+  background: #FFFFFF;
+  color: #111827;
+  resize: vertical;
+  min-height: 120px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.perspective-textarea:focus {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+/* Perspective-style button */
+.perspective-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 32px;
+  border-radius: 12px;
+  background: #2563EB;
+  color: #FFFFFF;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.perspective-button:hover {
+  background: #1D4ED8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+}
+
+.perspective-button:active {
+  transform: translateY(0);
+}
+
+.perspective-button.full-width {
+  width: 100%;
+}
+
+.perspective-button.secondary {
+  background: #F3F4F6;
+  color: #111827;
+}
+
+.perspective-button.secondary:hover {
+  background: #E5E7EB;
+}
+
+/* Perspective-style divider */
+.perspective-divider {
+  width: 80%;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+}
+
+/* Perspective-style upload zone */
+.perspective-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  border: 2px dashed #E5E7EB;
+  border-radius: 12px;
+  background: #F9FAFB;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  gap: 12px;
+}
+
+.perspective-upload-zone:hover {
+  border-color: #2563EB;
+  background: rgba(37, 99, 235, 0.02);
+}
+
+.perspective-upload-zone-icon {
+  color: #9CA3AF;
+  width: 32px;
+  height: 32px;
+}
+
+.perspective-upload-zone-text {
+  color: #6B7280;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Perspective-style FAQ accordion */
+.perspective-faq-item {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.perspective-faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  font-weight: 500;
+  color: #111827;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.perspective-faq-question:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.perspective-faq-answer {
+  padding: 0 20px 16px 20px;
+  color: rgba(0, 0, 0, 0.7);
+  line-height: 1.6;
+}
+
+/* Perspective-style placeholder states */
+.perspective-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  border: 2px dashed rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.02);
+  color: #9CA3AF;
+  text-align: center;
+  gap: 8px;
+}
+
+.perspective-placeholder-icon {
+  width: 40px;
+  height: 40px;
+  opacity: 0.5;
+}
+
+.perspective-placeholder-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Dark mode adaptations */
+.dark .perspective-choice-card {
+  background: #3B82F6;
+}
+
+.dark .perspective-choice-card:hover {
+  background: #2563EB;
+}
+
+.dark .perspective-input,
+.dark .perspective-textarea {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #F9FAFB;
+}
+
+.dark .perspective-input::placeholder,
+.dark .perspective-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.dark .perspective-input:focus,
+.dark .perspective-textarea:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.dark .perspective-divider {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark .perspective-upload-zone {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .perspective-upload-zone:hover {
+  border-color: #3B82F6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.dark .perspective-faq-item {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dark .perspective-faq-question {
+  color: #F9FAFB;
+}
+
+.dark .perspective-faq-question:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dark .perspective-faq-answer {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dark .perspective-placeholder {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.dark .perspective-image-choice {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark .perspective-image-choice-label {
+  color: #F9FAFB;
+}
+
 /* ===== Mobile-First Builder Styles ===== */
 @import './builder/styles/mobile.css';
