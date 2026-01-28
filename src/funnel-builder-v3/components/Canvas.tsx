@@ -1,14 +1,30 @@
 /**
  * Funnel Builder v3 - Canvas (Preview Area)
  * Multi-device support: Mobile, Tablet, Desktop frames
- * Dark charcoal theme matching flow-canvas aesthetic
+ * Drag-and-drop block reordering with dnd-kit
  */
 
 import { Screen, Block, FunnelSettings } from '../types/funnel';
 import { BlockRenderer } from './blocks/BlockRenderer';
+import { SortableBlockWrapper } from './blocks/SortableBlockWrapper';
 import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
 import { DeviceMode } from './Toolbar';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 interface CanvasProps {
   screen: Screen | null;
@@ -29,6 +45,36 @@ export function Canvas({
   settings,
   deviceMode,
 }: CanvasProps) {
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement before drag starts
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id && screen) {
+      const oldIndex = screen.blocks.findIndex(b => b.id === active.id);
+      const newIndex = screen.blocks.findIndex(b => b.id === over.id);
+      
+      const newOrder = arrayMove(
+        screen.blocks.map(b => b.id),
+        oldIndex,
+        newIndex
+      );
+      
+      onReorderBlocks(newOrder);
+    }
+  };
+
   if (!screen) {
     return (
       <div 
@@ -73,6 +119,9 @@ export function Canvas({
     }
   };
 
+  // Block IDs for sortable context
+  const blockIds = screen.blocks.map(b => b.id);
+
   // Shared screen content component
   const ScreenContent = () => (
     <div 
@@ -97,21 +146,38 @@ export function Canvas({
           </div>
         )}
 
-        {/* Blocks */}
-        <div className="p-6 space-y-4">
+        {/* Blocks with DnD */}
+        <div className="p-6 space-y-4 pl-10">
           {screen.blocks.length === 0 ? (
             <EmptyState previewMode={previewMode} />
           ) : (
-            screen.blocks.map((block) => (
-              <BlockRenderer
-                key={block.id}
-                block={block}
-                isSelected={block.id === selectedBlockId}
-                onSelect={() => onSelectBlock(block.id)}
-                previewMode={previewMode}
-                primaryColor={settings.primaryColor}
-              />
-            ))
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={blockIds}
+                strategy={verticalListSortingStrategy}
+              >
+                {screen.blocks.map((block) => (
+                  <SortableBlockWrapper
+                    key={block.id}
+                    id={block.id}
+                    isSelected={block.id === selectedBlockId}
+                    previewMode={previewMode}
+                  >
+                    <BlockRenderer
+                      block={block}
+                      isSelected={block.id === selectedBlockId}
+                      onSelect={() => onSelectBlock(block.id)}
+                      previewMode={previewMode}
+                      primaryColor={settings.primaryColor}
+                    />
+                  </SortableBlockWrapper>
+                ))}
+              </SortableContext>
+            </DndContext>
           )}
         </div>
       </div>
