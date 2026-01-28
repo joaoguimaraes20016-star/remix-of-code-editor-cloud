@@ -390,8 +390,10 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
             <RightPanel
               screen={selectedScreen}
               block={selectedBlock}
+              funnelSettings={funnel.settings}
               onUpdateScreen={(updates) => selectedScreenId && updateScreen(selectedScreenId, updates)}
               onUpdateBlock={handleUpdateBlock}
+              onUpdateSettings={updateSettings}
               onAddBlock={handleAddBlock}
               onDeleteBlock={handleDeleteBlock}
               onDuplicateBlock={handleDuplicateBlock}
