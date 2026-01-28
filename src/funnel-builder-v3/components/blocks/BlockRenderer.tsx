@@ -74,11 +74,11 @@ export function BlockRenderer({
   return (
     <div
       className={cn(
-        'relative transition-all rounded-lg',
+        'builder-v3-selectable relative transition-all rounded-lg',
         !previewMode && 'cursor-pointer',
-        !previewMode && isSelected && 'ring-2 ring-primary ring-offset-2',
-        !previewMode && !isSelected && 'hover:ring-2 hover:ring-muted-foreground/20'
+        isSelected && 'builder-v3-selected'
       )}
+      data-selected={isSelected || undefined}
       onClick={previewMode ? undefined : onSelect}
     >
       {getBlockComponent()}

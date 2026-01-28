@@ -113,7 +113,7 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
   }, [previewMode]);
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-[hsl(var(--builder-v3-bg))]" data-theme="builder">
       <Toolbar
         funnelName={funnel.name}
         previewMode={previewMode}
@@ -124,7 +124,7 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
         onBack={onBack}
       />
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden bg-[hsl(var(--builder-v3-canvas-bg))]">
         {/* Left Panel - Screen List */}
         {!previewMode && (
           <LeftPanel
