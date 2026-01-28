@@ -3643,6 +3643,82 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         );
       }
 
+      // ===============================================
+      // MULTIPLE CHOICE / SINGLE CHOICE - Perspective-style cards
+      // ===============================================
+      case 'multiple-choice':
+      case 'single-choice': {
+        const options = (element.props?.options as Array<{
+          id: string;
+          label: string;
+          icon?: string;
+          imageUrl?: string;
+        }>) || [];
+        
+        const layout = (element.props?.layout as string) || 'vertical';
+        const cardBg = (element.props?.cardBackgroundColor as string) || '#2563EB';
+        const cardTextColor = (element.props?.cardTextColor as string) || '#FFFFFF';
+        const cardRadius = (element.props?.cardBorderRadius as string) || '16px';
+        const gap = (element.props?.gap as number) || 16;
+        
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType={element.type}
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div 
+              className={cn(
+                'w-full',
+                layout === 'grid' ? 'grid grid-cols-2' : 'flex flex-col'
+              )}
+              style={{ gap: `${gap}px` }}
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            >
+              {options.length > 0 ? options.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={cn(
+                    'flex items-center gap-4 w-full text-left transition-all duration-200',
+                    'hover:opacity-90 hover:scale-[1.01]',
+                    'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                  )}
+                  style={{
+                    backgroundColor: cardBg,
+                    color: cardTextColor,
+                    borderRadius: cardRadius,
+                    padding: '24px 28px',
+                    fontWeight: 500,
+                    fontSize: '16px',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  {option.icon && (
+                    <span className="text-2xl flex-shrink-0">{option.icon}</span>
+                  )}
+                  <span className="font-medium">{option.label}</span>
+                </button>
+              )) : (
+                // Fallback if no options defined
+                <div className="text-center text-muted-foreground py-8 text-sm">
+                  No choices configured
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
       default: {
         // Format element type for display: "multiple-choice" → "Multiple Choice"
         const formatElementType = (type: string): string => 
@@ -3668,7 +3744,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
             {/* Styled fallback for unknown element types */}
             <div 
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors",
+                "flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors font-sans",
                 isDarkTheme 
                   ? "bg-gray-800/50 border-gray-700/50 hover:border-gray-600" 
                   : "bg-gray-50 border-gray-200 hover:border-gray-300"

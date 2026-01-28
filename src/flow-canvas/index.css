@@ -471,13 +471,18 @@
       0 0 80px -20px hsl(var(--builder-accent) / 0.15);
   }
   
-  /* Ensure font cascades to all device frame content */
+  /* Force Inter font on ALL canvas/device content - Perspective style */
+  .device-frame,
   .device-frame *,
   .device-frame button,
   .device-frame input,
   .device-frame textarea,
-  .device-frame select {
-    font-family: inherit;
+  .device-frame select,
+  [data-canvas-element],
+  [data-canvas-element] * {
+    font-family: var(--font-sans) !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
   }
   
   /* Inner content wrapper clips overflow but allows positioned toolbars */
