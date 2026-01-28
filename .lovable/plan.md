@@ -1,241 +1,197 @@
 
 # Make Section Templates Display Like Perspective
 
-## Summary
+## Problem Summary
 
-Currently, section templates use element types like `logo_bar`, `rating_display`, `feature_list`, and `faq_accordion` that aren't properly recognized by the template converter or rendered by CanvasRenderer. This causes templates to display incorrectly or with placeholder content.
+When section templates (Hero + Logos, etc.) are added to the canvas, they don't match the polished preview cards. The key issues:
 
-This plan upgrades the rendering pipeline to create polished, Perspective-style displays for all section template elements.
+1. **Logo bars show placeholder icons** instead of Perspective-style text wordmarks (like "Coca-Cola", "Zalando")
+2. **Props aren't being passed through** - `templateConverter.ts` correctly sets `showTextFallback: true`, but both renderers don't pass it to `LogoMarquee`
+3. **Avatar group ratings** work but could be more polished
+4. **Missing visual refinements** for professional appearance
 
 ---
 
-## Problem Analysis
+## Root Cause Analysis
 
 ```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                    Current Data Flow (Broken)                       │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  Section Template                Template Converter                 │
-│  ┌─────────────────┐            ┌─────────────────┐                │
-│  │ type: logo_bar  │ ─────────> │ maps to: text   │ ─> Wrong!      │
-│  │ type: rating_   │            │                 │                │
-│  │   display       │            │ (unrecognized)  │                │
-│  └─────────────────┘            └─────────────────┘                │
-│                                                                     │
-│                                        │                            │
-│                                        ▼                            │
-│                               CanvasRenderer                        │
-│                               ┌─────────────────┐                   │
-│                               │ case 'text':    │                   │
-│                               │   render plain  │ ─> No visual!    │
-│                               │   text (wrong)  │                   │
-│                               └─────────────────┘                   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+templateConverter.ts                    CanvasRenderer.tsx
+┌────────────────────────┐              ┌─────────────────────────┐
+│ type: 'logo-marquee'   │              │ <LogoMarquee            │
+│ props: {               │   ──────>    │   logos={...}           │
+│   logos: [{name: ...}] │              │   animated={...}        │
+│   showTextFallback: ✅ │              │   speed={...}           │
+│   grayscale: true      │              │   // showTextFallback   │
+│ }                      │              │   // ❌ NOT PASSED!     │
+└────────────────────────┘              └─────────────────────────┘
 ```
 
----
-
-## Solution Overview
-
-### 1. Update Template Converter Mappings
-
-Add proper element type recognition for all template-specific node types:
-
-| Node Type | Should Map To | Description |
-|-----------|---------------|-------------|
-| `logo_bar` | `logo-bar` | Company logo strip |
-| `rating_display` | `rating-display` | Star rating with count |
-| `feature_list` | `feature-list` | Icon + text features |
-| `faq_accordion` | `faq-accordion` | Collapsible Q&A |
-| `testimonial_card` | `testimonial` | Quote with avatar |
-| `form_group` | `form-group` | Multi-field form |
-
-### 2. Add Canvas Renderer Cases
-
-Create high-fidelity visual rendering for each element type:
-
-**Logo Bar (Perspective-style)**
-- Grayscale logos with hover color effect
-- Smooth marquee animation option
-- Proper spacing and alignment
-
-**Rating Display (Perspective-style)**
-- Overlapping avatar group
-- Gold star rating with gradient
-- "4.8 from 148 reviews" format
-
-**Feature List (Perspective-style)**
-- Colored icon circles
-- Bold titles with descriptions
-- Consistent spacing
-
-### 3. Enhance CSS Styling
-
-Add/refine premium CSS classes for polished animations and effects.
+The `showTextFallback` prop is correctly set in the template data, but neither renderer passes it to the LogoMarquee component.
 
 ---
 
-## File Changes
+## Implementation Plan
 
-### 1. Template Converter (`src/flow-canvas/builder/utils/templateConverter.ts`)
+### 1. Fix CanvasRenderer.tsx - Pass Missing Props
 
-**Add new element type mappings:**
+**File:** `src/flow-canvas/builder/components/CanvasRenderer.tsx`
+
+Pass `showTextFallback` to the LogoMarquee component:
 
 ```typescript
-function mapNodeTypeToElementType(nodeType: string): ElementType {
-  const mapping: Record<string, ElementType> = {
-    // Existing mappings...
-    'heading': 'heading',
-    'paragraph': 'text',
-    'cta_button': 'button',
-    'image': 'image',
-    
-    // NEW: Template-specific element types
-    'logo_bar': 'logo-bar',
-    'rating_display': 'rating-display',
-    'feature_list': 'feature-list',
-    'faq_accordion': 'faq-accordion',
-    'testimonial_card': 'testimonial',
-    'form_group': 'form-group',
-    'form_input': 'input',
+<LogoMarquee
+  logos={logos}
+  animated={element.props?.animated !== false}
+  speed={element.props?.speed as number || 30}
+  direction={(element.props?.direction as 'left' | 'right') || 'left'}
+  pauseOnHover={element.props?.pauseOnHover !== false}
+  grayscale={element.props?.grayscale !== false}
+  logoHeight={element.props?.logoHeight as number || 40}
+  gap={element.props?.gap as number || 48}
+  showTextFallback={element.props?.showTextFallback === true}  // ADD THIS
+  hoverEffect={(element.props?.hoverEffect as 'none' | 'color' | 'scale' | 'both') || 'color'}  // ADD THIS
+  isBuilder={true}
+  onLogosChange={...}
+/>
+```
+
+### 2. Fix FlowCanvasRenderer.tsx - Pass Missing Props
+
+**File:** `src/flow-canvas/components/FlowCanvasRenderer.tsx`
+
+Same fix for runtime rendering:
+
+```typescript
+<LogoMarquee
+  logos={logos}
+  animated={element.props?.animated !== false}
+  speed={element.props?.speed as number || 30}
+  direction={(element.props?.direction as 'left' | 'right') || 'left'}
+  pauseOnHover={element.props?.pauseOnHover !== false}
+  grayscale={element.props?.grayscale !== false}
+  logoHeight={element.props?.logoHeight as number || 40}
+  gap={element.props?.gap as number || 48}
+  showTextFallback={element.props?.showTextFallback === true}  // ADD THIS
+  hoverEffect={(element.props?.hoverEffect as 'none' | 'color' | 'scale' | 'both') || 'color'}  // ADD THIS
+/>
+```
+
+### 3. Enhance Template Defaults in templateConverter.ts
+
+**File:** `src/flow-canvas/builder/utils/templateConverter.ts`
+
+Improve the default logo bar configuration:
+
+```typescript
+if (node.type === 'logo_bar') {
+  const logos = (node.props?.logos as string[]) || ['Coca-Cola', 'Zalando', 'Braun', 'IKEA', 'Sony'];
+  return {
+    id: generateId(),
+    type: 'logo-marquee',
+    content: '',
+    props: {
+      logos: logos.map((name, i) => ({ id: `logo-${i}`, src: '', alt: name, name })),
+      speed: 25,
+      pauseOnHover: true,
+      grayscale: true,
+      showTextFallback: true,
+      hoverEffect: 'color',      // ADD: Professional hover effect
+      logoHeight: 32,            // ADD: Refined sizing
+      gap: 40,                   // ADD: Better spacing
+      animated: false,           // ADD: Static by default for cleaner look
+    },
   };
-  return mapping[nodeType] || 'text';
 }
 ```
 
-**Update element type recognition:**
+### 4. Enhance Rating Display Defaults
+
+**File:** `src/flow-canvas/builder/utils/templateConverter.ts`
+
+Make rating display match Perspective more closely:
 
 ```typescript
-function isElementType(nodeType: string): boolean {
-  const elementTypes = [
-    // Existing...
-    'heading', 'paragraph', 'cta_button', 'image',
-    
-    // NEW
-    'logo_bar', 'rating_display', 'feature_list',
-    'faq_accordion', 'testimonial_card', 'form_group', 'form_input'
-  ];
-  return elementTypes.includes(nodeType);
+if (node.type === 'rating_display') {
+  return {
+    id: generateId(),
+    type: 'avatar-group',
+    content: '',
+    props: {
+      count: 4,
+      size: 'sm',
+      colorMode: 'varied',
+      overlap: 10,
+      showRating: true,
+      rating: (node.props?.rating as number) || 4.8,
+      ratingCount: (node.props?.count as number) || 148,
+      ratingSource: (node.props?.source as string) || 'reviews',
+      alignment: 'center',       // ADD: Center alignment
+    },
+  };
 }
 ```
 
----
+### 5. Add CSS Refinements
 
-### 2. Canvas Renderer (`src/flow-canvas/builder/components/CanvasRenderer.tsx`)
+**File:** `src/flow-canvas/index.css`
 
-**Add rendering case for `logo-bar`:**
-
-Perspective-style logo bar with:
-- Text-based logo placeholders (e.g., "Zalando", "Braun", "IKEA")
-- Grayscale by default, color on hover
-- Proper spacing and alignment
-
-**Add rendering case for `rating-display`:**
-
-Perspective-style rating with:
-- Avatar group (4 overlapping circles)
-- 5 gold stars
-- "4.8 from 148 reviews" text
-
-**Add rendering case for `feature-list`:**
-
-Professional feature cards with:
-- Colored icon containers
-- Bold title + description
-- Consistent spacing
-
----
-
-### 3. CSS Enhancements (`src/flow-canvas/index.css`)
-
-**Logo Bar Styling:**
+Add polished styles for Perspective-like appearance:
 
 ```css
-.perspective-logo-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 32px;
-  padding: 16px 0;
-}
-
-.perspective-logo {
-  font-size: 18px;
+/* Perspective-style logo wordmarks */
+.perspective-logo-text {
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: rgba(0, 0, 0, 0.4);
-  transition: color 0.2s ease;
+  color: rgba(107, 114, 128, 0.6);
+  transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
-.perspective-logo:hover {
-  color: rgba(0, 0, 0, 0.8);
+.perspective-logo-text:hover {
+  color: rgba(17, 24, 39, 0.9);
 }
-```
 
-**Rating Display Styling:**
-
-```css
-.perspective-rating {
+/* Refined rating display */
+.perspective-rating-display {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
 }
 
-.perspective-stars {
+.perspective-rating-stars {
   display: flex;
   gap: 2px;
 }
 
-.perspective-star {
-  color: #FACC15;
-  fill: #FACC15;
-}
-
 .perspective-rating-text {
   font-size: 14px;
+  font-weight: 500;
   color: rgba(0, 0, 0, 0.6);
 }
 ```
 
 ---
 
-## Visual Quality Targets
+## Files to Modify
 
-### Logo Bar
-- Clean typography matching Perspective's wordmarks
-- Proper opacity (40% base, 80% hover)
-- Consistent 32px gap
-- Optional grayscale mode
-
-### Rating Display
-- Overlapping avatars (4 circles, -8px overlap)
-- Gold star icons (not yellow - #FACC15)
-- Professional text formatting ("4.8 from 148 reviews")
-- Centered layout
-
-### Images in Templates
-- Proper aspect ratio containers
-- Placeholder styling when no image set
-- Rounded corners matching Perspective
+| File | Changes |
+|------|---------|
+| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Pass `showTextFallback` and `hoverEffect` props to LogoMarquee |
+| `src/flow-canvas/components/FlowCanvasRenderer.tsx` | Pass `showTextFallback` and `hoverEffect` props to LogoMarquee |
+| `src/flow-canvas/builder/utils/templateConverter.ts` | Enhance logo bar and rating display defaults |
+| `src/flow-canvas/index.css` | Add refined CSS for Perspective-style elements |
 
 ---
 
-## Implementation Order
+## Visual Result
 
-1. **Update templateConverter.ts** - Add all node type mappings
-2. **Add CanvasRenderer cases** - Rating display, logo bar, feature list
-3. **Enhance CSS** - Perspective-style classes
-4. **Test all templates** - Verify each category renders correctly
+**Before:**
+- Logo bars show gray placeholder image icons
+- Templates look generic and unpolished
 
----
-
-## Result
-
-After implementation:
-- Hero + Reviews template shows avatars, stars, and rating text
-- Hero + Logos template shows clean wordmark-style logos
-- All section templates render with Perspective-quality visuals
-- Consistent styling between editor and published funnel
+**After:**
+- Logo bars display clean text wordmarks: "Coca-Cola • Zalando • Braun • IKEA • Sony"
+- Grayscale text that becomes full opacity on hover
+- Professional typography and spacing
+- Matches Perspective's clean aesthetic
