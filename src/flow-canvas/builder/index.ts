@@ -50,6 +50,7 @@ export { AddSectionPopover } from './components/AddSectionPopover';
 export { BlockActionBar } from './components/BlockActionBar';
 export { InlineTextEditor } from './components/InlineTextEditor';
 export { RichTextToolbar } from './components/RichTextToolbar';
+export { SectionPicker } from './components/SectionPicker';
 
 // ─────────────────────────────────────────────────────────
 // BUTTON ACTION SELECTOR (Phase 8)
@@ -98,6 +99,7 @@ export * from './utils/helpers';
 export * from './utils/textHighlight';
 export * from './utils/selectionManager';
 export { backgroundColorPresets, textColorPresets, elementColorPresets, highlightPresets, gradientPresets } from './utils/presets';
+export { createBlock, isValidBlockId, getAllBlockIds } from './utils/blockFactory';
 
 // ─────────────────────────────────────────────────────────
 // TYPES (re-exported from types folder)
