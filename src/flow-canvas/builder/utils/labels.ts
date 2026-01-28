@@ -98,6 +98,10 @@ export const elementTypeLabels: Record<ElementType, string> = {
   link: 'Link',
   'multiple-choice': 'Multiple Choice',
   'single-choice': 'Single Choice',
+  // Complex form elements
+  'form-group': 'Form Fields',
+  'feature-list': 'Feature List',
+  testimonial: 'Testimonial',
   // Premium element types
   'gradient-text': 'Gradient Text',
   'underline-text': 'Underline Text',

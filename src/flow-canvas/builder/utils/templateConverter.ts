@@ -59,10 +59,10 @@ function mapNodeTypeToElementType(nodeType: string): ElementType {
     // Template-specific element types (Perspective-style)
     'logo_bar': 'logo-marquee',
     'rating_display': 'avatar-group', // Uses avatar-group with rating display
-    'feature_list': 'text',
+    'feature_list': 'feature-list',   // Now uses dedicated feature-list type
     'faq_accordion': 'faq',
-    'testimonial_card': 'text',
-    'form_group': 'input',
+    'testimonial_card': 'testimonial', // Now uses dedicated testimonial type
+    'form_group': 'form-group',        // Now uses dedicated form-group type
     'form_input': 'input',
   };
   return mapping[nodeType] || 'text';
@@ -123,6 +123,74 @@ function nodeToElement(node: CanvasNode): Element {
         ratingCount: (node.props?.count as number) || 148,
         ratingSource: (node.props?.source as string) || 'reviews',
         alignment: 'center',
+      },
+    };
+  }
+  
+  // Handle form_group with multi-field structure
+  if (node.type === 'form_group') {
+    const fields = (node.props?.fields as Array<{
+      type: string;
+      placeholder: string;
+      required?: boolean;
+    }>) || [
+      { type: 'text', placeholder: 'Your name', required: true },
+      { type: 'email', placeholder: 'Your email', required: true },
+    ];
+    
+    return {
+      id: generateId(),
+      type: 'form-group',
+      content: '',
+      props: {
+        fields: fields.map((field, i) => ({
+          id: `field-${generateId()}-${i}`,
+          type: field.type,
+          placeholder: field.placeholder,
+          required: field.required ?? false,
+          fieldKey: `form_${field.type}_${i}`,
+        })),
+        layout: 'vertical',
+        gap: 12,
+      },
+    };
+  }
+  
+  // Handle feature_list with icon + text structure
+  if (node.type === 'feature_list') {
+    const features = (node.props?.items as string[]) || 
+                     (node.props?.features as string[]) || 
+                     ['Feature 1', 'Feature 2', 'Feature 3'];
+    
+    return {
+      id: generateId(),
+      type: 'feature-list',
+      content: '',
+      props: {
+        items: features.map((text, i) => ({
+          id: `feature-${generateId()}-${i}`,
+          text: typeof text === 'string' ? text : (text as { text?: string })?.text || 'Feature',
+          icon: 'Check',
+        })),
+        iconColor: '#22C55E',
+        layout: 'vertical',
+        gap: 8,
+      },
+    };
+  }
+  
+  // Handle testimonial_card with author info
+  if (node.type === 'testimonial_card') {
+    return {
+      id: generateId(),
+      type: 'testimonial',
+      content: (node.props?.quote as string) || (node.props?.content as string) || 'Great product!',
+      props: {
+        author: (node.props?.author as string) || 'John Doe',
+        role: (node.props?.role as string) || (node.props?.title as string) || 'CEO',
+        company: (node.props?.company as string) || 'Company',
+        avatar: (node.props?.avatar as string) || '',
+        rating: (node.props?.rating as number) || 5,
       },
     };
   }
