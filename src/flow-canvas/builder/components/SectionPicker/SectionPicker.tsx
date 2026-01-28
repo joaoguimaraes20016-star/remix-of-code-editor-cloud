@@ -23,13 +23,13 @@ export interface SectionPickerProps {
   onSelectTemplate: (templateId: string) => void;
 }
 
-// Block categories (basic elements) - show tile grid
+// Block categories - Simplified mental model
 const BLOCK_CATEGORIES = [
-  { id: 'content', label: 'Basic blocks', icon: 'text' as const },
-  { id: 'interactive', label: 'Interactive blocks', icon: 'sparkles' as const },
+  { id: 'content', label: 'Content', icon: 'text' as const, hint: 'Display only' },
+  { id: 'interactive', label: 'Inputs & Forms', icon: 'sparkles' as const, hint: 'Collects data' },
 ] as const;
 
-// Section categories (full sections) - show template gallery
+// Section categories (full templates) - show template gallery
 const SECTION_CATEGORIES = [
   { id: 'hero', label: 'Hero', icon: 'square' as const },
   { id: 'features', label: 'Features', icon: 'grid' as const },
