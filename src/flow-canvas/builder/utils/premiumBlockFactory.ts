@@ -149,18 +149,10 @@ function createAvatarGroupBlock(): Block {
       type: 'avatar-group' as ElementType,
       content: '',
       props: {
-        avatars: [
-          { initials: 'JD', gradient: ['#8B5CF6', '#6366F1'] },
-          { initials: 'SK', gradient: ['#EC4899', '#F43F5E'] },
-          { initials: 'MR', gradient: ['#14B8A6', '#22C55E'] },
-          { initials: 'AL', gradient: ['#F97316', '#EAB308'] },
-          { initials: 'TC', gradient: ['#3B82F6', '#6366F1'] }
-        ],
-        size: 40,
-        overlap: -12,
-        borderColor: '#FFFFFF',
-        borderWidth: 2,
-        showCount: false,
+        count: 5,
+        size: 'md',
+        colorMode: 'varied',
+        overlap: 12,
         alignment: 'center'
       }
     }],
@@ -182,16 +174,17 @@ function createTickerBlock(): Block {
     elements: [{
       id: generateId(),
       type: 'ticker' as ElementType,
-      content: 'Featured in Forbes • Inc Magazine • TechCrunch • Entrepreneur • Business Insider',
+      content: '',
       props: {
+        items: ['Featured in Forbes', 'Inc Magazine', 'TechCrunch', 'Entrepreneur', 'Business Insider'],
         speed: 30,
         direction: 'left',
         pauseOnHover: true,
         textColor: '#6B7280',
         fontSize: 'sm',
-        fontWeight: '500',
-        letterSpacing: '0.05em',
-        separator: ' • ',
+        fontWeight: 'medium',
+        letterSpacing: 0.05,
+        separator: '  •  ',
         backgroundColor: 'transparent'
       }
     }],

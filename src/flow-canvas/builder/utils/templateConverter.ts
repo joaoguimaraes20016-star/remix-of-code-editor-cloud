@@ -56,6 +56,14 @@ function mapNodeTypeToElementType(nodeType: string): ElementType {
     'option_grid': 'multiple-choice',
     'calendar_embed': 'video', // Placeholder
     'info_card': 'text',
+    // Template-specific element types (Perspective-style)
+    'logo_bar': 'logo-marquee',
+    'rating_display': 'avatar-group', // Uses avatar-group with rating display
+    'feature_list': 'text',
+    'faq_accordion': 'faq',
+    'testimonial_card': 'text',
+    'form_group': 'input',
+    'form_input': 'input',
   };
   return mapping[nodeType] || 'text';
 }
@@ -66,7 +74,10 @@ function isElementType(nodeType: string): boolean {
     'heading', 'paragraph', 'text', 'cta_button', 'button', 
     'image', 'video', 'video_embed', 'spacer', 'divider',
     'email_input', 'phone_input', 'text_input', 'option_grid',
-    'calendar_embed', 'info_card'
+    'calendar_embed', 'info_card',
+    // Template-specific types
+    'logo_bar', 'rating_display', 'feature_list',
+    'faq_accordion', 'testimonial_card', 'form_group', 'form_input'
   ];
   return elementTypes.includes(nodeType);
 }
@@ -74,12 +85,48 @@ function isElementType(nodeType: string): boolean {
 // Convert a CanvasNode to an Element
 function nodeToElement(node: CanvasNode): Element {
   const elementType = mapNodeTypeToElementType(node.type);
+  const baseProps = { ...node.props };
+  
+  // Special handling for template-specific types to add Perspective-style defaults
+  if (node.type === 'logo_bar') {
+    const logos = (node.props?.logos as string[]) || ['Coca-Cola', 'Zalando', 'Braun', 'IKEA', 'Sony'];
+    return {
+      id: generateId(),
+      type: 'logo-marquee',
+      content: '',
+      props: {
+        logos: logos.map((name, i) => ({ id: `logo-${i}`, src: '', alt: name, name })),
+        speed: 25,
+        pauseOnHover: true,
+        grayscale: true,
+        showTextFallback: true,
+      },
+    };
+  }
+  
+  if (node.type === 'rating_display') {
+    return {
+      id: generateId(),
+      type: 'avatar-group',
+      content: '',
+      props: {
+        count: 4,
+        size: 'sm',
+        colorMode: 'varied',
+        overlap: 10,
+        showRating: true,
+        rating: (node.props?.rating as number) || 4.8,
+        ratingCount: (node.props?.count as number) || 148,
+        ratingSource: (node.props?.source as string) || 'reviews',
+      },
+    };
+  }
   
   return {
     id: generateId(),
     type: elementType,
     content: (node.props?.content as string) || (node.props?.text as string) || '',
-    props: { ...node.props },
+    props: baseProps,
   };
 }
 

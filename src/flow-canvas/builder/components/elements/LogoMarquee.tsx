@@ -9,6 +9,7 @@ export interface LogoMarqueeProps {
     src: string;
     alt?: string;
     url?: string;
+    name?: string; // Text fallback for Perspective-style wordmarks
   }>;
   animated?: boolean;
   speed?: number; // seconds for one complete scroll
@@ -24,6 +25,8 @@ export interface LogoMarqueeProps {
   className?: string;
   isBuilder?: boolean;
   onLogosChange?: (logos: LogoMarqueeProps['logos']) => void;
+  // NEW: Perspective-style text-based logos
+  showTextFallback?: boolean;
 }
 
 export const LogoMarquee: React.FC<LogoMarqueeProps> = ({
@@ -41,6 +44,7 @@ export const LogoMarquee: React.FC<LogoMarqueeProps> = ({
   className,
   isBuilder = false,
   onLogosChange,
+  showTextFallback = false,
 }) => {
   // Builder-only: Add logo
   const handleAddLogo = () => {
@@ -107,6 +111,7 @@ export const LogoMarquee: React.FC<LogoMarqueeProps> = ({
             hoverEffect={hoverEffect}
             isBuilder={isBuilder}
             onRemove={(e) => handleRemoveLogo(logo.id, e)}
+            showTextFallback={showTextFallback}
           />
         ))}
         {isBuilder && onLogosChange && (
@@ -173,6 +178,7 @@ export const LogoMarquee: React.FC<LogoMarqueeProps> = ({
             hoverEffect={hoverEffect}
             isBuilder={isBuilder && index < logos.length}
             onRemove={(e) => handleRemoveLogo(logo.id, e)}
+            showTextFallback={showTextFallback}
           />
         ))}
       </div>
@@ -215,6 +221,7 @@ interface LogoItemProps {
   hoverEffect: 'none' | 'color' | 'scale' | 'both';
   isBuilder: boolean;
   onRemove: (e: React.MouseEvent) => void;
+  showTextFallback?: boolean;
 }
 
 const LogoItem: React.FC<LogoItemProps> = ({
@@ -224,6 +231,7 @@ const LogoItem: React.FC<LogoItemProps> = ({
   hoverEffect,
   isBuilder,
   onRemove,
+  showTextFallback = false,
 }) => {
   const getHoverClasses = () => {
     if (hoverEffect === 'none') return '';
@@ -236,6 +244,25 @@ const LogoItem: React.FC<LogoItemProps> = ({
     return '';
   };
 
+  // Perspective-style text wordmark when no image
+  const textFallback = showTextFallback && (logo.name || logo.alt) ? (
+    <span 
+      className={cn(
+        'font-bold tracking-tight transition-all duration-300 select-none whitespace-nowrap',
+        grayscale ? 'text-gray-400 opacity-60' : 'text-gray-700',
+        hoverEffect !== 'none' && 'hover:text-gray-900 hover:opacity-100',
+        hoverEffect === 'scale' && 'hover:scale-110',
+        hoverEffect === 'both' && 'hover:scale-110 hover:text-gray-900 hover:opacity-100'
+      )}
+      style={{ 
+        fontSize: Math.max(14, height * 0.45),
+        letterSpacing: '-0.02em',
+      }}
+    >
+      {logo.name || logo.alt}
+    </span>
+  ) : null;
+
   const content = logo.src ? (
     <img 
       src={logo.src}
@@ -247,7 +274,7 @@ const LogoItem: React.FC<LogoItemProps> = ({
       )}
       style={{ height, maxWidth: height * 3 }}
     />
-  ) : (
+  ) : textFallback ? textFallback : (
     <div 
       className="flex items-center justify-center bg-muted/50 rounded-lg"
       style={{ height, width: height * 2 }}
