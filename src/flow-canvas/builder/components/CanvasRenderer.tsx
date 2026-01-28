@@ -5420,7 +5420,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                 })();
 
                 return (
-                  <div className="flex items-center justify-center min-h-[500px] px-4">
+                  <div className="flex items-center justify-center min-h-[500px] px-4 builder-chrome">
                     <div className="w-full max-w-md text-center">
                       {/* Icon - adapts to background */}
                       <div className={cn(
@@ -5458,7 +5458,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                             ? "bg-white text-gray-900 hover:bg-gray-100"
                             : "bg-gray-900 text-white hover:bg-gray-800"
                         )}
-                        style={{ fontFamily: 'inherit' }}
+                        
                       >
                         <Plus size={18} />
                         Add Section
@@ -5486,7 +5486,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({
                 })();
 
                 return (
-                  <div className="flex flex-col items-center py-8 group">
+                  <div className="flex flex-col items-center py-8 group builder-chrome">
                     <button
                       onClick={() => onOpenSectionPicker()}
                       className={cn(
