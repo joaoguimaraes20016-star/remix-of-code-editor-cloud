@@ -17,9 +17,9 @@ export function InteractiveBlockCard({ id, name, mockup, onAdd }: InteractiveBlo
     <button
       onClick={onAdd}
       className={cn(
-        "flex flex-col bg-white border border-gray-200 rounded-xl transition-all overflow-hidden",
+        "flex flex-col bg-white border border-gray-200 rounded-xl transition-all overflow-hidden font-sans",
         "hover:border-gray-300 hover:shadow-md hover:scale-[1.02]",
-        "focus:outline-none focus:ring-2 focus:ring-blue-500/50",
+        "focus:outline-none focus:ring-2 focus:ring-primary/50",
         "p-3"
       )}
       style={{ aspectRatio: '3/4' }}
@@ -30,7 +30,7 @@ export function InteractiveBlockCard({ id, name, mockup, onAdd }: InteractiveBlo
       </div>
       
       {/* Block name */}
-      <span className="text-sm font-medium text-gray-700 mt-2 text-center">
+      <span className="text-sm font-medium text-gray-800 mt-2 text-center tracking-tight">
         {name}
       </span>
     </button>

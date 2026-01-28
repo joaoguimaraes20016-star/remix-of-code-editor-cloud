@@ -4,7 +4,15 @@
 
 /* Flow Canvas Design System (inherits global tokens) */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap');
+/* Perspective-style font stack: Inter primary */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Typography tokens */
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
 
 @layer base {
   :root {
@@ -182,7 +190,10 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'DM Sans', 'Inter', system-ui, sans-serif;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   /* Custom scrollbar for builder */
@@ -216,14 +227,14 @@
 }
 
 @layer components {
-  /* Builder UI Font Standardization */
+  /* Builder UI Font Standardization - Inter (Perspective-style) */
   .builder-surface,
   .builder-panel,
   .inspector-section,
   .builder-input,
   .builder-select,
   .builder-tab {
-    font-family: 'DM Sans', 'Inter', system-ui, sans-serif;
+    font-family: var(--font-sans);
   }
 
   /* Builder panel styles */
@@ -448,8 +459,8 @@
   /* IMPORTANT: overflow-visible allows toolbars to render outside frame bounds */
   .device-frame {
     @apply relative rounded-2xl;
-    /* Ensure font inheritance for all content */
-    font-family: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    /* Ensure font inheritance for all content - Inter (Perspective-style) */
+    font-family: var(--font-sans);
     /* Allow toolbar overflow - toolbars now use portals but this helps with transitions */
     overflow: visible;
     /* Clip only the inner content, not positioned elements */

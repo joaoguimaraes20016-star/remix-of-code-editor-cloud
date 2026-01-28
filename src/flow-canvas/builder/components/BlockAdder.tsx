@@ -108,7 +108,7 @@ export function BlockAdder({
         align="start"
         sideOffset={8}
         className={cn(
-          "w-[320px] p-3",
+          "w-[320px] p-3 font-sans",
           "bg-[hsl(var(--builder-surface))] border-[hsl(var(--builder-border))]",
           "shadow-xl shadow-black/20"
         )}
@@ -149,7 +149,7 @@ export function BlockAdder({
                   )} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="block text-sm font-medium text-[hsl(var(--builder-text))]">
+                  <span className="block text-sm font-medium text-[hsl(var(--builder-text))] tracking-tight">
                     {block.label}
                   </span>
                 </div>

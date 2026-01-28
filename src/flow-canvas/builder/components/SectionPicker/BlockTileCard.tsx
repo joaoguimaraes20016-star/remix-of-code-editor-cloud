@@ -20,15 +20,15 @@ export function BlockTileCard({ id, name, icon, bgColor, onAdd }: BlockTileCardP
       className={cn(
         "flex flex-col items-center justify-center gap-3 p-4 rounded-xl transition-all",
         "hover:scale-[1.02] hover:shadow-md",
-        "focus:outline-none focus:ring-2 focus:ring-blue-500/50",
-        "aspect-square",
+        "focus:outline-none focus:ring-2 focus:ring-primary/50",
+        "aspect-square font-sans",
         bgColor
       )}
     >
       <div className="flex items-center justify-center flex-1">
         {icon}
       </div>
-      <span className="text-sm font-medium text-gray-700">
+      <span className="text-sm font-medium text-gray-800 tracking-tight">
         {name}
       </span>
     </button>

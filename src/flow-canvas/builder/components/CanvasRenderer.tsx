@@ -3643,7 +3643,11 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         );
       }
 
-      default:
+      default: {
+        // Format element type for display: "multiple-choice" → "Multiple Choice"
+        const formatElementType = (type: string): string => 
+          type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
             {/* Inject state styles CSS */}
@@ -3661,18 +3665,39 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 onDelete={onDelete}
               />
             )}
-            {/* Element drag handle integrated into toolbar */}
+            {/* Styled fallback for unknown element types */}
             <div 
               className={cn(
-                "px-4 py-3 rounded-xl border",
-                isDarkTheme ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
+                "flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors",
+                isDarkTheme 
+                  ? "bg-gray-800/50 border-gray-700/50 hover:border-gray-600" 
+                  : "bg-gray-50 border-gray-200 hover:border-gray-300"
               )} 
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
-              <span className={cn("text-sm", isDarkTheme ? "text-gray-400" : "text-gray-500")}>{element.type}</span>
+              <div className={cn(
+                "flex items-center justify-center w-8 h-8 rounded-lg",
+                isDarkTheme ? "bg-gray-700/50" : "bg-gray-100"
+              )}>
+                <svg 
+                  className={cn("w-4 h-4", isDarkTheme ? "text-gray-400" : "text-gray-500")} 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                </svg>
+              </div>
+              <span className={cn(
+                "text-sm font-medium tracking-tight",
+                isDarkTheme ? "text-gray-300" : "text-gray-600"
+              )}>
+                {formatElementType(element.type)}
+              </span>
             </div>
           </div>
         );
+      }
     }
   };
 
