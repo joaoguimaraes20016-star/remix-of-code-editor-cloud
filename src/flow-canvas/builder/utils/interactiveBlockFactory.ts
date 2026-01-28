@@ -185,7 +185,7 @@ function createChoiceBlock(): Block {
 }
 
 /**
- * Quiz Block - Question with blue choice cards
+ * Quiz Block - Perspective-style 2x2 image grid with blue label footers
  */
 function createQuizBlock(): Block {
   return {
@@ -196,40 +196,46 @@ function createQuizBlock(): Block {
       {
         id: generateId(),
         type: 'heading' as ElementType,
-        content: 'What best describes your situation?',
+        content: 'What position best describes your role?',
         props: {
-          level: 3,
-          fontSize: 'xl',
-          fontWeight: '600',
+          level: 2,
+          fontSize: '2xl',
+          fontWeight: 'bold',
           textAlign: 'center',
           textColor: '#111827',
+          lineHeight: '1.2',
         }
       },
       {
         id: generateId(),
-        type: 'multiple-choice' as ElementType,
+        type: 'single-choice' as ElementType,
         content: '',
         props: {
           options: [
-            { id: generateId(), label: 'Just getting started', icon: '🤝' },
-            { id: generateId(), label: 'Looking to scale', icon: '🚀' },
-            { id: generateId(), label: 'Need optimization', icon: '🌟' },
-            { id: generateId(), label: 'Want consultation', icon: '📞' },
+            { id: generateId(), label: 'CEO', imageUrl: '' },
+            { id: generateId(), label: 'Management', imageUrl: '' },
+            { id: generateId(), label: 'Employee', imageUrl: '' },
+            { id: generateId(), label: 'Other Role', imageUrl: '' },
           ],
-          layout: 'vertical',
-          cardStyle: true,
-          cardBackgroundColor: '#2563EB',
-          cardTextColor: '#FFFFFF',
-          cardBorderRadius: '12px',
-          cardPadding: '16px 24px',
-          gap: 12,
-          fullWidth: true,
+          layout: 'grid',
+          columns: 2,
+          // Perspective-style image cards with blue footer
+          cardStyle: 'image-footer',
+          cardBorderRadius: '16px',
+          imageAspectRatio: '4:3',
+          footerBackgroundColor: '#2563EB',
+          footerTextColor: '#FFFFFF',
+          footerPadding: '16px 20px',
+          gap: 16,
           hoverEffect: true,
+          hoverScale: 1.02,
+          selectedBorderColor: '#2563EB',
+          selectedBorderWidth: 3,
         }
       },
     ],
     props: {
-      alignment: 'center',
+      alignment: 'stretch',
       gap: 24,
     }
   };
