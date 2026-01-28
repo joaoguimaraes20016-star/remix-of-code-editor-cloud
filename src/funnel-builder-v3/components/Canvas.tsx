@@ -1,5 +1,6 @@
 /**
  * Funnel Builder v3 - Canvas (Preview Area)
+ * Multi-device support: Mobile, Tablet, Desktop frames
  * Dark charcoal theme matching flow-canvas aesthetic
  */
 
@@ -7,6 +8,7 @@ import { Screen, Block, FunnelSettings } from '../types/funnel';
 import { BlockRenderer } from './blocks/BlockRenderer';
 import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
+import { DeviceMode } from './Toolbar';
 
 interface CanvasProps {
   screen: Screen | null;
@@ -15,6 +17,7 @@ interface CanvasProps {
   onReorderBlocks: (blockIds: string[]) => void;
   previewMode: boolean;
   settings: FunnelSettings;
+  deviceMode: DeviceMode;
 }
 
 export function Canvas({
@@ -24,6 +27,7 @@ export function Canvas({
   onReorderBlocks,
   previewMode,
   settings,
+  deviceMode,
 }: CanvasProps) {
   if (!screen) {
     return (
@@ -69,64 +73,98 @@ export function Canvas({
     }
   };
 
+  // Shared screen content component
+  const ScreenContent = () => (
+    <div 
+      className="builder-v3-device-screen"
+      style={{
+        ...getBackgroundStyle(),
+        fontFamily: settings.fontFamily || 'Inter, sans-serif',
+      }}
+      onClick={handleCanvasClick}
+    >
+      <div className={cn(
+        "builder-v3-device-screen-content",
+        deviceMode === 'desktop' && 'pt-0' // No notch space on desktop
+      )}>
+        {/* Progress Bar */}
+        {settings.showProgress && (
+          <div className="builder-v3-progress-bar">
+            <div 
+              className="builder-v3-progress-fill" 
+              style={{ width: '33%' }}
+            />
+          </div>
+        )}
+
+        {/* Blocks */}
+        <div className="p-6 space-y-4">
+          {screen.blocks.length === 0 ? (
+            <EmptyState previewMode={previewMode} />
+          ) : (
+            screen.blocks.map((block) => (
+              <BlockRenderer
+                key={block.id}
+                block={block}
+                isSelected={block.id === selectedBlockId}
+                onSelect={() => onSelectBlock(block.id)}
+                previewMode={previewMode}
+                primaryColor={settings.primaryColor}
+              />
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div 
       className="builder-v3-canvas-viewport flex-1 flex items-center justify-center p-8 overflow-auto"
       data-preview={previewMode ? 'true' : undefined}
     >
-      {/* Device Frame */}
-      <div className="builder-v3-device-frame builder-v3-device-frame--mobile">
-        {/* Phone Notch */}
-        <div className="builder-v3-phone-notch">
-          <div className="builder-v3-phone-notch-inner" />
-        </div>
-        
-        {/* Device Screen */}
-        <div 
-          className="builder-v3-device-screen"
-          style={{
-            ...getBackgroundStyle(),
-            fontFamily: settings.fontFamily || 'Inter, sans-serif',
-          }}
-          onClick={handleCanvasClick}
-        >
-          {/* Screen Content */}
-          <div className="builder-v3-device-screen-content">
-            {/* Progress Bar */}
-            {settings.showProgress && (
-              <div className="builder-v3-progress-bar">
-                <div 
-                  className="builder-v3-progress-fill" 
-                  style={{ width: '33%' }}
-                />
-              </div>
-            )}
-
-            {/* Blocks */}
-            <div className="p-6 space-y-4">
-              {screen.blocks.length === 0 ? (
-                <EmptyState previewMode={previewMode} />
-              ) : (
-                screen.blocks.map((block) => (
-                  <BlockRenderer
-                    key={block.id}
-                    block={block}
-                    isSelected={block.id === selectedBlockId}
-                    onSelect={() => onSelectBlock(block.id)}
-                    previewMode={previewMode}
-                    primaryColor={settings.primaryColor}
-                  />
-                ))
-              )}
+      {/* Desktop Frame */}
+      {deviceMode === 'desktop' && (
+        <div className="builder-v3-device-frame builder-v3-device-frame--desktop">
+          {/* Browser Bar */}
+          <div className="builder-v3-browser-bar">
+            <div className="builder-v3-traffic-lights">
+              <span className="builder-v3-traffic-light builder-v3-traffic-light--red" />
+              <span className="builder-v3-traffic-light builder-v3-traffic-light--yellow" />
+              <span className="builder-v3-traffic-light builder-v3-traffic-light--green" />
             </div>
+            <div className="builder-v3-url-bar">yourfunnel.com</div>
+          </div>
+          <ScreenContent />
+        </div>
+      )}
+
+      {/* Tablet Frame */}
+      {deviceMode === 'tablet' && (
+        <div className="builder-v3-device-frame builder-v3-device-frame--tablet">
+          <ScreenContent />
+          <div className="builder-v3-device-home-bar">
+            <div className="builder-v3-home-indicator" />
           </div>
         </div>
-        
-        {/* Home Bar */}
-        <div className="builder-v3-device-home-bar">
-          <div className="builder-v3-home-indicator" />
+      )}
+
+      {/* Mobile Frame */}
+      {deviceMode === 'mobile' && (
+        <div className="builder-v3-device-frame builder-v3-device-frame--mobile">
+          {/* Phone Notch */}
+          <div className="builder-v3-phone-notch">
+            <div className="builder-v3-phone-notch-inner" />
+          </div>
+          
+          <ScreenContent />
+          
+          {/* Home Bar */}
+          <div className="builder-v3-device-home-bar">
+            <div className="builder-v3-home-indicator" />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
