@@ -1,197 +1,79 @@
 
-# Make Section Templates Display Like Perspective
+# Fix Font Rendering - Missing Google Fonts Import
 
-## Problem Summary
+## Problem
 
-When section templates (Hero + Logos, etc.) are added to the canvas, they don't match the polished preview cards. The key issues:
+The builder allows users to select from 15+ fonts in the font family dropdown, but only 3 fonts are actually loaded via Google Fonts. When a user (or the AI) selects a font like "Oswald", "Montserrat", or "Playfair Display", the font fails to load and the browser falls back to its default serif font (Times New Roman), causing the ugly rendering shown in the screenshots.
 
-1. **Logo bars show placeholder icons** instead of Perspective-style text wordmarks (like "Coca-Cola", "Zalando")
-2. **Props aren't being passed through** - `templateConverter.ts` correctly sets `showTextFallback: true`, but both renderers don't pass it to `LogoMarquee`
-3. **Avatar group ratings** work but could be more polished
-4. **Missing visual refinements** for professional appearance
+### Current State
 
----
+**Fonts imported in `src/flow-canvas/index.css`:**
+- Inter
+- JetBrains Mono
+- DM Sans
 
-## Root Cause Analysis
-
-```text
-templateConverter.ts                    CanvasRenderer.tsx
-┌────────────────────────┐              ┌─────────────────────────┐
-│ type: 'logo-marquee'   │              │ <LogoMarquee            │
-│ props: {               │   ──────>    │   logos={...}           │
-│   logos: [{name: ...}] │              │   animated={...}        │
-│   showTextFallback: ✅ │              │   speed={...}           │
-│   grayscale: true      │              │   // showTextFallback   │
-│ }                      │              │   // ❌ NOT PASSED!     │
-└────────────────────────┘              └─────────────────────────┘
-```
-
-The `showTextFallback` prop is correctly set in the template data, but neither renderer passes it to the LogoMarquee component.
+**Fonts offered in `masterFontFamilies` (presets.ts):**
+- inherit, system-ui (system fonts - OK)
+- Inter, DM Sans (loaded - OK)
+- Oswald, Anton, Bebas Neue, Archivo Black, Space Grotesk, Syne (NOT LOADED)
+- Roboto, Open Sans, Poppins, Montserrat, Lato, Raleway (NOT LOADED)
+- Playfair Display (NOT LOADED)
 
 ---
 
-## Implementation Plan
+## Solution
 
-### 1. Fix CanvasRenderer.tsx - Pass Missing Props
+Update the Google Fonts import in `src/flow-canvas/index.css` to include ALL fonts from the `masterFontFamilies` preset. This ensures that any font a user selects will actually render correctly.
 
-**File:** `src/flow-canvas/builder/components/CanvasRenderer.tsx`
+### File to Modify
 
-Pass `showTextFallback` to the LogoMarquee component:
+**`src/flow-canvas/index.css`**
 
-```typescript
-<LogoMarquee
-  logos={logos}
-  animated={element.props?.animated !== false}
-  speed={element.props?.speed as number || 30}
-  direction={(element.props?.direction as 'left' | 'right') || 'left'}
-  pauseOnHover={element.props?.pauseOnHover !== false}
-  grayscale={element.props?.grayscale !== false}
-  logoHeight={element.props?.logoHeight as number || 40}
-  gap={element.props?.gap as number || 48}
-  showTextFallback={element.props?.showTextFallback === true}  // ADD THIS
-  hoverEffect={(element.props?.hoverEffect as 'none' | 'color' | 'scale' | 'both') || 'color'}  // ADD THIS
-  isBuilder={true}
-  onLogosChange={...}
-/>
-```
-
-### 2. Fix FlowCanvasRenderer.tsx - Pass Missing Props
-
-**File:** `src/flow-canvas/components/FlowCanvasRenderer.tsx`
-
-Same fix for runtime rendering:
-
-```typescript
-<LogoMarquee
-  logos={logos}
-  animated={element.props?.animated !== false}
-  speed={element.props?.speed as number || 30}
-  direction={(element.props?.direction as 'left' | 'right') || 'left'}
-  pauseOnHover={element.props?.pauseOnHover !== false}
-  grayscale={element.props?.grayscale !== false}
-  logoHeight={element.props?.logoHeight as number || 40}
-  gap={element.props?.gap as number || 48}
-  showTextFallback={element.props?.showTextFallback === true}  // ADD THIS
-  hoverEffect={(element.props?.hoverEffect as 'none' | 'color' | 'scale' | 'both') || 'color'}  // ADD THIS
-/>
-```
-
-### 3. Enhance Template Defaults in templateConverter.ts
-
-**File:** `src/flow-canvas/builder/utils/templateConverter.ts`
-
-Improve the default logo bar configuration:
-
-```typescript
-if (node.type === 'logo_bar') {
-  const logos = (node.props?.logos as string[]) || ['Coca-Cola', 'Zalando', 'Braun', 'IKEA', 'Sony'];
-  return {
-    id: generateId(),
-    type: 'logo-marquee',
-    content: '',
-    props: {
-      logos: logos.map((name, i) => ({ id: `logo-${i}`, src: '', alt: name, name })),
-      speed: 25,
-      pauseOnHover: true,
-      grayscale: true,
-      showTextFallback: true,
-      hoverEffect: 'color',      // ADD: Professional hover effect
-      logoHeight: 32,            // ADD: Refined sizing
-      gap: 40,                   // ADD: Better spacing
-      animated: false,           // ADD: Static by default for cleaner look
-    },
-  };
-}
-```
-
-### 4. Enhance Rating Display Defaults
-
-**File:** `src/flow-canvas/builder/utils/templateConverter.ts`
-
-Make rating display match Perspective more closely:
-
-```typescript
-if (node.type === 'rating_display') {
-  return {
-    id: generateId(),
-    type: 'avatar-group',
-    content: '',
-    props: {
-      count: 4,
-      size: 'sm',
-      colorMode: 'varied',
-      overlap: 10,
-      showRating: true,
-      rating: (node.props?.rating as number) || 4.8,
-      ratingCount: (node.props?.count as number) || 148,
-      ratingSource: (node.props?.source as string) || 'reviews',
-      alignment: 'center',       // ADD: Center alignment
-    },
-  };
-}
-```
-
-### 5. Add CSS Refinements
-
-**File:** `src/flow-canvas/index.css`
-
-Add polished styles for Perspective-like appearance:
-
+Replace line 7:
 ```css
-/* Perspective-style logo wordmarks */
-.perspective-logo-text {
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: rgba(107, 114, 128, 0.6);
-  transition: all 0.3s ease;
-  white-space: nowrap;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap');
+```
 
-.perspective-logo-text:hover {
-  color: rgba(17, 24, 39, 0.9);
-}
-
-/* Refined rating display */
-.perspective-rating-display {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.perspective-rating-stars {
-  display: flex;
-  gap: 2px;
-}
-
-.perspective-rating-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.6);
-}
+With comprehensive import:
+```css
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Lato:wght@300;400;700&family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Raleway:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap');
 ```
 
 ---
 
-## Files to Modify
+## Fonts Being Added
 
-| File | Changes |
-|------|---------|
-| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Pass `showTextFallback` and `hoverEffect` props to LogoMarquee |
-| `src/flow-canvas/components/FlowCanvasRenderer.tsx` | Pass `showTextFallback` and `hoverEffect` props to LogoMarquee |
-| `src/flow-canvas/builder/utils/templateConverter.ts` | Enhance logo bar and rating display defaults |
-| `src/flow-canvas/index.css` | Add refined CSS for Perspective-style elements |
+| Font | Category | Style |
+|------|----------|-------|
+| Oswald | Display | Bold, condensed |
+| Anton | Display | Heavy, impactful |
+| Bebas Neue | Display | All-caps, modern |
+| Archivo Black | Display | Bold, geometric |
+| Space Grotesk | Display | Tech, modern |
+| Syne | Display | Artistic, expressive |
+| Roboto | Standard | Google's flagship |
+| Open Sans | Standard | Friendly, readable |
+| Poppins | Standard | Geometric, clean |
+| Montserrat | Standard | Elegant, versatile |
+| Lato | Standard | Professional |
+| Raleway | Standard | Elegant, thin weights |
+| Playfair Display | Serif | Elegant headlines |
 
 ---
 
-## Visual Result
+## Technical Details
 
-**Before:**
-- Logo bars show gray placeholder image icons
-- Templates look generic and unpolished
+- The Google Fonts API allows combining multiple fonts in a single request
+- We include weight ranges (400-700) for most fonts to support normal and bold text
+- The `display=swap` parameter ensures text is visible while fonts load
+- This is a one-time CSS change - no JavaScript modifications needed
 
-**After:**
-- Logo bars display clean text wordmarks: "Coca-Cola • Zalando • Braun • IKEA • Sony"
-- Grayscale text that becomes full opacity on hover
-- Professional typography and spacing
-- Matches Perspective's clean aesthetic
+---
+
+## Result
+
+After this fix:
+- All fonts in the dropdown will actually render
+- No more fallback to Times New Roman
+- Consistent typography across editor and published funnels
+- AI-selected fonts will display correctly
