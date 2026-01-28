@@ -1,110 +1,361 @@
 
+# Template & Canvas Inconsistency Audit: Complete Fix Plan
 
-# Fix Builder UI Fonts Inheriting User Content Fonts
+## Executive Summary
 
-## Problem
+After thorough investigation, I found **12 major inconsistencies** between template previews and actual canvas rendering. The core issues fall into three categories:
 
-Builder UI elements (like the "Add Section" button, labels, hints) inside the canvas are incorrectly inheriting user content fonts. When a user's funnel uses display fonts like "Oswald" or "Bebas Neue", the builder chrome also picks up these fonts instead of staying with the standard system font (Inter/DM Sans).
-
-### Root Cause
-
-1. **CSS rule at line 464-470 in `src/flow-canvas/index.css`**:
-   ```css
-   .device-frame *,
-   .device-frame button {
-     font-family: inherit;
-   }
-   ```
-   This forces ALL elements inside the device frame to inherit font-family - including builder UI.
-
-2. **Inline style on the Add Section button** at line 5461 in `CanvasRenderer.tsx`:
-   ```tsx
-   style={{ fontFamily: 'inherit' }}
-   ```
-   This explicitly tells the button to inherit whatever font is cascading down.
+1. **Missing Type Mappings** - Template node types aren't being converted to proper element types
+2. **Missing Inspector Support** - Elements render but can't be edited
+3. **Prop Data Loss** - Templates define data that gets dropped during conversion
 
 ---
 
-## Solution
+## Issue Inventory
 
-### Strategy
-Create a clear separation between **user content** (which uses custom fonts) and **builder UI** (which always uses system fonts).
+### Category A: Elements That Render But Can't Be Edited
 
-### Changes
+| Element Type | Issue | Severity |
+|-------------|-------|----------|
+| `faq` | No inspector in RightPanel - shows "Add FAQ items in inspector" but no controls exist | HIGH |
+| `form_group` | Converts to single `input` - loses multiple field structure | HIGH |
+| `feature_list` | Converts to generic `text` - loses list structure and icons | MEDIUM |
+| `testimonial_card` | Converts to generic `text` - loses avatar, name, quote structure | MEDIUM |
+| `single-choice` / `multiple-choice` | Missing inspector in RightPanel (only renders, can't edit options) | HIGH |
 
-#### 1. Update CSS - Scope Font Inheritance to User Content Only
+### Category B: Data Loss During Conversion
 
-**File:** `src/flow-canvas/index.css`
+| Template Type | What Gets Lost |
+|--------------|----------------|
+| `form_group` | Array of fields `[{type, placeholder, required}]` → becomes single input |
+| `faq_accordion` | Items array structure (works, but items not editable in inspector) |
+| `rating_display` | `source` text (e.g., "companies trust us") not displayed |
+| `testimonial_card` | Author name, avatar, company, position |
+| `feature_list` | Icon names, bullet point structure |
 
-Replace the overly broad inheritance rule with scoped rules:
+### Category C: Visual Mismatch
 
-```css
-/* Before (broken) */
-.device-frame *,
-.device-frame button,
-.device-frame input,
-.device-frame textarea,
-.device-frame select {
-  font-family: inherit;
-}
+| Issue | Expected | Actual |
+|-------|----------|--------|
+| Logo Bar | Text wordmarks (Coca-Cola, IKEA, etc.) | Gray placeholder icons (FIXED in previous update) |
+| Form inputs | Styled matching template | Generic unstyled inputs |
+| FAQ accordion | Polished expand/collapse | Basic rendering (OK, but no edit) |
 
-/* After (fixed) */
-/* User content inherits custom fonts */
-.device-frame .user-content,
-.device-frame .user-content * {
-  font-family: inherit;
-}
+---
 
-/* Builder UI always uses system font */
-.device-frame .builder-chrome,
-.device-frame .builder-chrome * {
-  font-family: 'Inter', 'DM Sans', system-ui, -apple-system, sans-serif !important;
+## Root Cause Analysis
+
+```text
+Template Definition (sectionTemplates.ts)
+┌─────────────────────────────────────────┐
+│ type: 'form_group'                      │
+│ props: {                                │
+│   fields: [                             │
+│     { type: 'text', placeholder: 'Name' }│
+│     { type: 'email', placeholder: 'E-Mail'}│
+│   ]                                     │
+│ }                                       │
+└─────────────────────────────────────────┘
+               │
+               ▼ templateConverter.ts
+┌─────────────────────────────────────────┐
+│ mapNodeTypeToElementType('form_group')  │
+│         → returns 'input'               │
+│                                         │
+│ // Props ARE passed through, but...     │
+│ // Canvas only renders ONE input        │
+│ // because element.type === 'input'     │
+└─────────────────────────────────────────┘
+               │
+               ▼ CanvasRenderer.tsx
+┌─────────────────────────────────────────┐
+│ case 'input':                           │
+│   // Renders single input               │
+│   // fields[] prop ignored              │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## Implementation Plan
+
+### Phase 1: Add Missing Inspector Controls (Priority: HIGH)
+
+#### 1.1 Add FAQ Inspector to RightPanel.tsx
+
+**File:** `src/flow-canvas/builder/components/RightPanel.tsx`
+
+Add inspector section after the `trustpilot` section (~line 2989):
+
+```typescript
+{/* ========== FAQ SECTION ========== */}
+{element.type === 'faq' && (
+  <CollapsibleSection title="FAQ Items" icon={<HelpCircle className="w-4 h-4" />} defaultOpen>
+    <div className="pt-3 space-y-3">
+      <DndContext sensors={inspectorSensors} collisionDetection={closestCenter} onDragEnd={...}>
+        <SortableContext items={...} strategy={verticalListSortingStrategy}>
+          {((element.props?.items as Array<{ question: string; answer: string }>) || []).map((item, idx) => (
+            <SortableRow key={idx} id={`faq-${idx}`}>
+              <div className="space-y-2 flex-1">
+                <Input
+                  value={item.question}
+                  onChange={(e) => updateFaqItem(idx, 'question', e.target.value)}
+                  placeholder="Question..."
+                  className="builder-input text-xs"
+                />
+                <Textarea
+                  value={item.answer}
+                  onChange={(e) => updateFaqItem(idx, 'answer', e.target.value)}
+                  placeholder="Answer..."
+                  className="builder-input text-xs min-h-[60px]"
+                />
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => removeFaqItem(idx)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </SortableRow>
+          ))}
+        </SortableContext>
+      </DndContext>
+      <Button variant="outline" size="sm" onClick={addFaqItem} className="w-full">
+        <Plus className="w-4 h-4 mr-1" /> Add FAQ Item
+      </Button>
+    </div>
+  </CollapsibleSection>
+)}
+```
+
+### Phase 2: Fix Form Group Conversion (Priority: HIGH)
+
+#### 2.1 Create Proper Form Group Element Type
+
+**File:** `src/flow-canvas/types/infostack.ts`
+
+Add `form-group` to ElementType:
+
+```typescript
+export type ElementType =
+  | 'heading'
+  | 'text'
+  // ...existing types...
+  | 'form-group'  // NEW: Multi-field form container
+```
+
+#### 2.2 Update Template Converter
+
+**File:** `src/flow-canvas/builder/utils/templateConverter.ts`
+
+Change form_group mapping:
+
+```typescript
+// Before
+'form_group': 'input',
+
+// After
+'form_group': 'form-group',
+
+// Add special handling
+if (node.type === 'form_group') {
+  const fields = (node.props?.fields as Array<{
+    type: string;
+    placeholder: string;
+    required?: boolean;
+  }>) || [];
+  
+  return {
+    id: generateId(),
+    type: 'form-group',
+    content: '',
+    props: {
+      fields: fields.map((field, i) => ({
+        id: `field-${i}`,
+        type: field.type,
+        placeholder: field.placeholder,
+        required: field.required ?? false,
+        fieldKey: `form_${field.type}_${i}`,
+      })),
+      layout: 'vertical',
+      gap: 12,
+    },
+  };
 }
 ```
 
-#### 2. Add builder-chrome class to UI elements in CanvasRenderer.tsx
+#### 2.3 Add Form Group Renderer
 
 **File:** `src/flow-canvas/builder/components/CanvasRenderer.tsx`
 
-**Empty state (lines 5423-5467):**
-- Add `builder-chrome` class to the container
-- Remove the inline `fontFamily: 'inherit'` style
+Add new case in element switch:
 
-```tsx
-// Before
-<div className="flex items-center justify-center min-h-[500px] px-4">
-
-// After  
-<div className="flex items-center justify-center min-h-[500px] px-4 builder-chrome">
+```typescript
+case 'form-group': {
+  const fields = (element.props?.fields as Array<{
+    id: string;
+    type: string;
+    placeholder: string;
+    required?: boolean;
+    fieldKey?: string;
+  }>) || [];
+  const layout = (element.props?.layout as string) || 'vertical';
+  const gap = (element.props?.gap as number) || 12;
+  
+  return (
+    <div ref={combinedRef} style={style} className={cn(baseClasses, 'w-full relative')}>
+      {/* Toolbar */}
+      {!readOnly && (
+        <UnifiedElementToolbar
+          elementId={element.id}
+          elementType="form-group"
+          elementLabel="Form Fields"
+          isSelected={isSelected}
+          targetRef={wrapperRef}
+          deviceMode={deviceMode}
+          dragHandleProps={{ attributes, listeners }}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
+        />
+      )}
+      <div 
+        className={cn(
+          'flex w-full',
+          layout === 'vertical' ? 'flex-col' : 'flex-row'
+        )}
+        style={{ gap }}
+        onClick={(e) => { e.stopPropagation(); onSelect(); }}
+      >
+        {fields.map((field) => (
+          <input
+            key={field.id}
+            type={field.type}
+            placeholder={field.placeholder}
+            className="w-full px-4 py-3 border rounded-xl bg-transparent"
+            style={{
+              borderColor: isDarkTheme ? '#374151' : '#e5e7eb',
+              color: isDarkTheme ? '#fff' : '#1f2937',
+            }}
+            readOnly={!isPreviewMode}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 ```
 
-**Bottom Add Section button (lines 5489-5509):**
-- Add `builder-chrome` class to the container
+#### 2.4 Add Form Group Inspector
 
-```tsx
-// Before
-<div className="flex flex-col items-center py-8 group">
+**File:** `src/flow-canvas/builder/components/RightPanel.tsx`
 
-// After
-<div className="flex flex-col items-center py-8 group builder-chrome">
+Add inspector section:
+
+```typescript
+{element.type === 'form-group' && (
+  <CollapsibleSection title="Form Fields" icon={<FormInput className="w-4 h-4" />} defaultOpen>
+    <div className="pt-3 space-y-3">
+      {/* Sortable list of fields */}
+      {/* Add/remove field buttons */}
+      {/* Field type selector (text, email, tel, etc.) */}
+      {/* Placeholder input */}
+      {/* Required toggle */}
+    </div>
+  </CollapsibleSection>
+)}
+```
+
+### Phase 3: Fix Feature List & Testimonial (Priority: MEDIUM)
+
+#### 3.1 Create Feature List Element Type
+
+**File:** `src/flow-canvas/builder/utils/templateConverter.ts`
+
+```typescript
+if (node.type === 'feature_list') {
+  const features = (node.props?.items as string[]) || ['Feature 1', 'Feature 2'];
+  return {
+    id: generateId(),
+    type: 'feature-list',  // New element type
+    content: '',
+    props: {
+      items: features.map((text, i) => ({
+        id: `feature-${i}`,
+        text,
+        icon: 'Check',
+      })),
+      iconColor: '#22C55E',
+      layout: 'vertical',
+    },
+  };
+}
+```
+
+#### 3.2 Create Testimonial Element Type
+
+```typescript
+if (node.type === 'testimonial_card') {
+  return {
+    id: generateId(),
+    type: 'testimonial',  // New element type
+    content: node.props?.quote as string || 'Great product!',
+    props: {
+      author: node.props?.author as string || 'John Doe',
+      role: node.props?.role as string || 'CEO',
+      company: node.props?.company as string || 'Company',
+      avatar: node.props?.avatar as string || '',
+      rating: node.props?.rating as number || 5,
+    },
+  };
+}
+```
+
+### Phase 4: Add Single/Multiple Choice Inspector
+
+**File:** `src/flow-canvas/builder/components/RightPanel.tsx`
+
+Add inspector for choice elements:
+
+```typescript
+{(element.type === 'single-choice' || element.type === 'multiple-choice') && (
+  <CollapsibleSection title="Choice Options" icon={<List className="w-4 h-4" />} defaultOpen>
+    <div className="pt-3 space-y-3">
+      {/* Choice type toggle: single vs multiple */}
+      {/* Sortable list of options */}
+      {/* Add option button */}
+      {/* Layout: vertical/horizontal/grid */}
+    </div>
+  </CollapsibleSection>
+)}
 ```
 
 ---
 
 ## Files to Modify
 
-| File | Change |
-|------|--------|
-| `src/flow-canvas/index.css` | Replace broad `font-family: inherit` rule with scoped rules for user-content vs builder-chrome |
-| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Add `builder-chrome` class to empty state and bottom Add Section button containers, remove inline font style |
+| File | Changes |
+|------|---------|
+| `src/flow-canvas/types/infostack.ts` | Add `form-group`, `feature-list`, `testimonial` to ElementType |
+| `src/flow-canvas/builder/utils/templateConverter.ts` | Add special handling for form_group, feature_list, testimonial_card |
+| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Add render cases for new element types |
+| `src/flow-canvas/builder/components/RightPanel.tsx` | Add inspector sections for `faq`, `form-group`, `feature-list`, `testimonial`, `single-choice`, `multiple-choice` |
+| `src/flow-canvas/components/FlowCanvasRenderer.tsx` | Mirror new render cases for runtime |
 
 ---
 
-## Result
+## Expected Outcome
 
-After this fix:
-- User content (headings, text, buttons the user creates) uses whatever font they select
-- Builder UI (Add Section, labels, hints, tooltips inside the canvas) always uses Inter/DM Sans
-- Clean visual separation between editable content and builder chrome
-- No more display fonts bleeding into system UI
+After implementation:
 
+1. **FAQ sections** will have editable Q&A pairs in the inspector
+2. **Form sections** will render all fields from the template and be editable
+3. **Feature lists** will preserve icon + text structure
+4. **Testimonials** will display author, role, avatar, quote
+5. **Choice elements** will have option management in inspector
+6. **Templates will look identical** on canvas as they do in the preview cards
+
+---
+
+## Technical Notes
+
+- All new element types should extend the existing drag-and-drop infrastructure
+- Inspector sections should use existing `SortableRow` pattern for reorderable items
+- Runtime renderer (`FlowCanvasRenderer.tsx`) must be kept in sync with editor renderer
+- Premium element pattern (PremiumElementInspector) can be extended for complex new types
