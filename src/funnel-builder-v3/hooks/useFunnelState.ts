@@ -29,11 +29,14 @@ type FunnelAction =
   | { type: 'DELETE_SCREEN'; payload: { screenId: string } }
   | { type: 'REORDER_SCREENS'; payload: { screenIds: string[] } }
   | { type: 'ADD_BLOCK'; payload: { screenId: string; blockType: BlockType; afterBlockId?: string } }
+  | { type: 'ADD_BLOCKS'; payload: { screenId: string; blocks: Block[]; afterBlockId?: string } }
+  | { type: 'PASTE_BLOCK'; payload: { screenId: string; block: Block; afterBlockId?: string } }
   | { type: 'UPDATE_BLOCK'; payload: { screenId: string; blockId: string; updates: Partial<Block> } }
   | { type: 'DELETE_BLOCK'; payload: { screenId: string; blockId: string } }
   | { type: 'REORDER_BLOCKS'; payload: { screenId: string; blockIds: string[] } }
   | { type: 'DUPLICATE_BLOCK'; payload: { screenId: string; blockId: string } }
   | { type: 'DUPLICATE_SCREEN'; payload: { screenId: string } }
+  | { type: 'RENAME_SCREEN'; payload: { screenId: string; name: string } }
   | { type: 'MARK_SAVED' };
 
 // =============================================================================
@@ -231,6 +234,56 @@ function funnelReducer(state: FunnelState, action: FunnelAction): FunnelState {
       };
     }
 
+    case 'ADD_BLOCKS': {
+      const { screenId, blocks, afterBlockId } = action.payload;
+      
+      return {
+        ...state,
+        isDirty: true,
+        funnel: {
+          ...state.funnel,
+          screens: state.funnel.screens.map(screen => {
+            if (screen.id !== screenId) return screen;
+            
+            const existingBlocks = [...screen.blocks];
+            if (afterBlockId) {
+              const index = existingBlocks.findIndex(b => b.id === afterBlockId);
+              existingBlocks.splice(index + 1, 0, ...blocks);
+            } else {
+              existingBlocks.push(...blocks);
+            }
+            
+            return { ...screen, blocks: existingBlocks };
+          }),
+        },
+      };
+    }
+
+    case 'PASTE_BLOCK': {
+      const { screenId, block, afterBlockId } = action.payload;
+      
+      return {
+        ...state,
+        isDirty: true,
+        funnel: {
+          ...state.funnel,
+          screens: state.funnel.screens.map(screen => {
+            if (screen.id !== screenId) return screen;
+            
+            const blocks = [...screen.blocks];
+            if (afterBlockId) {
+              const index = blocks.findIndex(b => b.id === afterBlockId);
+              blocks.splice(index + 1, 0, block);
+            } else {
+              blocks.push(block);
+            }
+            
+            return { ...screen, blocks };
+          }),
+        },
+      };
+    }
+
     case 'DUPLICATE_SCREEN': {
       const { screenId } = action.payload;
       const screenIndex = state.funnel.screens.findIndex(s => s.id === screenId);
@@ -251,6 +304,20 @@ function funnelReducer(state: FunnelState, action: FunnelAction): FunnelState {
         ...state,
         isDirty: true,
         funnel: { ...state.funnel, screens },
+      };
+    }
+
+    case 'RENAME_SCREEN': {
+      const { screenId, name } = action.payload;
+      return {
+        ...state,
+        isDirty: true,
+        funnel: {
+          ...state.funnel,
+          screens: state.funnel.screens.map(s =>
+            s.id === screenId ? { ...s, name } : s
+          ),
+        },
       };
     }
 
@@ -384,6 +451,18 @@ export function useFunnelState(
     dispatch({ type: 'DUPLICATE_SCREEN', payload: { screenId } });
   }, []);
 
+  const renameScreen = useCallback((screenId: string, name: string) => {
+    dispatch({ type: 'RENAME_SCREEN', payload: { screenId, name } });
+  }, []);
+
+  const addBlocks = useCallback((screenId: string, blocks: Block[], afterBlockId?: string) => {
+    dispatch({ type: 'ADD_BLOCKS', payload: { screenId, blocks, afterBlockId } });
+  }, []);
+
+  const pasteBlock = useCallback((screenId: string, block: Block, afterBlockId?: string) => {
+    dispatch({ type: 'PASTE_BLOCK', payload: { screenId, block, afterBlockId } });
+  }, []);
+
   const forceSave = useCallback(async () => {
     if (!onSave || isSavingRef.current) return;
     
@@ -414,13 +493,16 @@ export function useFunnelState(
     deleteScreen,
     reorderScreens,
     duplicateScreen,
+    renameScreen,
     
     // Block actions
     addBlock,
+    addBlocks,
     updateBlock,
     deleteBlock,
     reorderBlocks,
     duplicateBlock,
+    pasteBlock,
     
     // Save
     forceSave,
