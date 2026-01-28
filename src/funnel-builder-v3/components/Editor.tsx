@@ -9,6 +9,8 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Funnel, Screen, Block, BlockType, ScreenType } from '../types/funnel';
 import { useFunnelState } from '../hooks/useFunnelState';
 import { useHistory } from '../hooks/useHistory';
+import { useClipboard } from '../hooks/useClipboard';
+import { getTemplateBlocks } from '../data/blockTemplates';
 import { LeftPanel } from './LeftPanel';
 import { Canvas } from './Canvas';
 import { PreviewCanvas } from './PreviewCanvas';
@@ -47,13 +49,19 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
     deleteScreen,
     reorderScreens,
     duplicateScreen,
+    renameScreen,
     addBlock,
+    addBlocks,
     updateBlock,
     deleteBlock,
     reorderBlocks,
     duplicateBlock,
+    pasteBlock,
     forceSave,
   } = useFunnelState(initialFunnel, { onSave });
+
+  // Clipboard management
+  const { copy, paste, hasClipboard } = useClipboard();
 
   // Sync history state to funnel state
   const lastHistoryFunnelRef = useRef(historyFunnel);
@@ -168,6 +176,25 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
         return;
       }
 
+      // Copy: Cmd+C
+      if (isModifier && e.key === 'c') {
+        if (selectedBlock) {
+          e.preventDefault();
+          copy(selectedBlock);
+        }
+        return;
+      }
+
+      // Paste: Cmd+V
+      if (isModifier && e.key === 'v') {
+        e.preventDefault();
+        const pastedBlock = paste();
+        if (pastedBlock && selectedScreenId) {
+          pasteBlock(selectedScreenId, pastedBlock, selectedBlockId || undefined);
+        }
+        return;
+      }
+
       // Duplicate: Cmd+D
       if (isModifier && e.key === 'd') {
         e.preventDefault();
@@ -195,7 +222,7 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [forceSave, handleUndo, handleRedo, selectedBlockId, selectedScreenId, duplicateBlock, deleteBlock]);
+  }, [forceSave, handleUndo, handleRedo, selectedBlockId, selectedScreenId, selectedBlock, duplicateBlock, deleteBlock, copy, paste, pasteBlock]);
 
   // Screen handlers
   const handleSelectScreen = useCallback((screenId: string) => {
@@ -221,6 +248,10 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
     duplicateScreen(screenId);
   }, [duplicateScreen]);
 
+  const handleRenameScreen = useCallback((screenId: string, name: string) => {
+    renameScreen(screenId, name);
+  }, [renameScreen]);
+
   // Block handlers
   const handleSelectBlock = useCallback((blockId: string | null) => {
     setSelectedBlockId(blockId);
@@ -230,6 +261,14 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
     if (!selectedScreenId) return;
     addBlock(selectedScreenId, type, selectedBlockId || undefined);
   }, [addBlock, selectedScreenId, selectedBlockId]);
+
+  const handleAddTemplate = useCallback((templateId: string) => {
+    if (!selectedScreenId) return;
+    const blocks = getTemplateBlocks(templateId);
+    if (blocks.length > 0) {
+      addBlocks(selectedScreenId, blocks, selectedBlockId || undefined);
+    }
+  }, [addBlocks, selectedScreenId, selectedBlockId]);
 
   const handleUpdateBlock = useCallback((updates: Partial<Block>) => {
     if (!selectedScreenId || !selectedBlockId) return;
@@ -319,7 +358,9 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
               onAddScreen={handleAddScreen}
               onDeleteScreen={handleDeleteScreen}
               onDuplicateScreen={handleDuplicateScreen}
+              onRenameScreen={handleRenameScreen}
               onReorderScreens={reorderScreens}
+              onAddTemplate={handleAddTemplate}
               isCollapsed={false}
               onToggleCollapse={() => setLeftPanelCollapsed(true)}
             />

@@ -998,6 +998,14 @@
   color: hsl(var(--builder-v3-accent));
 }
 
+/* Screen item dragging state */
+.builder-v3-screen-item--dragging {
+  opacity: 0.5;
+  background: hsl(var(--builder-v3-surface-active));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+
 /* Screen name */
 .builder-v3-screen-name {
   flex: 1;

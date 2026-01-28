@@ -1,33 +1,36 @@
 /**
  * Funnel Builder v3 - Left Panel (Screen List)
- * Enhanced with Pages/Layers tabs and collapse toggle
- * Dark charcoal theme matching flow-canvas aesthetic
+ * Enhanced with drag-and-drop reordering, rename, and templates
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { 
+  DndContext, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { 
   Plus, 
-  Trash2, 
-  Copy, 
   FileText, 
   FormInput, 
   ListChecks, 
   Calendar, 
   CheckCircle,
-  GripVertical,
-  MoreVertical,
   PanelLeftClose,
   Layers,
+  Sparkles,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
 import {
   Popover,
   PopoverContent,
@@ -38,7 +41,18 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Screen, ScreenType, Block, SCREEN_TYPE_CONFIG, BLOCK_TYPE_CONFIG, BlockType } from '../types/funnel';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Screen, ScreenType, SCREEN_TYPE_CONFIG, BLOCK_TYPE_CONFIG } from '../types/funnel';
+import { ScreenListItem } from './ScreenListItem';
+import { TemplatePickerPopover } from './TemplatePickerPopover';
 import { cn } from '@/lib/utils';
 
 interface LeftPanelProps {
@@ -50,7 +64,9 @@ interface LeftPanelProps {
   onAddScreen: (type: ScreenType) => void;
   onDeleteScreen: (screenId: string) => void;
   onDuplicateScreen: (screenId: string) => void;
+  onRenameScreen: (screenId: string, name: string) => void;
   onReorderScreens: (screenIds: string[]) => void;
+  onAddTemplate?: (templateId: string) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
 }
@@ -61,19 +77,6 @@ const SCREEN_ICONS: Record<ScreenType, React.ComponentType<{ className?: string 
   choice: ListChecks,
   calendar: Calendar,
   thankyou: CheckCircle,
-};
-
-// Block icons for layer tree
-const LAYER_BLOCK_ICONS: Partial<Record<BlockType, React.ComponentType<{ className?: string }>>> = {
-  heading: FileText,
-  text: FileText,
-  image: FileText,
-  video: FileText,
-  button: FileText,
-  input: FormInput,
-  choice: ListChecks,
-  divider: FileText,
-  spacer: FileText,
 };
 
 type PanelTab = 'pages' | 'layers';
@@ -87,15 +90,61 @@ export function LeftPanel({
   onAddScreen,
   onDeleteScreen,
   onDuplicateScreen,
+  onRenameScreen,
   onReorderScreens,
+  onAddTemplate,
   isCollapsed = false,
   onToggleCollapse,
 }: LeftPanelProps) {
   const [addScreenOpen, setAddScreenOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<PanelTab>('pages');
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renameScreenId, setRenameScreenId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
   
   // Get current screen for layer tree
   const currentScreen = screens.find(s => s.id === selectedScreenId);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = screens.findIndex(s => s.id === active.id);
+      const newIndex = screens.findIndex(s => s.id === over.id);
+      const newOrder = arrayMove(screens.map(s => s.id), oldIndex, newIndex);
+      onReorderScreens(newOrder);
+    }
+  }, [screens, onReorderScreens]);
+
+  const handleRenameClick = useCallback((screenId: string) => {
+    const screen = screens.find(s => s.id === screenId);
+    if (screen) {
+      setRenameScreenId(screenId);
+      setRenameValue(screen.name);
+      setRenameDialogOpen(true);
+    }
+  }, [screens]);
+
+  const handleRenameSubmit = useCallback(() => {
+    if (renameScreenId && renameValue.trim()) {
+      onRenameScreen(renameScreenId, renameValue.trim());
+    }
+    setRenameDialogOpen(false);
+    setRenameScreenId(null);
+    setRenameValue('');
+  }, [renameScreenId, renameValue, onRenameScreen]);
 
   if (isCollapsed) {
     return null;
@@ -164,6 +213,14 @@ export function LeftPanel({
               </PopoverContent>
             </Popover>
           )}
+
+          {activeTab === 'layers' && onAddTemplate && (
+            <TemplatePickerPopover onSelectTemplate={onAddTemplate}>
+              <button className="builder-v3-add-screen-btn">
+                <Sparkles className="h-4 w-4" />
+              </button>
+            </TemplatePickerPopover>
+          )}
           
           {onToggleCollapse && (
             <Tooltip>
@@ -183,68 +240,32 @@ export function LeftPanel({
       {/* Tab Content */}
       <ScrollArea className="flex-1 builder-v3-scroll">
         {activeTab === 'pages' ? (
-          <div className="builder-v3-screen-list">
-            {screens.map((screen, index) => {
-              const Icon = SCREEN_ICONS[screen.type];
-              const isSelected = screen.id === selectedScreenId;
-              
-              return (
-                <div
-                  key={screen.id}
-                  className={cn(
-                    'builder-v3-screen-item group',
-                    isSelected && 'builder-v3-screen-item--active'
-                  )}
-                  onClick={() => onSelectScreen(screen.id)}
-                >
-                  {/* Drag Handle */}
-                  <GripVertical className="builder-v3-drag-handle" />
-                  
-                  {/* Index Badge */}
-                  <span className="builder-v3-screen-index">{index + 1}</span>
-                  
-                  {/* Icon */}
-                  <Icon className="builder-v3-screen-icon" />
-                  
-                  {/* Name */}
-                  <span className="builder-v3-screen-name">{screen.name}</span>
-                  
-                  {/* Actions */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        className="builder-v3-screen-actions-btn"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <MoreVertical className="h-3 w-3" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent 
-                      align="end"
-                      className="builder-v3-dropdown"
-                    >
-                      <DropdownMenuItem 
-                        onClick={() => onDuplicateScreen(screen.id)}
-                        className="builder-v3-dropdown-item"
-                      >
-                        <Copy className="h-4 w-4 mr-2" />
-                        Duplicate
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="builder-v3-dropdown-separator" />
-                      <DropdownMenuItem
-                        onClick={() => onDeleteScreen(screen.id)}
-                        disabled={screens.length <= 1}
-                        className="builder-v3-dropdown-item builder-v3-dropdown-item--danger"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              );
-            })}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={screens.map(s => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="builder-v3-screen-list">
+                {screens.map((screen, index) => (
+                  <ScreenListItem
+                    key={screen.id}
+                    screen={screen}
+                    index={index}
+                    isSelected={screen.id === selectedScreenId}
+                    canDelete={screens.length > 1}
+                    onSelect={() => onSelectScreen(screen.id)}
+                    onDuplicate={() => onDuplicateScreen(screen.id)}
+                    onDelete={() => onDeleteScreen(screen.id)}
+                    onRename={() => handleRenameClick(screen.id)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         ) : (
           <div className="builder-v3-layer-tree">
             {currentScreen && currentScreen.blocks.length > 0 ? (
@@ -301,6 +322,44 @@ export function LeftPanel({
           </div>
         )}
       </ScrollArea>
+
+      {/* Rename Dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent className="sm:max-w-[400px] bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]">
+          <DialogHeader>
+            <DialogTitle className="text-[hsl(var(--builder-v3-text))]">Rename Screen</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              placeholder="Screen name"
+              className="bg-[hsl(var(--builder-v3-surface-active))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleRenameSubmit();
+                }
+              }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setRenameDialogOpen(false)}
+              className="text-[hsl(var(--builder-v3-text-secondary))]"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRenameSubmit}
+              className="bg-[hsl(var(--builder-v3-accent))] hover:bg-[hsl(var(--builder-v3-accent))]/90"
+            >
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
