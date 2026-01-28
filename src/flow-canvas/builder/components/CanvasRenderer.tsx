@@ -4603,23 +4603,6 @@ const StackRenderer: React.FC<StackRendererProps> = ({
             </DragOverlay>
           </DndContext>
           
-          {/* Add content button - contrast-adaptive */}
-          {!readOnly && stack.blocks.length > 0 && (
-            <div className="mt-3 opacity-60 hover:opacity-100 transition-opacity">
-              <button
-                onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
-                className={cn(
-                  "flex items-center justify-center gap-1.5 w-full py-2 text-xs transition-colors",
-                  isParentDark
-                    ? "text-white/50 hover:text-white/80"
-                    : "text-gray-500 hover:text-gray-700"
-                )}
-              >
-                <Plus size={14} />
-                <span>Add content</span>
-              </button>
-            </div>
-          )}
         </>
       )}
     </div>
