@@ -193,6 +193,23 @@ export function Canvas({
               </SortableContext>
             </DndContext>
           )}
+
+          {/* Add Content Button - shown when there are blocks and not in preview */}
+          {screen.blocks.length > 0 && !previewMode && onOpenSectionPicker && (
+            <button
+              onClick={onOpenSectionPicker}
+              className={cn(
+                'w-full flex items-center justify-center gap-2 py-4 rounded-xl transition-all',
+                'border-2 border-dashed border-slate-300 hover:border-blue-400',
+                'bg-slate-50/50 hover:bg-blue-50/50',
+                'text-slate-400 hover:text-blue-500',
+                'group'
+              )}
+            >
+              <Plus className="h-5 w-5 transition-transform group-hover:scale-110" />
+              <span className="text-sm font-medium">Add content</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
