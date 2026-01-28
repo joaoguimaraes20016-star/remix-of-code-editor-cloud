@@ -53,7 +53,8 @@ export type BlockType =
   | 'spacer'
   | 'input'      // Single field (name/email/phone/custom)
   | 'choice'     // Single or multiple selection
-  | 'embed';     // Calendar, HTML, etc.
+  | 'embed'      // Calendar, HTML, etc.
+  | 'icon';      // Lucide icon
 
 // =============================================================================
 // ANIMATION & GRADIENT TYPES (imported from shared)
@@ -109,6 +110,9 @@ export interface BlockProps {
   embedType?: 'calendar' | 'html' | 'video';
   embedCode?: string;
   calendarUrl?: string;
+  
+  // Icon
+  icon?: string;
   
   // Spacer
   height?: number;
@@ -363,6 +367,12 @@ export const BLOCK_TYPE_CONFIG: Record<BlockType, {
     label: 'Embed',
     description: 'External content',
     icon: 'Code',
+    category: 'content',
+  },
+  icon: {
+    label: 'Icon',
+    description: 'Lucide icon',
+    icon: 'Star',
     category: 'content',
   },
 };

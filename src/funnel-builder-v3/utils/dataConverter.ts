@@ -312,6 +312,9 @@ function mapElementTypeToBlockType(type: string): BlockType {
     checkbox: 'choice',
     select: 'choice',
     radio: 'choice',
+    icon: 'icon',
+    payment: 'embed',
+    checkout: 'embed',
   };
   return (mapping[type] as BlockType) || 'text';
 }

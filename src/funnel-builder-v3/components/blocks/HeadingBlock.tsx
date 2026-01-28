@@ -1,5 +1,5 @@
 /**
- * Heading Block
+ * Heading Block - Renders headings with HTML support
  */
 
 import { Block } from '../../types/funnel';
@@ -13,10 +13,25 @@ interface HeadingBlockProps {
   primaryColor?: string;
 }
 
+// Sanitize content by stripping concatenated metadata
+function sanitizeContent(content: string): string {
+  if (!content) return '';
+  return content
+    .replace(/\s*fontSize:\d+px\s*/g, '')
+    .replace(/\s*textAlign:\w+\s*/g, '')
+    .replace(/\s*placeholder:[^<]*/g, '')
+    .trim();
+}
+
+// Check if content contains HTML tags
+function hasHtml(content: string): boolean {
+  return /<[^>]+>/.test(content);
+}
+
 export function HeadingBlock({ block, previewMode }: HeadingBlockProps) {
   const { size = 'xl', align = 'left', color, fontWeight = 'bold' } = block.props;
 
-  const sizeClasses = {
+  const sizeClasses: Record<string, string> = {
     sm: 'text-lg',
     md: 'text-xl',
     lg: 'text-2xl',
@@ -25,31 +40,47 @@ export function HeadingBlock({ block, previewMode }: HeadingBlockProps) {
     '3xl': 'text-5xl',
   };
 
-  const alignClasses = {
+  const alignClasses: Record<string, string> = {
     left: 'text-left',
     center: 'text-center',
     right: 'text-right',
   };
 
-  const weightClasses = {
+  const weightClasses: Record<string, string> = {
     normal: 'font-normal',
     medium: 'font-medium',
     semibold: 'font-semibold',
     bold: 'font-bold',
   };
 
+  const content = block.content || '';
+  const sanitized = sanitizeContent(content);
+  const isEmpty = !sanitized;
+
+  const baseClasses = cn(
+    'p-2',
+    sizeClasses[size] || 'text-3xl',
+    alignClasses[align] || 'text-left',
+    weightClasses[fontWeight] || 'font-bold'
+  );
+
+  // If content has HTML, render it safely
+  if (hasHtml(sanitized)) {
+    return (
+      <h2
+        className={baseClasses}
+        style={{ color: color || undefined }}
+        dangerouslySetInnerHTML={{ __html: sanitized }}
+      />
+    );
+  }
+
   return (
     <h2
-      className={cn(
-        'p-2',
-        sizeClasses[size] || 'text-3xl',
-        alignClasses[align] || 'text-left',
-        weightClasses[fontWeight] || 'font-bold',
-        !block.content && 'text-muted-foreground italic'
-      )}
+      className={cn(baseClasses, isEmpty && 'text-muted-foreground italic')}
       style={{ color: color || undefined }}
     >
-      {block.content || (previewMode ? '' : 'Your Heading')}
+      {sanitized || (previewMode ? '' : 'Your Heading')}
     </h2>
   );
 }

@@ -18,6 +18,7 @@ import {
   Trash2,
   Copy,
   Palette,
+  Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +52,7 @@ const BLOCK_ICONS: Record<BlockType, React.ComponentType<{ className?: string }>
   input: TextCursor,
   choice: ListChecks,
   embed: Code,
+  icon: Star,
 };
 
 export function RightPanel({

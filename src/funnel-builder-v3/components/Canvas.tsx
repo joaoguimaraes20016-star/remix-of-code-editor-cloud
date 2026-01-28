@@ -36,26 +36,30 @@ export function Canvas({
     );
   }
 
-  // Background styles
+  // Background styles - default to white for content visibility
   const getBackgroundStyle = () => {
+    const defaultBg = { backgroundColor: '#ffffff' };
+    
     if (!screen.background) {
-      return { backgroundColor: 'hsl(var(--background))' };
+      return defaultBg;
     }
 
     switch (screen.background.type) {
       case 'solid':
-        return { backgroundColor: screen.background.color || 'hsl(var(--background))' };
-      case 'gradient':
+        return { backgroundColor: screen.background.color || '#ffffff' };
+      case 'gradient': {
         const { from, to, angle } = screen.background.gradient || { from: '#fff', to: '#f0f0f0', angle: 180 };
         return { background: `linear-gradient(${angle}deg, ${from}, ${to})` };
+      }
       case 'image':
         return {
           backgroundImage: `url(${screen.background.image})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          backgroundColor: '#ffffff',
         };
       default:
-        return {};
+        return defaultBg;
     }
   };
 
