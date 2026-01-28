@@ -15,6 +15,7 @@ import { ChoiceBlock } from './ChoiceBlock';
 import { DividerBlock } from './DividerBlock';
 import { SpacerBlock } from './SpacerBlock';
 import { EmbedBlock } from './EmbedBlock';
+import { IconBlock } from './IconBlock';
 import { cn } from '@/lib/utils';
 
 interface BlockRendererProps {
@@ -62,6 +63,8 @@ export function BlockRenderer({
         return <SpacerBlock {...commonProps} />;
       case 'embed':
         return <EmbedBlock {...commonProps} />;
+      case 'icon':
+        return <IconBlock {...commonProps} />;
       default:
         return (
           <div className="p-4 bg-muted rounded text-sm text-muted-foreground">
