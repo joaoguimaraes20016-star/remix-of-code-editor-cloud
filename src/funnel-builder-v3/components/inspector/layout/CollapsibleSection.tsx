@@ -2,6 +2,7 @@
  * CollapsibleSection - Expandable property group
  * 
  * Features animated chevron, optional badge/accent, dark theme styling.
+ * Enhanced with border-left accent on expanded sections.
  */
 
 import React, { useState } from 'react';
@@ -26,11 +27,12 @@ export const CollapsibleSection = React.forwardRef<HTMLDivElement, CollapsibleSe
       <div 
         ref={ref} 
         className={cn(
-          "border-b border-[hsl(var(--builder-v3-border))]",
+          'builder-v3-collapsible-section',
+          isOpen && 'builder-v3-collapsible-section--expanded',
           className
         )}
       >
-        {/* Accent gradient strip */}
+        {/* Accent gradient strip (optional custom color) */}
         {accentColor && (
           <div 
             className="h-0.5 w-full" 
@@ -40,40 +42,40 @@ export const CollapsibleSection = React.forwardRef<HTMLDivElement, CollapsibleSe
         
         <button 
           onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
-          className="w-full flex items-center justify-between px-4 py-3 hover:bg-[hsl(var(--builder-v3-surface-hover))] transition-colors"
+          className="builder-v3-collapsible-header"
           type="button"
         >
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="builder-v3-collapsible-header-left">
             {icon && (
-              <span className="text-[hsl(var(--builder-v3-text-muted))] flex-shrink-0">
+              <span className="builder-v3-collapsible-icon">
                 {icon}
               </span>
             )}
-            <span className="text-xs font-medium text-[hsl(var(--builder-v3-text))] truncate">
+            <span className="builder-v3-collapsible-title">
               {title}
             </span>
             {badge && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(var(--builder-v3-accent)/0.15)] text-[hsl(var(--builder-v3-accent))] font-medium flex-shrink-0">
+              <span className="builder-v3-collapsible-badge">
                 {badge}
               </span>
             )}
           </div>
           <ChevronDown 
             className={cn(
-              "w-3.5 h-3.5 text-[hsl(var(--builder-v3-text-dim))] flex-shrink-0 transition-transform duration-200",
-              isOpen && "rotate-180"
+              'builder-v3-collapsible-chevron',
+              isOpen && 'builder-v3-collapsible-chevron--open'
             )}
           />
         </button>
         
         <div
           className={cn(
-            "grid transition-all duration-200 ease-out",
-            isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+            'builder-v3-collapsible-content',
+            isOpen ? 'builder-v3-collapsible-content--open' : 'builder-v3-collapsible-content--closed'
           )}
         >
-          <div className="overflow-hidden">
-            <div className="px-4 pb-4 pt-0 space-y-3">
+          <div className="builder-v3-collapsible-inner">
+            <div className="builder-v3-collapsible-inner-padding space-y-3">
               {children}
             </div>
           </div>
