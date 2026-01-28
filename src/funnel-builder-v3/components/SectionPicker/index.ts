@@ -11,6 +11,7 @@ export { ContentBlockGrid } from './ContentBlockGrid';
 export { InputBlockGrid } from './InputBlockGrid';
 export { BlockTileCard } from './BlockTileCard';
 export { InteractiveBlockCard } from './InteractiveBlockCard';
+export { HighTicketPreviewCard } from '../HighTicketPreviewCard';
 
 // Block Icons
 export * from './BlockIcons';
