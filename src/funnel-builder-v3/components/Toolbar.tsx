@@ -27,47 +27,36 @@ export function Toolbar({
   onBack,
 }: ToolbarProps) {
   return (
-    <header className="h-14 border-b border-[hsl(var(--builder-v3-border))] bg-[hsl(var(--builder-v3-surface))] flex items-center justify-between px-4 shrink-0">
+    <header className="builder-v3-toolbar">
       {/* Left: Back + Title */}
-      <div className="flex items-center gap-3">
+      <div className="builder-v3-toolbar-left">
         {onBack && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            className="h-8 w-8 text-[hsl(var(--builder-v3-text-muted))] hover:text-[hsl(var(--builder-v3-text))] hover:bg-[hsl(var(--builder-v3-surface-hover))]"
-          >
+          <button onClick={onBack} className="builder-v3-toolbar-btn">
             <ArrowLeft className="h-4 w-4" />
-          </Button>
+          </button>
         )}
         
-        <div className="flex items-center gap-2">
-          <h1 className="font-semibold text-[hsl(var(--builder-v3-text))] truncate max-w-[200px]">
-            {funnelName}
-          </h1>
-          {isDirty && (
-            <span className="text-xs text-[hsl(var(--builder-v3-text-dim))]">(unsaved)</span>
-          )}
+        <div className="builder-v3-toolbar-title">
+          <h1>{funnelName}</h1>
+          {isDirty && <span className="builder-v3-toolbar-dirty">(unsaved)</span>}
         </div>
       </div>
 
       {/* Center: Preview Toggle */}
-      <div className="flex items-center">
+      <div className="builder-v3-toolbar-center">
         <button
           onClick={onTogglePreview}
           className={cn(
-            'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
-            previewMode 
-              ? 'bg-[hsl(var(--builder-v3-accent)/0.15)] text-[hsl(var(--builder-v3-accent))] ring-1 ring-[hsl(var(--builder-v3-accent)/0.3)]' 
-              : 'text-[hsl(var(--builder-v3-text-muted))] hover:text-[hsl(var(--builder-v3-text))] hover:bg-[hsl(var(--builder-v3-surface-hover))]'
+            'builder-v3-preview-toggle',
+            previewMode && 'builder-v3-preview-toggle--active'
           )}
         >
           {previewMode ? (
             <>
               <Eye className="h-4 w-4" />
               <span>Testing</span>
-              <span className="text-[hsl(var(--builder-v3-text-muted))]">·</span>
-              <span className="hover:text-[hsl(var(--builder-v3-accent))]">Back to Edit</span>
+              <span className="builder-v3-preview-divider">·</span>
+              <span className="builder-v3-preview-exit">Back to Edit</span>
             </>
           ) : (
             <>
@@ -79,21 +68,15 @@ export function Toolbar({
       </div>
 
       {/* Right: Save + Publish */}
-      <div className="flex items-center gap-2">
-        {/* Divider */}
-        <div className="w-px h-5 bg-[hsl(var(--builder-v3-border))]" />
+      <div className="builder-v3-toolbar-right">
+        <div className="builder-v3-toolbar-divider" />
         
         <Button
           variant="ghost"
           size="sm"
           onClick={onSave}
           disabled={!isDirty}
-          className={cn(
-            'gap-2',
-            'bg-[hsl(var(--builder-v3-surface-hover))] text-[hsl(var(--builder-v3-text-muted))]',
-            'hover:text-[hsl(var(--builder-v3-text))] hover:bg-[hsl(var(--builder-v3-surface-active))]',
-            'disabled:opacity-50'
-          )}
+          className="builder-v3-save-btn"
         >
           <Save className="h-4 w-4" />
           Save
@@ -103,7 +86,7 @@ export function Toolbar({
           <Button
             size="sm"
             onClick={onPublish}
-            className="gap-2 bg-[hsl(var(--builder-v3-accent))] text-white hover:brightness-110"
+            className="builder-v3-publish-btn"
           >
             <Rocket className="h-4 w-4" />
             Publish

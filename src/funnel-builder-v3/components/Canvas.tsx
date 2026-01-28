@@ -71,56 +71,61 @@ export function Canvas({
 
   return (
     <div 
-      className="flex-1 flex items-center justify-center p-8 overflow-auto"
-      style={{ backgroundColor: 'hsl(var(--builder-v3-canvas-bg))' }}
+      className="builder-v3-canvas-viewport flex-1 flex items-center justify-center p-8 overflow-auto"
       data-preview={previewMode ? 'true' : undefined}
     >
       {/* Device Frame */}
-      <div
-        className={cn(
-          'builder-v3-device-frame builder-v3-device-frame--mobile',
-          'min-h-[600px] overflow-hidden relative',
-          !previewMode && 'ring-1 ring-[hsl(var(--builder-v3-border)/0.3)]'
-        )}
-        style={{
-          ...getBackgroundStyle(),
-          fontFamily: settings.fontFamily || 'Inter, sans-serif',
-        }}
-        onClick={handleCanvasClick}
-      >
+      <div className="builder-v3-device-frame builder-v3-device-frame--mobile">
         {/* Phone Notch */}
-        <div className="builder-v3-phone-notch" />
-        
-        {/* Progress Bar */}
-        {settings.showProgress && (
-          <div className="h-1 bg-[hsl(var(--builder-v3-surface))]">
-            <div 
-              className="h-full bg-[hsl(var(--builder-v3-accent))] transition-all" 
-              style={{ width: '33%' }}
-            />
-          </div>
-        )}
-
-        {/* Screen Content */}
-        <div className="p-6 space-y-4 flex-1">
-          {screen.blocks.length === 0 ? (
-            <EmptyState previewMode={previewMode} />
-          ) : (
-            screen.blocks.map((block) => (
-              <BlockRenderer
-                key={block.id}
-                block={block}
-                isSelected={block.id === selectedBlockId}
-                onSelect={() => onSelectBlock(block.id)}
-                previewMode={previewMode}
-                primaryColor={settings.primaryColor}
-              />
-            ))
-          )}
+        <div className="builder-v3-phone-notch">
+          <div className="builder-v3-phone-notch-inner" />
         </div>
         
-        {/* Home Indicator */}
-        <div className="builder-v3-home-indicator" />
+        {/* Device Screen */}
+        <div 
+          className="builder-v3-device-screen"
+          style={{
+            ...getBackgroundStyle(),
+            fontFamily: settings.fontFamily || 'Inter, sans-serif',
+          }}
+          onClick={handleCanvasClick}
+        >
+          {/* Screen Content */}
+          <div className="builder-v3-device-screen-content">
+            {/* Progress Bar */}
+            {settings.showProgress && (
+              <div className="builder-v3-progress-bar">
+                <div 
+                  className="builder-v3-progress-fill" 
+                  style={{ width: '33%' }}
+                />
+              </div>
+            )}
+
+            {/* Blocks */}
+            <div className="p-6 space-y-4">
+              {screen.blocks.length === 0 ? (
+                <EmptyState previewMode={previewMode} />
+              ) : (
+                screen.blocks.map((block) => (
+                  <BlockRenderer
+                    key={block.id}
+                    block={block}
+                    isSelected={block.id === selectedBlockId}
+                    onSelect={() => onSelectBlock(block.id)}
+                    previewMode={previewMode}
+                    primaryColor={settings.primaryColor}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Home Bar */}
+        <div className="builder-v3-device-home-bar">
+          <div className="builder-v3-home-indicator" />
+        </div>
       </div>
     </div>
   );
@@ -129,21 +134,18 @@ export function Canvas({
 function EmptyState({ previewMode }: { previewMode: boolean }) {
   if (previewMode) {
     return (
-      <div className="py-20 text-center text-muted-foreground">
-        <p>This screen is empty</p>
+      <div className="builder-v3-empty-page-state">
+        <p className="builder-v3-empty-page-label">This screen is empty</p>
       </div>
     );
   }
 
   return (
-    <div className="py-20 flex flex-col items-center justify-center text-center">
-      <div className="w-12 h-12 rounded-full bg-[hsl(var(--builder-v3-surface-hover))] flex items-center justify-center mb-4">
-        <Plus className="h-6 w-6 text-[hsl(var(--builder-v3-text-muted))]" />
+    <div className="builder-v3-empty-page-state">
+      <div className="builder-v3-empty-page-add-btn">
+        <Plus className="h-6 w-6" />
       </div>
-      <p className="text-[hsl(var(--builder-v3-text-secondary))] mb-2">This screen is empty</p>
-      <p className="text-sm text-[hsl(var(--builder-v3-text-dim))]">
-        Add blocks from the right panel
-      </p>
+      <p className="builder-v3-empty-page-label">Add blocks from the right panel</p>
     </div>
   );
 }

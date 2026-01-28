@@ -63,26 +63,22 @@ export function LeftPanel({
   const [addScreenOpen, setAddScreenOpen] = useState(false);
 
   return (
-    <div className="w-64 border-r border-[hsl(var(--builder-v3-border))] bg-[hsl(var(--builder-v3-surface))] flex flex-col shrink-0">
+    <div className="builder-v3-left-panel">
       {/* Header */}
-      <div className="h-12 px-4 flex items-center justify-between border-b border-[hsl(var(--builder-v3-border-subtle))]">
-        <span className="text-sm font-medium text-[hsl(var(--builder-v3-text))]">Screens</span>
+      <div className="builder-v3-panel-header">
+        <span className="builder-v3-panel-title">Screens</span>
         
         <Popover open={addScreenOpen} onOpenChange={setAddScreenOpen}>
           <PopoverTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-7 w-7 text-[hsl(var(--builder-v3-text-muted))] hover:text-[hsl(var(--builder-v3-text))] hover:bg-[hsl(var(--builder-v3-surface-hover))]"
-            >
+            <button className="builder-v3-add-screen-btn">
               <Plus className="h-4 w-4" />
-            </Button>
+            </button>
           </PopoverTrigger>
           <PopoverContent 
-            className="w-56 p-2 bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]" 
+            className="builder-v3-screen-picker" 
             align="end"
           >
-            <div className="space-y-1">
+            <div className="builder-v3-screen-picker-list">
               {(Object.entries(SCREEN_TYPE_CONFIG) as [ScreenType, typeof SCREEN_TYPE_CONFIG[ScreenType]][]).map(
                 ([type, config]) => {
                   const Icon = SCREEN_ICONS[type];
@@ -93,14 +89,12 @@ export function LeftPanel({
                         onAddScreen(type);
                         setAddScreenOpen(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[hsl(var(--builder-v3-surface-hover))] text-left transition-colors"
+                      className="builder-v3-screen-picker-item"
                     >
-                      <Icon className="h-4 w-4 text-[hsl(var(--builder-v3-text-muted))]" />
-                      <div>
-                        <div className="text-sm font-medium text-[hsl(var(--builder-v3-text))]">{config.label}</div>
-                        <div className="text-xs text-[hsl(var(--builder-v3-text-dim))]">
-                          {config.description}
-                        </div>
+                      <Icon className="builder-v3-screen-picker-icon" />
+                      <div className="builder-v3-screen-picker-content">
+                        <div className="builder-v3-screen-picker-label">{config.label}</div>
+                        <div className="builder-v3-screen-picker-desc">{config.description}</div>
                       </div>
                     </button>
                   );
@@ -113,7 +107,7 @@ export function LeftPanel({
 
       {/* Screen List */}
       <ScrollArea className="flex-1 builder-v3-scroll">
-        <div className="p-2 space-y-1">
+        <div className="builder-v3-screen-list">
           {screens.map((screen, index) => {
             const Icon = SCREEN_ICONS[screen.type];
             const isSelected = screen.id === selectedScreenId;
@@ -122,58 +116,49 @@ export function LeftPanel({
               <div
                 key={screen.id}
                 className={cn(
-                  'group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-150',
-                  isSelected
-                    ? 'bg-[hsl(var(--builder-v3-accent)/0.15)] text-[hsl(var(--builder-v3-accent))]'
-                    : 'bg-[hsl(var(--builder-v3-surface))] hover:bg-[hsl(var(--builder-v3-surface-hover))] text-[hsl(var(--builder-v3-text-secondary))]'
+                  'builder-v3-screen-item group',
+                  isSelected && 'builder-v3-screen-item--active'
                 )}
                 onClick={() => onSelectScreen(screen.id)}
               >
                 {/* Drag Handle */}
-                <GripVertical className="h-3 w-3 text-[hsl(var(--builder-v3-text-dim))] opacity-0 group-hover:opacity-100 cursor-grab" />
+                <GripVertical className="builder-v3-drag-handle" />
+                
+                {/* Index Badge */}
+                <span className="builder-v3-screen-index">{index + 1}</span>
                 
                 {/* Icon */}
-                <Icon className={cn(
-                  'h-4 w-4 shrink-0',
-                  isSelected ? 'text-[hsl(var(--builder-v3-accent))]' : 'text-[hsl(var(--builder-v3-text-muted))]'
-                )} />
+                <Icon className="builder-v3-screen-icon" />
                 
                 {/* Name */}
-                <span className={cn(
-                  'flex-1 text-sm truncate',
-                  isSelected && 'font-medium'
-                )}>
-                  {index + 1}. {screen.name}
-                </span>
+                <span className="builder-v3-screen-name">{screen.name}</span>
                 
                 {/* Actions */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 text-[hsl(var(--builder-v3-text-muted))] hover:bg-[hsl(var(--builder-v3-surface-active))]"
+                    <button
+                      className="builder-v3-screen-actions-btn"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <MoreVertical className="h-3 w-3" />
-                    </Button>
+                    </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent 
                     align="end"
-                    className="bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]"
+                    className="builder-v3-dropdown"
                   >
                     <DropdownMenuItem 
                       onClick={() => onDuplicateScreen(screen.id)}
-                      className="text-[hsl(var(--builder-v3-text-secondary))] focus:bg-[hsl(var(--builder-v3-surface-hover))] focus:text-[hsl(var(--builder-v3-text))]"
+                      className="builder-v3-dropdown-item"
                     >
                       <Copy className="h-4 w-4 mr-2" />
                       Duplicate
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-[hsl(var(--builder-v3-border))]" />
+                    <DropdownMenuSeparator className="builder-v3-dropdown-separator" />
                     <DropdownMenuItem
                       onClick={() => onDeleteScreen(screen.id)}
                       disabled={screens.length <= 1}
-                      className="text-[hsl(var(--builder-v3-error))] focus:text-[hsl(var(--builder-v3-error))] focus:bg-[hsl(var(--builder-v3-error)/0.1)]"
+                      className="builder-v3-dropdown-item builder-v3-dropdown-item--danger"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
