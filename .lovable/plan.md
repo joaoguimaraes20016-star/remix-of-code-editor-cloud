@@ -1,456 +1,213 @@
 
-# Phase 6: Complete Feature Parity with Flow-Canvas Builder
+# Phase 12: Merge Flow-Canvas Components into v3 Builder
 
 ## Overview
 
-The v3 builder currently has the foundation in place (dark theme, device frame, basic panels) but is missing critical functionality that exists in the flow-canvas builder. This plan brings feature parity by integrating the proven patterns from `flow-canvas/builder/components`.
-
-## Gap Analysis
-
-| Feature | Flow-Canvas | V3 Builder | Status |
-|---------|-------------|------------|--------|
-| Device Selector (Mobile/Tablet/Desktop) | TopToolbar.tsx | Missing | Needs adding |
-| Light/Dark Editor Theme Toggle | TopToolbar.tsx | Missing | Needs adding |
-| Undo/Redo Buttons | TopToolbar.tsx | Missing | Needs adding |
-| Breakpoint Indicator | TopToolbar.tsx | Missing | Needs adding |
-| Save Status Indicator | TopToolbar.tsx | Missing | Needs adding |
-| Pages/Layers Tab Toggle | EditorShell.tsx | Missing | Needs adding |
-| Panel Collapse Toggle | EditorShell.tsx | Missing | Needs adding |
-| Desktop Device Frame | DeviceFrame.tsx | CSS exists, not wired | Needs wiring |
-| Tablet Device Frame | DeviceFrame.tsx | CSS exists, not wired | Needs wiring |
-| Keyboard Shortcuts (Undo/Redo) | EditorShell.tsx | Missing | Needs adding |
-| AI Copilot Button | TopToolbar.tsx | Missing | Future |
-| Grid Toggle | TopToolbar.tsx | Missing | Needs adding |
+This phase directly ports the proven, working components from `flow-canvas/builder` into the new `funnel-builder-v3`, ensuring the v3 builder looks and feels as polished as the original while maintaining the simplified v3 architecture.
 
 ---
 
-## Implementation Plan
+## Current State
 
-### 1. Enhanced Toolbar Component (~150 lines)
-**File:** `src/funnel-builder-v3/components/Toolbar.tsx`
+### v3 Builder Has
+- Basic block rendering (text, heading, image, video, button, choice, input, divider, spacer, embed, icon)
+- Drag-and-drop block reordering via @dnd-kit
+- Device frame preview (mobile/tablet/desktop)
+- Undo/redo history + keyboard shortcuts
+- Screen management (add, delete, duplicate, rename, reorder)
+- Basic RightPanel with plain Lucide icons
+- Simple EmptyState with plus icon
 
-Transform from basic to feature-complete toolbar with:
-
-```tsx
-interface ToolbarProps {
-  funnelName: string;
-  previewMode: boolean;
-  isDirty: boolean;
-  onTogglePreview: () => void;
-  onPublish?: () => void;
-  onSave: () => void;
-  onBack?: () => void;
-  // NEW: Device mode
-  deviceMode: 'mobile' | 'tablet' | 'desktop';
-  onDeviceModeChange: (mode: 'mobile' | 'tablet' | 'desktop') => void;
-  // NEW: Theme toggle
-  editorTheme: 'light' | 'dark';
-  onThemeToggle: () => void;
-  // NEW: Undo/Redo
-  canUndo: boolean;
-  canRedo: boolean;
-  onUndo: () => void;
-  onRedo: () => void;
-  // NEW: Save status
-  saveStatus?: 'idle' | 'saving' | 'saved' | 'error';
-}
-```
-
-Add device selector, theme toggle, undo/redo buttons:
-
-```tsx
-{/* Device Mode Switcher */}
-<div className="builder-v3-device-selector">
-  <button
-    onClick={() => onDeviceModeChange('desktop')}
-    className={cn("builder-v3-device-btn", deviceMode === 'desktop' && "builder-v3-device-btn--active")}
-  >
-    <Monitor className="w-4 h-4" />
-  </button>
-  <button
-    onClick={() => onDeviceModeChange('tablet')}
-    className={cn("builder-v3-device-btn", deviceMode === 'tablet' && "builder-v3-device-btn--active")}
-  >
-    <Tablet className="w-4 h-4" />
-  </button>
-  <button
-    onClick={() => onDeviceModeChange('mobile')}
-    className={cn("builder-v3-device-btn", deviceMode === 'mobile' && "builder-v3-device-btn--active")}
-  >
-    <Smartphone className="w-4 h-4" />
-  </button>
-</div>
-
-{/* Editor Theme Toggle */}
-<button onClick={onThemeToggle} className="builder-v3-toolbar-btn">
-  {editorTheme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-</button>
-
-{/* Undo/Redo */}
-<div className="builder-v3-undo-redo">
-  <button onClick={onUndo} disabled={!canUndo} className="builder-v3-toolbar-btn">
-    <Undo2 className="w-4 h-4" />
-  </button>
-  <button onClick={onRedo} disabled={!canRedo} className="builder-v3-toolbar-btn">
-    <Redo2 className="w-4 h-4" />
-  </button>
-</div>
-```
-
-### 2. Multi-Device Canvas Component (~80 lines)
-**File:** `src/funnel-builder-v3/components/Canvas.tsx`
-
-Add device mode support with proper frame switching:
-
-```tsx
-interface CanvasProps {
-  screen: Screen | null;
-  selectedBlockId: string | null;
-  onSelectBlock: (blockId: string | null) => void;
-  onReorderBlocks: (blockIds: string[]) => void;
-  previewMode: boolean;
-  settings: FunnelSettings;
-  // NEW: Device mode
-  deviceMode: 'mobile' | 'tablet' | 'desktop';
-}
-
-// Render different device frames based on mode
-{deviceMode === 'desktop' && (
-  <div className="builder-v3-device-frame builder-v3-device-frame--desktop">
-    <div className="builder-v3-browser-bar">
-      <div className="builder-v3-traffic-lights">
-        <span className="builder-v3-traffic-light builder-v3-traffic-light--red" />
-        <span className="builder-v3-traffic-light builder-v3-traffic-light--yellow" />
-        <span className="builder-v3-traffic-light builder-v3-traffic-light--green" />
-      </div>
-      <div className="builder-v3-url-bar">yourfunnel.com</div>
-    </div>
-    <div className="builder-v3-device-screen">{/* Content */}</div>
-  </div>
-)}
-
-{deviceMode === 'tablet' && (
-  <div className="builder-v3-device-frame builder-v3-device-frame--tablet">
-    <div className="builder-v3-device-screen">{/* Content */}</div>
-    <div className="builder-v3-device-home-bar">
-      <div className="builder-v3-home-indicator" />
-    </div>
-  </div>
-)}
-
-{deviceMode === 'mobile' && (
-  <div className="builder-v3-device-frame builder-v3-device-frame--mobile">
-    <div className="builder-v3-phone-notch">
-      <div className="builder-v3-phone-notch-inner" />
-    </div>
-    <div className="builder-v3-device-screen">{/* Content */}</div>
-    <div className="builder-v3-device-home-bar">
-      <div className="builder-v3-home-indicator" />
-    </div>
-  </div>
-)}
-```
-
-### 3. Enhanced Left Panel with Tab Toggle (~60 lines)
-**File:** `src/funnel-builder-v3/components/LeftPanel.tsx`
-
-Add Pages/Layers tab toggle and collapse button:
-
-```tsx
-interface LeftPanelProps {
-  screens: Screen[];
-  selectedScreenId: string;
-  onSelectScreen: (screenId: string) => void;
-  // ... existing props
-  // NEW: Collapse support
-  isCollapsed?: boolean;
-  onToggleCollapse?: () => void;
-}
-
-// Tab state
-const [activeTab, setActiveTab] = useState<'pages' | 'layers'>('pages');
-
-// Header with tabs and collapse
-<div className="builder-v3-panel-header">
-  <div className="builder-v3-panel-tabs">
-    <button
-      onClick={() => setActiveTab('pages')}
-      className={cn("builder-v3-panel-tab", activeTab === 'pages' && "builder-v3-panel-tab--active")}
-    >
-      Pages
-    </button>
-    <button
-      onClick={() => setActiveTab('layers')}
-      className={cn("builder-v3-panel-tab", activeTab === 'layers' && "builder-v3-panel-tab--active")}
-    >
-      Layers
-    </button>
-  </div>
-  <button onClick={onToggleCollapse} className="builder-v3-toolbar-btn">
-    <PanelLeftClose className="w-4 h-4" />
-  </button>
-</div>
-```
-
-### 4. Enhanced Editor Shell with State (~100 lines)
-**File:** `src/funnel-builder-v3/components/Editor.tsx`
-
-Add device mode, theme toggle, and undo/redo state:
-
-```tsx
-// New state
-const [deviceMode, setDeviceMode] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
-const [editorTheme, setEditorTheme] = useState<'light' | 'dark'>('dark');
-const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
-const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
-
-// Keyboard shortcuts for undo/redo
-useEffect(() => {
-  const handleKeyDown = (e: KeyboardEvent) => {
-    const isModifier = e.metaKey || e.ctrlKey;
-    if (!isModifier) return;
-    
-    if (e.key === 'z' && !e.shiftKey && canUndo) {
-      e.preventDefault();
-      undo();
-    }
-    if ((e.key === 'z' && e.shiftKey) || e.key === 'y') {
-      e.preventDefault();
-      if (canRedo) redo();
-    }
-  };
-  
-  window.addEventListener('keydown', handleKeyDown);
-  return () => window.removeEventListener('keydown', handleKeyDown);
-}, [canUndo, canRedo, undo, redo]);
-
-// Sync theme to document
-useEffect(() => {
-  document.documentElement.classList.toggle('dark', editorTheme === 'dark');
-}, [editorTheme]);
-```
-
-### 5. Additional CSS for New Features (~80 lines)
-**File:** `src/funnel-builder-v3/styles/builder.css`
-
-Add missing device selector, theme, and panel collapse styles:
-
-```css
-/* Device selector */
-.builder-v3-device-selector {
-  display: flex;
-  gap: 4px;
-  background: hsl(var(--builder-v3-surface-hover));
-  padding: 3px;
-  border-radius: 8px;
-}
-
-.builder-v3-device-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 28px;
-  background: transparent;
-  border: none;
-  border-radius: 5px;
-  color: hsl(var(--builder-v3-text-muted));
-  cursor: pointer;
-  transition: all var(--builder-v3-transition-fast);
-}
-
-.builder-v3-device-btn:hover {
-  color: hsl(var(--builder-v3-text-secondary));
-}
-
-.builder-v3-device-btn--active {
-  background: hsl(var(--builder-v3-surface-active));
-  color: hsl(var(--builder-v3-text));
-  box-shadow: 0 1px 3px hsl(0 0% 0% / 0.2);
-}
-
-/* Breakpoint indicator */
-.builder-v3-breakpoint-indicator {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-}
-
-.builder-v3-breakpoint-indicator .breakpoint-label {
-  font-weight: 500;
-  color: hsl(var(--builder-v3-accent));
-}
-
-.builder-v3-breakpoint-indicator .breakpoint-width {
-  color: hsl(var(--builder-v3-text-muted));
-}
-
-/* Panel collapse toggle */
-.builder-v3-panel-toggle {
-  position: fixed;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 48px;
-  background: hsl(var(--builder-v3-surface));
-  border: 1px solid hsl(var(--builder-v3-border));
-  border-radius: 0 8px 8px 0;
-  color: hsl(var(--builder-v3-text-muted));
-  cursor: pointer;
-  z-index: 100;
-  transition: all var(--builder-v3-transition);
-  box-shadow: 2px 0 8px hsl(0 0% 0% / 0.2);
-}
-
-.builder-v3-panel-toggle--left {
-  left: 0;
-}
-
-.builder-v3-panel-toggle--right {
-  right: 0;
-  border-radius: 8px 0 0 8px;
-}
-
-.builder-v3-panel-toggle:hover {
-  background: hsl(var(--builder-v3-surface-hover));
-  color: hsl(var(--builder-v3-text));
-}
-
-/* Collapsed panel state */
-.builder-v3-left-panel--collapsed,
-.builder-v3-right-panel--collapsed {
-  width: 0;
-  opacity: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-/* Editor shell grid layout */
-.builder-v3-editor-shell {
-  display: grid;
-  grid-template-columns: 260px 1fr 320px;
-  height: 100%;
-  transition: grid-template-columns 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.builder-v3-editor-shell--left-collapsed {
-  grid-template-columns: 0 1fr 320px;
-}
-
-.builder-v3-editor-shell--right-collapsed {
-  grid-template-columns: 260px 1fr 0;
-}
-
-.builder-v3-editor-shell--both-collapsed {
-  grid-template-columns: 0 1fr 0;
-}
-```
-
-### 6. Light Theme Support (~40 lines)
-**File:** `src/funnel-builder-v3/styles/builder.css`
-
-Add light theme token overrides:
-
-```css
-/* Light theme overrides */
-[data-theme="builder-light"] {
-  --builder-v3-bg: 0 0% 98%;
-  --builder-v3-surface: 0 0% 100%;
-  --builder-v3-surface-hover: 0 0% 96%;
-  --builder-v3-surface-active: 0 0% 92%;
-  --builder-v3-border: 0 0% 88%;
-  --builder-v3-border-subtle: 0 0% 92%;
-  --builder-v3-text: 0 0% 10%;
-  --builder-v3-text-secondary: 0 0% 40%;
-  --builder-v3-text-muted: 0 0% 55%;
-  --builder-v3-text-dim: 0 0% 70%;
-  --builder-v3-canvas-bg: 0 0% 94%;
-}
-```
+### What's Missing (Making it look "bland")
+1. **Rich Section Picker Modal** - The existing `SectionPicker` from flow-canvas is fully built
+2. **Premium Block Icons** - The `BlockIcons.tsx`, `InteractiveBlockIcons.tsx`, `PremiumBlockIcons.tsx` mockups exist
+3. **Block Action Bar** - The floating toolbar exists in `BlockActionBar.tsx`
+4. **Empty Canvas State** - The `EmptyCanvasState.tsx` with quick-picks exists
+5. **Section Templates** - 3500+ lines of templates in `sectionTemplates.ts`
+6. **High Ticket Preview Cards** - Rich visual previews in `HighTicketPreviewCard.tsx`
 
 ---
 
-## Files to Modify
+## Implementation Strategy
 
-| File | Type | Changes | Est. Lines |
-|------|------|---------|------------|
-| `components/Toolbar.tsx` | Modify | Device selector, theme toggle, undo/redo | ~150 |
-| `components/Canvas.tsx` | Modify | Multi-device frame support | ~80 |
-| `components/LeftPanel.tsx` | Modify | Pages/Layers tabs, collapse | ~60 |
-| `components/Editor.tsx` | Modify | State management, keyboard shortcuts | ~100 |
-| `styles/builder.css` | Modify | Device selector, panel toggle, light theme | ~120 |
+### Step 1: Copy SectionPicker Components (Direct Port)
 
-**Total: ~510 lines modified**
+Copy these existing, working files from `src/flow-canvas/builder/components/SectionPicker/` to `src/funnel-builder-v3/components/SectionPicker/`:
 
----
+| Source File | Purpose |
+|------------|---------|
+| `SectionPicker.tsx` | Main modal with left nav + right content |
+| `CategoryIcon.tsx` | Geometric category icons |
+| `BasicBlockGrid.tsx` | Content blocks grid (Text, Button, Image, etc.) |
+| `InteractiveBlockGrid.tsx` | Input/form blocks grid |
+| `BlockTileCard.tsx` | Visual tile card component |
+| `InteractiveBlockCard.tsx` | Taller card with form mockups |
+| `BlockIcons.tsx` | Rich visual mockups for content blocks |
+| `InteractiveBlockIcons.tsx` | Form/input mockups |
+| `PremiumBlockIcons.tsx` | Gradient text, stats, badges mockups |
+| `TemplateGallery.tsx` | Section template grid |
+| `QuickPicks.tsx` | Hero/CTA/Form quick cards |
+| `index.tsx` | Exports |
 
-## Visual Outcome
-
-After this phase:
-
-1. **Device Selector** - Mobile/Tablet/Desktop toggle in toolbar center
-2. **Light/Dark Theme Toggle** - Sun/Moon button to switch editor appearance
-3. **Undo/Redo Controls** - Buttons with keyboard shortcuts (Cmd+Z, Cmd+Shift+Z)
-4. **Breakpoint Indicator** - Shows "Mobile 390px" or "Desktop 1024px"
-5. **Save Status** - "Saving...", "Saved", "Error" indicator
-6. **Pages/Layers Tabs** - Toggle between screen list and layer tree
-7. **Panel Collapse** - Buttons to hide left/right panels for focus
-8. **Full Device Frames** - Desktop browser bar, tablet, mobile with notch
-9. **Keyboard Shortcuts** - Working undo/redo via keyboard
+**Minor adaptations needed:**
+- Update import paths for v3 types
+- Connect `onSelectTemplate` to v3's block creation logic
 
 ---
 
-## Technical Architecture
+### Step 2: Copy Supporting Components
 
-The v3 builder will follow the same proven patterns from flow-canvas:
+| Source | Destination | Purpose |
+|--------|-------------|---------|
+| `HighTicketPreviewCard.tsx` | `src/funnel-builder-v3/components/HighTicketPreviewCard.tsx` | Visual template previews |
+| `BlockActionBar.tsx` | `src/funnel-builder-v3/components/BlockActionBar.tsx` | Floating selection toolbar |
+| `EmptyCanvasState.tsx` | `src/funnel-builder-v3/components/EmptyCanvasState.tsx` | Premium empty state |
+
+---
+
+### Step 3: Integrate Into v3 Editor
+
+**Editor.tsx changes:**
+- Add `sectionPickerOpen` state
+- Add handler `handleOpenSectionPicker()`
+- Add handler `handleSectionPickerSelect(templateId)` - maps template to v3 blocks
+- Render `<SectionPicker>` modal
+
+**Canvas.tsx changes:**
+- Replace basic `EmptyState` with `EmptyCanvasState`
+- Pass `onQuickAdd` and `onBrowseAll` callbacks
+- Add "+" button to open SectionPicker from anywhere
+
+**SortableBlockWrapper.tsx changes:**
+- Integrate `BlockActionBar` component
+- Pass move/duplicate/delete callbacks
+- Add "Add above/below" functionality
+
+---
+
+### Step 4: Template to v3 Block Converter
+
+Create a converter utility that maps flow-canvas section templates to v3 blocks:
 
 ```text
-Editor.tsx (Shell)
-├── State Management
-│   ├── deviceMode: 'mobile' | 'tablet' | 'desktop'
-│   ├── editorTheme: 'light' | 'dark'
-│   ├── leftPanelCollapsed: boolean
-│   ├── rightPanelCollapsed: boolean
-│   └── useFunnelState (existing)
-│
-├── Toolbar.tsx
-│   ├── Back button
-│   ├── Funnel name
-│   ├── Undo/Redo
-│   ├── Device selector
-│   ├── Theme toggle
-│   ├── Preview toggle
-│   └── Save/Publish
-│
-├── LeftPanel.tsx
-│   ├── Pages/Layers tabs
-│   ├── Screen list (Pages)
-│   ├── Layer tree (Layers) [future]
-│   └── Collapse button
-│
-├── Canvas.tsx
-│   ├── Device frame (mobile/tablet/desktop)
-│   ├── Screen content
-│   └── Block selection
-│
-└── RightPanel.tsx
-    ├── Block/Screen tabs
-    ├── Block inspector
-    └── Collapse button
+src/funnel-builder-v3/utils/templateConverter.ts
+
+export function templateToBlocks(templateId: string): Block[] {
+  // For simple blocks (text, button, image, etc.)
+  // Return single block with default props
+  
+  // For section templates (hero-simple, cta-form, etc.)
+  // Create multiple blocks matching the template structure
+}
 ```
+
+This ensures the rich template library works with v3's simplified `Block[]` structure.
+
+---
+
+## File Summary
+
+### Files to Create (Copy + Adapt)
+
+```text
+src/funnel-builder-v3/components/SectionPicker/
+  ├── SectionPicker.tsx       (from flow-canvas)
+  ├── CategoryIcon.tsx        (direct copy)
+  ├── BasicBlockGrid.tsx      (adapted for v3 onAddBlock)
+  ├── InteractiveBlockGrid.tsx (adapted for v3 onAddBlock)
+  ├── BlockTileCard.tsx       (direct copy)
+  ├── InteractiveBlockCard.tsx (direct copy)
+  ├── BlockIcons.tsx          (direct copy)
+  ├── InteractiveBlockIcons.tsx (direct copy)
+  ├── PremiumBlockIcons.tsx   (direct copy)
+  ├── TemplateGallery.tsx     (adapted)
+  ├── QuickPicks.tsx          (direct copy)
+  └── index.ts
+
+src/funnel-builder-v3/components/
+  ├── HighTicketPreviewCard.tsx (from flow-canvas)
+  ├── BlockActionBar.tsx       (from flow-canvas, simplified)
+  └── EmptyCanvasState.tsx     (from flow-canvas)
+
+src/funnel-builder-v3/utils/
+  └── templateConverter.ts     (new - maps templates to v3 blocks)
+```
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `Editor.tsx` | Add SectionPicker state, render modal, handle selection |
+| `Canvas.tsx` | Use EmptyCanvasState, add open picker callbacks |
+| `SortableBlockWrapper.tsx` | Integrate BlockActionBar |
+| `RightPanel.tsx` | Add "Browse Templates" button in Add tab |
+
+---
+
+## Technical Details
+
+### SectionPicker Integration Flow
+
+```text
+User clicks "+" or "Browse Templates"
+       ↓
+SectionPicker modal opens (sectionPickerOpen = true)
+       ↓
+User selects block or template
+       ↓
+handleSectionPickerSelect(templateId) called
+       ↓
+templateConverter.templateToBlocks(templateId)
+       ↓
+dispatch({ type: 'ADD_BLOCKS', payload: { screenId, blocks } })
+       ↓
+Modal closes, blocks appear on canvas
+```
+
+### Block Category Mapping
+
+The existing SectionPicker categories map to v3 block types:
+
+| Category | v3 Block Types |
+|----------|----------------|
+| Content | heading, text, image, video, button, divider, spacer, icon |
+| Inputs & Forms | input, choice, embed |
+| Sections (Hero, CTA, etc.) | Multiple blocks from template |
 
 ---
 
 ## Success Criteria
 
-1. Device selector switches between mobile/tablet/desktop frames
-2. Theme toggle changes editor panels between light/dark
-3. Undo/Redo buttons work with visual feedback
-4. Keyboard shortcuts (Cmd+Z, Cmd+Shift+Z) function correctly
-5. Panels can be collapsed and restored
-6. All existing functionality remains intact
-7. Smooth 250ms transitions on panel collapse
+1. Full-screen SectionPicker modal opens with categorized blocks
+2. Visual block icons (not plain Lucide) in the picker
+3. Quick-picks (Hero, CTA, Form) on empty canvas
+4. Floating BlockActionBar appears when block is selected
+5. "Browse Templates" button in RightPanel opens picker
+6. Section templates add multiple blocks at once
+7. Same visual polish as the flow-canvas builder
+
+---
+
+## Technical Notes
+
+### Why Direct Copy Works
+
+The flow-canvas SectionPicker is self-contained:
+- Uses standard React + Framer Motion
+- Imports from `@/lib/utils` (same in v3)
+- Uses `@/builder_v2/templates/sectionTemplates` (can reference same file)
+- Only interface needed is `onSelectTemplate(templateId: string)`
+
+### BlockActionBar Simplification
+
+The flow-canvas `BlockActionBar` supports both desktop and mobile modes. For v3, we can:
+- Keep the full implementation (recommended)
+- Or simplify to desktop-only initially
+
+### Template Converter Strategy
+
+For the initial implementation:
+- Simple blocks (text, button, etc.) → return single Block
+- Section templates → parse `createNode()` output → convert to v3 Block array
+
+This allows using the existing 60+ section templates immediately.
