@@ -322,7 +322,7 @@ function createLogoBarBlock(): Block {
 }
 
 /**
- * Reviews Block - Social proof with avatar group and rating
+ * Reviews Block - Perspective-style social proof with avatars, stars and rating
  */
 function createReviewsBlock(): Block {
   return {
@@ -331,18 +331,31 @@ function createReviewsBlock(): Block {
     label: 'Reviews',
     elements: [{
       id: generateId(),
-      type: 'avatar-group' as ElementType,
+      type: 'social-proof' as ElementType,
       content: '',
       props: {
-        count: 4,
-        size: 'sm',
-        colorMode: 'varied',
-        overlap: 10,
-        showRating: true,
-        rating: 4.8,
-        ratingCount: 148,
-        ratingSource: 'reviews',
+        // Avatar group
+        avatarCount: 4,
+        avatarSize: 48,
+        avatarOverlap: 12,
+        showAvatars: true,
+        // Star rating
+        showStars: true,
+        starCount: 5,
+        starSize: 24,
+        starColor: '#FBBF24',
+        // Rating text
+        rating: 5.0,
+        ratingCount: 200,
+        ratingText: 'from 200+ reviews',
+        ratingFontSize: 'base',
+        ratingFontWeight: '600',
+        ratingColor: '#111827',
+        subtextColor: '#6B7280',
+        // Layout
         alignment: 'center',
+        gap: 12,
+        padding: '24px',
       }
     }],
     props: {
