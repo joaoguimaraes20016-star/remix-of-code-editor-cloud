@@ -1,12 +1,12 @@
 /**
  * Template Converter - Converts builder_v2 section templates to flow-canvas Frame format
- * Also handles premium block creation as a fallback for block IDs
+ * Also handles block creation via the unified blockFactory
  */
 
 import type { Frame, Stack, Block, Element, BlockType, ElementType } from '../../types/infostack';
 import type { CanvasNode } from '@/builder_v2/types';
 import { allSectionTemplates, type SectionTemplate } from '@/builder_v2/templates/sectionTemplates';
-import { createPremiumBlock, isPremiumBlockId } from './premiumBlockFactory';
+import { createBlock, isValidBlockId } from './blockFactory';
 
 // Generate unique ID
 function generateId(): string {
@@ -291,42 +291,47 @@ function canvasNodeToFrame(node: CanvasNode): Frame {
 }
 
 /**
+ * Wrap a block in a Frame structure for the canvas
+ */
+function wrapBlockInFrame(block: Block): Frame {
+  return {
+    id: generateId(),
+    label: block.label || 'Section',
+    stacks: [{
+      id: generateId(),
+      label: 'Main Stack',
+      direction: 'vertical',
+      blocks: [block],
+      props: { 
+        alignment: 'center',
+        gap: 16
+      }
+    }],
+    props: {
+      padding: { top: 24, bottom: 24, left: 16, right: 16 }
+    }
+  };
+}
+
+/**
  * Convert a section template to a flow-canvas Frame
- * Also handles premium block IDs by creating a frame with the premium block
- * @param templateId - The ID of the section template or premium block to convert
+ * Handles both full section templates and individual block IDs
+ * @param templateId - The ID of the section template or block to convert
  * @returns A Frame object ready to be added to a step
  */
 export function convertTemplateToFrame(templateId: string): Frame | null {
-  // First, try section templates
+  // 1. First, try section templates (full layouts like hero, cta sections)
   const template = allSectionTemplates.find(t => t.id === templateId);
   if (template) {
-    // Create the node from the template
     const canvasNode = template.createNode();
-    // Convert to frame
     return canvasNodeToFrame(canvasNode);
   }
 
-  // Fallback: Try premium block factory
-  if (isPremiumBlockId(templateId)) {
-    const premiumBlock = createPremiumBlock(templateId);
-    if (premiumBlock) {
-      return {
-        id: generateId(),
-        label: premiumBlock.label || 'Section',
-        stacks: [{
-          id: generateId(),
-          label: 'Main Stack',
-          direction: 'vertical',
-          blocks: [premiumBlock],
-          props: { 
-            alignment: 'center',
-            gap: 16
-          }
-        }],
-        props: {
-          padding: { top: 24, bottom: 24, left: 16, right: 16 }
-        }
-      };
+  // 2. Try the unified block factory (handles all basic, interactive, and premium blocks)
+  if (isValidBlockId(templateId)) {
+    const block = createBlock(templateId);
+    if (block) {
+      return wrapBlockInFrame(block);
     }
   }
 
