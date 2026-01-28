@@ -2899,6 +2899,12 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
         const avatarColorMode = (element.props?.colorMode as string) || 'gradient';
         const avatarOverlap = (element.props?.overlap as number) || 12;
         
+        // Rating display mode (Perspective-style)
+        const showRating = element.props?.showRating as boolean;
+        const ratingValue = (element.props?.rating as number) || 4.8;
+        const ratingCount = (element.props?.ratingCount as number) || 148;
+        const ratingSource = (element.props?.ratingSource as string) || 'reviews';
+        
         // Size mapping
         const sizeMap: Record<string, { wrapper: string; icon: string }> = {
           'xs': { wrapper: 'w-6 h-6', icon: 'w-3 h-3' },
@@ -2928,7 +2934,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               <UnifiedElementToolbar
                 elementId={element.id}
                 elementType="avatar-group"
-                elementLabel="Avatar Group"
+                elementLabel={showRating ? "Rating Display" : "Avatar Group"}
                 isSelected={isSelected}
                 targetRef={wrapperRef}
                 deviceMode={deviceMode}
@@ -2938,41 +2944,72 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
               />
             )}
             <div 
-              className="avatar-group"
-              style={{ 
-                '--avatar-border': isDarkTheme ? '#0a0a0f' : '#ffffff',
-                '--avatar-overlap': `-${avatarOverlap}px`,
-                justifyContent: alignmentJustify[avatarAlignment] || 'flex-end',
-              } as React.CSSProperties}
+              className={cn("flex items-center gap-3", showRating && "flex-col")}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
-              {Array.from({ length: avatarCount }).map((_, i) => {
-                // Color logic based on mode
-                let avatarBg: string;
-                const baseColor = (element.props?.gradientFrom as string) || primaryColor || '#8B5CF6';
-                const endColor = (element.props?.gradientTo as string) || shiftHue(baseColor, 40);
-                
-                if (avatarColorMode === 'solid') {
-                  avatarBg = (element.props?.solidColor as string) || primaryColor;
-                } else if (avatarColorMode === 'varied') {
-                  avatarBg = variedColors[i % variedColors.length];
-                } else {
-                  // gradient mode
-                  avatarBg = `linear-gradient(${135 + i * 15}deg, ${baseColor}, ${endColor})`;
-                }
-                
-                return (
-                  <div 
-                    key={i}
-                    className={cn(avatarSizeClasses.wrapper, 'rounded-full flex items-center justify-center shrink-0')}
-                    style={{
-                      background: avatarBg,
-                    }}
-                  >
-                    <User className={cn(avatarSizeClasses.icon, 'text-white')} />
+              {/* Avatar stack */}
+              <div 
+                className="avatar-group"
+                style={{ 
+                  '--avatar-border': isDarkTheme ? '#0a0a0f' : '#ffffff',
+                  '--avatar-overlap': `-${avatarOverlap}px`,
+                  justifyContent: showRating ? 'center' : (alignmentJustify[avatarAlignment] || 'flex-end'),
+                } as React.CSSProperties}
+              >
+                {Array.from({ length: avatarCount }).map((_, i) => {
+                  // Color logic based on mode
+                  let avatarBg: string;
+                  const baseColor = (element.props?.gradientFrom as string) || primaryColor || '#8B5CF6';
+                  const endColor = (element.props?.gradientTo as string) || shiftHue(baseColor, 40);
+                  
+                  if (avatarColorMode === 'solid') {
+                    avatarBg = (element.props?.solidColor as string) || primaryColor;
+                  } else if (avatarColorMode === 'varied') {
+                    avatarBg = variedColors[i % variedColors.length];
+                  } else {
+                    // gradient mode
+                    avatarBg = `linear-gradient(${135 + i * 15}deg, ${baseColor}, ${endColor})`;
+                  }
+                  
+                  return (
+                    <div 
+                      key={i}
+                      className={cn(avatarSizeClasses.wrapper, 'rounded-full flex items-center justify-center shrink-0')}
+                      style={{
+                        background: avatarBg,
+                      }}
+                    >
+                      <User className={cn(avatarSizeClasses.icon, 'text-white')} />
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Rating display (Perspective-style) */}
+              {showRating && (
+                <div className="flex flex-col items-center gap-1">
+                  {/* Stars */}
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg 
+                        key={star} 
+                        className="w-4 h-4" 
+                        viewBox="0 0 20 20" 
+                        fill={star <= Math.round(ratingValue) ? '#FACC15' : '#E5E7EB'}
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
                   </div>
-                );
-              })}
+                  {/* Rating text */}
+                  <span 
+                    className="text-sm"
+                    style={{ color: isDarkTheme ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)' }}
+                  >
+                    {ratingValue} from {ratingCount} {ratingSource}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         );

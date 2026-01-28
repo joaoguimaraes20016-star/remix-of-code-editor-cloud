@@ -1653,5 +1653,80 @@
   opacity: 0.3;
 }
 
+/* ===== Perspective-Style Logo Bar ===== */
+.perspective-logo-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 16px 0;
+  flex-wrap: wrap;
+}
+
+.perspective-logo {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: rgba(0, 0, 0, 0.4);
+  transition: color 0.2s ease, transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.perspective-logo:hover {
+  color: rgba(0, 0, 0, 0.8);
+  transform: scale(1.02);
+}
+
+/* Dark mode logo bar */
+.dark .perspective-logo {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.dark .perspective-logo:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ===== Perspective-Style Rating Display ===== */
+.perspective-rating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.perspective-stars {
+  display: flex;
+  gap: 2px;
+}
+
+.perspective-star {
+  width: 16px;
+  height: 16px;
+  color: #FACC15;
+  fill: #FACC15;
+}
+
+.perspective-star-empty {
+  color: #E5E7EB;
+  fill: #E5E7EB;
+}
+
+.perspective-rating-text {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.dark .perspective-rating-text {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Enhanced avatar group for ratings */
+.avatar-group-rating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
 /* ===== Mobile-First Builder Styles ===== */
 @import './builder/styles/mobile.css';
