@@ -29,6 +29,7 @@ const BASIC_BLOCK_IDS = [
   'html',
   'heading',
   'icon',
+  'countdown',
 ] as const;
 
 export type BasicBlockId = typeof BASIC_BLOCK_IDS[number];
@@ -79,6 +80,8 @@ export function createBasicBlock(blockId: string): Block | null {
       return createHtmlBlock();
     case 'icon':
       return createIconBlock();
+    case 'countdown':
+      return createCountdownBlock();
     default:
       return null;
   }
@@ -673,6 +676,51 @@ function createIconBlock(): Block {
         size: 48,
         color: '#8B5CF6',
         strokeWidth: 2,
+      }
+    }],
+    props: {
+      alignment: 'center',
+    }
+  };
+}
+
+/**
+ * Countdown Block - Perspective-style countdown timer
+ */
+function createCountdownBlock(): Block {
+  return {
+    id: generateId(),
+    type: 'custom' as BlockType,
+    label: 'Countdown',
+    elements: [{
+      id: generateId(),
+      type: 'countdown' as ElementType,
+      content: '',
+      props: {
+        // Timer mode
+        mode: 'recurring', // 'fixed' | 'recurring' | 'evergreen'
+        recurringType: 'weekly',
+        recurringDay: 'wednesday',
+        recurringTime: '23:59',
+        // Display
+        showDays: true,
+        showHours: true,
+        showMinutes: true,
+        showSeconds: true,
+        // Styling
+        layout: 'horizontal',
+        gap: 0,
+        numberFontSize: '2xl',
+        numberFontWeight: '600',
+        numberColor: '#111827',
+        labelFontSize: 'xs',
+        labelFontWeight: '400',
+        labelColor: '#9CA3AF',
+        showDividers: true,
+        dividerColor: '#E5E7EB',
+        padding: '16px 24px',
+        backgroundColor: 'transparent',
+        borderRadius: '12px',
       }
     }],
     props: {
