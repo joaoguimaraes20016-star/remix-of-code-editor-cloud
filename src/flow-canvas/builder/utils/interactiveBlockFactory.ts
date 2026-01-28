@@ -498,32 +498,70 @@ function createAppointmentBlock(): Block {
 }
 
 /**
- * Upload Block - File upload drop zone
+ * Upload Block - Perspective-style file upload with heading
  */
 function createUploadBlock(): Block {
   return {
     id: generateId(),
     type: 'custom' as BlockType,
     label: 'File Upload',
-    elements: [{
-      id: generateId(),
-      type: 'upload' as ElementType,
-      content: '',
-      props: {
-        acceptedTypes: ['image/*', 'application/pdf'],
-        maxSize: 10485760, // 10MB
-        multiple: false,
-        dropzoneText: 'Drag and drop your file here, or click to browse',
-        borderRadius: '12px',
-        border: '2px dashed #E5E7EB',
-        backgroundColor: '#F9FAFB',
-        hoverBackgroundColor: '#F3F4F6',
-        iconColor: '#9CA3AF',
-        padding: '40px',
-      }
-    }],
+    elements: [
+      {
+        id: generateId(),
+        type: 'heading' as ElementType,
+        content: 'Upload your resume',
+        props: {
+          level: 2,
+          fontSize: '2xl',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          textColor: '#111827',
+          lineHeight: '1.2',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'upload' as ElementType,
+        content: '',
+        props: {
+          acceptedTypes: ['application/pdf', 'image/png', 'image/jpeg'],
+          maxSize: 26214400, // 25MB
+          multiple: false,
+          // Perspective-style dropzone
+          dropzoneText: 'Click here to upload file',
+          dropzoneSubtext: '(max. 25MB, .pdf, .png, .jpg)',
+          borderRadius: '16px',
+          border: '2px dashed #E5E7EB',
+          backgroundColor: '#FFFFFF',
+          hoverBackgroundColor: '#F9FAFB',
+          icon: 'folder',
+          iconColor: '#9CA3AF',
+          iconSize: 32,
+          padding: '32px 24px',
+          textColor: '#111827',
+          subtextColor: '#6B7280',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'button' as ElementType,
+        content: 'Submit',
+        props: {
+          variant: 'primary',
+          size: 'lg',
+          fullWidth: true,
+          borderRadius: '16px',
+          backgroundColor: '#2563EB',
+          textColor: '#FFFFFF',
+          fontWeight: '600',
+          paddingVertical: 20,
+          shadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+        }
+      },
+    ],
     props: {
       alignment: 'stretch',
+      gap: 16,
     }
   };
 }
