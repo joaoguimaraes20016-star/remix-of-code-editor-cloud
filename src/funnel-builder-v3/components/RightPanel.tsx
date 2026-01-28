@@ -45,6 +45,8 @@ interface RightPanelProps {
   onDeleteBlock: () => void;
   onDuplicateBlock: () => void;
   onClearBlockSelection?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 const BLOCK_ICONS: Record<BlockType, React.ComponentType<{ className?: string }>> = {
@@ -70,8 +72,14 @@ export function RightPanel({
   onDeleteBlock,
   onDuplicateBlock,
   onClearBlockSelection,
+  isCollapsed = false,
+  onToggleCollapse,
 }: RightPanelProps) {
   const [activeTab, setActiveTab] = useState<'add' | 'style'>('add');
+
+  if (isCollapsed) {
+    return null;
+  }
 
   if (!screen) {
     return (
