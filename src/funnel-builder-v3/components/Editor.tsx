@@ -190,8 +190,11 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
     setEditorTheme(prev => prev === 'light' ? 'dark' : 'light');
   }, []);
 
-  // Get grid template columns based on panel collapse state
+  // Get grid template columns based on panel collapse state AND preview mode
   const getGridTemplateColumns = () => {
+    if (previewMode) {
+      return 'builder-v3-editor-shell--preview';
+    }
     if (leftPanelCollapsed && rightPanelCollapsed) {
       return 'builder-v3-editor-shell--both-collapsed';
     }
@@ -230,18 +233,8 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
           'builder-v3-editor-shell',
           getGridTemplateColumns()
         )}>
-          {/* Panel Toggle - Left (shown when collapsed) */}
-          {leftPanelCollapsed && !previewMode && (
-            <button
-              onClick={() => setLeftPanelCollapsed(false)}
-              className="builder-v3-panel-toggle builder-v3-panel-toggle--left"
-            >
-              <PanelLeftClose className="h-4 w-4 rotate-180" />
-            </button>
-          )}
-
           {/* Left Panel - Screen List */}
-          {!previewMode && (
+          {!previewMode && !leftPanelCollapsed && (
             <LeftPanel
               screens={funnel.screens}
               selectedScreenId={selectedScreenId}
@@ -250,7 +243,7 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
               onDeleteScreen={handleDeleteScreen}
               onDuplicateScreen={handleDuplicateScreen}
               onReorderScreens={reorderScreens}
-              isCollapsed={leftPanelCollapsed}
+              isCollapsed={false}
               onToggleCollapse={() => setLeftPanelCollapsed(true)}
             />
           )}
@@ -267,7 +260,7 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
           />
 
           {/* Right Panel - Properties */}
-          {!previewMode && (
+          {!previewMode && !rightPanelCollapsed && (
             <RightPanel
               screen={selectedScreen}
               block={selectedBlock}
@@ -276,21 +269,30 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
               onAddBlock={handleAddBlock}
               onDeleteBlock={handleDeleteBlock}
               onDuplicateBlock={handleDuplicateBlock}
-              isCollapsed={rightPanelCollapsed}
+              isCollapsed={false}
               onToggleCollapse={() => setRightPanelCollapsed(true)}
             />
           )}
-
-          {/* Panel Toggle - Right (shown when collapsed) */}
-          {rightPanelCollapsed && !previewMode && (
-            <button
-              onClick={() => setRightPanelCollapsed(false)}
-              className="builder-v3-panel-toggle builder-v3-panel-toggle--right"
-            >
-              <PanelRightClose className="h-4 w-4 rotate-180" />
-            </button>
-          )}
         </div>
+
+        {/* Panel Toggle Buttons - Outside grid to avoid layout interference */}
+        {leftPanelCollapsed && !previewMode && (
+          <button
+            onClick={() => setLeftPanelCollapsed(false)}
+            className="builder-v3-panel-toggle builder-v3-panel-toggle--left"
+          >
+            <PanelLeftClose className="h-4 w-4 rotate-180" />
+          </button>
+        )}
+
+        {rightPanelCollapsed && !previewMode && (
+          <button
+            onClick={() => setRightPanelCollapsed(false)}
+            className="builder-v3-panel-toggle builder-v3-panel-toggle--right"
+          >
+            <PanelRightClose className="h-4 w-4 rotate-180" />
+          </button>
+        )}
       </div>
     </TooltipProvider>
   );
