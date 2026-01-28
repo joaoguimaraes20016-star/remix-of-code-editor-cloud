@@ -30,6 +30,13 @@ function hasHtml(content: string): boolean {
   return /<[^>]+>/.test(content);
 }
 
+// Strip HTML tags for plain text display
+function stripHtml(content: string): string {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = content;
+  return tmp.textContent || tmp.innerText || '';
+}
+
 export function TextBlock({ block, isSelected, previewMode, onContentChange }: TextBlockProps) {
   const { size = 'md', align = 'left', color } = block.props;
   const [isEditing, setIsEditing] = useState(false);
@@ -53,6 +60,7 @@ export function TextBlock({ block, isSelected, previewMode, onContentChange }: T
   const content = block.content || '';
   const sanitized = sanitizeContent(content);
   const isEmpty = !sanitized;
+  const plainText = hasHtml(sanitized) ? stripHtml(sanitized) : sanitized;
 
   // Handle double-click to enter edit mode
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
@@ -65,10 +73,11 @@ export function TextBlock({ block, isSelected, previewMode, onContentChange }: T
   useEffect(() => {
     if (isEditing && editRef.current) {
       editRef.current.focus();
-      // Select all text
+      // Place cursor at end
       const selection = window.getSelection();
       const range = document.createRange();
       range.selectNodeContents(editRef.current);
+      range.collapse(false);
       selection?.removeAllRanges();
       selection?.addRange(range);
     }
@@ -78,12 +87,12 @@ export function TextBlock({ block, isSelected, previewMode, onContentChange }: T
   const handleBlur = useCallback(() => {
     if (editRef.current && onContentChange) {
       const newContent = editRef.current.innerText || '';
-      if (newContent !== sanitized) {
+      if (newContent !== plainText) {
         onContentChange(newContent);
       }
     }
     setIsEditing(false);
-  }, [onContentChange, sanitized]);
+  }, [onContentChange, plainText]);
 
   // Handle key events
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -103,7 +112,7 @@ export function TextBlock({ block, isSelected, previewMode, onContentChange }: T
     isEditing && 'ring-2 ring-blue-500/50 rounded bg-white/5'
   );
 
-  // Edit mode
+  // Edit mode - plain text editing
   if (isEditing && !previewMode) {
     return (
       <p
@@ -115,15 +124,15 @@ export function TextBlock({ block, isSelected, previewMode, onContentChange }: T
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
       >
-        {sanitized}
+        {plainText}
       </p>
     );
   }
 
-  // If content has HTML, render it safely
+  // Display mode - render HTML content properly
   if (hasHtml(sanitized)) {
     return (
-      <p
+      <div
         className={cn(baseClasses, 'cursor-text')}
         style={{ color: color || undefined }}
         dangerouslySetInnerHTML={{ __html: sanitized }}

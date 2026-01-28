@@ -32,7 +32,10 @@ interface CanvasProps {
   selectedBlockId: string | null;
   onSelectBlock: (blockId: string | null) => void;
   onReorderBlocks: (blockIds: string[]) => void;
+  onUpdateBlock?: (blockId: string, updates: Partial<Block>) => void;
   onUpdateBlockContent?: (blockId: string, content: string) => void;
+  onDuplicateBlock?: (blockId: string) => void;
+  onDeleteBlock?: (blockId: string) => void;
   previewMode: boolean;
   settings: FunnelSettings;
   deviceMode: DeviceMode;
@@ -45,7 +48,10 @@ export function Canvas({
   selectedBlockId,
   onSelectBlock,
   onReorderBlocks,
+  onUpdateBlock,
   onUpdateBlockContent,
+  onDuplicateBlock,
+  onDeleteBlock,
   previewMode,
   settings,
   deviceMode,
@@ -180,8 +186,12 @@ export function Canvas({
                   <SortableBlockWrapper
                     key={block.id}
                     id={block.id}
+                    block={block}
                     isSelected={block.id === selectedBlockId}
                     previewMode={previewMode}
+                    onAlignChange={(align) => onUpdateBlock?.(block.id, { props: { ...block.props, align } })}
+                    onDuplicate={() => onDuplicateBlock?.(block.id)}
+                    onDelete={() => onDeleteBlock?.(block.id)}
                   >
                     <BlockRenderer
                       block={block}

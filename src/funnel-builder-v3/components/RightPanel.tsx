@@ -50,6 +50,7 @@ import {
   ScreenBackgroundEditor,
   BlockAnimationEditor,
   GlobalStylesEditor,
+  ColorPickerPopover,
 } from './inspector';
 
 interface RightPanelProps {
@@ -412,6 +413,23 @@ function BlockStyleEditor({ block, onUpdate, onDelete, onDuplicate }: BlockStyle
                 <SelectItem value="3xl" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">3X Large</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Color Picker */}
+          <div className="builder-v3-field-group">
+            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Color</Label>
+            <div className="flex items-center gap-2">
+              <ColorPickerPopover
+                value={block.props.color || '#000000'}
+                onChange={(color) => onUpdate({ props: { ...block.props, color } })}
+              />
+              <Input
+                value={block.props.color || '#000000'}
+                onChange={(e) => onUpdate({ props: { ...block.props, color: e.target.value } })}
+                className="builder-v3-input builder-v3-control-md flex-1 font-mono text-xs"
+                placeholder="#000000"
+              />
+            </div>
           </div>
 
           <div className="builder-v3-field-group">

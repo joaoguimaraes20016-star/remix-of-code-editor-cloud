@@ -453,9 +453,27 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
               selectedBlockId={selectedBlockId}
               onSelectBlock={handleSelectBlock}
               onReorderBlocks={handleReorderBlocks}
+              onUpdateBlock={(blockId, updates) => {
+                if (selectedScreenId) {
+                  updateBlock(selectedScreenId, blockId, updates);
+                }
+              }}
               onUpdateBlockContent={(blockId, content) => {
                 if (selectedScreenId) {
                   updateBlock(selectedScreenId, blockId, { content });
+                }
+              }}
+              onDuplicateBlock={(blockId) => {
+                if (selectedScreenId) {
+                  duplicateBlock(selectedScreenId, blockId);
+                }
+              }}
+              onDeleteBlock={(blockId) => {
+                if (selectedScreenId) {
+                  deleteBlock(selectedScreenId, blockId);
+                  if (selectedBlockId === blockId) {
+                    setSelectedBlockId(null);
+                  }
                 }
               }}
               previewMode={false}
