@@ -1,361 +1,236 @@
 
-# Template & Canvas Inconsistency Audit: Complete Fix Plan
+# Funnel Builder Finalization Plan
 
-## Executive Summary
+## Current State Assessment
 
-After thorough investigation, I found **12 major inconsistencies** between template previews and actual canvas rendering. The core issues fall into three categories:
+After thorough exploration, the funnel builder is approximately **85% complete**. The core architecture is solid with:
+- Full element type system (30+ element types)
+- Template conversion pipeline working
+- Inspector support for most elements
+- Runtime rendering via CanvasRenderer in read-only mode
+- Premium elements (gradient-text, stat-number, ticker, badge, etc.)
 
-1. **Missing Type Mappings** - Template node types aren't being converted to proper element types
-2. **Missing Inspector Support** - Elements render but can't be edited
-3. **Prop Data Loss** - Templates define data that gets dropped during conversion
+## Remaining Gaps (Priority Ordered)
 
----
+### Phase 1: Critical UX Fixes (HIGH PRIORITY)
 
-## Issue Inventory
+#### 1.1 Video/Image Empty State Placeholders
+**Issue**: Empty video/image elements render as blank gray boxes with no indication they're upload zones.
 
-### Category A: Elements That Render But Can't Be Edited
+**Files to modify**:
+- `src/flow-canvas/builder/components/CanvasRenderer.tsx`
 
-| Element Type | Issue | Severity |
-|-------------|-------|----------|
-| `faq` | No inspector in RightPanel - shows "Add FAQ items in inspector" but no controls exist | HIGH |
-| `form_group` | Converts to single `input` - loses multiple field structure | HIGH |
-| `feature_list` | Converts to generic `text` - loses list structure and icons | MEDIUM |
-| `testimonial_card` | Converts to generic `text` - loses avatar, name, quote structure | MEDIUM |
-| `single-choice` / `multiple-choice` | Missing inspector in RightPanel (only renders, can't edit options) | HIGH |
-
-### Category B: Data Loss During Conversion
-
-| Template Type | What Gets Lost |
-|--------------|----------------|
-| `form_group` | Array of fields `[{type, placeholder, required}]` → becomes single input |
-| `faq_accordion` | Items array structure (works, but items not editable in inspector) |
-| `rating_display` | `source` text (e.g., "companies trust us") not displayed |
-| `testimonial_card` | Author name, avatar, company, position |
-| `feature_list` | Icon names, bullet point structure |
-
-### Category C: Visual Mismatch
-
-| Issue | Expected | Actual |
-|-------|----------|--------|
-| Logo Bar | Text wordmarks (Coca-Cola, IKEA, etc.) | Gray placeholder icons (FIXED in previous update) |
-| Form inputs | Styled matching template | Generic unstyled inputs |
-| FAQ accordion | Polished expand/collapse | Basic rendering (OK, but no edit) |
-
----
-
-## Root Cause Analysis
-
-```text
-Template Definition (sectionTemplates.ts)
-┌─────────────────────────────────────────┐
-│ type: 'form_group'                      │
-│ props: {                                │
-│   fields: [                             │
-│     { type: 'text', placeholder: 'Name' }│
-│     { type: 'email', placeholder: 'E-Mail'}│
-│   ]                                     │
-│ }                                       │
-└─────────────────────────────────────────┘
-               │
-               ▼ templateConverter.ts
-┌─────────────────────────────────────────┐
-│ mapNodeTypeToElementType('form_group')  │
-│         → returns 'input'               │
-│                                         │
-│ // Props ARE passed through, but...     │
-│ // Canvas only renders ONE input        │
-│ // because element.type === 'input'     │
-└─────────────────────────────────────────┘
-               │
-               ▼ CanvasRenderer.tsx
-┌─────────────────────────────────────────┐
-│ case 'input':                           │
-│   // Renders single input               │
-│   // fields[] prop ignored              │
-└─────────────────────────────────────────┘
-```
-
----
-
-## Implementation Plan
-
-### Phase 1: Add Missing Inspector Controls (Priority: HIGH)
-
-#### 1.1 Add FAQ Inspector to RightPanel.tsx
-
-**File:** `src/flow-canvas/builder/components/RightPanel.tsx`
-
-Add inspector section after the `trustpilot` section (~line 2989):
-
+**Changes**:
 ```typescript
-{/* ========== FAQ SECTION ========== */}
-{element.type === 'faq' && (
-  <CollapsibleSection title="FAQ Items" icon={<HelpCircle className="w-4 h-4" />} defaultOpen>
-    <div className="pt-3 space-y-3">
-      <DndContext sensors={inspectorSensors} collisionDetection={closestCenter} onDragEnd={...}>
-        <SortableContext items={...} strategy={verticalListSortingStrategy}>
-          {((element.props?.items as Array<{ question: string; answer: string }>) || []).map((item, idx) => (
-            <SortableRow key={idx} id={`faq-${idx}`}>
-              <div className="space-y-2 flex-1">
-                <Input
-                  value={item.question}
-                  onChange={(e) => updateFaqItem(idx, 'question', e.target.value)}
-                  placeholder="Question..."
-                  className="builder-input text-xs"
-                />
-                <Textarea
-                  value={item.answer}
-                  onChange={(e) => updateFaqItem(idx, 'answer', e.target.value)}
-                  placeholder="Answer..."
-                  className="builder-input text-xs min-h-[60px]"
-                />
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => removeFaqItem(idx)}>
-                <X className="w-4 h-4" />
-              </Button>
-            </SortableRow>
-          ))}
-        </SortableContext>
-      </DndContext>
-      <Button variant="outline" size="sm" onClick={addFaqItem} className="w-full">
-        <Plus className="w-4 h-4 mr-1" /> Add FAQ Item
-      </Button>
-    </div>
-  </CollapsibleSection>
-)}
-```
-
-### Phase 2: Fix Form Group Conversion (Priority: HIGH)
-
-#### 2.1 Create Proper Form Group Element Type
-
-**File:** `src/flow-canvas/types/infostack.ts`
-
-Add `form-group` to ElementType:
-
-```typescript
-export type ElementType =
-  | 'heading'
-  | 'text'
-  // ...existing types...
-  | 'form-group'  // NEW: Multi-field form container
-```
-
-#### 2.2 Update Template Converter
-
-**File:** `src/flow-canvas/builder/utils/templateConverter.ts`
-
-Change form_group mapping:
-
-```typescript
-// Before
-'form_group': 'input',
-
-// After
-'form_group': 'form-group',
-
-// Add special handling
-if (node.type === 'form_group') {
-  const fields = (node.props?.fields as Array<{
-    type: string;
-    placeholder: string;
-    required?: boolean;
-  }>) || [];
-  
-  return {
-    id: generateId(),
-    type: 'form-group',
-    content: '',
-    props: {
-      fields: fields.map((field, i) => ({
-        id: `field-${i}`,
-        type: field.type,
-        placeholder: field.placeholder,
-        required: field.required ?? false,
-        fieldKey: `form_${field.type}_${i}`,
-      })),
-      layout: 'vertical',
-      gap: 12,
-    },
-  };
-}
-```
-
-#### 2.3 Add Form Group Renderer
-
-**File:** `src/flow-canvas/builder/components/CanvasRenderer.tsx`
-
-Add new case in element switch:
-
-```typescript
-case 'form-group': {
-  const fields = (element.props?.fields as Array<{
-    id: string;
-    type: string;
-    placeholder: string;
-    required?: boolean;
-    fieldKey?: string;
-  }>) || [];
-  const layout = (element.props?.layout as string) || 'vertical';
-  const gap = (element.props?.gap as number) || 12;
-  
+// For video case (around line 2300):
+if (!videoSrc && !readOnly) {
   return (
-    <div ref={combinedRef} style={style} className={cn(baseClasses, 'w-full relative')}>
-      {/* Toolbar */}
-      {!readOnly && (
-        <UnifiedElementToolbar
-          elementId={element.id}
-          elementType="form-group"
-          elementLabel="Form Fields"
-          isSelected={isSelected}
-          targetRef={wrapperRef}
-          deviceMode={deviceMode}
-          dragHandleProps={{ attributes, listeners }}
-          onDuplicate={onDuplicate}
-          onDelete={onDelete}
-        />
-      )}
-      <div 
-        className={cn(
-          'flex w-full',
-          layout === 'vertical' ? 'flex-col' : 'flex-row'
-        )}
-        style={{ gap }}
-        onClick={(e) => { e.stopPropagation(); onSelect(); }}
-      >
-        {fields.map((field) => (
-          <input
-            key={field.id}
-            type={field.type}
-            placeholder={field.placeholder}
-            className="w-full px-4 py-3 border rounded-xl bg-transparent"
-            style={{
-              borderColor: isDarkTheme ? '#374151' : '#e5e7eb',
-              color: isDarkTheme ? '#fff' : '#1f2937',
-            }}
-            readOnly={!isPreviewMode}
-          />
-        ))}
-      </div>
+    <div className="aspect-video bg-gray-900/30 rounded-xl flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-500/50 cursor-pointer hover:border-primary/50 transition-colors">
+      <Play className="w-10 h-10 text-gray-400" />
+      <span className="text-sm text-gray-400">Click to add video</span>
+    </div>
+  );
+}
+
+// For image case (around line 2500):
+if (!imageSrc && !readOnly) {
+  return (
+    <div className="aspect-video bg-gray-900/30 rounded-xl flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-500/50 cursor-pointer hover:border-primary/50 transition-colors">
+      <ImageIcon className="w-10 h-10 text-gray-400" />
+      <span className="text-sm text-gray-400">Click to add image</span>
     </div>
   );
 }
 ```
 
-#### 2.4 Add Form Group Inspector
+#### 1.2 Fix Countdown Element Inspector
+**Issue**: Countdown element exists but may have incomplete inspector controls.
 
-**File:** `src/flow-canvas/builder/components/RightPanel.tsx`
+**Files to check/fix**:
+- `src/flow-canvas/builder/components/RightPanel.tsx`
 
-Add inspector section:
+**Changes**: Ensure countdown section includes:
+- End date/time picker
+- Display format (days/hours/minutes/seconds toggles)
+- Expiration action (hide, show message, redirect)
+- Styling controls (size, colors)
 
-```typescript
-{element.type === 'form-group' && (
-  <CollapsibleSection title="Form Fields" icon={<FormInput className="w-4 h-4" />} defaultOpen>
-    <div className="pt-3 space-y-3">
-      {/* Sortable list of fields */}
-      {/* Add/remove field buttons */}
-      {/* Field type selector (text, email, tel, etc.) */}
-      {/* Placeholder input */}
-      {/* Required toggle */}
-    </div>
-  </CollapsibleSection>
-)}
-```
+#### 1.3 Fix Carousel Element Inspector
+**Issue**: Carousel element type exists but needs full inspector support.
 
-### Phase 3: Fix Feature List & Testimonial (Priority: MEDIUM)
+**Files to modify**:
+- `src/flow-canvas/builder/components/RightPanel.tsx`
 
-#### 3.1 Create Feature List Element Type
+**Changes**: Add carousel inspector section with:
+- Image list management (add/remove/reorder)
+- Auto-play toggle and interval
+- Navigation style (dots, arrows, both)
+- Transition effect (slide, fade)
 
-**File:** `src/flow-canvas/builder/utils/templateConverter.ts`
+---
 
-```typescript
-if (node.type === 'feature_list') {
-  const features = (node.props?.items as string[]) || ['Feature 1', 'Feature 2'];
-  return {
-    id: generateId(),
-    type: 'feature-list',  // New element type
-    content: '',
-    props: {
-      items: features.map((text, i) => ({
-        id: `feature-${i}`,
-        text,
-        icon: 'Check',
-      })),
-      iconColor: '#22C55E',
-      layout: 'vertical',
-    },
-  };
+### Phase 2: Visual Polish (MEDIUM PRIORITY)
+
+#### 2.1 Add Ticker CSS Animation
+**Status**: Already implemented in CanvasRenderer (lines 3334-3416) with `ticker-container` and `ticker-content` classes.
+
+**Files to verify**:
+- `src/flow-canvas/index.css` - Ensure ticker keyframes exist
+
+**Changes if missing**:
+```css
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.ticker-container {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ticker-content {
+  display: inline-block;
+  animation: ticker-scroll var(--ticker-speed, 30s) linear infinite;
+  animation-direction: var(--ticker-direction, normal);
 }
 ```
 
-#### 3.2 Create Testimonial Element Type
+#### 2.2 Process Step Connectors
+**Issue**: Process steps show `showConnector: true` but no visual arrows between steps.
 
+**Files to modify**:
+- `src/flow-canvas/builder/components/CanvasRenderer.tsx` (around line 3515)
+
+**Changes**: Add connector SVG between process steps:
 ```typescript
-if (node.type === 'testimonial_card') {
-  return {
-    id: generateId(),
-    type: 'testimonial',  // New element type
-    content: node.props?.quote as string || 'Great product!',
-    props: {
-      author: node.props?.author as string || 'John Doe',
-      role: node.props?.role as string || 'CEO',
-      company: node.props?.company as string || 'Company',
-      avatar: node.props?.avatar as string || '',
-      rating: node.props?.rating as number || 5,
-    },
-  };
-}
+{showConnector && (
+  <div className="absolute -right-6 top-1/2 -translate-y-1/2 z-10">
+    <ArrowRight className="w-5 h-5 text-white/30" />
+  </div>
+)}
 ```
 
-### Phase 4: Add Single/Multiple Choice Inspector
+#### 2.3 Avatar Group Enhancement
+**Status**: Already implemented with varied colors, gradient mode, and rating display (lines 3212-3331).
 
-**File:** `src/flow-canvas/builder/components/RightPanel.tsx`
+**Verify**: Ensure proper overlapping with negative margin and border styling.
 
-Add inspector for choice elements:
+---
 
-```typescript
-{(element.type === 'single-choice' || element.type === 'multiple-choice') && (
-  <CollapsibleSection title="Choice Options" icon={<List className="w-4 h-4" />} defaultOpen>
-    <div className="pt-3 space-y-3">
-      {/* Choice type toggle: single vs multiple */}
-      {/* Sortable list of options */}
-      {/* Add option button */}
-      {/* Layout: vertical/horizontal/grid */}
-    </div>
-  </CollapsibleSection>
-)}
+### Phase 3: Application Flow Enhancements (MEDIUM PRIORITY)
+
+#### 3.1 Inline Choice Option Editing
+**Status**: Choice inspector already exists in RightPanel.tsx (lines 3330-3433) with:
+- Choice type toggle (single/multiple)
+- Layout selector (vertical/horizontal/grid)
+- Sortable options list
+- Add/remove options
+- Image URL support
+
+**Verify**: Ensure changes propagate to canvas immediately.
+
+#### 3.2 Application Flow Step Inspector
+**Status**: Full inspector exists in `ApplicationFlowInspector.tsx` with:
+- Step list management
+- Step content editor
+- Design presets
+- Background editor
+
+**Enhancement needed**: Add quick actions for common step types (welcome, question, capture, ending).
+
+---
+
+### Phase 4: Runtime Parity Verification (MEDIUM PRIORITY)
+
+#### 4.1 FlowCanvasRenderer Sync
+**Current architecture**: FlowCanvasRenderer imports CanvasRenderer in read-only mode, ensuring automatic parity.
+
+**Files to verify**:
+- `src/flow-canvas/components/FlowCanvasRenderer.tsx`
+
+**Verify**:
+- All element types render correctly at runtime
+- Form submission works
+- Button actions execute (next-step, submit, redirect)
+- Animations play correctly
+
+#### 4.2 Mobile Responsiveness
+**Verify**: All elements respect responsive breakpoints and touch targets.
+
+---
+
+### Phase 5: Final Polish (LOW PRIORITY)
+
+#### 5.1 Undo/Redo Support
+**If not implemented**: Add history tracking for element changes.
+
+#### 5.2 Keyboard Shortcuts
+**Verify shortcuts work**:
+- Delete/Backspace: Delete selected element
+- Cmd/Ctrl+D: Duplicate
+- Cmd/Ctrl+C/V: Copy/Paste
+- Arrow keys: Navigate between elements
+
+#### 5.3 Loading States
+**Verify**: All async operations (save, publish, image upload) show proper loading indicators.
+
+---
+
+## Implementation Order
+
+```text
+Day 1: Phase 1 (Critical UX)
+├── 1.1 Video/Image placeholders
+├── 1.2 Countdown inspector verification
+└── 1.3 Carousel inspector
+
+Day 2: Phase 2 (Visual Polish)
+├── 2.1 Ticker animation verification
+├── 2.2 Process step connectors
+└── 2.3 Avatar group verification
+
+Day 3: Phase 3 & 4 (Flow & Runtime)
+├── 3.1 Choice editing verification
+├── 3.2 Application Flow quick actions
+└── 4.1-4.2 Runtime parity testing
+
+Day 4: Phase 5 (Final Polish)
+├── 5.1 Undo/Redo (if needed)
+├── 5.2 Keyboard shortcuts
+└── 5.3 Loading states
 ```
 
 ---
 
-## Files to Modify
+## Files to Modify (Summary)
 
 | File | Changes |
 |------|---------|
-| `src/flow-canvas/types/infostack.ts` | Add `form-group`, `feature-list`, `testimonial` to ElementType |
-| `src/flow-canvas/builder/utils/templateConverter.ts` | Add special handling for form_group, feature_list, testimonial_card |
-| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Add render cases for new element types |
-| `src/flow-canvas/builder/components/RightPanel.tsx` | Add inspector sections for `faq`, `form-group`, `feature-list`, `testimonial`, `single-choice`, `multiple-choice` |
-| `src/flow-canvas/components/FlowCanvasRenderer.tsx` | Mirror new render cases for runtime |
+| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Empty state placeholders for video/image, process step connectors |
+| `src/flow-canvas/builder/components/RightPanel.tsx` | Verify/complete countdown and carousel inspectors |
+| `src/flow-canvas/index.css` | Verify ticker animation keyframes |
+| `src/flow-canvas/builder/components/inspectors/ApplicationFlowInspector.tsx` | Add quick step type actions |
+| `src/flow-canvas/components/FlowCanvasRenderer.tsx` | Verify runtime parity |
 
 ---
 
-## Expected Outcome
+## Success Criteria
 
 After implementation:
-
-1. **FAQ sections** will have editable Q&A pairs in the inspector
-2. **Form sections** will render all fields from the template and be editable
-3. **Feature lists** will preserve icon + text structure
-4. **Testimonials** will display author, role, avatar, quote
-5. **Choice elements** will have option management in inspector
-6. **Templates will look identical** on canvas as they do in the preview cards
+1. Every template element is fully editable on canvas
+2. Empty media elements show clear upload prompts
+3. All premium elements (gradient-text, ticker, badge, etc.) render and edit correctly
+4. Application Flow steps are fully configurable
+5. Published funnels match editor exactly (pixel parity)
+6. Mobile experience is smooth and touch-friendly
 
 ---
 
 ## Technical Notes
 
-- All new element types should extend the existing drag-and-drop infrastructure
-- Inspector sections should use existing `SortableRow` pattern for reorderable items
-- Runtime renderer (`FlowCanvasRenderer.tsx`) must be kept in sync with editor renderer
-- Premium element pattern (PremiumElementInspector) can be extended for complex new types
+- CanvasRenderer is the single source of truth for element rendering
+- FlowCanvasRenderer uses CanvasRenderer in read-only mode for automatic parity
+- Inspector sections in RightPanel use collapsible sections with consistent styling
+- Premium elements handled by PremiumElementInspector for specialized controls
+- Template conversion preserves all structured data (fields arrays, items arrays, etc.)
