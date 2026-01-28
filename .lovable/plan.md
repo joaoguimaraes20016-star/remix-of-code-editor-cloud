@@ -1,85 +1,69 @@
 
-
-# Remove Duplicate "Add Section" Button from Toolbar
+# Remove Duplicate "Add Content" Button from Canvas
 
 ## Summary
 
-Since the SectionPicker now contains both sections AND blocks (basic + interactive), having two separate "Add" buttons is redundant. The toolbar "+" button and the canvas dotted-circle button both open the exact same SectionPicker modal.
+The canvas currently shows **two buttons** that both open the same SectionPicker:
 
-We'll remove the toolbar "+" button while keeping the canvas-level add buttons (empty state CTA + bottom dotted circle), which are more contextual and intuitive.
+| Button | Location | Label |
+|--------|----------|-------|
+| **"+ Add content"** | Inside each section (at bottom of stack) | "Add content" |
+| **Dotted circle "+"** | Below all sections (outside content) | "Add Section" |
 
----
-
-## Current State
-
-Two "Add Section" entry points:
-
-| Location | Element | Action |
-|----------|---------|--------|
-| **TopToolbar** | Plus icon button with tooltip "Add Section (F)" | Opens SectionPicker |
-| **Canvas** | Dotted circle at bottom (or full empty state when no frames) | Opens SectionPicker |
-
-Both open the same modal that contains:
-- Basic blocks
-- Interactive blocks  
-- All section categories (Hero, Features, CTA, etc.)
+Since the SectionPicker now contains everything (basic blocks, interactive blocks, AND sections), having two buttons is confusing and redundant.
 
 ---
 
-## Proposed Change
+## Recommendation
 
-Remove the "+" button from `TopToolbar.tsx` since the canvas already provides a clear, contextual way to add content.
+**Remove the "Add content" button inside sections**, keep the dotted circle "Add Section" button below.
+
+### Reasoning
+
+| Keep Dotted Circle | Remove "Add content" |
+|--------------------|----------------------|
+| Clear separation from content | Confusing - suggests adding inside section |
+| Positioned at page level | Positioned inside section |
+| "Add Section" label matches picker content | "Add content" is misleading |
+| Universal pattern for builders | Creates visual clutter inside sections |
 
 ---
 
-## File Changes
+## File Change
 
-### `src/flow-canvas/builder/components/TopToolbar.tsx`
+### `src/flow-canvas/builder/components/CanvasRenderer.tsx`
 
-Remove the "Add Section" toolbar button (lines 313-321):
+Remove the "Add content" button block (lines 4606-4622):
 
+**Current code to remove:**
 ```tsx
-// REMOVE THIS BLOCK:
-{/* Single "Add Section" button - opens section picker */}
-<ToolbarButton
-  onClick={onAddFrame}
-  disabled={isAddFrameDisabled}
-  disabledReason={addFrameDisabledReason}
-  tooltip="Add Section (F)"
->
-  <Plus className="w-4 h-4" />
-</ToolbarButton>
+{/* Add content button - contrast-adaptive */}
+{!readOnly && stack.blocks.length > 0 && (
+  <div className="mt-3 opacity-60 hover:opacity-100 transition-opacity">
+    <button
+      onClick={() => onOpenBlockPickerInPanel?.(stack.id)}
+      className={cn(
+        "flex items-center justify-center gap-1.5 w-full py-2 text-xs transition-colors",
+        isParentDark
+          ? "text-white/50 hover:text-white/80"
+          : "text-gray-500 hover:text-gray-700"
+      )}
+    >
+      <Plus size={14} />
+      <span>Add content</span>
+    </button>
+  </div>
+)}
 ```
 
-Also remove the related disabled state variables that are no longer needed (lines 247-250):
-
-```tsx
-// REMOVE:
-const isAddFrameDisabled = previewMode;
-const addFrameDisabledReason = previewMode 
-  ? "Exit preview mode to add sections" 
-  : undefined;
-```
-
-Optionally, the `onAddFrame` prop can remain in the interface for flexibility, but it won't be used in the toolbar UI.
-
----
-
-## Cleanup
-
-### Unused Component
-
-The `AddSectionButton.tsx` component exists but is not imported or used anywhere. Consider deleting it as part of cleanup:
-
-- `src/flow-canvas/builder/components/AddSectionButton.tsx`
+This leaves the dotted circle button (lines 5449-5488) as the single, clear entry point.
 
 ---
 
 ## Result
 
 After this change:
-- Single, clear entry point for adding content: the canvas itself
-- Cleaner toolbar with fewer buttons
-- No confusion about "which add button to use"
-- SectionPicker (with all sections + blocks) accessible directly from the canvas
-
+- **Single entry point**: Dotted circle "+" button below sections
+- **No visual clutter** inside sections
+- **Clear mental model**: "To add anything, click the + at the bottom"
+- **SectionPicker** contains all options (blocks + sections)
