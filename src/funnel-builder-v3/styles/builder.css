@@ -1992,3 +1992,47 @@
   background: hsl(var(--builder-v3-accent) / 0.3);
   color: hsl(var(--builder-v3-accent));
 }
+
+/* =============================================================================
+   Section 13: Preview Mode
+   ============================================================================= */
+
+.builder-v3-preview-screen {
+  position: relative;
+}
+
+.builder-v3-preview-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  margin: 12px;
+  background: hsl(0 0% 0% / 0.05);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: hsl(0 0% 30%);
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.builder-v3-preview-back-btn:hover {
+  background: hsl(0 0% 0% / 0.1);
+}
+
+/* Preview indicator badge */
+[data-preview="true"] .builder-v3-device-frame::before {
+  content: 'Preview Mode';
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  background: hsl(var(--builder-v3-success));
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+}

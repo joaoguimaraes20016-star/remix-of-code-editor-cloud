@@ -11,6 +11,7 @@ import { useFunnelState } from '../hooks/useFunnelState';
 import { useHistory } from '../hooks/useHistory';
 import { LeftPanel } from './LeftPanel';
 import { Canvas } from './Canvas';
+import { PreviewCanvas } from './PreviewCanvas';
 import { RightPanel } from './RightPanel';
 import { Toolbar, DeviceMode, SaveStatus } from './Toolbar';
 import { cn } from '@/lib/utils';
@@ -324,16 +325,24 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
             />
           )}
 
-          {/* Canvas - Preview Area */}
-          <Canvas
-            screen={selectedScreen}
-            selectedBlockId={selectedBlockId}
-            onSelectBlock={handleSelectBlock}
-            onReorderBlocks={handleReorderBlocks}
-            previewMode={previewMode}
-            settings={funnel.settings}
-            deviceMode={deviceMode}
-          />
+          {/* Canvas - Edit or Preview Mode */}
+          {previewMode ? (
+            <PreviewCanvas
+              funnel={funnel}
+              deviceMode={deviceMode}
+              onExitPreview={handleTogglePreview}
+            />
+          ) : (
+            <Canvas
+              screen={selectedScreen}
+              selectedBlockId={selectedBlockId}
+              onSelectBlock={handleSelectBlock}
+              onReorderBlocks={handleReorderBlocks}
+              previewMode={false}
+              settings={funnel.settings}
+              deviceMode={deviceMode}
+            />
+          )}
 
           {/* Right Panel - Properties */}
           {!previewMode && !rightPanelCollapsed && (
