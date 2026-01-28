@@ -1,5 +1,5 @@
 /**
- * Funnel Builder v3 - Right Panel (Properties + Add Blocks)
+ * Funnel Builder v3 - Right Panel (Properties + Add Blocks + Settings)
  * Dark charcoal theme matching flow-canvas aesthetic
  */
 
@@ -29,6 +29,8 @@ import {
   ArrowLeft,
   Send,
   Link,
+  Settings,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,15 +40,24 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Screen, Block, BlockType, ButtonAction, BLOCK_TYPE_CONFIG, SCREEN_TYPE_CONFIG } from '../types/funnel';
+import { Screen, Block, BlockType, ButtonAction, FunnelSettings, BLOCK_TYPE_CONFIG, SCREEN_TYPE_CONFIG } from '../types/funnel';
 import { cn } from '@/lib/utils';
-import { CollapsibleSection, InspectorBreadcrumb, EmptyState } from './inspector';
+import { 
+  CollapsibleSection, 
+  InspectorBreadcrumb, 
+  EmptyState,
+  ScreenBackgroundEditor,
+  BlockAnimationEditor,
+  GlobalStylesEditor,
+} from './inspector';
 
 interface RightPanelProps {
   screen: Screen | null;
   block: Block | null;
+  funnelSettings?: FunnelSettings;
   onUpdateScreen: (updates: Partial<Screen>) => void;
   onUpdateBlock: (updates: Partial<Block>) => void;
+  onUpdateSettings?: (updates: FunnelSettings) => void;
   onAddBlock: (type: BlockType) => void;
   onDeleteBlock: () => void;
   onDuplicateBlock: () => void;
@@ -72,8 +83,10 @@ const BLOCK_ICONS: Record<BlockType, React.ComponentType<{ className?: string }>
 export function RightPanel({
   screen,
   block,
+  funnelSettings,
   onUpdateScreen,
   onUpdateBlock,
+  onUpdateSettings,
   onAddBlock,
   onDeleteBlock,
   onDuplicateBlock,
@@ -81,7 +94,7 @@ export function RightPanel({
   isCollapsed = false,
   onToggleCollapse,
 }: RightPanelProps) {
-  const [activeTab, setActiveTab] = useState<'add' | 'style'>('add');
+  const [activeTab, setActiveTab] = useState<'add' | 'style' | 'settings'>('add');
 
   if (isCollapsed) {
     return null;
@@ -103,7 +116,7 @@ export function RightPanel({
 
   return (
     <div className="builder-v3-right-panel">
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'add' | 'style')} className="flex flex-col h-full">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'add' | 'style' | 'settings')} className="flex flex-col h-full">
         {/* Tab Headers */}
         <div className="builder-v3-panel-header">
           <div className="builder-v3-panel-tabs">
@@ -114,7 +127,7 @@ export function RightPanel({
                 activeTab === 'add' && 'builder-v3-panel-tab--active'
               )}
             >
-              Add Blocks
+              Add
             </button>
             <button 
               onClick={() => setActiveTab('style')}
@@ -123,7 +136,16 @@ export function RightPanel({
                 activeTab === 'style' && 'builder-v3-panel-tab--active'
               )}
             >
-              {block ? 'Block Style' : 'Screen Style'}
+              {block ? 'Block' : 'Screen'}
+            </button>
+            <button 
+              onClick={() => setActiveTab('settings')}
+              className={cn(
+                'builder-v3-panel-tab',
+                activeTab === 'settings' && 'builder-v3-panel-tab--active'
+              )}
+            >
+              <Settings size={14} />
             </button>
           </div>
         </div>
@@ -254,6 +276,22 @@ export function RightPanel({
               <ScreenStyleEditor
                 screen={screen}
                 onUpdate={onUpdateScreen}
+              />
+            )}
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="mt-0 p-4">
+            {funnelSettings && onUpdateSettings ? (
+              <GlobalStylesEditor
+                settings={funnelSettings}
+                onChange={onUpdateSettings}
+              />
+            ) : (
+              <EmptyState
+                icon={<Settings size={24} />}
+                title="Funnel Settings"
+                description="Global settings not available in this context"
               />
             )}
           </TabsContent>
@@ -730,76 +768,16 @@ function ScreenStyleEditor({ screen, onUpdate }: ScreenStyleEditorProps) {
         </div>
       </CollapsibleSection>
 
-      {/* Background Section */}
+      {/* Background Section - Using enhanced editor */}
       <CollapsibleSection 
         title="Background" 
         icon={<Palette size={14} />}
         defaultOpen
       >
-        <div className="builder-v3-field-group">
-          <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Type</Label>
-          <Select
-            value={screen.background?.type || 'solid'}
-            onValueChange={(value) => onUpdate({ 
-              background: { 
-                ...screen.background, 
-                type: value as 'solid' | 'gradient' | 'image' 
-              } 
-            })}
-          >
-            <SelectTrigger className="builder-v3-control-md bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]">
-              <SelectItem value="solid" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Solid Color</SelectItem>
-              <SelectItem value="gradient" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Gradient</SelectItem>
-              <SelectItem value="image" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Image</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {screen.background?.type === 'solid' && (
-          <div className="builder-v3-field-group">
-            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Color</Label>
-            <div className="flex gap-2">
-              <div 
-                className="builder-v3-color-swatch"
-                style={{ background: screen.background?.color || '#ffffff' }}
-              >
-                <input
-                  type="color"
-                  value={screen.background?.color || '#ffffff'}
-                  onChange={(e) => onUpdate({ 
-                    background: { ...screen.background, type: 'solid', color: e.target.value } 
-                  })}
-                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
-                />
-              </div>
-              <Input
-                value={screen.background?.color || '#ffffff'}
-                onChange={(e) => onUpdate({ 
-                  background: { ...screen.background, type: 'solid', color: e.target.value } 
-                })}
-                className="builder-v3-input builder-v3-control-md flex-1"
-                placeholder="#ffffff"
-              />
-            </div>
-          </div>
-        )}
-
-        {screen.background?.type === 'image' && (
-          <div className="builder-v3-field-group">
-            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Image URL</Label>
-            <Input
-              value={screen.background?.image || ''}
-              onChange={(e) => onUpdate({ 
-                background: { ...screen.background, type: 'image', image: e.target.value } 
-              })}
-              placeholder="https://..."
-              className="builder-v3-input builder-v3-control-md"
-            />
-          </div>
-        )}
+        <ScreenBackgroundEditor
+          background={screen.background}
+          onChange={(background) => onUpdate({ background })}
+        />
       </CollapsibleSection>
     </div>
   );

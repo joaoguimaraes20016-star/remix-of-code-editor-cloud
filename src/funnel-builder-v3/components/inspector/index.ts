@@ -82,6 +82,13 @@ export { SizeSection } from './specialized/SizeSection';
 export type { SizeSectionProps, SizeSettings } from './specialized/SizeSection';
 
 // =============================================================================
+// SPECIALIZED EDITORS
+// =============================================================================
+export { ScreenBackgroundEditor } from './ScreenBackgroundEditor';
+export { BlockAnimationEditor } from './BlockAnimationEditor';
+export { GlobalStylesEditor } from './GlobalStylesEditor';
+
+// =============================================================================
 // HOOKS
 // =============================================================================
 export { useInspectorAutoTab } from './hooks/useInspectorAutoTab';
