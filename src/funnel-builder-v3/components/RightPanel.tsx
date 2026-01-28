@@ -77,32 +77,30 @@ export function RightPanel({
   const allowedBlocks = SCREEN_TYPE_CONFIG[screen.type].allowedBlocks;
 
   return (
-    <div className="w-80 border-l border-[hsl(var(--builder-v3-border))] bg-[hsl(var(--builder-v3-surface))] flex flex-col shrink-0">
+    <div className="builder-v3-right-panel">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'add' | 'style')} className="flex flex-col h-full">
         {/* Tab Headers */}
-        <div className="h-12 px-2 flex items-center border-b border-[hsl(var(--builder-v3-border-subtle))]">
-          <TabsList className="grid w-full grid-cols-2 bg-[hsl(var(--builder-v3-surface-hover))] p-1 rounded-lg">
-            <TabsTrigger 
-              value="add" 
+        <div className="builder-v3-panel-header">
+          <div className="builder-v3-panel-tabs">
+            <button 
+              onClick={() => setActiveTab('add')}
               className={cn(
-                'text-xs font-medium rounded-md transition-all',
-                'data-[state=inactive]:text-[hsl(var(--builder-v3-text-muted))] data-[state=inactive]:bg-transparent',
-                'data-[state=active]:bg-[hsl(var(--builder-v3-surface-active))] data-[state=active]:text-[hsl(var(--builder-v3-text))]'
+                'builder-v3-panel-tab',
+                activeTab === 'add' && 'builder-v3-panel-tab--active'
               )}
             >
               Add Blocks
-            </TabsTrigger>
-            <TabsTrigger 
-              value="style" 
+            </button>
+            <button 
+              onClick={() => setActiveTab('style')}
               className={cn(
-                'text-xs font-medium rounded-md transition-all',
-                'data-[state=inactive]:text-[hsl(var(--builder-v3-text-muted))] data-[state=inactive]:bg-transparent',
-                'data-[state=active]:bg-[hsl(var(--builder-v3-surface-active))] data-[state=active]:text-[hsl(var(--builder-v3-text))]'
+                'builder-v3-panel-tab',
+                activeTab === 'style' && 'builder-v3-panel-tab--active'
               )}
             >
               {block ? 'Block Style' : 'Screen Style'}
-            </TabsTrigger>
-          </TabsList>
+            </button>
+          </div>
         </div>
 
         <ScrollArea className="flex-1 builder-v3-scroll">

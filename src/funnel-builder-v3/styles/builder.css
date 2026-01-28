@@ -10,25 +10,26 @@
    ============================================================================= */
 
 :root {
-  /* Core builder colors (HSL values) */
-  --builder-v3-bg: 220 13% 8%;
-  --builder-v3-surface: 220 13% 10%;
-  --builder-v3-surface-hover: 220 13% 14%;
-  --builder-v3-surface-active: 220 13% 18%;
-  --builder-v3-border: 220 13% 16%;
-  --builder-v3-border-subtle: 220 13% 13%;
+  /* === Core Builder Colors (Match builder_v2 exactly) === */
+  --builder-v3-bg: 225 12% 10%;
+  --builder-v3-surface: 225 12% 14%;
+  --builder-v3-surface-hover: 225 10% 18%;
+  --builder-v3-surface-active: 225 8% 22%;
+  --builder-v3-border: 225 8% 20%;
+  --builder-v3-border-subtle: 225 8% 16%;
   
-  /* Text hierarchy */
+  /* Text hierarchy (from builder_v2) */
   --builder-v3-text: 210 20% 96%;
-  --builder-v3-text-secondary: 210 15% 80%;
-  --builder-v3-text-muted: 215 12% 62%;
-  --builder-v3-text-dim: 215 12% 52%;
+  --builder-v3-text-secondary: 215 16% 65%;
+  --builder-v3-text-muted: 215 12% 50%;
+  --builder-v3-text-dim: 215 8% 40%;
   
   /* Accent colors */
   --builder-v3-accent: 217 91% 60%;
-  --builder-v3-accent-glow: 217 91% 66%;
+  --builder-v3-accent-hover: 217 91% 55%;
+  --builder-v3-accent-glow: 217 91% 70%;
   --builder-v3-success: 142 71% 45%;
-  --builder-v3-warning: 38 92% 50%;
+  --builder-v3-warning: 45 90% 55%;
   --builder-v3-error: 0 84% 60%;
   
   /* Selection colors */
@@ -36,10 +37,10 @@
   --builder-v3-selection-block: 217 91% 60%;
   --builder-v3-selection-element: 214 85% 55%;
   
-  /* Transitions */
-  --builder-v3-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --builder-v3-transition-fast: 150ms;
-  --builder-v3-transition-slow: 400ms;
+  /* Transitions - smooth easing */
+  --builder-v3-transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --builder-v3-transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  --builder-v3-transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
   
   /* Radius */
   --builder-v3-radius-sm: 6px;
@@ -50,9 +51,12 @@
   /* Touch targets */
   --builder-v3-touch-target: 44px;
   
-  /* Canvas */
-  --builder-v3-canvas-bg: 0 0% 3%;
-  --builder-v3-canvas-grid: 0 0% 8%;
+  /* Canvas (dark gradient background) */
+  --builder-v3-canvas-bg: 225 12% 6%;
+  --builder-v3-canvas-grid: 225 8% 12%;
+  
+  /* Content background gradient */
+  --builder-v3-content-bg: linear-gradient(180deg, hsl(225 14% 5%) 0%, hsl(225 12% 7%) 100%);
 }
 
 /* =============================================================================
@@ -62,55 +66,75 @@
 /* Base device frame */
 .builder-v3-device-frame {
   position: relative;
-  border-radius: var(--builder-v3-radius-xl);
   overflow: visible;
-  box-shadow: 
-    0 0 0 1px hsl(var(--builder-v3-border) / 0.3),
-    0 25px 50px -12px rgba(0, 0, 0, 0.4),
-    0 0 80px -20px hsl(var(--builder-v3-accent) / 0.15);
 }
 
+/* Mobile device - Perspective-inspired realistic phone */
 .builder-v3-device-frame--mobile {
-  width: 375px;
+  width: min(375px, calc(100vw - 560px));
+  background: hsl(240 6% 12%);
   border-radius: 52px;
+  padding: 14px;
+  border: 3px solid hsl(240 4% 24%);
+  box-shadow: 
+    0 50px 100px -20px hsl(0 0% 0% / 0.5),
+    0 30px 60px -30px hsl(0 0% 0% / 0.4),
+    inset 0 1px 0 0 hsl(0 0% 100% / 0.06),
+    inset 0 -1px 0 0 hsl(0 0% 0% / 0.2);
 }
 
+/* Tablet device */
 .builder-v3-device-frame--tablet {
-  width: 768px;
+  width: min(768px, calc(100vw - 560px));
+  background: hsl(240 6% 12%);
   border-radius: 28px;
+  padding: 16px;
+  border: 3px solid hsl(240 4% 24%);
+  box-shadow: 
+    0 50px 100px -20px hsl(0 0% 0% / 0.5),
+    0 30px 60px -30px hsl(0 0% 0% / 0.4),
+    inset 0 1px 0 0 hsl(0 0% 100% / 0.06);
 }
 
+/* Desktop device - Browser window style */
 .builder-v3-device-frame--desktop {
-  width: 1200px;
+  width: 100%;
+  max-width: min(1024px, calc(100vw - 560px));
+  background: hsl(240 6% 12%);
   border-radius: 12px;
+  overflow: hidden;
+  border: 3px solid hsl(240 4% 24%);
+  box-shadow: 
+    0 50px 100px -20px hsl(0 0% 0% / 0.5),
+    0 30px 60px -30px hsl(0 0% 0% / 0.4),
+    inset 0 1px 0 0 hsl(0 0% 100% / 0.06);
 }
 
 /* Phone notch / dynamic island */
 .builder-v3-phone-notch {
   position: absolute;
-  top: 12px;
+  top: 14px;
   left: 50%;
   transform: translateX(-50%);
-  width: 126px;
-  height: 37px;
-  background: #000;
-  border-radius: 20px;
-  z-index: 10;
-  pointer-events: none;
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+  padding: 6px 0;
 }
 
-/* Home indicator */
+.builder-v3-phone-notch-inner {
+  width: 90px;
+  height: 24px;
+  background: hsl(0 0% 0%);
+  border-radius: 14px;
+}
+
+/* Home indicator bar */
 .builder-v3-home-indicator {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
   width: 134px;
   height: 5px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 100px;
-  pointer-events: none;
-  z-index: 10;
+  background: #636366;
+  border-radius: 3px;
 }
 
 /* Browser bar for desktop */
@@ -773,4 +797,570 @@
   height: 24px;
   border-radius: var(--builder-v3-radius-sm);
   border: 1px solid hsl(var(--builder-v3-border));
+}
+
+/* =============================================================================
+   Section 12: Canvas Viewport & Screen Structure
+   ============================================================================= */
+
+/* Canvas viewport with radial gradient highlight */
+.builder-v3-canvas-viewport {
+  background: hsl(var(--builder-v3-canvas-bg));
+  background-image: radial-gradient(
+    circle at 50% 0%, 
+    rgba(99, 102, 241, 0.03) 0%, 
+    transparent 50%
+  );
+}
+
+/* Device screen container */
+.builder-v3-device-screen {
+  position: relative;
+  background: var(--builder-v3-content-bg, hsl(225 14% 5%));
+  border-radius: 42px;
+  overflow: hidden;
+  overflow-y: auto;
+  min-height: 600px;
+  max-height: clamp(500px, calc(100vh - 200px), 680px);
+}
+
+.builder-v3-device-screen-content {
+  min-height: 100%;
+  padding-top: 44px; /* Space for notch */
+}
+
+/* Device home bar */
+.builder-v3-device-home-bar {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 6px;
+  background: #1c1c1e;
+}
+
+/* Progress bar */
+.builder-v3-progress-bar {
+  height: 4px;
+  background: hsl(var(--builder-v3-surface));
+}
+
+.builder-v3-progress-fill {
+  height: 100%;
+  background: hsl(var(--builder-v3-accent));
+  transition: width var(--builder-v3-transition);
+}
+
+/* =============================================================================
+   Section 13: Left Panel Screen List
+   ============================================================================= */
+
+/* Screen item */
+.builder-v3-screen-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--builder-v3-transition);
+  color: hsl(var(--builder-v3-text-secondary));
+}
+
+.builder-v3-screen-item:hover {
+  background: hsl(var(--builder-v3-surface-hover));
+}
+
+.builder-v3-screen-item--active {
+  background: hsl(217 91% 60% / 0.12);
+  color: hsl(var(--builder-v3-accent));
+}
+
+/* Screen index badge */
+.builder-v3-screen-index {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: hsl(var(--builder-v3-surface-active));
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: hsl(var(--builder-v3-text-muted));
+  flex-shrink: 0;
+}
+
+.builder-v3-screen-item--active .builder-v3-screen-index {
+  background: hsl(var(--builder-v3-accent));
+  color: white;
+}
+
+/* Drag handle */
+.builder-v3-drag-handle {
+  width: 12px;
+  height: 12px;
+  color: hsl(var(--builder-v3-text-dim));
+  opacity: 0;
+  cursor: grab;
+  flex-shrink: 0;
+  transition: opacity var(--builder-v3-transition-fast);
+}
+
+.builder-v3-screen-item:hover .builder-v3-drag-handle {
+  opacity: 1;
+}
+
+/* Screen icon */
+.builder-v3-screen-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: hsl(var(--builder-v3-text-muted));
+}
+
+.builder-v3-screen-item--active .builder-v3-screen-icon {
+  color: hsl(var(--builder-v3-accent));
+}
+
+/* Screen name */
+.builder-v3-screen-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =============================================================================
+   Section 14: Toolbar Styles
+   ============================================================================= */
+
+.builder-v3-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 16px;
+  background: hsl(var(--builder-v3-surface));
+  border-bottom: 1px solid hsl(var(--builder-v3-border));
+  flex-shrink: 0;
+}
+
+.builder-v3-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.builder-v3-toolbar-center {
+  display: flex;
+  align-items: center;
+}
+
+.builder-v3-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.builder-v3-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--builder-v3-radius-sm);
+  background: transparent;
+  color: hsl(var(--builder-v3-text-muted));
+  border: none;
+  cursor: pointer;
+  transition: all var(--builder-v3-transition-fast);
+}
+
+.builder-v3-toolbar-btn:hover {
+  background: hsl(var(--builder-v3-surface-hover));
+  color: hsl(var(--builder-v3-text));
+}
+
+.builder-v3-toolbar-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.builder-v3-toolbar-title h1 {
+  font-size: 14px;
+  font-weight: 600;
+  color: hsl(var(--builder-v3-text));
+  margin: 0;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.builder-v3-toolbar-dirty {
+  font-size: 11px;
+  color: hsl(var(--builder-v3-text-dim));
+}
+
+.builder-v3-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: hsl(var(--builder-v3-border));
+  margin: 0 4px;
+}
+
+/* Preview toggle button */
+.builder-v3-preview-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--builder-v3-radius-md);
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: hsl(var(--builder-v3-text-muted));
+  cursor: pointer;
+  transition: all var(--builder-v3-transition);
+}
+
+.builder-v3-preview-toggle:hover {
+  background: hsl(var(--builder-v3-surface-hover));
+  color: hsl(var(--builder-v3-text));
+}
+
+.builder-v3-preview-toggle--active {
+  background: hsl(217 91% 60% / 0.15);
+  color: hsl(var(--builder-v3-accent));
+  box-shadow: inset 0 0 0 1px hsl(217 91% 60% / 0.3);
+}
+
+.builder-v3-preview-divider {
+  color: hsl(var(--builder-v3-text-dim));
+}
+
+.builder-v3-preview-exit {
+  opacity: 0.8;
+}
+
+.builder-v3-preview-exit:hover {
+  opacity: 1;
+}
+
+/* Save button */
+.builder-v3-save-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--builder-v3-radius-sm);
+  background: hsl(var(--builder-v3-surface-hover));
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: hsl(var(--builder-v3-text-muted));
+  cursor: pointer;
+  transition: all var(--builder-v3-transition-fast);
+}
+
+.builder-v3-save-btn:hover:not(:disabled) {
+  background: hsl(var(--builder-v3-surface-active));
+  color: hsl(var(--builder-v3-text));
+}
+
+.builder-v3-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Publish button */
+.builder-v3-publish-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--builder-v3-radius-sm);
+  background: hsl(var(--builder-v3-accent));
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all var(--builder-v3-transition-fast);
+}
+
+.builder-v3-publish-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* =============================================================================
+   Section 15: Right Panel Styles
+   ============================================================================= */
+
+.builder-v3-right-panel {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  background: hsl(var(--builder-v3-surface));
+  border-left: 1px solid hsl(var(--builder-v3-border));
+}
+
+.builder-v3-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid hsl(var(--builder-v3-border-subtle));
+}
+
+/* Panel header for left panel (uses justify-content: space-between) */
+.builder-v3-left-panel .builder-v3-panel-header {
+  justify-content: space-between;
+}
+
+/* Panel header for right panel (centered tabs) */
+.builder-v3-right-panel .builder-v3-panel-header {
+  justify-content: center;
+  padding: 0 12px;
+}
+
+.builder-v3-panel-tabs {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  padding: 3px;
+  background: hsl(var(--builder-v3-surface-hover));
+  border-radius: 8px;
+}
+
+.builder-v3-panel-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: hsl(var(--builder-v3-text-muted));
+  cursor: pointer;
+  transition: all var(--builder-v3-transition-fast);
+}
+
+.builder-v3-panel-tab:hover:not(.builder-v3-panel-tab--active) {
+  color: hsl(var(--builder-v3-text-secondary));
+}
+
+.builder-v3-panel-tab--active {
+  background: hsl(var(--builder-v3-surface-active));
+  color: hsl(var(--builder-v3-text));
+  box-shadow: 0 1px 3px hsl(0 0% 0% / 0.2);
+}
+
+/* =============================================================================
+   Section 16: Empty State (Perspective-style)
+   ============================================================================= */
+
+.builder-v3-empty-page-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 400px;
+  gap: 16px;
+  padding: 48px 24px;
+}
+
+.builder-v3-empty-page-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 2px dashed rgba(59, 130, 246, 0.4);
+  border-radius: 16px;
+  color: rgba(59, 130, 246, 0.9);
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.builder-v3-empty-page-add-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.6);
+  color: #3b82f6;
+  transform: scale(1.05);
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2);
+}
+
+.builder-v3-empty-page-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: hsl(var(--builder-v3-text-dim));
+  letter-spacing: 0.01em;
+}
+
+/* =============================================================================
+   Section 17: Left Panel Styles
+   ============================================================================= */
+
+.builder-v3-left-panel {
+  width: 256px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  background: hsl(var(--builder-v3-surface));
+  border-right: 1px solid hsl(var(--builder-v3-border));
+}
+
+.builder-v3-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: hsl(var(--builder-v3-text));
+}
+
+.builder-v3-add-screen-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--builder-v3-radius-sm);
+  background: transparent;
+  border: none;
+  color: hsl(var(--builder-v3-text-muted));
+  cursor: pointer;
+  transition: all var(--builder-v3-transition-fast);
+}
+
+.builder-v3-add-screen-btn:hover {
+  background: hsl(var(--builder-v3-surface-hover));
+  color: hsl(var(--builder-v3-text));
+}
+
+.builder-v3-screen-list {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Screen picker popover */
+.builder-v3-screen-picker {
+  width: 224px;
+  padding: 8px;
+  background: hsl(var(--builder-v3-surface)) !important;
+  border-color: hsl(var(--builder-v3-border)) !important;
+}
+
+.builder-v3-screen-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.builder-v3-screen-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--builder-v3-radius-sm);
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--builder-v3-transition-fast);
+}
+
+.builder-v3-screen-picker-item:hover {
+  background: hsl(var(--builder-v3-surface-hover));
+}
+
+.builder-v3-screen-picker-icon {
+  width: 16px;
+  height: 16px;
+  color: hsl(var(--builder-v3-text-muted));
+  flex-shrink: 0;
+}
+
+.builder-v3-screen-picker-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.builder-v3-screen-picker-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: hsl(var(--builder-v3-text));
+}
+
+.builder-v3-screen-picker-desc {
+  font-size: 11px;
+  color: hsl(var(--builder-v3-text-dim));
+  margin-top: 2px;
+}
+
+/* Screen actions button */
+.builder-v3-screen-actions-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  color: hsl(var(--builder-v3-text-muted));
+  cursor: pointer;
+  opacity: 0;
+  transition: all var(--builder-v3-transition-fast);
+}
+
+.builder-v3-screen-item:hover .builder-v3-screen-actions-btn {
+  opacity: 1;
+}
+
+.builder-v3-screen-actions-btn:hover {
+  background: hsl(var(--builder-v3-surface-active));
+}
+
+/* =============================================================================
+   Section 18: Dropdown Styles
+   ============================================================================= */
+
+.builder-v3-dropdown {
+  background: hsl(var(--builder-v3-surface)) !important;
+  border-color: hsl(var(--builder-v3-border)) !important;
+}
+
+.builder-v3-dropdown-item {
+  color: hsl(var(--builder-v3-text-secondary)) !important;
+  transition: all var(--builder-v3-transition-fast);
+}
+
+.builder-v3-dropdown-item:focus {
+  background: hsl(var(--builder-v3-surface-hover)) !important;
+  color: hsl(var(--builder-v3-text)) !important;
+}
+
+.builder-v3-dropdown-item--danger {
+  color: hsl(var(--builder-v3-error)) !important;
+}
+
+.builder-v3-dropdown-item--danger:focus {
+  background: hsl(var(--builder-v3-error) / 0.1) !important;
+  color: hsl(var(--builder-v3-error)) !important;
+}
+
+.builder-v3-dropdown-separator {
+  background: hsl(var(--builder-v3-border)) !important;
 }
