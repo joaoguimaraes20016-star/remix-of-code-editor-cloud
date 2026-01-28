@@ -5,6 +5,9 @@
 // Types
 export * from './types/funnel';
 
+// Shared utilities
+export * from './shared';
+
 // Components
 export { Editor } from './components/Editor';
 export { Canvas } from './components/Canvas';
