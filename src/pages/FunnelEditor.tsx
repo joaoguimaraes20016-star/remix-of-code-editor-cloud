@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 
 // V3 Builder (new - default)
-import { Editor } from '@/funnel-builder-v3/components/Editor';
+import { Editor } from '@/funnel-builder-v3';
 import { 
   Funnel, 
   createDefaultFunnel 
