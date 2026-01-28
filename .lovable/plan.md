@@ -1,79 +1,110 @@
 
-# Fix Font Rendering - Missing Google Fonts Import
+
+# Fix Builder UI Fonts Inheriting User Content Fonts
 
 ## Problem
 
-The builder allows users to select from 15+ fonts in the font family dropdown, but only 3 fonts are actually loaded via Google Fonts. When a user (or the AI) selects a font like "Oswald", "Montserrat", or "Playfair Display", the font fails to load and the browser falls back to its default serif font (Times New Roman), causing the ugly rendering shown in the screenshots.
+Builder UI elements (like the "Add Section" button, labels, hints) inside the canvas are incorrectly inheriting user content fonts. When a user's funnel uses display fonts like "Oswald" or "Bebas Neue", the builder chrome also picks up these fonts instead of staying with the standard system font (Inter/DM Sans).
 
-### Current State
+### Root Cause
 
-**Fonts imported in `src/flow-canvas/index.css`:**
-- Inter
-- JetBrains Mono
-- DM Sans
+1. **CSS rule at line 464-470 in `src/flow-canvas/index.css`**:
+   ```css
+   .device-frame *,
+   .device-frame button {
+     font-family: inherit;
+   }
+   ```
+   This forces ALL elements inside the device frame to inherit font-family - including builder UI.
 
-**Fonts offered in `masterFontFamilies` (presets.ts):**
-- inherit, system-ui (system fonts - OK)
-- Inter, DM Sans (loaded - OK)
-- Oswald, Anton, Bebas Neue, Archivo Black, Space Grotesk, Syne (NOT LOADED)
-- Roboto, Open Sans, Poppins, Montserrat, Lato, Raleway (NOT LOADED)
-- Playfair Display (NOT LOADED)
+2. **Inline style on the Add Section button** at line 5461 in `CanvasRenderer.tsx`:
+   ```tsx
+   style={{ fontFamily: 'inherit' }}
+   ```
+   This explicitly tells the button to inherit whatever font is cascading down.
 
 ---
 
 ## Solution
 
-Update the Google Fonts import in `src/flow-canvas/index.css` to include ALL fonts from the `masterFontFamilies` preset. This ensures that any font a user selects will actually render correctly.
+### Strategy
+Create a clear separation between **user content** (which uses custom fonts) and **builder UI** (which always uses system fonts).
 
-### File to Modify
+### Changes
 
-**`src/flow-canvas/index.css`**
+#### 1. Update CSS - Scope Font Inheritance to User Content Only
 
-Replace line 7:
+**File:** `src/flow-canvas/index.css`
+
+Replace the overly broad inheritance rule with scoped rules:
+
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap');
+/* Before (broken) */
+.device-frame *,
+.device-frame button,
+.device-frame input,
+.device-frame textarea,
+.device-frame select {
+  font-family: inherit;
+}
+
+/* After (fixed) */
+/* User content inherits custom fonts */
+.device-frame .user-content,
+.device-frame .user-content * {
+  font-family: inherit;
+}
+
+/* Builder UI always uses system font */
+.device-frame .builder-chrome,
+.device-frame .builder-chrome * {
+  font-family: 'Inter', 'DM Sans', system-ui, -apple-system, sans-serif !important;
+}
 ```
 
-With comprehensive import:
-```css
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Lato:wght@300;400;700&family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Raleway:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap');
+#### 2. Add builder-chrome class to UI elements in CanvasRenderer.tsx
+
+**File:** `src/flow-canvas/builder/components/CanvasRenderer.tsx`
+
+**Empty state (lines 5423-5467):**
+- Add `builder-chrome` class to the container
+- Remove the inline `fontFamily: 'inherit'` style
+
+```tsx
+// Before
+<div className="flex items-center justify-center min-h-[500px] px-4">
+
+// After  
+<div className="flex items-center justify-center min-h-[500px] px-4 builder-chrome">
+```
+
+**Bottom Add Section button (lines 5489-5509):**
+- Add `builder-chrome` class to the container
+
+```tsx
+// Before
+<div className="flex flex-col items-center py-8 group">
+
+// After
+<div className="flex flex-col items-center py-8 group builder-chrome">
 ```
 
 ---
 
-## Fonts Being Added
+## Files to Modify
 
-| Font | Category | Style |
-|------|----------|-------|
-| Oswald | Display | Bold, condensed |
-| Anton | Display | Heavy, impactful |
-| Bebas Neue | Display | All-caps, modern |
-| Archivo Black | Display | Bold, geometric |
-| Space Grotesk | Display | Tech, modern |
-| Syne | Display | Artistic, expressive |
-| Roboto | Standard | Google's flagship |
-| Open Sans | Standard | Friendly, readable |
-| Poppins | Standard | Geometric, clean |
-| Montserrat | Standard | Elegant, versatile |
-| Lato | Standard | Professional |
-| Raleway | Standard | Elegant, thin weights |
-| Playfair Display | Serif | Elegant headlines |
-
----
-
-## Technical Details
-
-- The Google Fonts API allows combining multiple fonts in a single request
-- We include weight ranges (400-700) for most fonts to support normal and bold text
-- The `display=swap` parameter ensures text is visible while fonts load
-- This is a one-time CSS change - no JavaScript modifications needed
+| File | Change |
+|------|--------|
+| `src/flow-canvas/index.css` | Replace broad `font-family: inherit` rule with scoped rules for user-content vs builder-chrome |
+| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Add `builder-chrome` class to empty state and bottom Add Section button containers, remove inline font style |
 
 ---
 
 ## Result
 
 After this fix:
-- All fonts in the dropdown will actually render
-- No more fallback to Times New Roman
-- Consistent typography across editor and published funnels
-- AI-selected fonts will display correctly
+- User content (headings, text, buttons the user creates) uses whatever font they select
+- Builder UI (Add Section, labels, hints, tooltips inside the canvas) always uses Inter/DM Sans
+- Clean visual separation between editable content and builder chrome
+- No more display fonts bleeding into system UI
+
