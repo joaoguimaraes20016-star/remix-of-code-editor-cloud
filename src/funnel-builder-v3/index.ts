@@ -2,6 +2,9 @@
  * Funnel Builder v3 - Public Exports
  */
 
+// Styles
+import './styles/builder.css';
+
 // Types
 export * from './types/funnel';
 
