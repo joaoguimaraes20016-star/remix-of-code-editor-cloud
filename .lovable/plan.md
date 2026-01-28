@@ -1,67 +1,71 @@
 
-# Funnel Builder v3 - Complete Enhancement & Legacy Cleanup
+# Funnel Builder v3 - Merge First, Delete Last
 
-## Executive Summary
+## Strategy Overview
 
-This plan enhances the new v3 funnel builder with **all the editing complexity, templates, animations, and visual polish** from the legacy builders, then **deletes ~25,000 lines** of legacy code to create a single, clean, Perspective-style system.
+This plan takes a **safe, incremental approach**:
+1. **Phases 1-11**: Merge all valuable capabilities from legacy builders into v3
+2. **Phase 12**: Delete legacy code **only after everything is working**
 
-**Current State Analysis:**
+This ensures no functionality is lost and allows testing at each step.
 
-| Component | Status | Lines | Action |
-|-----------|--------|-------|--------|
-| `funnel-builder-v3/` | New, minimal | ~1,500 | **ENHANCE** |
-| `flow-canvas/builder/` | Complex, unmaintainable | ~15,000+ | **DELETE** |
-| `builder_v2/` | Duplicate of flow-canvas | ~8,000+ | **DELETE** |
-| `components/funnel-builder/` | Original legacy | ~4,000+ | **DELETE** |
+---
 
-**Target**: ~3,500 lines (v3 enhanced) vs ~27,000 lines (current total)
+## What We're Keeping (Legacy → v3)
+
+| Feature | Source | Target | Why It's Valuable |
+|---------|--------|--------|-------------------|
+| **48 Color Presets** | `flow-canvas/builder/utils/presets.ts` | `v3/shared/presets.ts` | Unified palette |
+| **12 Gradient Presets** | `flow-canvas/builder/utils/presets.ts` | `v3/shared/presets.ts` | Professional gradients |
+| **Gradient Editor** | `GradientValue` interface | `v3/shared/gradientHelpers.ts` | Multi-stop control |
+| **14 Animation Presets** | `AnimationPresetSection.tsx` | `v3/shared/animationPresets.ts` | Entrance + attention |
+| **Inline Text Editor** | `components/funnel-builder/InlineTextEditor.tsx` | `v3/components/InlineTextEditor.tsx` | Rich text on canvas |
+| **Device Frames** | `EditorLayout.css` device frames | `v3/components/DeviceFrame.tsx` | Phone/tablet/desktop |
+| **50+ Templates** | `builder_v2/templates/sectionTemplates.ts` | `v3/templates/` | High-converting sections |
+| **Collapsible Sections** | Inspector components | `v3/components/inspector/` | Organized property panels |
+| **Video URL Parsing** | `getVideoEmbedUrl()` | `v3/shared/videoHelpers.ts` | YouTube/Vimeo/Loom |
+| **CSS Design Tokens** | `EditorLayout.css` variables | `v3/styles/builder.css` | Unified visual system |
 
 ---
 
 ## Phase 1: Create Shared Utilities (~600 lines)
 
-### 1.1 Presets System
+### 1.1 Create Presets System
 **File: `src/funnel-builder-v3/shared/presets.ts`**
 
-Migrate from `flow-canvas/builder/utils/presets.ts`:
-- `masterColorPresets` - 48 colors (6 rows x 8 columns)
+Port from `flow-canvas/builder/utils/presets.ts`:
+- `masterColorPresets` - 48 colors organized in 6 rows × 8 columns
 - `inspectorColorPresets` - Categorized: neutrals, brand, warm, cool
-- `masterGradientPresets` - 12 gradient presets with GradientValue interface
-- `masterFontFamilies` - 15 fonts with categories
+- `masterGradientPresets` - 12 gradient presets with `GradientValue` interface
+- `masterFontFamilies` - 15+ fonts with categories (display, standard, serif)
 - `fontSizeOptions`, `fontWeightOptions`, `letterSpacingOptions`
 - `textShadowPresets`, `blockShadowPresets`
 
-### 1.2 Gradient Helpers
+### 1.2 Create Gradient Helpers
 **File: `src/funnel-builder-v3/shared/gradientHelpers.ts`**
 
-```text
-Interfaces:
-├── GradientValue { type, angle, stops[] }
-├── GradientPreset { name, gradient }
+Port from `flow-canvas/builder/utils/gradientHelpers.ts`:
+- `GradientValue` interface (type, angle, stops[])
+- `gradientToCSS()` - Convert gradient object to CSS string
+- `cssToGradientValue()` - Parse CSS gradient to object
+- `cloneGradient()` - Deep clone for immutability
+- `defaultGradientValue` - Default purple-to-pink gradient
 
-Functions:
-├── gradientToCSS(gradient) → CSS string
-├── cssToGradientValue(css) → GradientValue
-├── cloneGradient(gradient) → GradientValue (immutable)
-└── defaultGradientValue
-```
-
-### 1.3 Animation Presets
+### 1.3 Create Animation Presets
 **File: `src/funnel-builder-v3/shared/animationPresets.ts`**
 
-Migrate from `AnimationPresetSection.tsx`:
-- 14 animation presets (entrance + attention)
+Port from `AnimationPresetSection.tsx`:
+- 14 animation presets (entrance + attention categories)
+- `AnimationSettings` interface with effect, trigger, duration, delay
 - Spring physics presets (Gentle, Default, Snappy, Bouncy, Stiff)
-- Trigger options (load, scroll, hover)
 - Easing options (ease-out, ease-in, spring, linear)
+- Trigger options (load, scroll, hover)
 
-### 1.4 Video Helpers
+### 1.4 Create Video Helpers
 **File: `src/funnel-builder-v3/shared/videoHelpers.ts`**
 
-```typescript
-getVideoEmbedUrl(url: string): string | null
-getVideoProvider(url: string): 'youtube' | 'vimeo' | 'loom' | 'wistia' | 'direct' | null
-```
+- `getVideoEmbedUrl(url)` - Parse and return embed URL
+- `getVideoProvider(url)` - Detect: youtube, vimeo, loom, wistia, direct
 
 ---
 
@@ -69,43 +73,30 @@ getVideoProvider(url: string): 'youtube' | 'vimeo' | 'loom' | 'wistia' | 'direct
 
 **File: `src/funnel-builder-v3/styles/builder.css`**
 
-Migrate from `EditorLayout.css`:
+Port from `EditorLayout.css`:
 
-```css
-:root {
-  /* Builder tokens */
-  --builder-bg: 225 12% 10%;
-  --builder-surface: 225 12% 14%;
-  --builder-accent: 217 91% 60%;
-  --builder-text: 210 20% 96%;
-  --builder-border: 225 8% 20%;
-  
-  /* Transitions */
-  --builder-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  
-  /* Radius */
-  --builder-radius-sm: 6px;
-  --builder-radius-md: 10px;
-  --builder-radius-lg: 16px;
-}
+**Design Tokens:**
+- Builder colors: `--builder-bg`, `--builder-surface`, `--builder-accent`, `--builder-text`, `--builder-border`
+- Semantic colors: `--builder-success`, `--builder-warning`, `--builder-error`
+- Radius: `--builder-radius-sm` (6px), `--builder-radius-md` (10px), `--builder-radius-lg` (16px)
+- Transitions: `--builder-transition` (200ms cubic-bezier)
 
-/* Device frame styles */
-.device-frame--phone { ... }
-.device-frame--tablet { ... }
-.device-frame--desktop { ... }
+**Device Frame Styles:**
+- `.device-frame--phone` - Dynamic island, rounded corners (52px), home indicator
+- `.device-frame--tablet` - Rounded corners (28px), home bar
+- `.device-frame--desktop` - Browser bar with traffic lights
 
-/* Node selection states */
-.builder-v3-node-overlay { ... }
-.builder-v3-node:hover > .builder-v3-node-overlay { border-color: rgba(59, 130, 246, 0.4); }
-.builder-v3-node[data-selected="true"] > .builder-v3-node-overlay { border-color: #3b82f6; }
+**Node Selection States:**
+- `.builder-v3-node-overlay` - Selection ring styles
+- Hover state: semi-transparent blue border
+- Selected state: solid blue border
 
-/* Animation keyframes */
-@keyframes builder-fade-in { ... }
-@keyframes builder-slide-up { ... }
-@keyframes builder-scale-in { ... }
-@keyframes builder-bounce { ... }
-@keyframes builder-pulse { ... }
-```
+**Animation Keyframes:**
+- `@keyframes builder-fade-in`
+- `@keyframes builder-slide-up`
+- `@keyframes builder-scale-in`
+- `@keyframes builder-bounce`
+- `@keyframes builder-pulse`
 
 ---
 
@@ -114,44 +105,28 @@ Migrate from `EditorLayout.css`:
 ### 3.1 Collapsible Section
 **File: `src/funnel-builder-v3/components/inspector/CollapsibleSection.tsx`**
 
-```typescript
-interface CollapsibleSectionProps {
-  title: string;
-  icon?: React.ReactNode;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}
-```
-
 Features:
 - Animated chevron rotation
 - Consistent padding (px-4 py-3)
-- Hover state (bg-builder-surface-hover)
-- Active badge indicator
+- Icon + title header
+- `defaultOpen` prop for initial state
 
 ### 3.2 Field Group
 **File: `src/funnel-builder-v3/components/inspector/FieldGroup.tsx`**
 
-```typescript
-interface FieldGroupProps {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}
-```
-
 Features:
-- 11px label text
-- 9px hint text (dim)
-- 1.5 spacing between label and control
+- 11px label text (medium weight)
+- 9px hint text (muted color)
+- Consistent vertical spacing
 
 ### 3.3 Color Preset Grid
 **File: `src/funnel-builder-v3/components/inspector/ColorPresetGrid.tsx`**
 
+Features:
 - 8-column swatch grid
-- Categories: Neutrals, Brand, Warm, Cool
-- Active state with ring
-- Custom color input
+- Category headers: Neutrals, Brand, Warm, Cool
+- Active state with ring indicator
+- Custom color input option
 
 ### 3.4 Gradient Editor
 **File: `src/funnel-builder-v3/components/inspector/GradientEditor.tsx`**
@@ -159,7 +134,7 @@ Features:
 Features:
 - Gradient preview bar
 - Type toggle (linear/radial)
-- Angle slider (0-360)
+- Angle slider (0-360°)
 - Color stop management (add/remove/drag)
 - Preset selection grid
 
@@ -167,12 +142,10 @@ Features:
 **File: `src/funnel-builder-v3/components/inspector/AnimationPicker.tsx`**
 
 Features:
-- Preset selection dropdown (grouped by entrance/attention)
+- Preset selection dropdown (grouped by category)
 - Duration slider (100-2000ms)
 - Delay slider (0-2000ms)
 - Trigger selection (load/scroll/hover)
-- Easing selection
-- Spring physics presets (when easing = spring)
 - Preview/replay button
 
 ---
@@ -181,19 +154,23 @@ Features:
 
 **File: `src/funnel-builder-v3/components/DeviceFrame.tsx`**
 
-```typescript
-type DeviceMode = 'desktop' | 'tablet' | 'mobile';
+Port from `EditorLayout.css` device frame styles:
 
-interface DeviceFrameProps {
-  mode: DeviceMode;
-  children: React.ReactNode;
-}
-```
+**Phone Frame:**
+- Dynamic island/notch
+- Rounded corners (52px)
+- Home indicator bar
+- Responsive width: `min(375px, calc(100vw - 560px))`
 
-Frame styles from `EditorLayout.css`:
-- **Phone**: Dynamic island, rounded corners (52px), home indicator
-- **Tablet**: Rounded corners (28px), home bar
-- **Desktop**: Browser bar with traffic lights (red/yellow/green), URL bar
+**Tablet Frame:**
+- Rounded corners (28px)
+- Home bar
+- Responsive width: `min(768px, calc(100vw - 560px))`
+
+**Desktop Frame:**
+- Browser bar with traffic lights (red/yellow/green)
+- URL bar
+- Minimal rounded corners
 
 ---
 
@@ -201,16 +178,13 @@ Frame styles from `EditorLayout.css`:
 
 **File: `src/funnel-builder-v3/components/InlineTextEditor.tsx`**
 
-Simplified version from `components/funnel-builder/InlineTextEditor.tsx`:
+Port simplified version from `components/funnel-builder/InlineTextEditor.tsx`:
 
 Features:
 - Click to enter edit mode
-- contentEditable div with placeholder
-- Floating toolbar on text selection:
-  - Bold / Italic / Underline
-  - Alignment (left/center/right)
-  - Color picker (15 preset colors + custom)
-  - Font size (7 options)
+- `contentEditable` div with placeholder
+- Floating toolbar on text selection (portaled to body)
+- Toolbar controls: Bold, Italic, Underline, Alignment, Color, Font Size
 - Keyboard shortcuts (Ctrl+B/I/U)
 - Escape to cancel, blur to save
 - Debounced save (300ms)
@@ -221,57 +195,45 @@ Features:
 
 **File: `src/funnel-builder-v3/types/funnel.ts`** (additions)
 
+Add these new types to the existing file:
+
 ```typescript
-// Add animation settings
+// Animation settings
 export interface AnimationSettings {
   effect: AnimationEffect;
   trigger: 'load' | 'scroll' | 'hover';
   duration: number;
   delay: number;
   easing?: string;
-  springStiffness?: number;
-  springDamping?: number;
 }
 
 export type AnimationEffect = 
   | 'none' | 'fade-in' | 'slide-up' | 'slide-down' | 'slide-left' | 'slide-right'
-  | 'scale-in' | 'scale-up' | 'blur-in' | 'rotate-in'
-  | 'bounce' | 'pulse' | 'shake' | 'wiggle';
+  | 'scale-in' | 'bounce' | 'pulse' | 'shake';
 
-// Add gradient value
+// Gradient value (unified with presets)
 export interface GradientValue {
   type: 'linear' | 'radial';
   angle: number;
   stops: Array<{ color: string; position: number }>;
 }
 
-// Enhance BlockProps
+// Enhanced BlockProps (add to existing)
 export interface BlockProps {
   // ... existing props
-  
-  // Animation
   animation?: AnimationSettings;
-  
-  // Advanced styling
   gradient?: GradientValue;
   useGradient?: boolean;
   shadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | 'glow';
-  borderRadius?: number;
   hoverEffect?: 'none' | 'glow' | 'lift' | 'pulse' | 'shine';
 }
 
-// Enhance ScreenBackground
+// Enhanced ScreenBackground (add to existing)
 export interface ScreenBackground {
-  type: 'solid' | 'gradient' | 'image' | 'video' | 'pattern';
-  // ... existing
+  // ... existing props
   video?: string;
-  pattern?: {
-    type: 'dots' | 'grid' | 'lines';
-    color: string;
-    opacity: number;
-    size: number;
-  };
-  overlay?: 'none' | 'dark' | 'light' | 'gradient-dark' | 'gradient-light';
+  pattern?: { type: 'dots' | 'grid' | 'lines'; color: string; opacity: number };
+  overlay?: 'none' | 'dark' | 'light' | 'gradient-dark';
   overlayOpacity?: number;
 }
 ```
@@ -282,41 +244,37 @@ export interface ScreenBackground {
 
 **File: `src/funnel-builder-v3/components/RightPanel.tsx`** (rewrite)
 
-Replace flat controls with collapsible sections:
+Replace flat controls with collapsible sections using new inspector components:
 
+**Screen Style Tab:**
 ```text
-Screen Style Tab:
 ├── CollapsibleSection: Background (defaultOpen)
 │   ├── BackgroundTypeSelector (solid/gradient/image/video/pattern)
 │   ├── ColorPresetGrid (if solid)
 │   ├── GradientEditor (if gradient)
-│   ├── ImageUploader (if image)
 │   └── OverlaySelector
-│
 └── CollapsibleSection: Screen Settings
-    ├── Screen Name
-    └── Screen Type
+    ├── Screen Name input
+    └── Screen Type selector
+```
 
-Block Style Tab:
+**Block Style Tab:**
+```text
 ├── CollapsibleSection: Content (defaultOpen)
 │   ├── Content input/textarea
 │   └── InlineTextEditor toggle
-│
 ├── CollapsibleSection: Typography
-│   ├── FontSizeSelector
-│   ├── FontWeightSelector
+│   ├── FontSizeSelector (from presets)
+│   ├── FontWeightSelector (from presets)
 │   ├── TextAlignmentControl
-│   └── ColorPicker with presets
-│
-├── CollapsibleSection: Button Style (if button)
-│   ├── VariantSelector (primary/secondary/outline/ghost)
+│   └── ColorPresetGrid
+├── CollapsibleSection: Button Style (if button block)
+│   ├── VariantSelector
 │   ├── GradientToggle + GradientEditor
 │   ├── ShadowSelector
 │   └── HoverEffectSelector
-│
 ├── CollapsibleSection: Animation
 │   └── AnimationPicker
-│
 └── Actions
     ├── Duplicate button
     └── Delete button
@@ -328,26 +286,21 @@ Block Style Tab:
 
 **File: `src/funnel-builder-v3/components/Toolbar.tsx`** (additions)
 
-Add:
-- Device mode switcher (Desktop/Tablet/Mobile icons)
-- Undo/Redo buttons (placeholder for Phase 2)
-- Save status indicator (Saving... / Saved)
-- Settings dropdown (funnel settings)
+Add these features:
 
-```typescript
-// Device switcher
-<div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-  <button onClick={() => setDevice('desktop')} className={...}>
-    <Monitor className="h-4 w-4" />
-  </button>
-  <button onClick={() => setDevice('tablet')} className={...}>
-    <Tablet className="h-4 w-4" />
-  </button>
-  <button onClick={() => setDevice('mobile')} className={...}>
-    <Smartphone className="h-4 w-4" />
-  </button>
-</div>
-```
+**Device Mode Switcher:**
+- Desktop/Tablet/Mobile icon buttons
+- Active state styling
+- Pass mode to Canvas
+
+**Save Status:**
+- "Saving..." indicator
+- "Saved" confirmation
+- Error state handling
+
+**Settings Dropdown:**
+- Funnel settings access
+- Grid toggle (placeholder)
 
 ---
 
@@ -355,47 +308,59 @@ Add:
 
 **File: `src/funnel-builder-v3/components/Canvas.tsx`** (additions)
 
-Add:
-- DeviceFrame wrapper based on device mode
-- Pattern background rendering
-- Video background support
+Add these features:
+
+**DeviceFrame Integration:**
+- Wrap content in `DeviceFrame` component
+- Pass `deviceMode` from Toolbar
+
+**Enhanced Background Support:**
+- Pattern backgrounds (dots, grid, lines)
+- Video backgrounds (iframe embed)
 - Overlay rendering
-- Enhanced progress bar styles
+
+**Progress Bar Enhancements:**
+- Multiple styles: bar, dots, steps
+- Animated transitions
 
 ---
 
 ## Phase 10: Enhance Block Renderers (~200 lines)
 
-### 10.1 ButtonBlock
+### 10.1 ButtonBlock Enhancements
 **File: `src/funnel-builder-v3/components/blocks/ButtonBlock.tsx`**
 
 Add:
-- Gradient background support
+- Gradient background support (using `gradientToCSS`)
 - Animation class application
-- Hover effect classes
+- Hover effect classes (glow, lift, pulse, shine)
 - Shadow styles
 
 ### 10.2 HeadingBlock & TextBlock
-Add inline editing support via InlineTextEditor
+Add inline editing support via InlineTextEditor component
 
 ### 10.3 ChoiceBlock
-Add card-style layout with images (perspective grid view)
+Add card-style layout with images (grid view)
 
-### 10.4 All blocks
-Add animation wrapper:
+### 10.4 All Blocks - Animation Wrapper
+Add animation class application to BlockRenderer:
 
 ```typescript
 const animationClass = block.props.animation?.effect 
   ? `builder-animate-${block.props.animation.effect}` 
   : '';
 
-<div 
-  className={cn('block-wrapper', animationClass)}
-  style={{ 
-    animationDuration: `${block.props.animation?.duration || 500}ms`,
-    animationDelay: `${block.props.animation?.delay || 0}ms`,
-  }}
->
+return (
+  <div 
+    className={cn('block-wrapper', animationClass)}
+    style={{ 
+      animationDuration: `${block.props.animation?.duration || 500}ms`,
+      animationDelay: `${block.props.animation?.delay || 0}ms`,
+    }}
+  >
+    {/* block content */}
+  </div>
+);
 ```
 
 ---
@@ -410,10 +375,14 @@ export interface ScreenTemplate {
   id: string;
   name: string;
   description: string;
-  category: 'hero' | 'content' | 'cta' | 'form' | 'choice' | 'social_proof' | 'faq' | 'features';
+  category: TemplateCategory;
   icon: string;
   createScreen: () => Screen;
 }
+
+export type TemplateCategory = 
+  | 'hero' | 'content' | 'cta' | 'form' 
+  | 'choice' | 'social_proof' | 'faq' | 'features';
 
 export const TEMPLATE_CATEGORIES = [
   { id: 'hero', label: 'Hero', icon: 'Layout' },
@@ -422,71 +391,43 @@ export const TEMPLATE_CATEGORIES = [
   { id: 'form', label: 'Form', icon: 'FormInput' },
   { id: 'choice', label: 'Choice', icon: 'ListChecks' },
   { id: 'social_proof', label: 'Social Proof', icon: 'Star' },
-  { id: 'faq', label: 'FAQ', icon: 'HelpCircle' },
-  { id: 'features', label: 'Features', icon: 'Grid' },
-];
-
-export const ALL_TEMPLATES: ScreenTemplate[] = [
-  ...heroTemplates,
-  ...contentTemplates,
-  ...ctaTemplates,
-  ...formTemplates,
-  ...socialProofTemplates,
 ];
 ```
 
 ### 11.2 Template Files
-Convert 50+ templates from `builder_v2/templates/sectionTemplates.ts`:
+Convert 50+ templates from `builder_v2/templates/sectionTemplates.ts` to v3 format:
 
 **File: `src/funnel-builder-v3/templates/heroTemplates.ts`**
-- Hero Simple
-- Hero + Reviews
-- Hero + Logos
-- Hero Split
-- Hero + Form Card
-- Hero + Inline Form
-- Hero Gradient
-- Hero Dark
+- Hero Simple, Hero + Reviews, Hero + Logos, Hero Split
+- Hero + Form Card, Hero Gradient, Hero Dark
 
 **File: `src/funnel-builder-v3/templates/ctaTemplates.ts`**
-- CTA Simple
-- CTA Urgency
-- CTA Discount
-- CTA Comparison
-- CTA Guarantee
-- CTA Scarcity
-- CTA Social Proof
-- CTA Stacked Benefits
-- CTA Testimonial
-- CTA Video
+- CTA Simple, CTA Urgency, CTA Discount
+- CTA Comparison, CTA Testimonial
 
 **File: `src/funnel-builder-v3/templates/formTemplates.ts`**
-- Contact Form
-- Application Form
-- Quiz Start
-- Multi-step Form
+- Contact Form, Application Form, Quiz Start
 
 **File: `src/funnel-builder-v3/templates/socialProofTemplates.ts`**
-- Testimonial Grid
-- Logo Bar
-- Review Cards
-- Stats Bar
+- Testimonial Grid, Logo Bar, Stats Bar
 
 ### 11.3 Template Picker Modal
 **File: `src/funnel-builder-v3/components/TemplatePicker.tsx`**
 
 Features:
-- Modal with category tabs
-- Template cards with preview thumbnails
-- Search/filter
+- Modal dialog with category tabs
+- Template cards with preview/description
 - One-click insert
+- Search/filter functionality
 
 ### 11.4 Update LeftPanel
-Add "Add Screen" button that opens TemplatePicker
+Add "Add Screen" button that opens TemplatePicker modal
 
 ---
 
-## Phase 12: Delete Legacy Builders
+## Phase 12: Delete Legacy Builders (LAST)
+
+**ONLY execute this phase after Phases 1-11 are complete and tested.**
 
 ### Delete Directories
 ```bash
@@ -495,121 +436,19 @@ rm -rf src/builder_v2/
 rm -rf src/components/funnel-builder/
 ```
 
-### Update FunnelEditor.tsx
-Remove legacy imports and feature flag:
+### Update Imports
+**File: `src/pages/FunnelEditor.tsx`**
+- Remove legacy builder imports
+- Remove `?builder=legacy` feature flag
+- Use only v3 Editor
 
-```typescript
-// REMOVE these imports
-import { EditorShell as LegacyEditorShell } from '@/flow-canvas/builder/components/EditorShell';
-import type { Page as FlowCanvasPage } from '@/flow-canvas/types/infostack';
-import { editorDocumentToFlowCanvas, flowCanvasToEditorDocument } from '@/lib/funnel/dataConverter';
+**File: `src/flow-canvas/index.ts`**
+- Remove builder exports
+- Keep only runtime exports (FlowCanvasRenderer, types)
 
-// REMOVE legacy builder check
-const useLegacyBuilder = searchParams.get('builder') === 'legacy';
-
-// REMOVE LegacyFunnelEditor component entirely
-```
-
-### Clean Up Related Files
-- Update `src/flow-canvas/index.ts` - Remove builder exports
-- Update route references
+### Clean Up
 - Remove deprecated type imports
-
----
-
-## Technical Implementation Details
-
-### Animation CSS Classes
-
-```css
-.builder-animate-fade-in {
-  animation: builder-fade-in var(--animation-duration, 500ms) ease-out forwards;
-  opacity: 0;
-}
-
-@keyframes builder-fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes builder-slide-up {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes builder-scale-in {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes builder-bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes builder-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-```
-
-### Gradient Value Structure
-
-```typescript
-// Used consistently across background, button, text
-interface GradientValue {
-  type: 'linear' | 'radial';
-  angle: number;  // 0-360 for linear
-  stops: Array<{ color: string; position: number }>; // position 0-100
-}
-
-function gradientToCSS(g: GradientValue): string {
-  const stops = g.stops.map(s => `${s.color} ${s.position}%`).join(', ');
-  return g.type === 'radial' 
-    ? `radial-gradient(circle, ${stops})`
-    : `linear-gradient(${g.angle}deg, ${stops})`;
-}
-```
-
-### Template Conversion Pattern
-
-```typescript
-// Convert legacy CanvasNode template to v3 Screen
-function convertTemplate(node: CanvasNode, category: string): Screen {
-  const blocks: Block[] = [];
-  
-  for (const child of node.children || []) {
-    const block = convertNodeToBlock(child);
-    if (block) blocks.push(block);
-  }
-  
-  return {
-    id: createId(),
-    name: node.props?.name || 'Screen',
-    type: inferScreenType(node, category),
-    blocks,
-    background: node.props?.background,
-  };
-}
-
-function convertNodeToBlock(node: CanvasNode): Block | null {
-  switch (node.type) {
-    case 'heading':
-      return createBlock('heading', node.props?.text || '', {
-        size: levelToSize(node.props?.level),
-        align: 'center',
-      });
-    case 'paragraph':
-      return createBlock('text', node.props?.text || '', { align: 'center' });
-    case 'cta_button':
-      return createBlock('button', node.props?.label || '', {
-        variant: node.props?.variant || 'primary',
-        action: { type: 'next-screen' },
-      });
-    // ... more conversions
-  }
-}
-```
+- Update any remaining references
 
 ---
 
@@ -617,11 +456,11 @@ function convertNodeToBlock(node: CanvasNode): Block | null {
 
 | Action | File | Est. Lines |
 |--------|------|------------|
-| CREATE | `v3/styles/builder.css` | ~400 |
 | CREATE | `v3/shared/presets.ts` | ~400 |
 | CREATE | `v3/shared/gradientHelpers.ts` | ~100 |
 | CREATE | `v3/shared/animationPresets.ts` | ~100 |
 | CREATE | `v3/shared/videoHelpers.ts` | ~50 |
+| CREATE | `v3/styles/builder.css` | ~400 |
 | CREATE | `v3/components/DeviceFrame.tsx` | ~150 |
 | CREATE | `v3/components/InlineTextEditor.tsx` | ~250 |
 | CREATE | `v3/components/TemplatePicker.tsx` | ~200 |
@@ -641,25 +480,34 @@ function convertNodeToBlock(node: CanvasNode): Block | null {
 | MODIFY | `v3/components/LeftPanel.tsx` | +50 |
 | MODIFY | `v3/components/RightPanel.tsx` | Rewrite (~400) |
 | MODIFY | `v3/components/blocks/*.tsx` | +200 |
-| MODIFY | `pages/FunnelEditor.tsx` | -150 |
-| DELETE | `src/flow-canvas/builder/` | -15,000 |
-| DELETE | `src/builder_v2/` | -8,000 |
-| DELETE | `src/components/funnel-builder/` | -4,000 |
+| *DEFERRED* | Delete legacy directories | -27,000 |
 
-**Net Result: ~3,500 lines (v3 enhanced) vs ~27,000 lines (current)**
+**Net Result After Phase 11: ~3,500 lines (v3 enhanced) + ~27,000 lines (legacy still present)**
+**Net Result After Phase 12: ~3,500 lines total**
 
 ---
 
 ## Success Criteria
 
-1. All 50+ templates from builder_v2 available in v3
+### After Phases 1-11 (Before Deletion):
+1. All 50+ templates accessible in v3
 2. Animation presets working on all block types
-3. Gradient editor for backgrounds and buttons
-4. Device frame switching (desktop/tablet/mobile)
-5. Collapsible inspector sections with proper styling
-6. Inline text editing for headings and text blocks
-7. Color preset grids with categorized swatches
-8. ~3,500 lines total (vs 27,000+ legacy)
-9. No breaking changes to published funnels (FlowCanvasRenderer still works)
-10. Fluid, Perspective-like editing experience
-11. Any developer can understand the architecture in 10 minutes
+3. Gradient editor functional for backgrounds and buttons
+4. Device frame switching (desktop/tablet/mobile) works
+5. Collapsible inspector sections render properly
+6. Inline text editing works for headings and text
+7. Color preset grids display correctly
+8. Published funnels still work via FlowCanvasRenderer
+
+### After Phase 12 (After Deletion):
+9. No broken imports or references
+10. ~3,500 lines total codebase
+11. Application runs without errors
+12. All v3 features continue working
+
+---
+
+## Implementation Order
+
+Start with **Phase 1** (shared utilities) since all other phases depend on these presets and helpers. Then proceed sequentially through Phase 11. Phase 12 (deletion) should only be executed after manual verification that all features work correctly.
+
