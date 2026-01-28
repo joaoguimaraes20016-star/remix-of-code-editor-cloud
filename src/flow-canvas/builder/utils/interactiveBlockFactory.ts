@@ -567,32 +567,68 @@ function createUploadBlock(): Block {
 }
 
 /**
- * Message Block - Long-form textarea input
+ * Message Block - Perspective-style textarea with icon
  */
 function createMessageBlock(): Block {
   return {
     id: generateId(),
     type: 'form-field' as BlockType,
     label: 'Message',
-    elements: [{
-      id: generateId(),
-      type: 'textarea' as ElementType,
-      content: '',
-      props: {
-        placeholder: 'Type your message here...',
-        rows: 4,
-        required: false,
-        borderRadius: '12px',
-        padding: '16px 20px',
-        fontSize: '16px',
-        border: '1px solid #E5E7EB',
-        fullWidth: true,
-        resize: 'vertical',
-        label: 'Message',
-      }
-    }],
+    elements: [
+      {
+        id: generateId(),
+        type: 'heading' as ElementType,
+        content: 'Describe your current challenge:',
+        props: {
+          level: 2,
+          fontSize: '2xl',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          textColor: '#111827',
+          lineHeight: '1.2',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'textarea' as ElementType,
+        content: '',
+        props: {
+          placeholder: 'Type here',
+          rows: 5,
+          required: false,
+          // Perspective-style rounded textarea with icon
+          borderRadius: '16px',
+          padding: '20px 24px 20px 56px',
+          fontSize: '16px',
+          border: '1px solid #E5E7EB',
+          backgroundColor: '#F9FAFB',
+          fullWidth: true,
+          resize: 'none',
+          icon: 'message-square',
+          iconPosition: 'left',
+          iconColor: '#9CA3AF',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'button' as ElementType,
+        content: 'Submit and proceed',
+        props: {
+          variant: 'primary',
+          size: 'lg',
+          fullWidth: true,
+          borderRadius: '16px',
+          backgroundColor: '#2563EB',
+          textColor: '#FFFFFF',
+          fontWeight: '600',
+          paddingVertical: 20,
+          shadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+        }
+      },
+    ],
     props: {
       alignment: 'stretch',
+      gap: 16,
     }
   };
 }
