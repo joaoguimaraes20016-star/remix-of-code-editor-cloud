@@ -3,7 +3,8 @@
  * Dark charcoal theme matching flow-canvas aesthetic
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useInspectorAutoTab } from './inspector/hooks/useInspectorAutoTab';
 import { 
   Heading, 
   Type, 
@@ -96,7 +97,10 @@ export function RightPanel({
   onToggleCollapse,
   onOpenSectionPicker,
 }: RightPanelProps) {
-  const [activeTab, setActiveTab] = useState<'add' | 'style' | 'settings'>('add');
+  const [activeTab, setActiveTab] = useState<'add' | 'content' | 'style' | 'settings'>('add');
+  
+  // Auto-switch to style tab when a block is selected
+  useInspectorAutoTab(block?.type, setActiveTab);
 
   if (isCollapsed) {
     return null;

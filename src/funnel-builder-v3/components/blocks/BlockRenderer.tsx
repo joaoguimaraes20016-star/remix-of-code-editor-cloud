@@ -2,6 +2,7 @@
  * Funnel Builder v3 - Block Renderer
  * 
  * Routes to the appropriate block component based on type.
+ * Supports inline editing via onContentChange for text-based blocks.
  */
 
 import { Block } from '../../types/funnel';
@@ -24,6 +25,7 @@ interface BlockRendererProps {
   onSelect: () => void;
   previewMode: boolean;
   primaryColor?: string;
+  onContentChange?: (content: string) => void;
 }
 
 export function BlockRenderer({
@@ -32,6 +34,7 @@ export function BlockRenderer({
   onSelect,
   previewMode,
   primaryColor,
+  onContentChange,
 }: BlockRendererProps) {
   const commonProps = {
     block,
@@ -41,12 +44,18 @@ export function BlockRenderer({
     primaryColor,
   };
 
+  // Props for text-based blocks that support inline editing
+  const textBlockProps = {
+    ...commonProps,
+    onContentChange,
+  };
+
   const getBlockComponent = () => {
     switch (block.type) {
       case 'text':
-        return <TextBlock {...commonProps} />;
+        return <TextBlock {...textBlockProps} />;
       case 'heading':
-        return <HeadingBlock {...commonProps} />;
+        return <HeadingBlock {...textBlockProps} />;
       case 'image':
         return <ImageBlock {...commonProps} />;
       case 'video':

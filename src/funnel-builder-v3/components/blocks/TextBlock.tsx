@@ -1,7 +1,8 @@
 /**
- * Text Block - Renders text content with HTML support
+ * Text Block - Renders text content with HTML support and inline editing
  */
 
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Block } from '../../types/funnel';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +12,7 @@ interface TextBlockProps {
   onSelect: () => void;
   previewMode: boolean;
   primaryColor?: string;
+  onContentChange?: (content: string) => void;
 }
 
 // Sanitize content by stripping concatenated metadata
@@ -28,8 +30,10 @@ function hasHtml(content: string): boolean {
   return /<[^>]+>/.test(content);
 }
 
-export function TextBlock({ block, previewMode }: TextBlockProps) {
+export function TextBlock({ block, isSelected, previewMode, onContentChange }: TextBlockProps) {
   const { size = 'md', align = 'left', color } = block.props;
+  const [isEditing, setIsEditing] = useState(false);
+  const editRef = useRef<HTMLParagraphElement>(null);
 
   const sizeClasses: Record<string, string> = {
     sm: 'text-sm',
@@ -50,32 +54,91 @@ export function TextBlock({ block, previewMode }: TextBlockProps) {
   const sanitized = sanitizeContent(content);
   const isEmpty = !sanitized;
 
+  // Handle double-click to enter edit mode
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+    if (previewMode) return;
+    e.stopPropagation();
+    setIsEditing(true);
+  }, [previewMode]);
+
+  // Focus when entering edit mode
+  useEffect(() => {
+    if (isEditing && editRef.current) {
+      editRef.current.focus();
+      // Select all text
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(editRef.current);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+  }, [isEditing]);
+
+  // Handle blur to save and exit edit mode
+  const handleBlur = useCallback(() => {
+    if (editRef.current && onContentChange) {
+      const newContent = editRef.current.innerText || '';
+      if (newContent !== sanitized) {
+        onContentChange(newContent);
+      }
+    }
+    setIsEditing(false);
+  }, [onContentChange, sanitized]);
+
+  // Handle key events
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setIsEditing(false);
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleBlur();
+    }
+  }, [handleBlur]);
+
+  const baseClasses = cn(
+    'p-2 outline-none transition-all',
+    sizeClasses[size] || 'text-base',
+    alignClasses[align] || 'text-left',
+    isEmpty && !isEditing && 'text-muted-foreground italic',
+    isEditing && 'ring-2 ring-blue-500/50 rounded bg-white/5'
+  );
+
+  // Edit mode
+  if (isEditing && !previewMode) {
+    return (
+      <p
+        ref={editRef}
+        contentEditable
+        suppressContentEditableWarning
+        className={baseClasses}
+        style={{ color: color || undefined }}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+      >
+        {sanitized}
+      </p>
+    );
+  }
+
   // If content has HTML, render it safely
   if (hasHtml(sanitized)) {
     return (
       <p
-        className={cn(
-          'p-2',
-          sizeClasses[size] || 'text-base',
-          alignClasses[align] || 'text-left'
-        )}
+        className={cn(baseClasses, 'cursor-text')}
         style={{ color: color || undefined }}
         dangerouslySetInnerHTML={{ __html: sanitized }}
+        onDoubleClick={handleDoubleClick}
       />
     );
   }
 
   return (
     <p
-      className={cn(
-        'p-2',
-        sizeClasses[size] || 'text-base',
-        alignClasses[align] || 'text-left',
-        isEmpty && 'text-muted-foreground italic'
-      )}
+      className={cn(baseClasses, !previewMode && 'cursor-text')}
       style={{ color: color || undefined }}
+      onDoubleClick={handleDoubleClick}
     >
-      {sanitized || (previewMode ? '' : 'Click to edit text...')}
+      {sanitized || (previewMode ? '' : 'Double-click to edit...')}
     </p>
   );
 }
