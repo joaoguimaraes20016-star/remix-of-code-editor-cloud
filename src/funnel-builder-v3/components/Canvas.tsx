@@ -32,6 +32,7 @@ interface CanvasProps {
   selectedBlockId: string | null;
   onSelectBlock: (blockId: string | null) => void;
   onReorderBlocks: (blockIds: string[]) => void;
+  onUpdateBlockContent?: (blockId: string, content: string) => void;
   previewMode: boolean;
   settings: FunnelSettings;
   deviceMode: DeviceMode;
@@ -44,6 +45,7 @@ export function Canvas({
   selectedBlockId,
   onSelectBlock,
   onReorderBlocks,
+  onUpdateBlockContent,
   previewMode,
   settings,
   deviceMode,
@@ -187,6 +189,10 @@ export function Canvas({
                       onSelect={() => onSelectBlock(block.id)}
                       previewMode={previewMode}
                       primaryColor={settings.primaryColor}
+                      onContentChange={onUpdateBlockContent 
+                        ? (content) => onUpdateBlockContent(block.id, content) 
+                        : undefined
+                      }
                     />
                   </SortableBlockWrapper>
                 ))}

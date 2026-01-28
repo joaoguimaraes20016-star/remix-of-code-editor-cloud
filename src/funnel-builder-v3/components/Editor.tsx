@@ -11,6 +11,7 @@ import { useFunnelState } from '../hooks/useFunnelState';
 import { useHistory } from '../hooks/useHistory';
 import { useClipboard } from '../hooks/useClipboard';
 import { getTemplateBlocks } from '../data/blockTemplates';
+import { convertSectionTemplateToBlocks, isSectionTemplate } from '../utils/templateConverter';
 import { LeftPanel } from './LeftPanel';
 import { Canvas } from './Canvas';
 import { PreviewCanvas } from './PreviewCanvas';
@@ -282,7 +283,7 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
   const handleSectionPickerSelect = useCallback((blockId: string) => {
     if (!selectedScreenId) return;
     
-    // Map block ID to BlockType for known types
+    // 1. Direct block type mapping
     const blockTypeMap: Record<string, BlockType> = {
       'heading': 'heading',
       'text': 'text',
@@ -300,14 +301,29 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
     const blockType = blockTypeMap[blockId];
     if (blockType) {
       addBlock(selectedScreenId, blockType, selectedBlockId || undefined);
-    } else {
-      // For template-based blocks, try to get template
-      const blocks = getTemplateBlocks(blockId);
-      if (blocks.length > 0) {
-        addBlocks(selectedScreenId, blocks, selectedBlockId || undefined);
+      setSectionPickerOpen(false);
+      return;
+    }
+    
+    // 2. Section template (hero-simple, cta-gray-card, etc.)
+    if (isSectionTemplate(blockId)) {
+      const sectionBlocks = convertSectionTemplateToBlocks(blockId);
+      if (sectionBlocks.length > 0) {
+        addBlocks(selectedScreenId, sectionBlocks, selectedBlockId || undefined);
+        setSectionPickerOpen(false);
+        return;
       }
     }
     
+    // 3. Block template from blockTemplates.ts
+    const templateBlocks = getTemplateBlocks(blockId);
+    if (templateBlocks.length > 0) {
+      addBlocks(selectedScreenId, templateBlocks, selectedBlockId || undefined);
+      setSectionPickerOpen(false);
+      return;
+    }
+    
+    console.warn('[Editor] Unknown template/block:', blockId);
     setSectionPickerOpen(false);
   }, [addBlock, addBlocks, selectedScreenId, selectedBlockId]);
 
@@ -437,6 +453,11 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
               selectedBlockId={selectedBlockId}
               onSelectBlock={handleSelectBlock}
               onReorderBlocks={handleReorderBlocks}
+              onUpdateBlockContent={(blockId, content) => {
+                if (selectedScreenId) {
+                  updateBlock(selectedScreenId, blockId, { content });
+                }
+              }}
               previewMode={false}
               settings={funnel.settings}
               deviceMode={deviceMode}
