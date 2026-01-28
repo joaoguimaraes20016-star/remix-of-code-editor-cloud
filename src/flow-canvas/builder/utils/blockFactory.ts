@@ -470,44 +470,114 @@ function createSingleChoiceBlock(): Block {
 }
 
 function createQuizBlock(): Block {
+  const blockId = generateId();
+  
+  // Generate step IDs upfront for proper references
+  const welcomeStepId = generateId();
+  const question1StepId = generateId();
+  const question2StepId = generateId();
+  const thankYouStepId = generateId();
+  
   return {
-    id: generateId(),
+    id: blockId,
     type: 'application-flow' as BlockType,
     label: 'Quiz',
-    elements: [],
-    props: {
-      flowSettings: {
-        displayMode: 'one-at-a-time',
-        showProgress: true,
-        steps: [
-          {
-            id: generateId(),
-            name: 'Question 1',
-            type: 'question',
-            elements: [],
-            settings: {
-              title: 'What describes you best?',
-              questionType: 'multiple-choice',
-              options: ['Beginner', 'Intermediate', 'Expert'],
-              buttonText: 'Next',
-            },
-            navigation: { action: 'next' },
-          },
-          {
-            id: generateId(),
-            name: 'Question 2',
-            type: 'question',
-            elements: [],
-            settings: {
-              title: 'What is your main goal?',
-              questionType: 'multiple-choice',
-              options: ['Learn', 'Grow', 'Scale'],
-              buttonText: 'See Results',
-            },
-            navigation: { action: 'submit' },
-          },
-        ],
+    // Top-level elements for welcome step display (ApplicationFlowCard renders from here)
+    elements: [
+      {
+        id: generateId(),
+        type: 'heading' as ElementType,
+        content: 'Quick Quiz',
+        props: {
+          level: 2,
+          fontSize: '2xl',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          textColor: '#111827',
+        },
       },
+      {
+        id: generateId(),
+        type: 'text' as ElementType,
+        content: 'Answer a few quick questions to see if we\'re a good fit.',
+        props: {
+          fontSize: 'base',
+          textAlign: 'center',
+          textColor: '#6B7280',
+        },
+      },
+      {
+        id: generateId(),
+        type: 'button' as ElementType,
+        content: 'Start Quiz →',
+        props: {
+          variant: 'primary',
+          size: 'lg',
+          backgroundColor: '#8B5CF6',
+          textColor: '#FFFFFF',
+          borderRadius: '12px',
+          action: { type: 'next-step' },
+        },
+      },
+    ],
+    props: {
+      // Flow settings stored at block.props level (not nested in flowSettings)
+      displayMode: 'one-at-a-time',
+      showProgress: true,
+      designPreset: 'none', // Invisible by default - user styles the block
+      contentWidth: 'md',
+      contentAlign: 'center',
+      steps: [
+        {
+          id: welcomeStepId,
+          name: 'Welcome',
+          type: 'welcome',
+          settings: {
+            title: 'Quick Quiz',
+            description: 'Answer a few quick questions to see if we\'re a good fit.',
+            buttonText: 'Start Quiz →',
+            buttonAction: { type: 'next-step' },
+          },
+        },
+        {
+          id: question1StepId,
+          name: 'Question 1',
+          type: 'question',
+          settings: {
+            title: 'What best describes you?',
+            questionType: 'single-choice',
+            options: ['Beginner', 'Intermediate', 'Expert'],
+            buttonText: 'Next',
+            buttonAction: { type: 'next-step' },
+            fieldKey: 'experience_level',
+          },
+        },
+        {
+          id: question2StepId,
+          name: 'Question 2',
+          type: 'question',
+          settings: {
+            title: 'What is your main goal?',
+            questionType: 'single-choice',
+            options: ['Learn new skills', 'Grow my business', 'Scale to new levels'],
+            buttonText: 'See Results',
+            buttonAction: { type: 'next-step' },
+            fieldKey: 'main_goal',
+          },
+        },
+        {
+          id: thankYouStepId,
+          name: 'Thank You',
+          type: 'ending',
+          settings: {
+            title: 'Thanks for completing the quiz!',
+            description: 'We\'ll be in touch with personalized recommendations.',
+            buttonText: 'Learn More',
+            buttonAction: { type: 'url', value: '' },
+            showConfetti: false,
+          },
+        },
+      ],
     },
   };
 }

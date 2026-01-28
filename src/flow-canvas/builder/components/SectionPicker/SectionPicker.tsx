@@ -1,7 +1,15 @@
 /**
- * SectionPicker - Clean, Perspective-style section picker modal
- * Simple icons, grouped categories, light theme
- * Shows tile grid for blocks, template gallery for sections
+ * SectionPicker - Perspective-style unified content picker
+ * 
+ * ARCHITECTURE: Simplified mental model matching Perspective.co
+ * ────────────────────────────────────────────────────────────
+ * BLOCKS (Left nav):
+ *   • Content - Display only (Text, Image, Video, etc.)
+ *   • Inputs & Forms - Data collection (Choices, Forms, Quiz)
+ * 
+ * SECTIONS (Left nav):
+ *   • Pre-built templates (Hero, CTA, Features, etc.)
+ * ────────────────────────────────────────────────────────────
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -23,7 +31,11 @@ export interface SectionPickerProps {
   onSelectTemplate: (templateId: string) => void;
 }
 
-// Block categories - Simplified mental model
+// ═══════════════════════════════════════════════════════════════
+// SIMPLIFIED CATEGORIES - Perspective-style mental model
+// ═══════════════════════════════════════════════════════════════
+
+// Block categories - simplified to just 2 for clarity
 const BLOCK_CATEGORIES = [
   { id: 'content', label: 'Content', icon: 'text' as const, hint: 'Display only' },
   { id: 'interactive', label: 'Inputs & Forms', icon: 'sparkles' as const, hint: 'Collects data' },
