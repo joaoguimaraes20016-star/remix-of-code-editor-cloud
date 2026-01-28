@@ -244,11 +244,6 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
     ? "Exit preview mode to add blocks" 
     : undefined;
 
-  const isAddFrameDisabled = previewMode;
-  const addFrameDisabledReason = previewMode 
-    ? "Exit preview mode to add sections" 
-    : undefined;
-
   const isAIGenerateDisabled = previewMode;
   const aiGenerateDisabledReason = previewMode 
     ? "Exit preview mode to use AI generation" 
@@ -310,16 +305,6 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
 
           {/* Toolbar Icons */}
           <div className="flex items-center gap-1 ml-2">
-            {/* Single "Add Section" button - opens section picker */}
-            <ToolbarButton
-              onClick={onAddFrame}
-              disabled={isAddFrameDisabled}
-              disabledReason={addFrameDisabledReason}
-              tooltip="Add Section (F)"
-            >
-              <Plus className="w-4 h-4" />
-            </ToolbarButton>
-
             <ToolbarButton
               onClick={onOpenTextStyles}
               disabled={isTextStylesDisabled}
