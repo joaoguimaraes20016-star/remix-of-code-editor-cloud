@@ -1,101 +1,169 @@
 
+# Fix Multiple Choice Rendering & Font Consistency
 
-# Perspective-Style Typography & Font Consistency
+## Problem Summary
 
-## Overview
-This plan addresses typography inconsistencies in the funnel builder to match Perspective's clean, professional aesthetic. The current builder shows "weird fonts" on hover states and when rendering unknown element types.
+Two critical issues identified in the funnel builder:
 
-## Problems Identified
-1. **Unknown element types display raw type names** - Elements like `multiple-choice` and `single-choice` fall through to the default case and display the element type as plain unstyled text
-2. **Inconsistent font inheritance** - Some UI components don't properly inherit the font family, causing visual inconsistency
-3. **Block picker hover states** - Typography in popovers and pickers doesn't feel polished
+1. **Multiple Choice block renders as generic placeholder** - When adding a Multiple Choice block, instead of showing 4 Perspective-style blue choice cards with emoji icons, it displays a generic fallback that says "Multiple Choice"
+2. **Font inconsistencies remain** - The Inter font isn't being applied consistently across all builder components
+
+## Root Cause Analysis
+
+### Issue 1: Missing Case Handler
+The `CanvasRenderer.tsx` has no `case 'multiple-choice':` or `case 'single-choice':` handlers in its element type switch statement (around line 1132). When the interactive block factory creates a block with element type `multiple-choice`, it falls through to the `default:` case which renders a generic placeholder.
+
+**Factory output (correct):**
+```typescript
+// From interactiveBlockFactory.ts
+{
+  type: 'multiple-choice',
+  props: {
+    options: [
+      { id: '...', label: 'Social media', icon: '🎟️' },
+      { id: '...', label: 'Word of mouth', icon: '💬' },
+      { id: '...', label: 'Advertising', icon: '⭐' },
+      { id: '...', label: 'Search engine', icon: '👀' },
+    ],
+    layout: 'vertical',
+    cardStyle: 'filled',
+    cardBackgroundColor: '#2563EB',
+    ...
+  }
+}
+```
+
+**Actual rendering (broken):**
+Falls through to default case showing "Multiple Choice" text label instead of actual cards.
+
+### Issue 2: CSS Specificity
+Some builder components have inline styles or tailwind classes that override the global `font-family: var(--font-sans)` setting.
 
 ## Implementation Plan
 
-### Phase 1: Update Font Stack (Priority: High)
-**File: `src/flow-canvas/index.css`**
+### Phase 1: Add Multiple Choice Renderer (Priority: Critical)
 
-- Update the Google Fonts import to use **Inter** as primary (Perspective's choice), with system fonts as fallback
-- Change font import order to prioritize Inter over DM Sans
-- Apply `-webkit-font-smoothing: antialiased` and `text-rendering: optimizeLegibility` globally for crisp text
-
-### Phase 2: Fix Default Element Renderer (Priority: High)
 **File: `src/flow-canvas/builder/components/CanvasRenderer.tsx`**
 
-In the `default` case (around line 3646-3675):
-- Add proper styling classes instead of showing raw `element.type`
-- Use a formatted label (e.g., "Multiple Choice" instead of "multiple-choice")
-- Apply consistent padding, background, and typography
-- Add a subtle icon indicator for unrecognized element types
+Add a new case handler for `multiple-choice` and `single-choice` element types that renders Perspective-style choice cards:
 
-### Phase 3: Block Adder Typography (Priority: Medium)
-**File: `src/flow-canvas/builder/components/BlockAdder.tsx`**
+1. Add `case 'multiple-choice':` and `case 'single-choice':` handlers before the default case
+2. Render a vertical stack of clickable cards, each showing:
+   - Emoji icon on the left
+   - Choice label text
+   - Full-width blue background (Perspective style)
+   - Rounded corners (16px)
+   - Hover/selected states
+3. Wire up selection handling for preview mode
+4. Support both `vertical` and `grid` layouts
 
-- Apply consistent `font-family: inherit` to all text elements
-- Ensure the "Add content" button text uses the correct font weight
-- Style the popover content with proper typography tokens
+**Technical implementation:**
+- Extract `options` array from `element.props`
+- Map over options to render individual choice cards
+- Apply Perspective styling: `bg-[#2563EB]`, `text-white`, `rounded-2xl`, `px-7 py-6`
+- Handle selection state with ring indicator
 
-### Phase 4: Block Picker Cards (Priority: Medium)
-**Files:**
-- `src/flow-canvas/builder/components/SectionPicker/BlockTileCard.tsx`
-- `src/flow-canvas/builder/components/SectionPicker/InteractiveBlockCard.tsx`
-- `src/flow-canvas/builder/components/SectionPicker/BasicBlockGrid.tsx`
+### Phase 2: Add Quiz/Grid Choice Renderer (Priority: High)
 
-- Update font classes to use `font-medium` for card labels
-- Apply `text-gray-800` instead of `text-gray-700` for better contrast
-- Ensure hover states maintain font consistency
+For quiz blocks with image cards in a 2x2 grid layout:
+- Render placeholder image areas
+- Blue footer with label
+- Grid layout with gap
 
-### Phase 5: Canvas Content Typography (Priority: Medium)
+### Phase 3: Force Font Inheritance (Priority: Medium)
+
 **File: `src/flow-canvas/index.css`**
 
-Add dedicated typography rules for canvas content:
+Add targeted rules to force Inter font across all canvas content:
+
 ```css
+/* Force Inter font on all canvas content */
 .device-frame,
-.device-frame * {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+.device-frame *,
+[data-canvas-element],
+[data-canvas-element] * {
+  font-family: var(--font-sans) !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
 }
 ```
 
-### Phase 6: Choice/Quiz Block Rendering (Priority: Medium)
-**File: `src/flow-canvas/builder/components/CanvasRenderer.tsx`**
+### Phase 4: Update Block Picker Components
 
-Add explicit `case` handlers for:
-- `single-choice`
-- `multiple-choice`
-- `quiz`
+**Files:**
+- `src/flow-canvas/builder/components/SectionPicker/InteractiveBlockCard.tsx`
+- `src/flow-canvas/builder/components/SectionPicker/BlockTileCard.tsx`
+- `src/flow-canvas/builder/components/BlockAdder.tsx`
 
-These should render proper UI rather than falling through to the default case with raw type names.
+Ensure all text elements explicitly use `font-sans` and proper tracking.
 
 ---
 
-## Technical Details
+## Detailed Code Changes
 
-### Font Stack Change
-```css
-/* Before */
-font-family: 'DM Sans', 'Inter', system-ui, sans-serif;
+### CanvasRenderer.tsx - New Choice Element Handlers
 
-/* After (Perspective-style) */
-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-```
+Insert before the `default:` case (around line 3645):
 
-### Typography Token Additions
-```css
-:root {
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-}
-```
-
-### Element Type Label Formatting
 ```typescript
-// Helper function to format element types for display
-function formatElementType(type: string): string {
-  return type
-    .replace(/-/g, ' ')
-    .replace(/\b\w/g, c => c.toUpperCase());
+case 'multiple-choice':
+case 'single-choice': {
+  const options = (element.props?.options as Array<{
+    id: string;
+    label: string;
+    icon?: string;
+    imageUrl?: string;
+  }>) || [];
+  
+  const layout = (element.props?.layout as string) || 'vertical';
+  const cardBg = (element.props?.cardBackgroundColor as string) || '#2563EB';
+  const cardTextColor = (element.props?.cardTextColor as string) || '#FFFFFF';
+  const cardRadius = (element.props?.cardBorderRadius as string) || '16px';
+  const gap = (element.props?.gap as number) || 16;
+  const isMultiple = element.type === 'multiple-choice';
+  
+  return (
+    <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+      {stateStylesCSS && <style>{stateStylesCSS}</style>}
+      {!readOnly && (
+        <UnifiedElementToolbar ... />
+      )}
+      <div 
+        className={cn(
+          'flex flex-col w-full',
+          layout === 'grid' ? 'grid grid-cols-2' : 'flex flex-col'
+        )}
+        style={{ gap: `${gap}px` }}
+        onClick={(e) => { e.stopPropagation(); onSelect(); }}
+      >
+        {options.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            className={cn(
+              'flex items-center gap-4 w-full text-left transition-all duration-200',
+              'hover:opacity-90 hover:scale-[1.01]',
+              'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+            )}
+            style={{
+              backgroundColor: cardBg,
+              color: cardTextColor,
+              borderRadius: cardRadius,
+              padding: '24px 28px',
+              fontWeight: 500,
+              fontSize: '16px',
+            }}
+          >
+            {option.icon && (
+              <span className="text-2xl">{option.icon}</span>
+            )}
+            <span className="font-medium">{option.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
-// "multiple-choice" → "Multiple Choice"
 ```
 
 ---
@@ -104,20 +172,26 @@ function formatElementType(type: string): string {
 
 | File | Changes |
 |------|---------|
-| `src/flow-canvas/index.css` | Font stack update, typography tokens, canvas content rules |
-| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Default case styling, add choice element handlers |
-| `src/flow-canvas/builder/components/BlockAdder.tsx` | Font inheritance fixes |
-| `src/flow-canvas/builder/components/SectionPicker/BlockTileCard.tsx` | Typography consistency |
-| `src/flow-canvas/builder/components/SectionPicker/InteractiveBlockCard.tsx` | Typography consistency |
+| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Add `case 'multiple-choice':` and `case 'single-choice':` handlers with full Perspective-style rendering |
+| `src/flow-canvas/index.css` | Add !important font rules for canvas content inheritance |
+| `src/flow-canvas/builder/components/BlockAdder.tsx` | Add explicit font-sans class |
+| `src/flow-canvas/builder/components/SectionPicker/InteractiveBlockCard.tsx` | Ensure font consistency |
+| `src/flow-canvas/builder/components/SectionPicker/BlockTileCard.tsx` | Ensure font consistency |
 
 ---
 
-## Expected Outcome
+## Expected Result
 
 After implementation:
-- All text in the builder will use Inter font consistently
-- Unknown element types will display with formatted labels and proper styling
-- Block pickers and hovers will feel polished and match Perspective's aesthetic
-- Canvas content typography will be crisp and professional
-- No more "weird fonts" on any UI elements
+1. Adding a "Multiple Choice" block will render 4 Perspective-style blue cards with emoji icons (Social media, Word of mouth, Advertising, Search engine)
+2. Cards will have proper hover states and selection behavior
+3. All text in the builder will use Inter font consistently
+4. The visual output will match the Perspective screenshots provided
 
+---
+
+## Technical Notes
+
+- The `multiple-choice` element already has all the data (4 options with icons/labels) in the factory - we just need to render it
+- Grid layouts (2x2) should use `grid grid-cols-2` with image placeholders for quiz-style blocks
+- Selection state tracking will integrate with the existing preview mode form values system
