@@ -155,17 +155,9 @@ function SortablePageItem({
   );
 }
 
-/**
- * @deprecated This EditorShell is deprecated. Use flow-canvas/builder/EditorShell instead.
- * This component is kept for backward compatibility only.
- */
 export function EditorShell() {
   return (
     <EditorProvider>
-      {/* Deprecation Banner */}
-      <div className="bg-amber-500/90 text-amber-950 px-4 py-2 text-sm font-medium text-center">
-        ⚠️ This builder version is deprecated. Please use the new unified builder.
-      </div>
       <EditorShellContent />
     </EditorProvider>
   );

@@ -4,7 +4,7 @@
 
 /* Flow Canvas Design System (inherits global tokens) */
 
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Lato:wght@300;400;700&family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Raleway:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -460,16 +460,13 @@
       0 0 80px -20px hsl(var(--builder-accent) / 0.15);
   }
   
-  /* User content inherits custom fonts */
-  .device-frame .user-content,
-  .device-frame .user-content * {
+  /* Ensure font cascades to all device frame content */
+  .device-frame *,
+  .device-frame button,
+  .device-frame input,
+  .device-frame textarea,
+  .device-frame select {
     font-family: inherit;
-  }
-  
-  /* Builder UI always uses system font */
-  .device-frame .builder-chrome,
-  .device-frame .builder-chrome * {
-    font-family: 'Inter', 'DM Sans', system-ui, -apple-system, sans-serif !important;
   }
   
   /* Inner content wrapper clips overflow but allows positioned toolbars */

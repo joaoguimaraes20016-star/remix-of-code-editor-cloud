@@ -1,41 +1,33 @@
-/**
- * FunnelEditor Page
- * 
- * Uses feature flag (?builder=v3) to toggle between old and new builder.
- * Default: v3 (new Perspective-style builder)
- */
-
 import { useMemo, useCallback, useRef, useState } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 
-// V3 Builder (new - default)
-import { Editor } from '@/funnel-builder-v3';
-import { 
-  Funnel, 
-  createDefaultFunnel 
-} from '@/funnel-builder-v3/types/funnel';
-import { 
-  dbRowToFunnel, 
-  v3FunnelToEditorDocument,
-  v3FunnelToFlowCanvas,
-} from '@/funnel-builder-v3/utils/dataConverter';
-
-// Legacy builder (for backward compatibility)
-import { EditorShell as LegacyEditorShell } from '@/flow-canvas/builder/components/EditorShell';
+// Flow-canvas builder
+import { EditorShell } from '@/flow-canvas/builder/components/EditorShell';
 import type { Page as FlowCanvasPage, SelectionState } from '@/flow-canvas/types/infostack';
+
+// Data conversion
 import { 
   editorDocumentToFlowCanvas, 
   flowCanvasToEditorDocument 
 } from '@/lib/funnel/dataConverter';
 import type { EditorDocument } from '@/builder_v2/state/persistence';
+
+// Flow-canvas builder styles (full builder theme)
 import '@/flow-canvas/index.css';
 
 // Types
+// Version history entry type
+type VersionHistoryEntry = {
+  snapshot: unknown;
+  timestamp: number;
+  name?: string;
+};
+
 type FunnelRow = {
   id: string;
   team_id: string;
@@ -44,19 +36,21 @@ type FunnelRow = {
   status: string;
   settings: Record<string, unknown>;
   builder_document: EditorDocument | null;
-  published_document_snapshot: FlowCanvasPage | null;
-  version_history: Array<{ snapshot: unknown; timestamp: number; name?: string }> | null;
+  version_history: VersionHistoryEntry[] | null;
   domain_id: string | null;
   updated_at: string;
 };
 
+// Save status type
+type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
+
 // Loading state
 function LoadingState({ message }: { message: string }) {
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-background">
+    <div className="flex h-screen w-full items-center justify-center bg-[hsl(var(--builder-bg))]">
       <div className="flex flex-col items-center gap-4">
-        <div className="h-10 w-10 animate-spin rounded-full border-3 border-primary border-t-transparent" />
-        <p className="text-sm font-medium text-muted-foreground">{message}</p>
+        <div className="h-10 w-10 animate-spin rounded-full border-3 border-[hsl(var(--builder-accent))] border-t-transparent" />
+        <p className="text-sm font-medium text-[hsl(var(--builder-text-muted))]">{message}</p>
       </div>
     </div>
   );
@@ -65,12 +59,12 @@ function LoadingState({ message }: { message: string }) {
 // Error state
 function ErrorState({ message, onBack }: { message: string; onBack: () => void }) {
   return (
-    <div className="flex h-screen items-center justify-center bg-background">
+    <div className="flex h-screen items-center justify-center bg-[hsl(var(--builder-bg))]">
       <div className="text-center">
-        <h2 className="text-lg font-semibold">{message}</h2>
+        <h2 className="text-lg font-semibold text-[hsl(var(--builder-text))]">{message}</h2>
         <button 
           onClick={onBack}
-          className="mt-4 text-sm text-primary hover:underline"
+          className="mt-4 text-sm text-[hsl(var(--builder-accent))] hover:underline"
         >
           Go back
         </button>
@@ -81,20 +75,24 @@ function ErrorState({ message, onBack }: { message: string; onBack: () => void }
 
 export default function FunnelEditor() {
   const { teamId, funnelId } = useParams<{ teamId: string; funnelId: string }>();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  
+  // Auto-save state with debounced status updates to prevent flicker
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const currentPageRef = useRef<FlowCanvasPage | null>(null);
+  const lastSaveTimeRef = useRef<number>(0);
 
-  // Feature flag: ?builder=legacy to use old builder
-  const useLegacyBuilder = searchParams.get('builder') === 'legacy';
-
-  // Fetch funnel data
+  // Fetch funnel data from Supabase
   const { data: funnel, isLoading, error } = useQuery({
     queryKey: ['funnel-editor', funnelId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('funnels')
-        .select('id, team_id, name, slug, status, settings, builder_document, published_document_snapshot, version_history, domain_id, updated_at')
+        .select('id, team_id, name, slug, status, settings, builder_document, version_history, domain_id, updated_at')
         .eq('id', funnelId)
         .single();
       if (error) throw error;
@@ -103,12 +101,224 @@ export default function FunnelEditor() {
     enabled: !!funnelId,
   });
 
-  // Loading
+  // Convert Supabase document to flow-canvas format
+  const initialFlowCanvasPage = useMemo(() => {
+    if (!funnel) return null;
+
+    // Try to convert existing builder_document
+    const converted = editorDocumentToFlowCanvas(
+      funnel.builder_document,
+      funnel.slug
+    );
+
+    // Merge persisted funnel-level settings (source of truth for theme/background)
+    // into the flow-canvas page settings.
+    converted.settings = {
+      ...(converted.settings || {}),
+      ...((funnel.settings as unknown as FlowCanvasPage['settings']) || {}),
+    };
+
+    // Update page name from funnel
+    converted.name = funnel.name;
+
+    return converted;
+  }, [funnel]);
+
+  // Save mutation (silent - no toast on auto-save)
+  // Uses minimum display duration to prevent flicker
+  const saveMutation = useMutation({
+    mutationFn: async (page: FlowCanvasPage) => {
+      const document = flowCanvasToEditorDocument(page);
+      const { error } = await supabase
+        .from('funnels')
+        .update({ 
+          builder_document: document as unknown as Json, 
+          // Also persist page.settings to the funnel.settings column (source of truth for theme/background)
+          settings: (page.settings || {}) as unknown as Json,
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', funnelId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      // Clear any pending status timeout
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+      
+      setSaveStatus('saved');
+      setLastSavedAt(new Date());
+      lastSaveTimeRef.current = Date.now();
+      
+      // Keep "Saved" visible for minimum 1.5 seconds before returning to idle
+      statusTimeoutRef.current = setTimeout(() => {
+        setSaveStatus('idle');
+      }, 1500);
+    },
+    onError: () => {
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+      setSaveStatus('error');
+      toast({ title: 'Error saving', variant: 'destructive' });
+    },
+  });
+
+  // Publish mutation - stores FlowCanvas format as the primary runtime payload
+  // CRITICAL: FlowCanvas (steps) is now canonical; EditorDocument is only for editor persistence
+  const publishMutation = useMutation({
+    mutationFn: async (page: FlowCanvasPage) => {
+      // PRIMARY: Store FlowCanvas format directly (steps-based)
+      // This ensures runtime uses same rendering logic as editor preview
+      const flowCanvasSnapshot = { 
+        ...page,
+        publishedAt: Date.now(),
+        // Include page-level settings (background, theme, fonts) for runtime rendering
+        settings: page.settings || {},
+      };
+      
+      // First fetch current version_history
+      const { data: currentFunnel } = await supabase
+        .from('funnels')
+        .select('version_history, published_document_snapshot')
+        .eq('id', funnelId)
+        .single();
+      
+      // Build new history entry (only if there's an existing published version)
+      const existingHistory = (currentFunnel?.version_history as Array<{snapshot: unknown; timestamp: number; name?: string}>) || [];
+      const newHistory = currentFunnel?.published_document_snapshot 
+        ? [
+            { 
+              snapshot: currentFunnel.published_document_snapshot, 
+              timestamp: (currentFunnel.published_document_snapshot as any)?.publishedAt || Date.now(),
+              name: `Version ${existingHistory.length + 1}`
+            },
+            ...existingHistory
+          ].slice(0, 20) // Keep max 20 versions
+        : existingHistory;
+      
+      const { error } = await supabase
+        .from('funnels')
+        .update({
+          // Store FlowCanvas format as primary snapshot (steps-based)
+          published_document_snapshot: flowCanvasSnapshot as unknown as Json,
+          version_history: newHistory as unknown as Json,
+          status: 'published',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', funnelId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['funnel-editor', funnelId] });
+      toast({ title: 'Published!' });
+    },
+    onError: () => {
+      toast({ title: 'Error publishing', variant: 'destructive' });
+    },
+  });
+
+  // Handle page changes from the editor with auto-save
+  // Uses debouncing to prevent rapid status flicker
+  const handlePageChange = useCallback((updatedPage: FlowCanvasPage) => {
+    // Store current page for publish
+    currentPageRef.current = updatedPage;
+    
+    // Clear existing save timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Only show "pending" if we're not already in a saving/saved state
+    // This prevents flicker when user edits during save
+    if (saveStatus === 'idle' || saveStatus === 'error') {
+      // Delay showing "pending" by 300ms to avoid flash for quick edits
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+      statusTimeoutRef.current = setTimeout(() => {
+        // Only set pending if we haven't started saving yet
+        if (!saveMutation.isPending) {
+          setSaveStatus('pending');
+        }
+      }, 300);
+    }
+    
+    // Debounced auto-save after 2 seconds of inactivity
+    saveTimeoutRef.current = setTimeout(() => {
+      // Clear pending status timeout
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+      setSaveStatus('saving');
+      saveMutation.mutate(updatedPage);
+    }, 2000);
+  }, [saveMutation, saveStatus]);
+
+  // Handle selection changes
+  const handleSelect = useCallback((selection: SelectionState) => {
+    // Selection state is handled internally by EditorShell
+  }, []);
+
+  // BUG FIX #5: Handle publish with better error handling
+  const handlePublish = useCallback((page: FlowCanvasPage) => {
+    // Clear any pending auto-save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Clear localStorage history to prevent quota issues
+    try {
+      const historyKeys: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith('infostack_history')) {
+          historyKeys.push(key);
+        }
+      }
+      // Keep only current page history, remove old ones
+      const currentKey = `infostack_history_${page.id}`;
+      historyKeys.filter(k => k !== currentKey).forEach(k => localStorage.removeItem(k));
+    } catch (e) {
+      console.warn('Could not clear old history:', e);
+    }
+    
+    // Save first, then publish - with error handling
+    setSaveStatus('saving');
+    saveMutation.mutate(page, {
+      onSuccess: () => {
+        publishMutation.mutate(page);
+      },
+      onError: (error) => {
+        console.error('Save before publish failed:', error);
+        toast({ 
+          title: 'Save failed', 
+          description: 'Could not save changes before publishing. Please try again.',
+          variant: 'destructive' 
+        });
+        // Still try to publish with current state
+        toast({ title: 'Attempting to publish anyway...' });
+        publishMutation.mutate(page);
+      },
+    });
+  }, [saveMutation, publishMutation]);
+
+  // Handle version restore - must be before any early returns
+  const handleRestoreVersion = useCallback(async (snapshot: unknown) => {
+    if (!snapshot || !funnel?.slug) return;
+    // Convert the snapshot back to flow-canvas format and update the page
+    const restoredPage = editorDocumentToFlowCanvas(snapshot as EditorDocument, funnel.slug);
+    if (restoredPage) {
+      handlePageChange(restoredPage);
+    }
+  }, [funnel?.slug, handlePageChange]);
+
+  // Loading state
   if (isLoading) {
     return <LoadingState message="Loading funnel..." />;
   }
 
-  // Error
+  // Error state
   if (error || !funnel) {
     return (
       <ErrorState 
@@ -118,257 +328,25 @@ export default function FunnelEditor() {
     );
   }
 
-  // Route to appropriate builder
-  if (useLegacyBuilder) {
-    return (
-      <LegacyFunnelEditor
-        funnel={funnel}
-        funnelId={funnelId!}
-        teamId={teamId}
-        queryClient={queryClient}
-        navigate={navigate}
-      />
-    );
+  // No page data yet
+  if (!initialFlowCanvasPage) {
+    return <LoadingState message="Preparing editor..." />;
   }
 
   return (
-    <V3FunnelEditor
-      funnel={funnel}
-      funnelId={funnelId!}
-      teamId={teamId}
-      queryClient={queryClient}
-      navigate={navigate}
-    />
-  );
-}
-
-// =============================================================================
-// V3 BUILDER (NEW - DEFAULT)
-// =============================================================================
-
-interface V3EditorProps {
-  funnel: FunnelRow;
-  funnelId: string;
-  teamId?: string;
-  queryClient: ReturnType<typeof useQueryClient>;
-  navigate: ReturnType<typeof useNavigate>;
-}
-
-function V3FunnelEditor({ funnel, funnelId, teamId, queryClient, navigate }: V3EditorProps) {
-  // Convert DB data to v3 Funnel format
-  const initialFunnel = useMemo(() => {
-    return dbRowToFunnel({
-      id: funnel.id,
-      name: funnel.name,
-      slug: funnel.slug,
-      status: funnel.status,
-      settings: funnel.settings,
-      builder_document: funnel.builder_document,
-      published_document_snapshot: funnel.published_document_snapshot,
-    });
-  }, [funnel]);
-
-  // Save mutation
-  const saveMutation = useMutation({
-    mutationFn: async (updatedFunnel: Funnel) => {
-      const document = v3FunnelToEditorDocument(updatedFunnel);
-      const { error } = await supabase
-        .from('funnels')
-        .update({
-          builder_document: document as unknown as Json,
-          settings: {
-            ...funnel.settings,
-            primaryColor: updatedFunnel.settings.primaryColor,
-            fontFamily: updatedFunnel.settings.fontFamily,
-          } as unknown as Json,
-          name: updatedFunnel.name,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', funnelId);
-      if (error) throw error;
-    },
-    onError: () => {
-      toast({ title: 'Error saving', variant: 'destructive' });
-    },
-  });
-
-  // Publish mutation
-  const publishMutation = useMutation({
-    mutationFn: async (updatedFunnel: Funnel) => {
-      const flowCanvasSnapshot = v3FunnelToFlowCanvas(updatedFunnel);
-      const document = v3FunnelToEditorDocument(updatedFunnel);
-      
-      const { error } = await supabase
-        .from('funnels')
-        .update({
-          builder_document: document as unknown as Json,
-          published_document_snapshot: {
-            ...flowCanvasSnapshot,
-            publishedAt: Date.now(),
-          } as unknown as Json,
-          status: 'published',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', funnelId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['funnel-editor', funnelId] });
-      toast({ title: 'Published!' });
-    },
-    onError: () => {
-      toast({ title: 'Error publishing', variant: 'destructive' });
-    },
-  });
-
-  const handleSave = useCallback(async (updatedFunnel: Funnel) => {
-    await saveMutation.mutateAsync(updatedFunnel);
-  }, [saveMutation]);
-
-  const handlePublish = useCallback(() => {
-    // Get latest funnel state from the Editor
-    // For now, just publish what we have
-    publishMutation.mutate(initialFunnel);
-  }, [publishMutation, initialFunnel]);
-
-  const handleBack = useCallback(() => {
-    navigate(teamId ? `/team/${teamId}/funnels` : '/');
-  }, [navigate, teamId]);
-
-  return (
-    <Editor
-      initialFunnel={initialFunnel}
-      onSave={handleSave}
-      onPublish={handlePublish}
-      onBack={handleBack}
-    />
-  );
-}
-
-// =============================================================================
-// LEGACY BUILDER (BACKWARD COMPATIBILITY)
-// =============================================================================
-
-interface LegacyEditorProps {
-  funnel: FunnelRow;
-  funnelId: string;
-  teamId?: string;
-  queryClient: ReturnType<typeof useQueryClient>;
-  navigate: ReturnType<typeof useNavigate>;
-}
-
-function LegacyFunnelEditor({ funnel, funnelId, teamId, queryClient, navigate }: LegacyEditorProps) {
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
-  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-
-  // Convert to flow-canvas format
-  const initialFlowCanvasPage = useMemo(() => {
-    const converted = editorDocumentToFlowCanvas(funnel.builder_document, funnel.slug);
-    converted.settings = {
-      ...(converted.settings || {}),
-      ...((funnel.settings as unknown as FlowCanvasPage['settings']) || {}),
-    };
-    converted.name = funnel.name;
-    return converted;
-  }, [funnel]);
-
-  // Save mutation
-  const saveMutation = useMutation({
-    mutationFn: async (page: FlowCanvasPage) => {
-      const document = flowCanvasToEditorDocument(page);
-      const { error } = await supabase
-        .from('funnels')
-        .update({
-          builder_document: document as unknown as Json,
-          settings: (page.settings || {}) as unknown as Json,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', funnelId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      if (statusTimeoutRef.current) clearTimeout(statusTimeoutRef.current);
-      setSaveStatus('saved');
-      setLastSavedAt(new Date());
-      statusTimeoutRef.current = setTimeout(() => setSaveStatus('idle'), 1500);
-    },
-    onError: () => {
-      setSaveStatus('error');
-      toast({ title: 'Error saving', variant: 'destructive' });
-    },
-  });
-
-  // Publish mutation
-  const publishMutation = useMutation({
-    mutationFn: async (page: FlowCanvasPage) => {
-      const flowCanvasSnapshot = { ...page, publishedAt: Date.now(), settings: page.settings || {} };
-      const { error } = await supabase
-        .from('funnels')
-        .update({
-          published_document_snapshot: flowCanvasSnapshot as unknown as Json,
-          status: 'published',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', funnelId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['funnel-editor', funnelId] });
-      toast({ title: 'Published!' });
-    },
-    onError: () => {
-      toast({ title: 'Error publishing', variant: 'destructive' });
-    },
-  });
-
-  const handlePageChange = useCallback((updatedPage: FlowCanvasPage) => {
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    if (saveStatus === 'idle' || saveStatus === 'error') {
-      if (statusTimeoutRef.current) clearTimeout(statusTimeoutRef.current);
-      statusTimeoutRef.current = setTimeout(() => {
-        if (!saveMutation.isPending) setSaveStatus('pending');
-      }, 300);
-    }
-    saveTimeoutRef.current = setTimeout(() => {
-      if (statusTimeoutRef.current) clearTimeout(statusTimeoutRef.current);
-      setSaveStatus('saving');
-      saveMutation.mutate(updatedPage);
-    }, 2000);
-  }, [saveMutation, saveStatus]);
-
-  const handleSelect = useCallback((selection: SelectionState) => {}, []);
-
-  const handlePublish = useCallback((page: FlowCanvasPage) => {
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    setSaveStatus('saving');
-    saveMutation.mutate(page, {
-      onSuccess: () => publishMutation.mutate(page),
-      onError: () => publishMutation.mutate(page),
-    });
-  }, [saveMutation, publishMutation]);
-
-  const handleRestoreVersion = useCallback(async (snapshot: unknown) => {
-    if (!snapshot) return;
-    const restoredPage = editorDocumentToFlowCanvas(snapshot as EditorDocument, funnel.slug);
-    if (restoredPage) handlePageChange(restoredPage);
-  }, [funnel.slug, handlePageChange]);
-
-  return (
-    <LegacyEditorShell
+    <EditorShell
       initialState={initialFlowCanvasPage}
       onChange={handlePageChange}
       onSelect={handleSelect}
       onPublish={handlePublish}
       saveStatus={saveStatus}
       lastSavedAt={lastSavedAt}
-      versionHistory={funnel.version_history || []}
+      versionHistory={funnel?.version_history || []}
       onRestoreVersion={handleRestoreVersion}
       funnelId={funnelId}
       teamId={teamId}
-      currentDomainId={funnel.domain_id || null}
-      funnelStatus={funnel.status || 'draft'}
+      currentDomainId={funnel?.domain_id || null}
+      funnelStatus={funnel?.status || 'draft'}
       isPublishing={publishMutation.isPending}
     />
   );

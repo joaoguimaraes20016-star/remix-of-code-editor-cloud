@@ -1,12 +1,12 @@
 /**
  * Template Converter - Converts builder_v2 section templates to flow-canvas Frame format
- * Also handles block creation via the unified blockFactory
+ * Also handles premium block creation as a fallback for block IDs
  */
 
 import type { Frame, Stack, Block, Element, BlockType, ElementType } from '../../types/infostack';
 import type { CanvasNode } from '@/builder_v2/types';
 import { allSectionTemplates, type SectionTemplate } from '@/builder_v2/templates/sectionTemplates';
-import { createBlock, isValidBlockId } from './blockFactory';
+import { createPremiumBlock, isPremiumBlockId } from './premiumBlockFactory';
 
 // Generate unique ID
 function generateId(): string {
@@ -59,10 +59,10 @@ function mapNodeTypeToElementType(nodeType: string): ElementType {
     // Template-specific element types (Perspective-style)
     'logo_bar': 'logo-marquee',
     'rating_display': 'avatar-group', // Uses avatar-group with rating display
-    'feature_list': 'feature-list',   // Now uses dedicated feature-list type
+    'feature_list': 'text',
     'faq_accordion': 'faq',
-    'testimonial_card': 'testimonial', // Now uses dedicated testimonial type
-    'form_group': 'form-group',        // Now uses dedicated form-group type
+    'testimonial_card': 'text',
+    'form_group': 'input',
     'form_input': 'input',
   };
   return mapping[nodeType] || 'text';
@@ -123,74 +123,6 @@ function nodeToElement(node: CanvasNode): Element {
         ratingCount: (node.props?.count as number) || 148,
         ratingSource: (node.props?.source as string) || 'reviews',
         alignment: 'center',
-      },
-    };
-  }
-  
-  // Handle form_group with multi-field structure
-  if (node.type === 'form_group') {
-    const fields = (node.props?.fields as Array<{
-      type: string;
-      placeholder: string;
-      required?: boolean;
-    }>) || [
-      { type: 'text', placeholder: 'Your name', required: true },
-      { type: 'email', placeholder: 'Your email', required: true },
-    ];
-    
-    return {
-      id: generateId(),
-      type: 'form-group',
-      content: '',
-      props: {
-        fields: fields.map((field, i) => ({
-          id: `field-${generateId()}-${i}`,
-          type: field.type,
-          placeholder: field.placeholder,
-          required: field.required ?? false,
-          fieldKey: `form_${field.type}_${i}`,
-        })),
-        layout: 'vertical',
-        gap: 12,
-      },
-    };
-  }
-  
-  // Handle feature_list with icon + text structure
-  if (node.type === 'feature_list') {
-    const features = (node.props?.items as string[]) || 
-                     (node.props?.features as string[]) || 
-                     ['Feature 1', 'Feature 2', 'Feature 3'];
-    
-    return {
-      id: generateId(),
-      type: 'feature-list',
-      content: '',
-      props: {
-        items: features.map((text, i) => ({
-          id: `feature-${generateId()}-${i}`,
-          text: typeof text === 'string' ? text : (text as { text?: string })?.text || 'Feature',
-          icon: 'Check',
-        })),
-        iconColor: '#22C55E',
-        layout: 'vertical',
-        gap: 8,
-      },
-    };
-  }
-  
-  // Handle testimonial_card with author info
-  if (node.type === 'testimonial_card') {
-    return {
-      id: generateId(),
-      type: 'testimonial',
-      content: (node.props?.quote as string) || (node.props?.content as string) || 'Great product!',
-      props: {
-        author: (node.props?.author as string) || 'John Doe',
-        role: (node.props?.role as string) || (node.props?.title as string) || 'CEO',
-        company: (node.props?.company as string) || 'Company',
-        avatar: (node.props?.avatar as string) || '',
-        rating: (node.props?.rating as number) || 5,
       },
     };
   }
@@ -291,47 +223,42 @@ function canvasNodeToFrame(node: CanvasNode): Frame {
 }
 
 /**
- * Wrap a block in a Frame structure for the canvas
- */
-function wrapBlockInFrame(block: Block): Frame {
-  return {
-    id: generateId(),
-    label: block.label || 'Section',
-    stacks: [{
-      id: generateId(),
-      label: 'Main Stack',
-      direction: 'vertical',
-      blocks: [block],
-      props: { 
-        alignment: 'center',
-        gap: 16
-      }
-    }],
-    props: {
-      padding: { top: 24, bottom: 24, left: 16, right: 16 }
-    }
-  };
-}
-
-/**
  * Convert a section template to a flow-canvas Frame
- * Handles both full section templates and individual block IDs
- * @param templateId - The ID of the section template or block to convert
+ * Also handles premium block IDs by creating a frame with the premium block
+ * @param templateId - The ID of the section template or premium block to convert
  * @returns A Frame object ready to be added to a step
  */
 export function convertTemplateToFrame(templateId: string): Frame | null {
-  // 1. First, try section templates (full layouts like hero, cta sections)
+  // First, try section templates
   const template = allSectionTemplates.find(t => t.id === templateId);
   if (template) {
+    // Create the node from the template
     const canvasNode = template.createNode();
+    // Convert to frame
     return canvasNodeToFrame(canvasNode);
   }
 
-  // 2. Try the unified block factory (handles all basic, interactive, and premium blocks)
-  if (isValidBlockId(templateId)) {
-    const block = createBlock(templateId);
-    if (block) {
-      return wrapBlockInFrame(block);
+  // Fallback: Try premium block factory
+  if (isPremiumBlockId(templateId)) {
+    const premiumBlock = createPremiumBlock(templateId);
+    if (premiumBlock) {
+      return {
+        id: generateId(),
+        label: premiumBlock.label || 'Section',
+        stacks: [{
+          id: generateId(),
+          label: 'Main Stack',
+          direction: 'vertical',
+          blocks: [premiumBlock],
+          props: { 
+            alignment: 'center',
+            gap: 16
+          }
+        }],
+        props: {
+          padding: { top: 24, bottom: 24, left: 16, right: 16 }
+        }
+      };
     }
   }
 

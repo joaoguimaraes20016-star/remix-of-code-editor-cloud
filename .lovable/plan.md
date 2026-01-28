@@ -1,225 +1,197 @@
 
-# Phase 16: Integrate Flow-Canvas Components into Funnel Builder V3
+# Make Section Templates Display Like Perspective
 
-## The Problem
+## Problem Summary
 
-The v3 builder feels incomplete compared to the original flow-canvas builder:
+When section templates (Hero + Logos, etc.) are added to the canvas, they don't match the polished preview cards. The key issues:
 
-1. **Raw HTML showing on canvas** - Text blocks display `<span style="font-weight: 700">` instead of rendered formatted text
-2. **Missing rich inspector controls** - No color pickers, gradient editors, typography sliders, animation presets
-3. **No floating element toolbar** - No quick access to alignment, color, duplicate, delete
-4. **Missing inline text editing** - No rich text toolbar with Bold/Italic/Alignment when editing text
-5. **Basic block rendering** - No state-based styling (hover, active), no animations
-
-## Solution Strategy
-
-Rather than rewriting v3 from scratch, we will **import and adapt the proven flow-canvas components** into the v3 architecture:
-
-```text
-flow-canvas (6,000+ lines of polished UI)
-       ↓
-    Adapter Layer
-       ↓
-funnel-builder-v3 (simplified data model)
-```
+1. **Logo bars show placeholder icons** instead of Perspective-style text wordmarks (like "Coca-Cola", "Zalando")
+2. **Props aren't being passed through** - `templateConverter.ts` correctly sets `showTextFallback: true`, but both renderers don't pass it to `LogoMarquee`
+3. **Avatar group ratings** work but could be more polished
+4. **Missing visual refinements** for professional appearance
 
 ---
 
-## Phase 16A: Fix Immediate Content Rendering Issues
+## Root Cause Analysis
 
-### Problem: Raw HTML Display
-The v3 `TextBlock` and `HeadingBlock` use `dangerouslySetInnerHTML` but then show raw HTML strings.
+```text
+templateConverter.ts                    CanvasRenderer.tsx
+┌────────────────────────┐              ┌─────────────────────────┐
+│ type: 'logo-marquee'   │              │ <LogoMarquee            │
+│ props: {               │   ──────>    │   logos={...}           │
+│   logos: [{name: ...}] │              │   animated={...}        │
+│   showTextFallback: ✅ │              │   speed={...}           │
+│   grayscale: true      │              │   // showTextFallback   │
+│ }                      │              │   // ❌ NOT PASSED!     │
+└────────────────────────┘              └─────────────────────────┘
+```
 
-**Root Cause:** The `sanitizeContent` function strips metadata but doesn't handle HTML entities properly when content is converted from templates.
+The `showTextFallback` prop is correctly set in the template data, but neither renderer passes it to the LogoMarquee component.
 
-**Fix:** Update content handling to properly render rich text:
+---
+
+## Implementation Plan
+
+### 1. Fix CanvasRenderer.tsx - Pass Missing Props
+
+**File:** `src/flow-canvas/builder/components/CanvasRenderer.tsx`
+
+Pass `showTextFallback` to the LogoMarquee component:
 
 ```typescript
-// src/funnel-builder-v3/components/blocks/TextBlock.tsx
-// Instead of showing raw HTML, strip tags for plain text display or render HTML properly
-function renderContent(content: string): React.ReactNode {
-  const sanitized = sanitizeContent(content);
-  // If it has HTML, render with dangerouslySetInnerHTML but in a div
-  if (hasHtml(sanitized)) {
-    return <span dangerouslySetInnerHTML={{ __html: sanitized }} />;
-  }
-  return sanitized;
+<LogoMarquee
+  logos={logos}
+  animated={element.props?.animated !== false}
+  speed={element.props?.speed as number || 30}
+  direction={(element.props?.direction as 'left' | 'right') || 'left'}
+  pauseOnHover={element.props?.pauseOnHover !== false}
+  grayscale={element.props?.grayscale !== false}
+  logoHeight={element.props?.logoHeight as number || 40}
+  gap={element.props?.gap as number || 48}
+  showTextFallback={element.props?.showTextFallback === true}  // ADD THIS
+  hoverEffect={(element.props?.hoverEffect as 'none' | 'color' | 'scale' | 'both') || 'color'}  // ADD THIS
+  isBuilder={true}
+  onLogosChange={...}
+/>
+```
+
+### 2. Fix FlowCanvasRenderer.tsx - Pass Missing Props
+
+**File:** `src/flow-canvas/components/FlowCanvasRenderer.tsx`
+
+Same fix for runtime rendering:
+
+```typescript
+<LogoMarquee
+  logos={logos}
+  animated={element.props?.animated !== false}
+  speed={element.props?.speed as number || 30}
+  direction={(element.props?.direction as 'left' | 'right') || 'left'}
+  pauseOnHover={element.props?.pauseOnHover !== false}
+  grayscale={element.props?.grayscale !== false}
+  logoHeight={element.props?.logoHeight as number || 40}
+  gap={element.props?.gap as number || 48}
+  showTextFallback={element.props?.showTextFallback === true}  // ADD THIS
+  hoverEffect={(element.props?.hoverEffect as 'none' | 'color' | 'scale' | 'both') || 'color'}  // ADD THIS
+/>
+```
+
+### 3. Enhance Template Defaults in templateConverter.ts
+
+**File:** `src/flow-canvas/builder/utils/templateConverter.ts`
+
+Improve the default logo bar configuration:
+
+```typescript
+if (node.type === 'logo_bar') {
+  const logos = (node.props?.logos as string[]) || ['Coca-Cola', 'Zalando', 'Braun', 'IKEA', 'Sony'];
+  return {
+    id: generateId(),
+    type: 'logo-marquee',
+    content: '',
+    props: {
+      logos: logos.map((name, i) => ({ id: `logo-${i}`, src: '', alt: name, name })),
+      speed: 25,
+      pauseOnHover: true,
+      grayscale: true,
+      showTextFallback: true,
+      hoverEffect: 'color',      // ADD: Professional hover effect
+      logoHeight: 32,            // ADD: Refined sizing
+      gap: 40,                   // ADD: Better spacing
+      animated: false,           // ADD: Static by default for cleaner look
+    },
+  };
+}
+```
+
+### 4. Enhance Rating Display Defaults
+
+**File:** `src/flow-canvas/builder/utils/templateConverter.ts`
+
+Make rating display match Perspective more closely:
+
+```typescript
+if (node.type === 'rating_display') {
+  return {
+    id: generateId(),
+    type: 'avatar-group',
+    content: '',
+    props: {
+      count: 4,
+      size: 'sm',
+      colorMode: 'varied',
+      overlap: 10,
+      showRating: true,
+      rating: (node.props?.rating as number) || 4.8,
+      ratingCount: (node.props?.count as number) || 148,
+      ratingSource: (node.props?.source as string) || 'reviews',
+      alignment: 'center',       // ADD: Center alignment
+    },
+  };
+}
+```
+
+### 5. Add CSS Refinements
+
+**File:** `src/flow-canvas/index.css`
+
+Add polished styles for Perspective-like appearance:
+
+```css
+/* Perspective-style logo wordmarks */
+.perspective-logo-text {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: rgba(107, 114, 128, 0.6);
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.perspective-logo-text:hover {
+  color: rgba(17, 24, 39, 0.9);
+}
+
+/* Refined rating display */
+.perspective-rating-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.perspective-rating-stars {
+  display: flex;
+  gap: 2px;
+}
+
+.perspective-rating-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.6);
 }
 ```
 
 ---
 
-## Phase 16B: Port Inspector Modals & Controls
-
-### Components to Port
-
-| Component | Source | Purpose |
-|-----------|--------|---------|
-| `ColorPickerPopover` | `flow-canvas/modals` | Rich color picker with presets |
-| `GradientPickerPopover` | `flow-canvas/modals` | Gradient editor with stops |
-| `EffectsPickerPopover` | `flow-canvas/modals` | Shadow/blur effects |
-| `AnimationPresetSection` | `flow-canvas/inspectors` | Animation dropdown with preview |
-| `CollapsibleSection` (enhanced) | `flow-canvas/RightPanel` | Inspector section with auto-scroll |
-
-### Implementation
-
-Create a shared inspector components folder:
-```
-src/funnel-builder-v3/components/inspector/
-  ├── controls/
-  │   ├── ColorPickerPopover.tsx    ← Port from flow-canvas
-  │   ├── GradientPickerPopover.tsx ← Port from flow-canvas
-  │   ├── TextFillControl.tsx       ← Solid/Gradient toggle + pickers
-  │   └── TypographyControls.tsx    ← Size slider, weight, font family
-  ├── AnimationPresetSection.tsx    ← Port from flow-canvas
-  └── ...existing files
-```
-
----
-
-## Phase 16C: Port Floating Element Toolbar
-
-### Component: `ElementActionBar`
-Currently exists in flow-canvas as a polished floating toolbar with:
-- Drag handle
-- Alignment buttons (Left/Center/Right)
-- Color picker shortcut
-- Duplicate button
-- Delete button
-
-**Integration Plan:**
-1. Copy `ElementActionBar.tsx` to v3 components
-2. Add to `SortableBlockWrapper.tsx` to show on hover/selection
-3. Wire up handlers to existing block actions
-
-```typescript
-// src/funnel-builder-v3/components/blocks/SortableBlockWrapper.tsx
-<div className="group/block relative">
-  <ElementActionBar
-    elementId={block.id}
-    elementType={block.type}
-    currentAlign={block.props.align}
-    onAlignChange={(align) => onUpdateBlock({ props: { ...block.props, align } })}
-    onDuplicate={onDuplicate}
-    onDelete={onDelete}
-  />
-  {children}
-</div>
-```
-
----
-
-## Phase 16D: Port Rich Text Toolbar
-
-### Component: `RichTextToolbar` + `InlineTextEditor`
-Currently exists in flow-canvas as a floating toolbar when editing text:
-- Font size dropdown (M, etc.)
-- Bold (B)
-- Italic (I)
-- Alignment buttons
-- Copy/Delete
-
-**Integration Plan:**
-1. Port `RichTextToolbar.tsx` to v3
-2. Port `InlineTextEditor.tsx` context for managing edit state
-3. Show toolbar when double-clicking text/heading blocks
-
----
-
-## Phase 16E: Enhance Block Rendering
-
-### Add State-Based Styling
-Port the `resolveElementStyles` logic from flow-canvas `CanvasRenderer`:
-
-```typescript
-// Handle hover/active states on buttons
-const [interactionState, setInteractionState] = useState<'base' | 'hover' | 'active'>('base');
-
-// Merge base styles with state-specific overrides
-const resolvedStyles = useMemo(() => {
-  const base = block.props;
-  const stateOverrides = block.props.stateStyles?.[interactionState] || {};
-  return { ...base, ...stateOverrides };
-}, [block.props, interactionState]);
-```
-
-### Add Animation Support
-Port the `effectClasses` mapping and animation CSS:
-
-```typescript
-const effectClasses: Record<string, string> = {
-  'fade-in': 'animate-fade-in',
-  'slide-up': 'animate-slide-up',
-  'bounce': 'animate-bounce',
-  // ...etc
-};
-```
-
----
-
-## Files to Create/Modify
-
-### New Files (Ported from flow-canvas)
-
-| File | Lines | Purpose |
-|------|-------|---------|
-| `inspector/controls/ColorPickerPopover.tsx` | ~200 | Rich color picker |
-| `inspector/controls/GradientPickerPopover.tsx` | ~300 | Gradient editor |
-| `inspector/controls/TextFillControl.tsx` | ~100 | Solid/Gradient toggle |
-| `components/ElementActionBar.tsx` | ~240 | Floating toolbar |
-| `components/RichTextToolbar.tsx` | ~150 | Inline text editing toolbar |
-
-### Modified Files
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `blocks/TextBlock.tsx` | Fix HTML rendering, add inline edit state |
-| `blocks/HeadingBlock.tsx` | Fix HTML rendering, add inline edit state |
-| `blocks/SortableBlockWrapper.tsx` | Add ElementActionBar |
-| `RightPanel.tsx` | Use ported color/gradient pickers |
-| `Canvas.tsx` | Add RichTextToolbar portal |
+| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Pass `showTextFallback` and `hoverEffect` props to LogoMarquee |
+| `src/flow-canvas/components/FlowCanvasRenderer.tsx` | Pass `showTextFallback` and `hoverEffect` props to LogoMarquee |
+| `src/flow-canvas/builder/utils/templateConverter.ts` | Enhance logo bar and rating display defaults |
+| `src/flow-canvas/index.css` | Add refined CSS for Perspective-style elements |
 
 ---
 
-## Visual Comparison
+## Visual Result
 
-### Current v3 (Broken)
-```text
-┌──────────────────────────────────┐
-│ <span style="font-weight: 700"   │
-│ data-inline-style-id="...">200+  │
-│ </span>STUDENTS BECAME TOGI...   │
-└──────────────────────────────────┘
-```
+**Before:**
+- Logo bars show gray placeholder image icons
+- Templates look generic and unpolished
 
-### After Fix (Rendered Properly)
-```text
-┌──────────────────────────────────┐
-│ 200+ STUDENTS BECAME TOGI        │  ← Bold text rendered
-│ No Brain Needed...               │  ← Italic text rendered
-└──────────────────────────────────┘
-│ [≡] [B] [I] [⬛] [≡] [⬛] [🗑]    │  ← Floating toolbar on hover
-└──────────────────────────────────┘
-```
-
----
-
-## Implementation Order
-
-1. **Fix content rendering** (immediate visual fix)
-2. **Port ColorPickerPopover** (enables color editing)
-3. **Port ElementActionBar** (quick actions on canvas)
-4. **Port AnimationPresetSection** (animation controls)
-5. **Port RichTextToolbar** (inline text formatting)
-6. **Enhance RightPanel** (full inspector parity)
-
----
-
-## Success Criteria
-
-1. Text/heading blocks render formatted content (bold, italic, colors)
-2. Hovering blocks shows floating action bar
-3. Double-clicking text shows rich text toolbar
-4. Inspector has color pickers with presets
-5. Animation dropdown works with preview
-6. Overall feel matches the original flow-canvas builder
+**After:**
+- Logo bars display clean text wordmarks: "Coca-Cola • Zalando • Braun • IKEA • Sony"
+- Grayscale text that becomes full opacity on hover
+- Professional typography and spacing
+- Matches Perspective's clean aesthetic
