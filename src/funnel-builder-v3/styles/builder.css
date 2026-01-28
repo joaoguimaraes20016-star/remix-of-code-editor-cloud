@@ -816,17 +816,36 @@
 /* Device screen container */
 .builder-v3-device-screen {
   position: relative;
-  background: var(--builder-v3-content-bg, hsl(225 14% 5%));
-  border-radius: 42px;
+  background: #ffffff; /* Default white for content visibility */
   overflow: hidden;
   overflow-y: auto;
-  min-height: 600px;
+  min-height: 500px;
   max-height: clamp(500px, calc(100vh - 200px), 680px);
+}
+
+/* Mobile screen gets rounded corners */
+.builder-v3-device-frame--mobile .builder-v3-device-screen {
+  border-radius: 38px;
+}
+
+/* Tablet screen gets less rounded corners */
+.builder-v3-device-frame--tablet .builder-v3-device-screen {
+  border-radius: 16px;
+}
+
+/* Desktop screen has no rounded corners (browser style) */
+.builder-v3-device-frame--desktop .builder-v3-device-screen {
+  border-radius: 0;
 }
 
 .builder-v3-device-screen-content {
   min-height: 100%;
-  padding-top: 44px; /* Space for notch */
+  padding-top: 44px; /* Space for notch on mobile */
+}
+
+/* No notch padding on desktop */
+.builder-v3-device-frame--desktop .builder-v3-device-screen-content {
+  padding-top: 0;
 }
 
 /* Device home bar */
@@ -1101,12 +1120,12 @@
    ============================================================================= */
 
 .builder-v3-right-panel {
-  width: 320px;
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
+  min-width: 0; /* Allow grid to control width */
   background: hsl(var(--builder-v3-surface));
   border-left: 1px solid hsl(var(--builder-v3-border));
+  overflow: hidden;
 }
 
 .builder-v3-panel-header {
@@ -1213,12 +1232,12 @@
    ============================================================================= */
 
 .builder-v3-left-panel {
-  width: 256px;
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
+  min-width: 0; /* Allow grid to control width */
   background: hsl(var(--builder-v3-surface));
   border-right: 1px solid hsl(var(--builder-v3-border));
+  overflow: hidden;
 }
 
 .builder-v3-panel-title {
@@ -1781,16 +1800,20 @@
   transition: grid-template-columns 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.builder-v3-editor-shell--preview {
+  grid-template-columns: 1fr;
+}
+
 .builder-v3-editor-shell--left-collapsed {
-  grid-template-columns: 0 1fr 320px;
+  grid-template-columns: 1fr 320px;
 }
 
 .builder-v3-editor-shell--right-collapsed {
-  grid-template-columns: 256px 1fr 0;
+  grid-template-columns: 256px 1fr;
 }
 
 .builder-v3-editor-shell--both-collapsed {
-  grid-template-columns: 0 1fr 0;
+  grid-template-columns: 1fr;
 }
 
 /* =============================================================================
