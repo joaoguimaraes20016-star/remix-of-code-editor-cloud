@@ -1,159 +1,196 @@
-# Funnel Builder Finalization Plan
 
-## ✅ Status: COMPLETE
 
-The funnel builder has been fully audited and is **100% complete**. All planned features are already implemented.
+# Complete Funnel Builder Unification & Fix Plan
 
----
+## Executive Summary
 
-## Verification Summary
-
-### ✅ Phase 1: Critical UX Fixes - COMPLETE
-
-#### 1.1 Video/Image Empty State Placeholders
-**Status**: ✅ Already implemented (CanvasRenderer.tsx lines 2194-2217, 2259-2316)
-- Empty images show dashed border with icon and "Drop image" text
-- Empty videos show placeholder with Video icon in thumbnail mode
-- Both support drag-and-drop upload
-
-#### 1.2 Countdown Element Inspector
-**Status**: ✅ Already implemented (RightPanel.tsx lines 2073-2240)
-- End date/time picker with datetime-local input
-- Style selector (boxes, inline, minimal, flip)
-- Size selector (sm, md, lg, xl)
-- Toggle for Show Days, Show Seconds, Show Labels
-- Loop mode with configurable interval
-- Speed multiplier (1-10x)
-- Animate digits toggle
-- Urgency pulse effect
-- Color customization (box color, text color, label color)
-
-#### 1.3 Carousel Element Inspector
-**Status**: ✅ Already implemented (RightPanel.tsx lines 2538-2700+)
-- Aspect ratio selector (16:9, 4:3, 1:1, 21:9)
-- Navigation style (arrows + dots, arrows only, dots only, none)
-- Autoplay toggle with configurable interval
-- Loop toggle
-- Slides management with drag-and-drop reordering
-- Image picker integration
-- Alt text per slide
+The funnel builder is broken at a fundamental level. The UI shows 30+ blocks to add, but **26 of them produce "Template not found" errors** because there's no factory code to create them. Additionally, there are **3 separate builder implementations** causing confusion and maintenance overhead.
 
 ---
 
-### ✅ Phase 2: Visual Polish - COMPLETE
+## Problem Analysis
 
-#### 2.1 Ticker CSS Animation
-**Status**: ✅ Already implemented (index.css lines 1156-1180, 1567-1584)
-```css
-@keyframes ticker-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-.ticker-container { overflow: hidden; white-space: nowrap; }
-.ticker-content { animation: ticker-scroll var(--ticker-speed, 30s) linear infinite; }
+### Problem 1: Missing Block Factories (Critical)
+
+The `SectionPicker` UI defines these block IDs that **don't exist** in any factory:
+
+**Basic Blocks (BasicBlockGrid.tsx):**
+| Block ID | Status |
+|----------|--------|
+| `text` | Missing |
+| `button` | Missing |
+| `image` | Missing |
+| `list` | Missing |
+| `divider` | Missing |
+| `logo-bar` | Missing |
+| `reviews` | Missing |
+| `spacer` | Missing |
+| `video` | Missing |
+| `testimonial` | Missing |
+| `faq` | Missing |
+| `team` | Missing |
+| `calendar` | Missing |
+| `html` | Missing |
+| `form` | Missing |
+
+**Interactive Blocks (InteractiveBlockGrid.tsx):**
+| Block ID | Status |
+|----------|--------|
+| `multiple-choice` | Missing |
+| `choice` | Missing |
+| `quiz` | Missing |
+| `video-question` | Missing |
+| `form-block` | Missing |
+| `appointment` | Missing |
+| `upload` | Missing |
+| `message` | Missing |
+| `date` | Missing |
+| `dropdown` | Missing |
+| `payment` | Missing |
+
+**Premium Blocks (Working):**
+`gradient-text`, `underline-text`, `stat-number`, `avatar-group`, `ticker`, `badge`, `process-step` - These 7 work correctly.
+
+### Problem 2: Fragmented Architecture
+
+```text
+src/
+├── flow-canvas/builder/          ← ACTIVE (used by FunnelEditor.tsx)
+│   ├── components/EditorShell.tsx  ← Main shell
+│   ├── components/RightPanel.tsx   ← Inspector
+│   ├── utils/templateConverter.ts  ← Template factory
+│   └── ...
+├── builder_v2/                   ← LEGACY (route: /builder-v2)
+│   ├── EditorShell.tsx
+│   ├── templates/sectionTemplates.ts ← Template definitions
+│   └── ...
+├── components/funnel-builder/    ← LEGACY (partially used)
+│   ├── EditorShell.tsx           ← Different component!
+│   └── ...
 ```
 
-#### 2.2 Process Step Connectors
-**Status**: ✅ Already implemented (CanvasRenderer.tsx lines 3589-3609)
-- Arrow connector style with SVG chevron
-- Solid, dotted, dashed line styles
-- Uses accent color from step props
-
-#### 2.3 Avatar Group Enhancement
-**Status**: ✅ Already implemented (CanvasRenderer.tsx lines 3212-3331)
-- Overlapping avatars with negative margins
-- Gradient background mode
-- Rating display with stars
-- Configurable count and colors
+The `flow-canvas` builder imports templates from `builder_v2` but doesn't have factories for most block types.
 
 ---
 
-### ✅ Phase 3: Application Flow - COMPLETE
+## Implementation Plan
 
-#### 3.1 Choice Option Editing
-**Status**: ✅ Already implemented (RightPanel.tsx lines 3330-3433)
-- Choice type toggle (single/multiple)
-- Layout selector (vertical/horizontal/grid)
-- Sortable options list with drag-and-drop
-- Add/remove options
-- Image URL support per option
+### Phase 1: Create Missing Block Factories (Critical)
 
-#### 3.2 Application Flow Inspector
-**Status**: ✅ Already implemented (ApplicationFlowInspector.tsx)
-- Step list management
-- Step content editor
-- Design presets
-- Background editor
+**File to modify:** `src/flow-canvas/builder/utils/premiumBlockFactory.ts` → Rename to `src/flow-canvas/builder/utils/blockFactory.ts`
 
----
+Add factory functions for ALL missing blocks:
 
-### ✅ Phase 4: Runtime Parity - COMPLETE
-
-#### 4.1 FlowCanvasRenderer Architecture
-**Status**: ✅ Verified (FlowCanvasRenderer.tsx line 27)
 ```typescript
-import { CanvasRenderer } from '@/flow-canvas/builder/components/CanvasRenderer';
+// Basic Blocks
+createTextBlock()         → heading or text element
+createButtonBlock()       → button element
+createImageBlock()        → image element with upload placeholder
+createListBlock()         → feature-list element
+createDividerBlock()      → divider element
+createLogoBarBlock()      → logo-marquee element
+createReviewsBlock()      → avatar-group with rating
+createSpacerBlock()       → spacer element
+createVideoBlock()        → video element with placeholder
+createTestimonialBlock()  → testimonial element
+createFaqBlock()          → faq element with default items
+createTeamBlock()         → team grid (new element type)
+createCalendarBlock()     → calendar embed (uses calendly)
+createHtmlBlock()         → html-embed element
+createFormBlock()         → form-group element
+
+// Interactive Blocks
+createMultipleChoiceBlock()  → multiple-choice element
+createSingleChoiceBlock()    → single-choice element
+createQuizBlock()            → quiz flow (application-flow style)
+createVideoQuestionBlock()   → video + question combo
+createAppointmentBlock()     → calendar with form
+createUploadBlock()          → file upload element
+createMessageBlock()         → open-ended text element
+createDateBlock()            → date picker element
+createDropdownBlock()        → select/dropdown element
+createPaymentBlock()         → payment integration element
 ```
-FlowCanvasRenderer imports and uses CanvasRenderer in read-only mode, ensuring automatic pixel-perfect parity between editor and published funnels.
 
-#### 4.2 Mobile Responsiveness
-**Status**: ✅ Already implemented
-- Responsive device mode detection (useRuntimeDeviceMode hook)
-- Responsive style overrides support per element
-- Touch-friendly targets
+### Phase 2: Update Template Converter
 
----
+**File:** `src/flow-canvas/builder/utils/templateConverter.ts`
 
-## Architecture Highlights
+Update `convertTemplateToFrame()` to:
+1. First check `allSectionTemplates` (for full section templates)
+2. Then check the new expanded block factory
+3. Return proper frames with correct structure
 
-### Single Source of Truth
-- `CanvasRenderer.tsx` handles all element rendering (5860+ lines)
-- `FlowCanvasRenderer.tsx` wraps CanvasRenderer for runtime with form submission logic
-- Changes to CanvasRenderer automatically propagate to runtime
+```typescript
+export function convertTemplateToFrame(templateId: string): Frame | null {
+  // 1. Check section templates
+  const template = allSectionTemplates.find(t => t.id === templateId);
+  if (template) {
+    return canvasNodeToFrame(template.createNode());
+  }
 
-### Complete Element Type System
-30+ element types fully supported:
-- **Text**: heading, text, gradient-text, underline-text
-- **Media**: image, video, carousel
-- **Interactive**: button, input, select, checkbox, radio, choice
-- **Layout**: divider, spacer, container
-- **Premium**: stat-number, avatar-group, ticker, badge, process-step
-- **Application Flow**: Single/multiple choice, form capture steps
-- **Widgets**: countdown, FAQ, form-group, feature-list, logo-bar
+  // 2. Check block factory (expanded)
+  const block = createBlock(templateId);
+  if (block) {
+    return wrapBlockInFrame(block);
+  }
 
-### Inspector Coverage
-All element types have dedicated inspector sections in RightPanel.tsx:
-- Typography controls (font, size, weight, color, alignment)
-- Layout controls (margin, padding, width, alignment)
-- Style controls (background, border, shadow, radius)
-- Animation controls (effects, duration, delay, easing)
-- Type-specific controls (video settings, countdown timer, etc.)
+  console.warn(`Template not found: ${templateId}`);
+  return null;
+}
+```
 
----
+### Phase 3: Consolidate Architecture (Medium Priority)
 
-## Files Summary
+**Goal:** Single source of truth for the funnel builder.
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `CanvasRenderer.tsx` | 5860 | Single source of truth for all element rendering |
-| `RightPanel.tsx` | 6176 | All inspector panels and property editors |
-| `FlowCanvasRenderer.tsx` | 2221 | Runtime wrapper with form submission |
-| `index.css` | 1757 | All styling including ticker animations |
-| `ApplicationFlowInspector.tsx` | ~800 | Application flow step management |
+1. Keep `src/flow-canvas/builder/` as the canonical implementation
+2. Move remaining useful code from `builder_v2/templates/` into flow-canvas
+3. Mark `builder_v2/EditorShell.tsx` as deprecated (keep route for existing users)
+4. Delete or deprecate `src/components/funnel-builder/` (check for any active usage first)
 
----
+### Phase 4: Inspector Completeness
 
-## Success Criteria - All Met ✅
-
-1. ✅ Every template element is fully editable on canvas
-2. ✅ Empty media elements show clear upload prompts
-3. ✅ All premium elements render and edit correctly
-4. ✅ Application Flow steps are fully configurable
-5. ✅ Published funnels match editor exactly (pixel parity via shared CanvasRenderer)
-6. ✅ Mobile experience is smooth and touch-friendly
+After blocks are created, ensure each has corresponding inspector controls in `RightPanel.tsx`:
+- `team` element inspector
+- `calendar` element inspector  
+- `html-embed` element inspector
+- `upload` element inspector
+- `dropdown` element inspector
+- `date` element inspector
+- `payment` element inspector
 
 ---
 
-## No Further Action Required
+## Files to Create/Modify
 
-The funnel builder is feature-complete and ready for production use.
+| File | Action | Purpose |
+|------|--------|---------|
+| `src/flow-canvas/builder/utils/blockFactory.ts` | Create (or expand premiumBlockFactory) | All 26 missing block factories |
+| `src/flow-canvas/builder/utils/templateConverter.ts` | Modify | Use new block factory |
+| `src/flow-canvas/types/infostack.ts` | Modify | Add any missing element types |
+| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Modify | Render new element types |
+| `src/flow-canvas/builder/components/RightPanel.tsx` | Modify | Add inspectors for new types |
+| `src/builder_v2/EditorShell.tsx` | Deprecate | Add deprecation notice |
+| `src/components/funnel-builder/*` | Audit | Check usage, deprecate if unused |
+
+---
+
+## Expected Outcome
+
+After implementation:
+1. All 30+ blocks in the picker will create actual content
+2. No more "Template not found" errors
+3. Clear architecture with one canonical builder
+4. Every block type has working inspector controls
+5. Perspective-style polish on all elements
+
+---
+
+## Technical Notes
+
+- Block factory should return `Block` objects, wrapped into `Frame` by the converter
+- Each block needs a unique element type in `ElementType` union
+- CanvasRenderer must have a `case` for each new element type
+- Runtime parity is automatic since FlowCanvasRenderer uses CanvasRenderer
+
