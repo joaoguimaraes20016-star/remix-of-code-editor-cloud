@@ -1,213 +1,115 @@
 
-# Phase 12: Merge Flow-Canvas Components into v3 Builder
+# Phase 13: Visual Overhaul - Fix the "Horrible" UI Issues
 
-## Overview
+## Problem Analysis
 
-This phase directly ports the proven, working components from `flow-canvas/builder` into the new `funnel-builder-v3`, ensuring the v3 builder looks and feels as polished as the original while maintaining the simplified v3 architecture.
+Based on your screenshots, I identified three major issues making the v3 builder look unfinished:
 
----
+### Issue 1: Left Panel Text Almost Invisible
+The left panel items (Pages, Layers, screen names) are barely visible - the text color is using a CSS variable that's too dim against the dark background.
 
-## Current State
+### Issue 2: Basic Block Grid in Right Panel
+The "Add" tab is showing plain dark tiles with simple Lucide icons instead of the rich visual mockups that exist in the SectionPicker components.
 
-### v3 Builder Has
-- Basic block rendering (text, heading, image, video, button, choice, input, divider, spacer, embed, icon)
-- Drag-and-drop block reordering via @dnd-kit
-- Device frame preview (mobile/tablet/desktop)
-- Undo/redo history + keyboard shortcuts
-- Screen management (add, delete, duplicate, rename, reorder)
-- Basic RightPanel with plain Lucide icons
-- Simple EmptyState with plus icon
-
-### What's Missing (Making it look "bland")
-1. **Rich Section Picker Modal** - The existing `SectionPicker` from flow-canvas is fully built
-2. **Premium Block Icons** - The `BlockIcons.tsx`, `InteractiveBlockIcons.tsx`, `PremiumBlockIcons.tsx` mockups exist
-3. **Block Action Bar** - The floating toolbar exists in `BlockActionBar.tsx`
-4. **Empty Canvas State** - The `EmptyCanvasState.tsx` with quick-picks exists
-5. **Section Templates** - 3500+ lines of templates in `sectionTemplates.ts`
-6. **High Ticket Preview Cards** - Rich visual previews in `HighTicketPreviewCard.tsx`
+### Issue 3: Missing Section Picker Integration
+The beautiful full-screen SectionPicker modal with categorized blocks and visual tile cards exists but isn't being triggered from the right places.
 
 ---
 
-## Implementation Strategy
+## Solution Overview
 
-### Step 1: Copy SectionPicker Components (Direct Port)
+### Fix 1: Left Panel Text Visibility
+Update the CSS variables and specific styles to ensure panel text has proper contrast. The issue is that `--builder-v3-text-muted` and `--builder-v3-text-secondary` are too dark.
 
-Copy these existing, working files from `src/flow-canvas/builder/components/SectionPicker/` to `src/funnel-builder-v3/components/SectionPicker/`:
+**Changes to `builder.css`:**
+- Increase brightness of `--builder-v3-text-secondary` from `65%` lightness to `75%`
+- Increase brightness of `--builder-v3-text-muted` from `50%` to `60%`
+- Ensure panel tabs and screen list items have visible text
 
-| Source File | Purpose |
-|------------|---------|
-| `SectionPicker.tsx` | Main modal with left nav + right content |
-| `CategoryIcon.tsx` | Geometric category icons |
-| `BasicBlockGrid.tsx` | Content blocks grid (Text, Button, Image, etc.) |
-| `InteractiveBlockGrid.tsx` | Input/form blocks grid |
-| `BlockTileCard.tsx` | Visual tile card component |
-| `InteractiveBlockCard.tsx` | Taller card with form mockups |
-| `BlockIcons.tsx` | Rich visual mockups for content blocks |
-| `InteractiveBlockIcons.tsx` | Form/input mockups |
-| `PremiumBlockIcons.tsx` | Gradient text, stats, badges mockups |
-| `TemplateGallery.tsx` | Section template grid |
-| `QuickPicks.tsx` | Hero/CTA/Form quick cards |
-| `index.tsx` | Exports |
+### Fix 2: Replace Basic Block Grid with Rich Visual Tiles
+Replace the plain Lucide icons in the RightPanel "Add" tab with the rich visual mockups from the SectionPicker components.
 
-**Minor adaptations needed:**
-- Update import paths for v3 types
-- Connect `onSelectTemplate` to v3's block creation logic
+**Changes to `RightPanel.tsx`:**
+- Import `BlockTileCard`, `InteractiveBlockCard`, and the visual icon mockups
+- Replace the current grid of plain icon buttons with proper tile cards
+- Add a "Browse All" button that opens the full SectionPicker modal
+
+### Fix 3: Better Section Picker Integration
+Add more entry points to the full-screen SectionPicker modal:
+- "Browse All Templates" button in RightPanel
+- Pass the `onOpenSectionPicker` callback through to RightPanel
 
 ---
 
-### Step 2: Copy Supporting Components
+## Technical Implementation
 
-| Source | Destination | Purpose |
-|--------|-------------|---------|
-| `HighTicketPreviewCard.tsx` | `src/funnel-builder-v3/components/HighTicketPreviewCard.tsx` | Visual template previews |
-| `BlockActionBar.tsx` | `src/funnel-builder-v3/components/BlockActionBar.tsx` | Floating selection toolbar |
-| `EmptyCanvasState.tsx` | `src/funnel-builder-v3/components/EmptyCanvasState.tsx` | Premium empty state |
+### File Changes
 
----
+**1. `src/funnel-builder-v3/styles/builder.css`**
+```css
+/* Fix text visibility - brighten secondary/muted colors */
+--builder-v3-text-secondary: 215 16% 75%;  /* Was 65% */
+--builder-v3-text-muted: 215 12% 60%;      /* Was 50% */
+--builder-v3-text-dim: 215 8% 50%;         /* Was 40% */
 
-### Step 3: Integrate Into v3 Editor
-
-**Editor.tsx changes:**
-- Add `sectionPickerOpen` state
-- Add handler `handleOpenSectionPicker()`
-- Add handler `handleSectionPickerSelect(templateId)` - maps template to v3 blocks
-- Render `<SectionPicker>` modal
-
-**Canvas.tsx changes:**
-- Replace basic `EmptyState` with `EmptyCanvasState`
-- Pass `onQuickAdd` and `onBrowseAll` callbacks
-- Add "+" button to open SectionPicker from anywhere
-
-**SortableBlockWrapper.tsx changes:**
-- Integrate `BlockActionBar` component
-- Pass move/duplicate/delete callbacks
-- Add "Add above/below" functionality
-
----
-
-### Step 4: Template to v3 Block Converter
-
-Create a converter utility that maps flow-canvas section templates to v3 blocks:
-
-```text
-src/funnel-builder-v3/utils/templateConverter.ts
-
-export function templateToBlocks(templateId: string): Block[] {
-  // For simple blocks (text, button, image, etc.)
-  // Return single block with default props
-  
-  // For section templates (hero-simple, cta-form, etc.)
-  // Create multiple blocks matching the template structure
+/* Ensure panel tabs are visible */
+.builder-v3-panel-tab {
+  color: hsl(var(--builder-v3-text-secondary)); /* brighter */
 }
 ```
 
-This ensures the rich template library works with v3's simplified `Block[]` structure.
+**2. `src/funnel-builder-v3/components/RightPanel.tsx`**
+- Import rich block icon components
+- Replace the basic button grid with `BlockTileCard` components
+- Add "Browse All Templates" button that triggers the SectionPicker
+
+**3. `src/funnel-builder-v3/components/Editor.tsx`**
+- Pass `onOpenSectionPicker` to the RightPanel component
 
 ---
 
-## File Summary
+## Visual Comparison
 
-### Files to Create (Copy + Adapt)
-
+### Before (Current State)
 ```text
-src/funnel-builder-v3/components/SectionPicker/
-  ├── SectionPicker.tsx       (from flow-canvas)
-  ├── CategoryIcon.tsx        (direct copy)
-  ├── BasicBlockGrid.tsx      (adapted for v3 onAddBlock)
-  ├── InteractiveBlockGrid.tsx (adapted for v3 onAddBlock)
-  ├── BlockTileCard.tsx       (direct copy)
-  ├── InteractiveBlockCard.tsx (direct copy)
-  ├── BlockIcons.tsx          (direct copy)
-  ├── InteractiveBlockIcons.tsx (direct copy)
-  ├── PremiumBlockIcons.tsx   (direct copy)
-  ├── TemplateGallery.tsx     (adapted)
-  ├── QuickPicks.tsx          (direct copy)
-  └── index.ts
-
-src/funnel-builder-v3/components/
-  ├── HighTicketPreviewCard.tsx (from flow-canvas)
-  ├── BlockActionBar.tsx       (from flow-canvas, simplified)
-  └── EmptyCanvasState.tsx     (from flow-canvas)
-
-src/funnel-builder-v3/utils/
-  └── templateConverter.ts     (new - maps templates to v3 blocks)
++-------------------+
+| [H] Heading       | <- Plain icon, dark tile
+| [T] Text          | <- Plain icon, dark tile
+| [▷] Button        | <- Plain icon, dark tile
++-------------------+
 ```
 
-### Files to Modify
+### After (Fixed State)
+```text
++-------------------+
+| [Visual Mockup]   | <- Rich heading preview
+| Heading           |
++-------------------+
+| [Visual Mockup]   | <- Rich text lines preview  
+| Text              |
++-------------------+
+| [Visual Mockup]   | <- Rich button preview
+| Button            |
++-------------------+
+| [Browse All...]   | <- Opens full SectionPicker
++-------------------+
+```
+
+---
+
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `Editor.tsx` | Add SectionPicker state, render modal, handle selection |
-| `Canvas.tsx` | Use EmptyCanvasState, add open picker callbacks |
-| `SortableBlockWrapper.tsx` | Integrate BlockActionBar |
-| `RightPanel.tsx` | Add "Browse Templates" button in Add tab |
-
----
-
-## Technical Details
-
-### SectionPicker Integration Flow
-
-```text
-User clicks "+" or "Browse Templates"
-       ↓
-SectionPicker modal opens (sectionPickerOpen = true)
-       ↓
-User selects block or template
-       ↓
-handleSectionPickerSelect(templateId) called
-       ↓
-templateConverter.templateToBlocks(templateId)
-       ↓
-dispatch({ type: 'ADD_BLOCKS', payload: { screenId, blocks } })
-       ↓
-Modal closes, blocks appear on canvas
-```
-
-### Block Category Mapping
-
-The existing SectionPicker categories map to v3 block types:
-
-| Category | v3 Block Types |
-|----------|----------------|
-| Content | heading, text, image, video, button, divider, spacer, icon |
-| Inputs & Forms | input, choice, embed |
-| Sections (Hero, CTA, etc.) | Multiple blocks from template |
+| `styles/builder.css` | Brighten text color variables for visibility |
+| `RightPanel.tsx` | Replace plain icons with rich visual tiles, add Browse button |
+| `Editor.tsx` | Pass `onOpenSectionPicker` to RightPanel |
 
 ---
 
 ## Success Criteria
 
-1. Full-screen SectionPicker modal opens with categorized blocks
-2. Visual block icons (not plain Lucide) in the picker
-3. Quick-picks (Hero, CTA, Form) on empty canvas
-4. Floating BlockActionBar appears when block is selected
-5. "Browse Templates" button in RightPanel opens picker
-6. Section templates add multiple blocks at once
-7. Same visual polish as the flow-canvas builder
-
----
-
-## Technical Notes
-
-### Why Direct Copy Works
-
-The flow-canvas SectionPicker is self-contained:
-- Uses standard React + Framer Motion
-- Imports from `@/lib/utils` (same in v3)
-- Uses `@/builder_v2/templates/sectionTemplates` (can reference same file)
-- Only interface needed is `onSelectTemplate(templateId: string)`
-
-### BlockActionBar Simplification
-
-The flow-canvas `BlockActionBar` supports both desktop and mobile modes. For v3, we can:
-- Keep the full implementation (recommended)
-- Or simplify to desktop-only initially
-
-### Template Converter Strategy
-
-For the initial implementation:
-- Simple blocks (text, button, etc.) → return single Block
-- Section templates → parse `createNode()` output → convert to v3 Block array
-
-This allows using the existing 60+ section templates immediately.
+1. Left panel text is clearly visible (screen names, tabs, layer items)
+2. Right panel "Add" tab shows rich visual block tiles with mockups
+3. "Browse All" button opens the full-screen SectionPicker modal
+4. Overall visual polish matches the flow-canvas builder
