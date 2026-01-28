@@ -1,549 +1,441 @@
 
 
-# Phase 3: Create Inspector Components (Enhanced)
+# Phase 4: Apply Flow Canvas UI Theme to v3 Builder
 
-## Philosophy: Complex Under the Hood, Simple to Use
+## Overview
 
-Taking from what works in **v2 EnhancedInspector** and **flow-canvas** inspectors:
-- **Complex capabilities** (gradients, animations, spring physics, responsive controls)
-- **Simple editing feel** like Perspective (clean tabs, minimal visible options, smart defaults)
+Transform the funnel-builder-v3 components from their current generic light-themed look to the polished, professional **dark charcoal "Fanbasis-like" aesthetic** used in the flow-canvas builder, while maintaining **perspective parity** (the simple, clean editing feel).
 
-The key insight from your existing builders: **power is hidden until needed** - collapsible sections, smart defaults, and progressive disclosure.
+## Design Philosophy
 
----
+**Complex under the hood, simple to use:**
+- Dark charcoal panels (HSL 220 13% 8-10%) - matches flow-canvas
+- Blue accent system (HSL 217 91% 60%) - brand consistency
+- Text hierarchy: bright → secondary → muted → dim
+- Clean, minimal chrome that stays out of the way
+- Power is hidden until needed
 
-## What We're Porting (Complete Feature List)
+## Files to Modify
 
-### From EnhancedInspector (v2)
-| Component | Lines | Key Features |
-|-----------|-------|--------------|
-| `ColorPicker` with solid/gradient tabs | ~90 | Preset grid, native picker, gradient toggle |
-| `InspectorSection` collapsible | ~30 | Chevron animation, icon + title |
-| `TextField` inline | ~25 | Text/textarea with label |
-| `SliderField` with value display | ~20 | Min/max/unit, live value badge |
-| `SelectField` styled | ~20 | Dark theme select |
-| `ButtonGroup` toggle | ~20 | Icon/label options |
-| `SwitchField` inline | ~15 | Row layout with toggle |
-| `OptionsEditor` for choices | ~60 | Emoji, image URL, add/remove |
-| Element-to-tab auto-switching | ~25 | Smart tab selection based on element |
+| File | Changes | Est. Lines |
+|------|---------|------------|
+| `Editor.tsx` | Shell background, data-theme | ~15 |
+| `Toolbar.tsx` | Toolbar buttons, dividers, preview toggle | ~60 |
+| `LeftPanel.tsx` | Panel, screen items, scrollbar | ~70 |
+| `RightPanel.tsx` | Panel, tabs, block buttons, inputs | ~100 |
+| `Canvas.tsx` | Canvas bg, device frame classes | ~40 |
+| `BlockRenderer.tsx` | Selection state classes | ~20 |
 
-### From flow-canvas UniversalAppearanceSection
-| Component | Lines | Key Features |
-|-----------|-------|--------------|
-| Size & Dimensions section | ~130 | Width/height presets + custom, max/min |
-| Position controls | ~45 | Position mode, offset inputs |
-| Layout & Spacing | ~95 | Align self, gap, padding grid, margin sliders |
-| Layout Mode (flex/grid) | ~80 | Display toggle, direction, wrap, justify, align |
-
-### From AnimationPresetSection
-| Component | Lines | Key Features |
-|-----------|-------|--------------|
-| Animation preset dropdown | ~50 | Grouped by entrance/attention |
-| Trigger selection | ~20 | Load/scroll/hover |
-| Duration/delay sliders | ~40 | Range 100-2000ms |
-| Easing dropdown | ~25 | Including spring option |
-| Spring physics presets | ~60 | Gentle/Default/Snappy/Bouncy/Stiff |
-| Advanced spring controls | ~50 | Stiffness/damping/mass sliders |
-| Replay button | ~10 | Preview animation |
-
-### From GradientPickerPopover
-| Component | Lines | Key Features |
-|-----------|-------|--------------|
-| GradientEditor standalone | ~180 | Type/angle, color stops, presets |
-| GradientPickerPopover wrapper | ~90 | Popover with manual dismiss |
-| Gradient utilities | ~40 | gradientToCSS, cloneGradient, defaultGradient |
-
-### From inspector/controls/
-| Component | Lines | Key Features |
-|-----------|-------|--------------|
-| ColorControl with popover | ~140 | Outside-dismiss logic, sync |
-| SpacingControl 4-way | ~110 | Linked padding/margin visual |
-| FontControl | ~80 | Family, size, weight |
-| ShadowControl | ~60 | Preset + custom shadow layers |
-| AlignmentControl | ~40 | Horizontal + vertical icon buttons |
+**Total: ~305 lines modified**
 
 ---
 
-## File Structure (v3 Inspector)
+## Implementation Details
 
-```text
-src/funnel-builder-v3/components/inspector/
-├── index.ts                      # Public exports
-│
-├── layout/
-│   ├── CollapsibleSection.tsx    # Expandable property group
-│   └── FieldGroup.tsx            # Label + control + hint wrapper
-│
-├── controls/
-│   ├── TextField.tsx             # Text/textarea input
-│   ├── SelectField.tsx           # Styled dropdown
-│   ├── SliderField.tsx           # Range with value display
-│   ├── SwitchField.tsx           # Toggle with label
-│   ├── ButtonGroup.tsx           # Segmented button toggle
-│   ├── SpacingControl.tsx        # 4-way padding/margin
-│   └── AlignmentControl.tsx      # Align icons (H + V)
-│
-├── color/
-│   ├── ColorPresetGrid.tsx       # 8-column swatch grid
-│   ├── ColorPickerPopover.tsx    # Full picker with popover
-│   ├── GradientEditor.tsx        # Standalone gradient editor
-│   └── GradientPickerPopover.tsx # Popover wrapper
-│
-├── animation/
-│   └── AnimationPicker.tsx       # Effect + trigger + timing + spring
-│
-├── specialized/
-│   ├── OptionsEditor.tsx         # Choice options with emoji/image
-│   ├── TypographySection.tsx     # Font family/size/weight/color
-│   └── SizeSection.tsx           # Width/height/max/min presets
-│
-└── hooks/
-    └── useInspectorAutoTab.ts    # Smart tab switching based on selection
+### 1. Editor.tsx - Shell Container (~15 lines)
+
+Current:
+```tsx
+<div className="h-screen flex flex-col bg-background">
+  ...
+  <div className="flex-1 flex overflow-hidden">
 ```
 
-**Total: ~1,400 lines across 17 files**
+Updated:
+```tsx
+<div className="h-screen flex flex-col bg-[hsl(var(--builder-v3-bg))]" data-theme="builder">
+  ...
+  <div className="flex-1 flex overflow-hidden bg-[hsl(var(--builder-v3-canvas-bg))]">
+```
+
+Key changes:
+- Root: `bg-background` → `bg-[hsl(var(--builder-v3-bg))]`
+- Add `data-theme="builder"` for CSS cascade
+- Main area: Add `bg-[hsl(var(--builder-v3-canvas-bg))]` for dark canvas
 
 ---
 
-## Component Specifications
+### 2. Toolbar.tsx - Top Bar (~60 lines)
 
-### 1. Layout Components
-
-#### CollapsibleSection.tsx (~70 lines)
-Port from `EnhancedInspector.InspectorSection` + flow-canvas styling:
-
-```typescript
-interface CollapsibleSectionProps {
-  title: string;
-  icon?: React.ReactNode;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-  badge?: string;              // e.g., "Fade In" for active animation
-  accentColor?: string;        // Optional gradient accent (like animation section)
-}
+Current:
+```tsx
+<header className="h-14 border-b border-border bg-card ...">
 ```
 
-Features:
-- Animated chevron rotation (180deg)
-- Icon + title + optional badge layout
-- Hover state: `bg-[hsl(var(--builder-v3-surface-hover))]`
-- Border bottom: `border-[hsl(var(--builder-v3-border))]`
-- Content padding: `px-4 pb-4 pt-0`
-- Support for accent gradient strip (like animation section)
+Updated structure:
+```tsx
+<header className="h-14 border-b border-[hsl(var(--builder-v3-border))] bg-[hsl(var(--builder-v3-surface))] ...">
+  {/* Left section */}
+  <div className="flex items-center gap-3">
+    {/* Back button - ghost style */}
+    <Button variant="ghost" ... className="text-[hsl(var(--builder-v3-text-muted))] hover:text-[hsl(var(--builder-v3-text))] hover:bg-[hsl(var(--builder-v3-surface-hover))]">
+    
+    {/* Title */}
+    <h1 className="font-semibold text-[hsl(var(--builder-v3-text))] ...">
+    
+    {/* Dirty indicator */}
+    <span className="text-xs text-[hsl(var(--builder-v3-text-dim))]">(unsaved)</span>
+  </div>
 
-#### FieldGroup.tsx (~35 lines)
-Port from flow-canvas `FieldGroup`:
+  {/* Center: Preview Toggle - flow-canvas style */}
+  <button className={cn(
+    'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+    previewMode 
+      ? 'bg-[hsl(var(--builder-v3-accent)/0.15)] text-[hsl(var(--builder-v3-accent))] ring-1 ring-[hsl(var(--builder-v3-accent)/0.3)]' 
+      : 'text-[hsl(var(--builder-v3-text-muted))] hover:text-[hsl(var(--builder-v3-text))] hover:bg-[hsl(var(--builder-v3-surface-hover))]'
+  )}>
+    {previewMode ? (
+      <>
+        <Eye /> Testing · <span className="hover:text-[hsl(var(--builder-v3-accent))]">Back to Edit</span>
+      </>
+    ) : (
+      <><Play /> Preview</>
+    )}
+  </button>
 
-```typescript
-interface FieldGroupProps {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-  horizontal?: boolean;  // Label left, control right
-}
+  {/* Right: Save + Publish with dividers */}
+  <div className="flex items-center gap-2">
+    <div className="w-px h-5 bg-[hsl(var(--builder-v3-border))]" /> {/* divider */}
+    
+    <Button className="bg-[hsl(var(--builder-v3-surface-hover))] text-[hsl(var(--builder-v3-text-muted))] hover:text-[hsl(var(--builder-v3-text))] hover:bg-[hsl(var(--builder-v3-surface-active))]">
+      Save
+    </Button>
+    
+    <Button className="bg-[hsl(var(--builder-v3-accent))] text-white hover:brightness-110">
+      Publish
+    </Button>
+  </div>
+</header>
 ```
 
-Features:
-- 11px label (font-medium, `text-builder-v3-text-secondary`)
-- 9px hint text (`text-builder-v3-text-dim`)
-- Vertical (default) or horizontal layout
-- `space-y-1.5` gap
+Key patterns from flow-canvas:
+- `.toolbar-btn` pattern: `bg-builder-surface-hover text-builder-text-muted hover:text-builder-text hover:bg-builder-surface-active`
+- `.toolbar-divider`: `w-px h-5 bg-builder-border`
+- Preview toggle: Accent glow when active, "Testing · Back to Edit" text pattern
 
 ---
 
-### 2. Form Controls
+### 3. LeftPanel.tsx - Screen List (~70 lines)
 
-#### TextField.tsx (~40 lines)
-```typescript
-interface TextFieldProps {
-  value: string;
-  onChange: (value: string) => void;
-  label: string;
-  placeholder?: string;
-  multiline?: boolean;
-  rows?: number;
-}
+Current:
+```tsx
+<div className="w-64 border-r border-border bg-card ...">
 ```
 
-Uses `.builder-v3-input` and `.builder-v3-textarea` from CSS.
+Updated structure:
+```tsx
+<div className="w-64 border-r border-[hsl(var(--builder-v3-border))] bg-[hsl(var(--builder-v3-surface))] flex flex-col shrink-0">
+  {/* Header */}
+  <div className="h-12 px-4 flex items-center justify-between border-b border-[hsl(var(--builder-v3-border-subtle))]">
+    <span className="text-sm font-medium text-[hsl(var(--builder-v3-text))]">Screens</span>
+    <Button className="h-7 w-7 bg-transparent text-[hsl(var(--builder-v3-text-muted))] hover:text-[hsl(var(--builder-v3-text))] hover:bg-[hsl(var(--builder-v3-surface-hover))]">
+      <Plus />
+    </Button>
+  </div>
 
-#### SelectField.tsx (~50 lines)
-Styled select with dark theme:
-
-```typescript
-interface SelectFieldProps {
-  value: string;
-  onChange: (value: string) => void;
-  label: string;
-  options: Array<{ value: string; label: string; description?: string }>;
-  grouped?: Record<string, Array<{ value: string; label: string }>>;  // For animation categories
-}
+  {/* ScrollArea with custom scrollbar */}
+  <ScrollArea className="flex-1 builder-v3-scroll">
+    <div className="p-2 space-y-1">
+      {screens.map((screen, index) => (
+        <div
+          className={cn(
+            'group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-150',
+            isSelected 
+              ? 'bg-[hsl(var(--builder-v3-accent)/0.15)] text-[hsl(var(--builder-v3-accent))]' 
+              : 'bg-[hsl(var(--builder-v3-surface))] hover:bg-[hsl(var(--builder-v3-surface-hover))] text-[hsl(var(--builder-v3-text-secondary))]'
+          )}
+        >
+          {/* Drag Handle */}
+          <GripVertical className="w-3 h-3 text-[hsl(var(--builder-v3-text-dim))] opacity-0 group-hover:opacity-100" />
+          
+          {/* Icon */}
+          <Icon className={cn(
+            'h-4 w-4 shrink-0',
+            isSelected ? 'text-[hsl(var(--builder-v3-accent))]' : 'text-[hsl(var(--builder-v3-text-muted))]'
+          )} />
+          
+          {/* Name */}
+          <span className={cn(
+            'flex-1 text-sm truncate',
+            isSelected && 'font-medium'
+          )}>
+            {index + 1}. {screen.name}
+          </span>
+          
+          {/* Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-[hsl(var(--builder-v3-surface-active))]">
+              <MoreVertical className="h-3 w-3 text-[hsl(var(--builder-v3-text-muted))]" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]">
+              ...
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ))}
+    </div>
+  </ScrollArea>
+</div>
 ```
 
-#### SliderField.tsx (~55 lines)
-Port from EnhancedInspector with value badge:
-
-```typescript
-interface SliderFieldProps {
-  value: number;
-  onChange: (value: number) => void;
-  label: string;
-  min?: number;
-  max?: number;
-  step?: number;
-  unit?: string;  // "px", "ms", "%", "°"
-}
-```
-
-Features:
-- Label left, value badge right (e.g., `500ms`)
-- Value badge: `bg-builder-v3-surface-hover px-2 py-0.5 rounded text-xs font-mono`
-- Slider uses accent color for thumb
-
-#### ButtonGroup.tsx (~45 lines)
-```typescript
-interface ButtonGroupProps {
-  value: string;
-  onChange: (value: string) => void;
-  label: string;
-  options: Array<{ value: string; label?: string; icon?: React.ReactNode }>;
-}
-```
-
-Features:
-- Segmented control appearance
-- Active state with accent background
-- Icon-only or icon + label
-
-#### SwitchField.tsx (~30 lines)
-```typescript
-interface SwitchFieldProps {
-  value: boolean;
-  onChange: (value: boolean) => void;
-  label: string;
-}
-```
-
-Horizontal layout: label left, switch right.
-
-#### SpacingControl.tsx (~110 lines)
-Port from v2 with dark theme:
-
-Features:
-- Visual 3x3 grid layout
-- Link/unlink toggle in center
-- Top/right/bottom/left inputs
-- Dark theme styling
-
-#### AlignmentControl.tsx (~50 lines)
-```typescript
-interface AlignmentControlProps {
-  value: { horizontal: 'left' | 'center' | 'right'; vertical?: 'top' | 'center' | 'bottom' };
-  onChange: (value: ...) => void;
-  label: string;
-  showVertical?: boolean;
-}
-```
-
-Icon buttons: AlignLeft, AlignCenter, AlignRight (+ vertical variants).
+Key patterns from flow-canvas:
+- Selected state: `bg-builder-accent/15 text-builder-accent`
+- Hover state: `bg-builder-surface-hover text-builder-text-secondary`
+- Drag handle: Dim color, opacity-0 → opacity-100 on hover
+- DropdownMenu: Builder surface colors
 
 ---
 
-### 3. Color Components
+### 4. RightPanel.tsx - Properties Panel (~100 lines)
 
-#### ColorPresetGrid.tsx (~90 lines)
-Standalone swatch grid using Phase 1 presets:
-
-```typescript
-interface ColorPresetGridProps {
-  value: string;
-  onChange: (color: string) => void;
-  presets?: string[];  // Override defaults
-  columns?: number;    // Default 8
-  showTransparent?: boolean;
-  showCategories?: boolean;  // Show "Neutrals", "Brand", etc.
-}
+Current:
+```tsx
+<div className="w-80 border-l border-border bg-card ...">
+  <TabsList className="grid w-full grid-cols-2">
+    <TabsTrigger value="add">Add Blocks</TabsTrigger>
+    <TabsTrigger value="style">...</TabsTrigger>
+  </TabsList>
 ```
 
-Features:
-- 8-column grid (matches v2)
-- Active state: `ring-2 ring-[hsl(var(--builder-v3-accent))]`
-- Hover: `scale-110` transition
-- Transparent swatch with checkerboard pattern
-- Optional category headers
+Updated structure:
+```tsx
+<div className="w-80 border-l border-[hsl(var(--builder-v3-border))] bg-[hsl(var(--builder-v3-surface))] flex flex-col shrink-0">
+  <Tabs className="flex flex-col h-full">
+    {/* Tab Headers - Flow canvas style */}
+    <div className="h-12 px-2 flex items-center border-b border-[hsl(var(--builder-v3-border-subtle))]">
+      <TabsList className="grid w-full grid-cols-2 bg-[hsl(var(--builder-v3-surface-hover))] p-1 rounded-lg">
+        <TabsTrigger 
+          value="add"
+          className={cn(
+            'text-xs font-medium rounded-md transition-all',
+            'data-[state=inactive]:text-[hsl(var(--builder-v3-text-muted))]',
+            'data-[state=active]:bg-[hsl(var(--builder-v3-surface-active))] data-[state=active]:text-[hsl(var(--builder-v3-text))]'
+          )}
+        >
+          Add Blocks
+        </TabsTrigger>
+        <TabsTrigger 
+          value="style"
+          className={cn(...)}
+        >
+          {block ? 'Block Style' : 'Screen Style'}
+        </TabsTrigger>
+      </TabsList>
+    </div>
 
-#### ColorPickerPopover.tsx (~180 lines)
-Port from v2 ColorControl + EnhancedInspector ColorPicker:
+    <ScrollArea className="flex-1 builder-v3-scroll">
+      {/* Add Blocks Tab */}
+      <TabsContent value="add" className="mt-0 p-4">
+        {/* Category headers */}
+        <h3 className="text-[10px] font-medium text-[hsl(var(--builder-v3-text-dim))] uppercase tracking-wider mb-2">
+          Content
+        </h3>
+        
+        {/* Block buttons grid */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            className={cn(
+              'flex flex-col items-center gap-2 p-3 rounded-lg transition-all',
+              'border border-[hsl(var(--builder-v3-border))]',
+              'bg-[hsl(var(--builder-v3-surface-hover))]',
+              'hover:bg-[hsl(var(--builder-v3-surface-active))]',
+              'hover:border-[hsl(var(--builder-v3-accent)/0.3)]',
+              'text-[hsl(var(--builder-v3-text-secondary))]'
+            )}
+          >
+            <Icon className="h-5 w-5 text-[hsl(var(--builder-v3-text-muted))]" />
+            <span className="text-xs">{label}</span>
+          </button>
+        </div>
+      </TabsContent>
 
-```typescript
-interface ColorPickerPopoverProps {
-  value: string;
-  onChange: (color: string) => void;
-  children?: React.ReactNode;  // Custom trigger
-  showGradients?: boolean;
-  onSwitchToGradient?: () => void;
-}
+      {/* Style Tab */}
+      <TabsContent value="style" className="mt-0 p-4 space-y-6">
+        {/* Actions */}
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            className="flex-1 bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text-secondary))] hover:text-[hsl(var(--builder-v3-text))] hover:bg-[hsl(var(--builder-v3-surface-active))]"
+          >
+            <Copy /> Duplicate
+          </Button>
+          <Button 
+            variant="outline"
+            className="text-[hsl(var(--builder-v3-error))] hover:text-[hsl(var(--builder-v3-error))] hover:bg-[hsl(var(--builder-v3-error)/0.1)]"
+          >
+            <Trash2 />
+          </Button>
+        </div>
+
+        {/* Field groups use Phase 3 styling */}
+        <div className="space-y-1.5">
+          <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">
+            Content
+          </Label>
+          <Input className="builder-v3-input" />
+        </div>
+
+        {/* Select fields */}
+        <Select>
+          <SelectTrigger className="bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]">
+            ...
+          </SelectTrigger>
+          <SelectContent className="bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]">
+            ...
+          </SelectContent>
+        </Select>
+      </TabsContent>
+    </ScrollArea>
+  </Tabs>
+</div>
 ```
 
-Features:
-- Trigger button with swatch preview
-- Popover with ColorPresetGrid
-- Solid/Gradient tabs (when showGradients=true)
-- Native color input + HEX text input
-- Recent colors (localStorage)
-- Manual outside-dismiss logic (prevent slider close issues)
-
-#### GradientEditor.tsx (~200 lines)
-Port from flow-canvas GradientPickerPopover:
-
-```typescript
-interface GradientEditorProps {
-  value: GradientValue;
-  onChange: (gradient: GradientValue) => void;
-  compact?: boolean;
-}
-```
-
-Features:
-- "Aa" text preview with gradient
-- Type toggle: Linear/Radial
-- Angle slider (0-360°) for linear
-- Color stops list:
-  - Color picker per stop
-  - Position slider (0-100%)
-  - Add stop (max 5)
-  - Remove stop (min 2)
-- Preset grid (9 gradients)
-- Pure functions: `gradientToCSS`, `cloneGradient`
-
-#### GradientPickerPopover.tsx (~90 lines)
-Popover wrapper for GradientEditor:
-
-```typescript
-interface GradientPickerPopoverProps {
-  value: GradientValue | null;
-  onChange: (gradient: GradientValue) => void;
-  children: React.ReactNode;
-}
-```
-
-Features:
-- Header with gradient icon
-- GradientEditor embedded
-- Manual outside-dismiss (like ColorPickerPopover)
+Key patterns from flow-canvas:
+- TabsList: `bg-builder-surface-hover p-1 rounded-lg`
+- TabsTrigger active: `bg-builder-surface-active text-builder-text`
+- Block buttons: `bg-builder-surface-hover hover:bg-builder-surface-active border-builder-border`
+- Labels: 11px, font-medium, text-muted
+- Inputs: Use `.builder-v3-input` class from Phase 2 CSS
 
 ---
 
-### 4. Animation Components
+### 5. Canvas.tsx - Preview Area (~40 lines)
 
-#### AnimationPicker.tsx (~250 lines)
-Port from flow-canvas AnimationPresetSection:
-
-```typescript
-interface AnimationPickerProps {
-  value: AnimationSettings | undefined;
-  onChange: (settings: AnimationSettings | undefined) => void;
-  onReplay?: () => void;
-}
+Current:
+```tsx
+<div className="flex-1 flex items-center justify-center bg-muted/30 p-8 ...">
+  <div className="w-full max-w-md min-h-[600px] rounded-2xl shadow-2xl ...">
 ```
 
-Features:
-- Effect dropdown (grouped):
-  - Entrance: None, Fade In, Slide Up/Down/Left/Right, Scale In, Blur In, Rotate In
-  - Attention: Bounce, Pulse, Shake, Wiggle
-- Trigger dropdown: On Page Load, On Scroll, On Hover
-- Duration slider (100-2000ms)
-- Delay slider (0-2000ms)
-- Easing dropdown: Ease Out, Ease In, Ease In-Out, Spring, Linear
-- Spring physics (when easing=spring):
-  - Preset buttons: Gentle, Default, Snappy, Bouncy, Stiff
-  - Advanced toggle → Stiffness/Damping/Mass sliders
-- Replay button
-- Remove animation button
-- Accent gradient strip on section
+Updated structure:
+```tsx
+<div 
+  className="flex-1 flex items-center justify-center p-8 overflow-auto"
+  style={{ backgroundColor: 'hsl(var(--builder-v3-canvas-bg))' }}
+  data-preview={previewMode ? 'true' : undefined}
+>
+  {/* Device Frame - uses v3 classes */}
+  <div
+    className={cn(
+      'builder-v3-device-frame builder-v3-device-frame--mobile',
+      'min-h-[600px] overflow-hidden',
+      !previewMode && 'ring-1 ring-[hsl(var(--builder-v3-border)/0.3)]'
+    )}
+    style={{
+      ...getBackgroundStyle(),
+      fontFamily: settings.fontFamily || 'Inter, sans-serif',
+    }}
+    onClick={handleCanvasClick}
+  >
+    {/* Phone Notch */}
+    <div className="builder-v3-phone-notch" />
+    
+    {/* Progress Bar */}
+    {settings.showProgress && (
+      <div className="h-1 bg-[hsl(var(--builder-v3-surface))]">
+        <div 
+          className="h-full bg-[hsl(var(--builder-v3-accent))] transition-all" 
+          style={{ width: '33%' }}
+        />
+      </div>
+    )}
+
+    {/* Screen Content */}
+    <div className="p-6 space-y-4">
+      {screen.blocks.map((block) => (
+        <BlockRenderer
+          key={block.id}
+          block={block}
+          isSelected={block.id === selectedBlockId}
+          onSelect={() => onSelectBlock(block.id)}
+          previewMode={previewMode}
+          primaryColor={settings.primaryColor}
+        />
+      ))}
+    </div>
+    
+    {/* Home Indicator */}
+    <div className="builder-v3-home-indicator" />
+  </div>
+</div>
+```
+
+Key changes:
+- Canvas background: `--builder-v3-canvas-bg` (very dark, near black)
+- Device frame: Use `.builder-v3-device-frame` classes from Phase 2 CSS
+- Add phone notch and home indicator for realism
+- Progress bar uses accent color
+- Add `data-preview` attribute for CSS to hide selection states
 
 ---
 
-### 5. Specialized Components
+### 6. BlockRenderer.tsx - Selection States (~20 lines)
 
-#### OptionsEditor.tsx (~80 lines)
-Port from EnhancedInspector:
-
-```typescript
-interface OptionsEditorProps {
-  options: Array<{ id: string; label: string; emoji?: string; image?: string }>;
-  onChange: (options: ...) => void;
-}
+Current:
+```tsx
+<div
+  className={cn(
+    'relative transition-all cursor-pointer',
+    isSelected && 'ring-2 ring-primary ring-offset-2',
+    !previewMode && 'hover:ring-2 hover:ring-primary/50 hover:ring-offset-2'
+  )}
+>
 ```
 
-Features:
-- Sortable list (drag handle)
-- Emoji input
-- Label input
-- Image URL input (for card-style choices)
-- Add/remove buttons
-
-#### TypographySection.tsx (~120 lines)
-Combines font controls into one section:
-
-```typescript
-interface TypographySectionProps {
-  fontSize?: string;
-  fontWeight?: string;
-  fontFamily?: string;
-  color?: string;
-  textAlign?: 'left' | 'center' | 'right';
-  onChange: (updates: Partial<...>) => void;
-}
+Updated:
+```tsx
+<div
+  className={cn(
+    'builder-v3-selectable relative transition-all',
+    isSelected && 'builder-v3-selected',
+    // Hover states handled by CSS
+  )}
+  data-selected={isSelected || undefined}
+>
 ```
 
-Features:
-- Font family dropdown (using Phase 1 masterFontFamilies)
-- Font size dropdown (predefined sizes)
-- Font weight dropdown
-- Text color picker (inline swatch)
-- Alignment button group
-
-#### SizeSection.tsx (~130 lines)
-Port from UniversalAppearanceSection:
-
-```typescript
-interface SizeSectionProps {
-  width?: string;
-  height?: string;
-  maxWidth?: string;
-  minHeight?: string;
-  onChange: (key: string, value: string) => void;
-}
-```
-
-Features:
-- Width: Auto/Full/75%/50%/Fit/Custom presets
-- Height: Auto/Full/Fit/Custom presets
-- Custom value input when selected
-- Max width input
-- Min height input
+Key changes:
+- Use `.builder-v3-selectable` and `.builder-v3-selected` classes
+- Selection states automatically hidden in preview mode via CSS `[data-preview="true"]`
+- Cleaner, more maintainable
 
 ---
 
-### 6. Hooks
+## Visual Result
 
-#### useInspectorAutoTab.ts (~40 lines)
-Port element-to-tab mapping from EnhancedInspector:
+After this phase, the v3 builder will have:
 
-```typescript
-function useInspectorAutoTab(
-  selectedBlockType: string | null,
-  setActiveTab: (tab: string) => void
-)
-```
+1. **Dark charcoal panels** - Matching flow-canvas aesthetic (HSL 220 13% 8-10%)
+2. **Blue accent system** - Consistent with Infostack brand (HSL 217 91% 60%)
+3. **Proper text hierarchy** - Bright → secondary → muted → dim progression
+4. **Toolbar with proper styling** - Button patterns, dividers, preview toggle
+5. **Professional device frame** - Phone notch, home indicator, shadow/glow
+6. **Clean selection states** - Using CSS classes from Phase 2
 
-Automatically switches to:
-- `content` tab for text/heading elements
-- `style` tab for buttons/inputs
-- `add` tab when nothing selected
-
----
-
-## CSS Integration
-
-All components use the CSS classes from Phase 2:
+## CSS Classes Utilized (from Phase 2)
 
 ```css
-/* Form controls */
-.builder-v3-input         /* Text inputs */
-.builder-v3-textarea      /* Multiline inputs */
-.builder-v3-select        /* Select dropdowns */
+/* Layout */
+.builder-v3-device-frame, .builder-v3-device-frame--mobile
+.builder-v3-phone-notch, .builder-v3-home-indicator
+.builder-v3-scroll
 
-/* Toggle controls */
-.builder-v3-toggle-pill   /* Segmented control container */
-.builder-v3-toggle-option /* Segmented control option */
+/* Selection */
+.builder-v3-selectable, .builder-v3-selected
+[data-preview="true"] .builder-v3-selected { outline: none }
 
-/* Inspector structure */
-.builder-v3-inspector-section  /* Section container */
-.builder-v3-inspector-header   /* Section header */
-.builder-v3-inspector-content  /* Section content */
-
-/* Animations */
-.builder-v3-animate-*     /* Animation classes for preview */
+/* Inputs */
+.builder-v3-input, .builder-v3-textarea
 ```
-
----
-
-## Index Exports
-
-```typescript
-// src/funnel-builder-v3/components/inspector/index.ts
-
-// Layout
-export { CollapsibleSection } from './layout/CollapsibleSection';
-export { FieldGroup } from './layout/FieldGroup';
-
-// Controls
-export { TextField } from './controls/TextField';
-export { SelectField } from './controls/SelectField';
-export { SliderField } from './controls/SliderField';
-export { SwitchField } from './controls/SwitchField';
-export { ButtonGroup } from './controls/ButtonGroup';
-export { SpacingControl } from './controls/SpacingControl';
-export { AlignmentControl } from './controls/AlignmentControl';
-
-// Color
-export { ColorPresetGrid } from './color/ColorPresetGrid';
-export { ColorPickerPopover } from './color/ColorPickerPopover';
-export { GradientEditor, gradientToCSS, cloneGradient, defaultGradient } from './color/GradientEditor';
-export { GradientPickerPopover } from './color/GradientPickerPopover';
-
-// Animation
-export { AnimationPicker } from './animation/AnimationPicker';
-
-// Specialized
-export { OptionsEditor } from './specialized/OptionsEditor';
-export { TypographySection } from './specialized/TypographySection';
-export { SizeSection } from './specialized/SizeSection';
-
-// Hooks
-export { useInspectorAutoTab } from './hooks/useInspectorAutoTab';
-```
-
----
-
-## Files Summary
-
-| Directory | Files | Est. Lines |
-|-----------|-------|------------|
-| `inspector/layout/` | 2 | ~105 |
-| `inspector/controls/` | 7 | ~380 |
-| `inspector/color/` | 4 | ~560 |
-| `inspector/animation/` | 1 | ~250 |
-| `inspector/specialized/` | 3 | ~330 |
-| `inspector/hooks/` | 1 | ~40 |
-| `inspector/index.ts` | 1 | ~35 |
-| **Total** | **19 files** | **~1,700 lines** |
-
----
-
-## Implementation Order
-
-1. **Layout components** (CollapsibleSection, FieldGroup) - foundation for all sections
-2. **Basic controls** (TextField, SelectField, SliderField, SwitchField, ButtonGroup) - building blocks
-3. **Color components** (ColorPresetGrid → ColorPickerPopover → GradientEditor → GradientPickerPopover)
-4. **Alignment & Spacing** (AlignmentControl, SpacingControl)
-5. **Animation** (AnimationPicker) - most complex, depends on SliderField
-6. **Specialized** (OptionsEditor, TypographySection, SizeSection)
-7. **Hook** (useInspectorAutoTab)
-8. **Index exports**
-
----
 
 ## Success Criteria
 
-1. All 19 inspector component files created
-2. CollapsibleSection animates smoothly with chevron rotation
-3. ColorPickerPopover handles outside-dismiss correctly (no slider close bugs)
-4. GradientEditor creates valid CSS gradients
-5. AnimationPicker shows spring physics controls when easing=spring
-6. All components use Phase 2 CSS design tokens
-7. TypeScript compiles without errors
-8. Components are ready for RightPanel integration (Phase 7)
+1. All 6 files updated with dark theme tokens
+2. Toolbar matches flow-canvas pattern (dividers, preview toggle)
+3. Left panel screen items have proper hover/selected states
+4. Right panel tabs and controls use builder tokens
+5. Canvas has dark background with device frame styling
+6. Selection states work and hide in preview mode
+7. No TypeScript errors
+8. Visual parity with flow-canvas builder aesthetic
 
