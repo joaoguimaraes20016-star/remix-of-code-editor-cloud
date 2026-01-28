@@ -275,10 +275,10 @@ function createSpacerBlock(): Block {
 }
 
 /**
- * Logo Bar Block - Perspective-style brand wordmarks
+ * Logo Bar Block - Perspective-style horizontal logo display
  */
 function createLogoBarBlock(): Block {
-  const brandNames = ['Coca-Cola', 'Zalando', 'Braun', 'IKEA', 'Sony'];
+  const brandNames = ['Zalando', 'Google', 'Deutsche Bahn', 'Coca-Cola', 'Sony'];
   
   return {
     id: generateId(),
@@ -295,14 +295,23 @@ function createLogoBarBlock(): Block {
           alt: name,
           name,
         })),
-        speed: 25,
-        pauseOnHover: true,
+        // Perspective-style logo bar
+        layout: 'horizontal',
+        animated: false,
         grayscale: true,
         showTextFallback: true,
         hoverEffect: 'color',
-        logoHeight: 32,
-        gap: 48,
-        animated: false,
+        logoHeight: 28,
+        gap: 32,
+        padding: '24px 16px',
+        backgroundColor: '#F9FAFB',
+        borderRadius: '16px',
+        justifyContent: 'center',
+        alignItems: 'center',
+        fontFamily: 'inherit',
+        fontWeight: '600',
+        textColor: '#6B7280',
+        opacity: 0.7,
       }
     }],
     props: {
