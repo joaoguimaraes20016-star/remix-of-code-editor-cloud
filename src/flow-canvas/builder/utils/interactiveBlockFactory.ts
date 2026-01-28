@@ -701,37 +701,68 @@ function createDateBlock(): Block {
 }
 
 /**
- * Dropdown Block - Select menu with options
+ * Dropdown Block - Perspective-style select with card options
  */
 function createDropdownBlock(): Block {
   return {
     id: generateId(),
     type: 'form-field' as BlockType,
     label: 'Dropdown',
-    elements: [{
-      id: generateId(),
-      type: 'select' as ElementType,
-      content: '',
-      props: {
-        placeholder: 'Select an option',
-        options: [
-          { value: 'option1', label: 'Option 1' },
-          { value: 'option2', label: 'Option 2' },
-          { value: 'option3', label: 'Option 3' },
-          { value: 'option4', label: 'Option 4' },
-        ],
-        required: false,
-        borderRadius: '12px',
-        padding: '16px 20px',
-        fontSize: '16px',
-        border: '1px solid #E5E7EB',
-        fullWidth: true,
-        icon: 'chevron-down',
-        label: 'Select',
-      }
-    }],
+    elements: [
+      {
+        id: generateId(),
+        type: 'heading' as ElementType,
+        content: 'What day do you prefer?',
+        props: {
+          level: 2,
+          fontSize: '2xl',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          textColor: '#111827',
+          lineHeight: '1.2',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'select' as ElementType,
+        content: '',
+        props: {
+          placeholder: 'Pick a day',
+          options: [
+            { value: 'monday', label: 'Monday' },
+            { value: 'tuesday', label: 'Tuesday' },
+            { value: 'wednesday', label: 'Wednesday' },
+            { value: 'thursday', label: 'Thursday' },
+            { value: 'friday', label: 'Friday' },
+            { value: 'saturday', label: 'Saturday' },
+            { value: 'sunday', label: 'Sunday' },
+          ],
+          required: false,
+          // Perspective-style rounded select with icons
+          borderRadius: '16px',
+          padding: '20px 24px 20px 56px',
+          fontSize: '16px',
+          border: '1px solid #E5E7EB',
+          backgroundColor: '#F9FAFB',
+          fullWidth: true,
+          icon: 'calendar',
+          iconPosition: 'left',
+          iconColor: '#9CA3AF',
+          chevronIcon: 'chevrons-up-down',
+          // Dropdown options style
+          optionStyle: 'card',
+          optionBorderRadius: '12px',
+          optionPadding: '20px',
+          optionBackgroundColor: '#FFFFFF',
+          optionHoverBackgroundColor: '#F3F4F6',
+          optionBorder: '1px solid #E5E7EB',
+          optionGap: 8,
+        }
+      },
+    ],
     props: {
       alignment: 'stretch',
+      gap: 16,
     }
   };
 }
