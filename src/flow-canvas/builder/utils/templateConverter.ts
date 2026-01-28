@@ -1,10 +1,12 @@
 /**
  * Template Converter - Converts builder_v2 section templates to flow-canvas Frame format
+ * Also handles premium block creation as a fallback for block IDs
  */
 
 import type { Frame, Stack, Block, Element, BlockType, ElementType } from '../../types/infostack';
 import type { CanvasNode } from '@/builder_v2/types';
 import { allSectionTemplates, type SectionTemplate } from '@/builder_v2/templates/sectionTemplates';
+import { createPremiumBlock, isPremiumBlockId } from './premiumBlockFactory';
 
 // Generate unique ID
 function generateId(): string {
@@ -170,21 +172,46 @@ function canvasNodeToFrame(node: CanvasNode): Frame {
 
 /**
  * Convert a section template to a flow-canvas Frame
- * @param templateId - The ID of the section template to convert
+ * Also handles premium block IDs by creating a frame with the premium block
+ * @param templateId - The ID of the section template or premium block to convert
  * @returns A Frame object ready to be added to a step
  */
 export function convertTemplateToFrame(templateId: string): Frame | null {
+  // First, try section templates
   const template = allSectionTemplates.find(t => t.id === templateId);
-  if (!template) {
-    console.warn(`Template not found: ${templateId}`);
-    return null;
+  if (template) {
+    // Create the node from the template
+    const canvasNode = template.createNode();
+    // Convert to frame
+    return canvasNodeToFrame(canvasNode);
   }
 
-  // Create the node from the template
-  const canvasNode = template.createNode();
-  
-  // Convert to frame
-  return canvasNodeToFrame(canvasNode);
+  // Fallback: Try premium block factory
+  if (isPremiumBlockId(templateId)) {
+    const premiumBlock = createPremiumBlock(templateId);
+    if (premiumBlock) {
+      return {
+        id: generateId(),
+        label: premiumBlock.label || 'Section',
+        stacks: [{
+          id: generateId(),
+          label: 'Main Stack',
+          direction: 'vertical',
+          blocks: [premiumBlock],
+          props: { 
+            alignment: 'center',
+            gap: 16
+          }
+        }],
+        props: {
+          padding: { top: 24, bottom: 24, left: 16, right: 16 }
+        }
+      };
+    }
+  }
+
+  console.warn(`Template not found: ${templateId}`);
+  return null;
 }
 
 /**

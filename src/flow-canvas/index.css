@@ -1475,5 +1475,183 @@
   background: hsl(var(--builder-accent));
 }
 
+/* ============================================ */
+/* PREMIUM ELEMENTS - Perspective-Style Rendering */
+/* ============================================ */
+
+/* Gradient Text - Smooth gradient fill with proper line-height */
+.premium-gradient-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 100%;
+  line-height: 1.2;
+  display: inline-block;
+}
+
+/* Underline Text - Accent underline with animation */
+.premium-underline-text {
+  position: relative;
+  display: inline-block;
+}
+
+.premium-underline-text::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 2px;
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.premium-underline-text:hover::after {
+  transform: scaleX(1.05);
+}
+
+/* Stat Number - Tabular numerics for clean alignment */
+.premium-stat-number {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.premium-stat-suffix {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.premium-stat-label {
+  letter-spacing: 0.02em;
+  margin-top: 4px;
+}
+
+/* Avatar Group - Overlapping with professional shadows */
+.premium-avatar-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.premium-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 14px;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.premium-avatar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+/* Ticker - Smooth infinite scroll animation */
+.premium-ticker-wrapper {
+  overflow: hidden;
+  width: 100%;
+}
+
+.premium-ticker {
+  display: flex;
+  animation: ticker-scroll 30s linear infinite;
+  white-space: nowrap;
+}
+
+.premium-ticker:hover {
+  animation-play-state: paused;
+}
+
+@keyframes ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.premium-ticker-item {
+  padding: 0 24px;
+  letter-spacing: 0.05em;
+}
+
+/* Badge - Pill-shaped with gradient and icon */
+.premium-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.premium-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.premium-badge-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Process Step - Numbered indicator with connector */
+.premium-process-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.premium-step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: white;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+}
+
+.premium-step-indicator:hover {
+  transform: scale(1.05);
+}
+
+.premium-step-title {
+  line-height: 1.3;
+}
+
+.premium-step-description {
+  line-height: 1.5;
+  max-width: 200px;
+}
+
+/* Process Step Connector Line */
+.premium-step-connector {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, currentColor, transparent);
+  opacity: 0.3;
+}
+
 /* ===== Mobile-First Builder Styles ===== */
 @import './builder/styles/mobile.css';
