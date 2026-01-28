@@ -13,6 +13,12 @@ export type { CollapsibleSectionProps } from './layout/CollapsibleSection';
 export { FieldGroup } from './layout/FieldGroup';
 export type { FieldGroupProps } from './layout/FieldGroup';
 
+export { InspectorBreadcrumb } from './layout/InspectorBreadcrumb';
+export type { InspectorBreadcrumbProps } from './layout/InspectorBreadcrumb';
+
+export { EmptyState } from './layout/EmptyState';
+export type { EmptyStateProps } from './layout/EmptyState';
+
 // =============================================================================
 // CONTROLS
 // =============================================================================

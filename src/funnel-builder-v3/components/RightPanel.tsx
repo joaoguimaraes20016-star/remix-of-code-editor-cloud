@@ -19,6 +19,10 @@ import {
   Copy,
   Palette,
   Star,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  MousePointerClick,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Screen, Block, BlockType, BLOCK_TYPE_CONFIG, SCREEN_TYPE_CONFIG } from '../types/funnel';
 import { cn } from '@/lib/utils';
+import { CollapsibleSection, InspectorBreadcrumb, EmptyState } from './inspector';
 
 interface RightPanelProps {
   screen: Screen | null;
@@ -39,6 +44,7 @@ interface RightPanelProps {
   onAddBlock: (type: BlockType) => void;
   onDeleteBlock: () => void;
   onDuplicateBlock: () => void;
+  onClearBlockSelection?: () => void;
 }
 
 const BLOCK_ICONS: Record<BlockType, React.ComponentType<{ className?: string }>> = {
@@ -63,13 +69,18 @@ export function RightPanel({
   onAddBlock,
   onDeleteBlock,
   onDuplicateBlock,
+  onClearBlockSelection,
 }: RightPanelProps) {
   const [activeTab, setActiveTab] = useState<'add' | 'style'>('add');
 
   if (!screen) {
     return (
       <div className="w-80 border-l border-[hsl(var(--builder-v3-border))] bg-[hsl(var(--builder-v3-surface))] flex items-center justify-center">
-        <p className="text-[hsl(var(--builder-v3-text-muted))] text-sm">Select a screen</p>
+        <EmptyState
+          icon={<MousePointerClick size={24} />}
+          title="No screen selected"
+          description="Select a screen from the left panel to edit its properties"
+        />
       </div>
     );
   }
@@ -210,14 +221,21 @@ export function RightPanel({
           </TabsContent>
 
           {/* Style Tab */}
-          <TabsContent value="style" className="mt-0 p-4">
+          <TabsContent value="style" className="mt-0">
             {block ? (
-              <BlockStyleEditor
-                block={block}
-                onUpdate={onUpdateBlock}
-                onDelete={onDeleteBlock}
-                onDuplicate={onDuplicateBlock}
-              />
+              <>
+                <InspectorBreadcrumb
+                  screenName={screen.name}
+                  blockType={BLOCK_TYPE_CONFIG[block.type]?.label || block.type}
+                  onClearSelection={onClearBlockSelection}
+                />
+                <BlockStyleEditor
+                  block={block}
+                  onUpdate={onUpdateBlock}
+                  onDelete={onDeleteBlock}
+                  onDuplicate={onDuplicateBlock}
+                />
+              </>
             ) : (
               <ScreenStyleEditor
                 screen={screen}
@@ -244,140 +262,163 @@ interface BlockStyleEditorProps {
 
 function BlockStyleEditor({ block, onUpdate, onDelete, onDuplicate }: BlockStyleEditorProps) {
   return (
-    <div className="space-y-6">
-      {/* Actions */}
-      <div className="flex gap-2">
-        <Button 
-          variant="outline" 
-          size="sm" 
+    <div className="space-y-0">
+      {/* Quick Actions Bar */}
+      <div className="builder-v3-quick-actions">
+        <button 
           onClick={onDuplicate} 
-          className={cn(
-            'flex-1',
-            'bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))]',
-            'text-[hsl(var(--builder-v3-text-secondary))]',
-            'hover:text-[hsl(var(--builder-v3-text))] hover:bg-[hsl(var(--builder-v3-surface-active))]'
-          )}
+          className="builder-v3-inspector-action builder-v3-inspector-action--secondary flex-1"
         >
-          <Copy className="h-4 w-4 mr-2" />
+          <Copy size={14} />
           Duplicate
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
+        </button>
+        <button 
           onClick={onDelete} 
-          className={cn(
-            'border-[hsl(var(--builder-v3-border))]',
-            'text-[hsl(var(--builder-v3-error))]',
-            'hover:text-[hsl(var(--builder-v3-error))] hover:bg-[hsl(var(--builder-v3-error)/0.1)]'
-          )}
+          className="builder-v3-inspector-action builder-v3-inspector-action--danger"
         >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+          <Trash2 size={14} />
+        </button>
       </div>
 
-      {/* Separator */}
-      <div className="h-px bg-[hsl(var(--builder-v3-border))]" />
-
-      {/* Content */}
+      {/* Content Section - for text/heading/button */}
       {['heading', 'text', 'button'].includes(block.type) && (
-        <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Content</Label>
-          {block.type === 'text' ? (
-            <Textarea
-              value={block.content}
-              onChange={(e) => onUpdate({ content: e.target.value })}
-              rows={3}
-              className="builder-v3-textarea"
-            />
-          ) : (
-            <Input
-              value={block.content}
-              onChange={(e) => onUpdate({ content: e.target.value })}
-              className="builder-v3-input"
-            />
-          )}
-        </div>
-      )}
-
-      {/* Size (for heading/text) */}
-      {['heading', 'text'].includes(block.type) && (
-        <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Size</Label>
-          <Select
-            value={block.props.size || 'md'}
-            onValueChange={(value) => onUpdate({ props: { ...block.props, size: value as any } })}
-          >
-            <SelectTrigger className="bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]">
-              <SelectItem value="sm" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Small</SelectItem>
-              <SelectItem value="md" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Medium</SelectItem>
-              <SelectItem value="lg" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Large</SelectItem>
-              <SelectItem value="xl" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Extra Large</SelectItem>
-              <SelectItem value="2xl" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">2X Large</SelectItem>
-              <SelectItem value="3xl" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">3X Large</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {/* Alignment */}
-      {['heading', 'text', 'button'].includes(block.type) && (
-        <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Alignment</Label>
-          <div className="flex gap-2">
-            {(['left', 'center', 'right'] as const).map((align) => (
-              <Button
-                key={align}
-                variant="outline"
-                size="sm"
-                onClick={() => onUpdate({ props: { ...block.props, align } })}
-                className={cn(
-                  'flex-1 capitalize border-[hsl(var(--builder-v3-border))]',
-                  block.props.align === align 
-                    ? 'bg-[hsl(var(--builder-v3-accent)/0.15)] text-[hsl(var(--builder-v3-accent))] border-[hsl(var(--builder-v3-accent)/0.3)]'
-                    : 'bg-[hsl(var(--builder-v3-surface-hover))] text-[hsl(var(--builder-v3-text-muted))] hover:text-[hsl(var(--builder-v3-text))] hover:bg-[hsl(var(--builder-v3-surface-active))]'
-                )}
-              >
-                {align}
-              </Button>
-            ))}
+        <CollapsibleSection 
+          title="Content" 
+          icon={<Type size={14} />}
+          defaultOpen
+        >
+          <div className="builder-v3-field-group">
+            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Text</Label>
+            {block.type === 'text' ? (
+              <Textarea
+                value={block.content}
+                onChange={(e) => onUpdate({ content: e.target.value })}
+                rows={3}
+                className="builder-v3-textarea"
+              />
+            ) : (
+              <Input
+                value={block.content}
+                onChange={(e) => onUpdate({ content: e.target.value })}
+                className="builder-v3-input builder-v3-control-md"
+              />
+            )}
           </div>
-        </div>
+        </CollapsibleSection>
       )}
 
-      {/* Button Variant */}
+      {/* Typography Section */}
+      {['heading', 'text'].includes(block.type) && (
+        <CollapsibleSection 
+          title="Typography" 
+          icon={<Type size={14} />}
+        >
+          <div className="builder-v3-field-group">
+            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Size</Label>
+            <Select
+              value={block.props.size || 'md'}
+              onValueChange={(value) => onUpdate({ props: { ...block.props, size: value as any } })}
+            >
+              <SelectTrigger className="builder-v3-control-md bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]">
+                <SelectItem value="sm" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Small</SelectItem>
+                <SelectItem value="md" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Medium</SelectItem>
+                <SelectItem value="lg" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Large</SelectItem>
+                <SelectItem value="xl" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Extra Large</SelectItem>
+                <SelectItem value="2xl" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">2X Large</SelectItem>
+                <SelectItem value="3xl" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">3X Large</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="builder-v3-field-group">
+            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Alignment</Label>
+            <div className="builder-v3-toggle-pill w-full">
+              {([
+                { value: 'left', icon: AlignLeft },
+                { value: 'center', icon: AlignCenter },
+                { value: 'right', icon: AlignRight },
+              ] as const).map(({ value, icon: Icon }) => (
+                <button
+                  key={value}
+                  onClick={() => onUpdate({ props: { ...block.props, align: value } })}
+                  className={cn(
+                    'builder-v3-toggle-option flex-1 flex items-center justify-center',
+                    block.props.align === value && 'builder-v3-toggle-option--active'
+                  )}
+                >
+                  <Icon size={14} />
+                </button>
+              ))}
+            </div>
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {/* Button Section */}
       {block.type === 'button' && (
-        <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Style</Label>
-          <Select
-            value={block.props.variant || 'primary'}
-            onValueChange={(value) => onUpdate({ props: { ...block.props, variant: value as any } })}
-          >
-            <SelectTrigger className="bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]">
-              <SelectItem value="primary" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Primary</SelectItem>
-              <SelectItem value="secondary" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Secondary</SelectItem>
-              <SelectItem value="outline" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Outline</SelectItem>
-              <SelectItem value="ghost" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Ghost</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <CollapsibleSection 
+          title="Button Style" 
+          icon={<MousePointer size={14} />}
+        >
+          <div className="builder-v3-field-group">
+            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Variant</Label>
+            <Select
+              value={block.props.variant || 'primary'}
+              onValueChange={(value) => onUpdate({ props: { ...block.props, variant: value as any } })}
+            >
+              <SelectTrigger className="builder-v3-control-md bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]">
+                <SelectItem value="primary" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Primary</SelectItem>
+                <SelectItem value="secondary" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Secondary</SelectItem>
+                <SelectItem value="outline" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Outline</SelectItem>
+                <SelectItem value="ghost" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Ghost</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="builder-v3-field-group">
+            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Alignment</Label>
+            <div className="builder-v3-toggle-pill w-full">
+              {([
+                { value: 'left', icon: AlignLeft },
+                { value: 'center', icon: AlignCenter },
+                { value: 'right', icon: AlignRight },
+              ] as const).map(({ value, icon: Icon }) => (
+                <button
+                  key={value}
+                  onClick={() => onUpdate({ props: { ...block.props, align: value } })}
+                  className={cn(
+                    'builder-v3-toggle-option flex-1 flex items-center justify-center',
+                    block.props.align === value && 'builder-v3-toggle-option--active'
+                  )}
+                >
+                  <Icon size={14} />
+                </button>
+              ))}
+            </div>
+          </div>
+        </CollapsibleSection>
       )}
 
-      {/* Input Fields */}
+      {/* Input Fields Section */}
       {block.type === 'input' && (
-        <>
-          <div className="space-y-1.5">
+        <CollapsibleSection 
+          title="Field Settings" 
+          icon={<TextCursor size={14} />}
+          defaultOpen
+        >
+          <div className="builder-v3-field-group">
             <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Field Type</Label>
             <Select
               value={block.props.inputType || 'text'}
               onValueChange={(value) => onUpdate({ props: { ...block.props, inputType: value as any } })}
             >
-              <SelectTrigger className="bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]">
+              <SelectTrigger className="builder-v3-control-md bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]">
@@ -389,64 +430,67 @@ function BlockStyleEditor({ block, onUpdate, onDelete, onDuplicate }: BlockStyle
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
+
+          <div className="builder-v3-field-group">
             <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Placeholder</Label>
             <Input
               value={block.props.placeholder || ''}
               onChange={(e) => onUpdate({ props: { ...block.props, placeholder: e.target.value } })}
               placeholder="Enter placeholder..."
-              className="builder-v3-input"
+              className="builder-v3-input builder-v3-control-md"
             />
           </div>
-          <div className="flex items-center justify-between">
+
+          <div className="builder-v3-field-row">
             <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Required</Label>
             <Switch
               checked={block.props.required || false}
               onCheckedChange={(checked) => onUpdate({ props: { ...block.props, required: checked } })}
             />
           </div>
-        </>
+        </CollapsibleSection>
       )}
 
-      {/* Image */}
-      {block.type === 'image' && (
-        <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Image URL</Label>
-          <Input
-            value={block.props.src || ''}
-            onChange={(e) => onUpdate({ props: { ...block.props, src: e.target.value } })}
-            placeholder="https://..."
-            className="builder-v3-input"
-          />
-        </div>
+      {/* Media Section */}
+      {['image', 'video'].includes(block.type) && (
+        <CollapsibleSection 
+          title="Media" 
+          icon={block.type === 'image' ? <Image size={14} /> : <Video size={14} />}
+          defaultOpen
+        >
+          <div className="builder-v3-field-group">
+            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">
+              {block.type === 'image' ? 'Image URL' : 'Video URL'}
+            </Label>
+            <Input
+              value={block.props.src || ''}
+              onChange={(e) => onUpdate({ props: { ...block.props, src: e.target.value } })}
+              placeholder={block.type === 'image' ? 'https://...' : 'https://youtube.com/...'}
+              className="builder-v3-input builder-v3-control-md"
+            />
+          </div>
+        </CollapsibleSection>
       )}
 
-      {/* Video */}
-      {block.type === 'video' && (
-        <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Video URL</Label>
-          <Input
-            value={block.props.src || ''}
-            onChange={(e) => onUpdate({ props: { ...block.props, src: e.target.value } })}
-            placeholder="https://youtube.com/..."
-            className="builder-v3-input"
-          />
-        </div>
-      )}
-
-      {/* Spacer */}
+      {/* Layout Section (spacer) */}
       {block.type === 'spacer' && (
-        <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Height (px)</Label>
-          <Input
-            type="number"
-            value={block.props.height || 32}
-            onChange={(e) => onUpdate({ props: { ...block.props, height: parseInt(e.target.value) } })}
-            min={8}
-            max={200}
-            className="builder-v3-input"
-          />
-        </div>
+        <CollapsibleSection 
+          title="Layout" 
+          icon={<Space size={14} />}
+          defaultOpen
+        >
+          <div className="builder-v3-field-group">
+            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Height (px)</Label>
+            <Input
+              type="number"
+              value={block.props.height || 32}
+              onChange={(e) => onUpdate({ props: { ...block.props, height: parseInt(e.target.value) } })}
+              min={8}
+              max={200}
+              className="builder-v3-input builder-v3-control-md"
+            />
+          </div>
+        </CollapsibleSection>
       )}
     </div>
   );
@@ -463,28 +507,30 @@ interface ScreenStyleEditorProps {
 
 function ScreenStyleEditor({ screen, onUpdate }: ScreenStyleEditorProps) {
   return (
-    <div className="space-y-6">
-      {/* Screen Name */}
-      <div className="space-y-1.5">
-        <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Screen Name</Label>
-        <Input
-          value={screen.name}
-          onChange={(e) => onUpdate({ name: e.target.value })}
-          className="builder-v3-input"
-        />
-      </div>
+    <div className="space-y-0">
+      {/* Screen Info Section */}
+      <CollapsibleSection 
+        title="Screen Info" 
+        icon={<Type size={14} />}
+        defaultOpen
+      >
+        <div className="builder-v3-field-group">
+          <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Screen Name</Label>
+          <Input
+            value={screen.name}
+            onChange={(e) => onUpdate({ name: e.target.value })}
+            className="builder-v3-input builder-v3-control-md"
+          />
+        </div>
+      </CollapsibleSection>
 
-      {/* Separator */}
-      <div className="h-px bg-[hsl(var(--builder-v3-border))]" />
-
-      {/* Background */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium flex items-center gap-2 text-[hsl(var(--builder-v3-text))]">
-          <Palette className="h-4 w-4 text-[hsl(var(--builder-v3-text-muted))]" />
-          Background
-        </h3>
-
-        <div className="space-y-1.5">
+      {/* Background Section */}
+      <CollapsibleSection 
+        title="Background" 
+        icon={<Palette size={14} />}
+        defaultOpen
+      >
+        <div className="builder-v3-field-group">
           <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Type</Label>
           <Select
             value={screen.background?.type || 'solid'}
@@ -495,7 +541,7 @@ function ScreenStyleEditor({ screen, onUpdate }: ScreenStyleEditorProps) {
               } 
             })}
           >
-            <SelectTrigger className="bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]">
+            <SelectTrigger className="builder-v3-control-md bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]">
@@ -507,23 +553,28 @@ function ScreenStyleEditor({ screen, onUpdate }: ScreenStyleEditorProps) {
         </div>
 
         {screen.background?.type === 'solid' && (
-          <div className="space-y-1.5">
+          <div className="builder-v3-field-group">
             <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Color</Label>
             <div className="flex gap-2">
+              <div 
+                className="builder-v3-color-swatch"
+                style={{ background: screen.background?.color || '#ffffff' }}
+              >
+                <input
+                  type="color"
+                  value={screen.background?.color || '#ffffff'}
+                  onChange={(e) => onUpdate({ 
+                    background: { ...screen.background, type: 'solid', color: e.target.value } 
+                  })}
+                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                />
+              </div>
               <Input
-                type="color"
                 value={screen.background?.color || '#ffffff'}
                 onChange={(e) => onUpdate({ 
                   background: { ...screen.background, type: 'solid', color: e.target.value } 
                 })}
-                className="h-10 w-14 p-1 cursor-pointer bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))]"
-              />
-              <Input
-                value={screen.background?.color || '#ffffff'}
-                onChange={(e) => onUpdate({ 
-                  background: { ...screen.background, type: 'solid', color: e.target.value } 
-                })}
-                className="builder-v3-input flex-1"
+                className="builder-v3-input builder-v3-control-md flex-1"
                 placeholder="#ffffff"
               />
             </div>
@@ -531,7 +582,7 @@ function ScreenStyleEditor({ screen, onUpdate }: ScreenStyleEditorProps) {
         )}
 
         {screen.background?.type === 'image' && (
-          <div className="space-y-1.5">
+          <div className="builder-v3-field-group">
             <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Image URL</Label>
             <Input
               value={screen.background?.image || ''}
@@ -539,11 +590,11 @@ function ScreenStyleEditor({ screen, onUpdate }: ScreenStyleEditorProps) {
                 background: { ...screen.background, type: 'image', image: e.target.value } 
               })}
               placeholder="https://..."
-              className="builder-v3-input"
+              className="builder-v3-input builder-v3-control-md"
             />
           </div>
         )}
-      </div>
+      </CollapsibleSection>
     </div>
   );
 }
