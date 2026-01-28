@@ -278,7 +278,7 @@ function createVideoQuestionBlock(): Block {
 }
 
 /**
- * Form Block Block - Multi-field form (name, email, phone)
+ * Form Block - Perspective-style opt-in form with icons
  */
 function createFormBlockBlock(): Block {
   return {
@@ -288,18 +288,35 @@ function createFormBlockBlock(): Block {
     elements: [
       {
         id: generateId(),
+        type: 'heading' as ElementType,
+        content: "What's the best way to reach you?",
+        props: {
+          level: 2,
+          fontSize: '2xl',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          textColor: '#111827',
+          lineHeight: '1.2',
+        }
+      },
+      {
+        id: generateId(),
         type: 'input' as ElementType,
         content: '',
         props: {
-          placeholder: 'Your full name',
+          placeholder: 'Your name',
           inputType: 'text',
           required: true,
-          borderRadius: '12px',
-          padding: '16px 20px',
+          // Perspective-style rounded input with icon
+          borderRadius: '16px',
+          padding: '20px 24px 20px 56px',
           fontSize: '16px',
           border: '1px solid #E5E7EB',
+          backgroundColor: '#F9FAFB',
           fullWidth: true,
-          label: 'Name',
+          icon: 'hand',
+          iconPosition: 'left',
+          iconColor: '#9CA3AF',
         }
       },
       {
@@ -307,15 +324,18 @@ function createFormBlockBlock(): Block {
         type: 'input' as ElementType,
         content: '',
         props: {
-          placeholder: 'your@email.com',
+          placeholder: 'Your email address',
           inputType: 'email',
           required: true,
-          borderRadius: '12px',
-          padding: '16px 20px',
+          borderRadius: '16px',
+          padding: '20px 24px 20px 56px',
           fontSize: '16px',
           border: '1px solid #E5E7EB',
+          backgroundColor: '#F9FAFB',
           fullWidth: true,
-          label: 'Email',
+          icon: 'mail',
+          iconPosition: 'left',
+          iconColor: '#9CA3AF',
         }
       },
       {
@@ -323,36 +343,56 @@ function createFormBlockBlock(): Block {
         type: 'input' as ElementType,
         content: '',
         props: {
-          placeholder: '+1 (555) 000-0000',
+          placeholder: 'Your phone number',
           inputType: 'tel',
           required: false,
-          borderRadius: '12px',
-          padding: '16px 20px',
+          borderRadius: '16px',
+          padding: '20px 24px 20px 56px',
           fontSize: '16px',
           border: '1px solid #E5E7EB',
+          backgroundColor: '#F9FAFB',
           fullWidth: true,
-          label: 'Phone',
+          icon: 'phone',
+          iconPosition: 'left',
+          iconColor: '#9CA3AF',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'checkbox' as ElementType,
+        content: 'I have read and accept the privacy policy.',
+        props: {
+          required: true,
+          checkboxSize: 20,
+          checkboxColor: '#2563EB',
+          checkboxBorderRadius: '4px',
+          labelColor: '#374151',
+          labelSize: 'sm',
+          gap: 12,
+          linkText: 'privacy policy.',
+          linkUrl: '/privacy',
         }
       },
       {
         id: generateId(),
         type: 'button' as ElementType,
-        content: 'Submit',
+        content: 'Submit and proceed',
         props: {
           variant: 'primary',
           size: 'lg',
           fullWidth: true,
-          borderRadius: '12px',
+          borderRadius: '16px',
           backgroundColor: '#2563EB',
           textColor: '#FFFFFF',
           fontWeight: '600',
+          paddingVertical: 20,
+          shadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
         }
       },
     ],
     props: {
       alignment: 'stretch',
       gap: 16,
-      maxWidth: '480px',
     }
   };
 }
