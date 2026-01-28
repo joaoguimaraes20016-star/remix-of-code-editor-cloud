@@ -1,0 +1,776 @@
+/**
+ * Funnel Builder v3 - Design System
+ * 
+ * Namespaced CSS variables and classes to avoid conflicts with legacy builders.
+ * Organized into logical sections for maintainability.
+ */
+
+/* =============================================================================
+   Section 1: Design Tokens
+   ============================================================================= */
+
+:root {
+  /* Core builder colors (HSL values) */
+  --builder-v3-bg: 220 13% 8%;
+  --builder-v3-surface: 220 13% 10%;
+  --builder-v3-surface-hover: 220 13% 14%;
+  --builder-v3-surface-active: 220 13% 18%;
+  --builder-v3-border: 220 13% 16%;
+  --builder-v3-border-subtle: 220 13% 13%;
+  
+  /* Text hierarchy */
+  --builder-v3-text: 210 20% 96%;
+  --builder-v3-text-secondary: 210 15% 80%;
+  --builder-v3-text-muted: 215 12% 62%;
+  --builder-v3-text-dim: 215 12% 52%;
+  
+  /* Accent colors */
+  --builder-v3-accent: 217 91% 60%;
+  --builder-v3-accent-glow: 217 91% 66%;
+  --builder-v3-success: 142 71% 45%;
+  --builder-v3-warning: 38 92% 50%;
+  --builder-v3-error: 0 84% 60%;
+  
+  /* Selection colors */
+  --builder-v3-selection-section: 210 85% 48%;
+  --builder-v3-selection-block: 217 91% 60%;
+  --builder-v3-selection-element: 214 85% 55%;
+  
+  /* Transitions */
+  --builder-v3-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --builder-v3-transition-fast: 150ms;
+  --builder-v3-transition-slow: 400ms;
+  
+  /* Radius */
+  --builder-v3-radius-sm: 6px;
+  --builder-v3-radius-md: 10px;
+  --builder-v3-radius-lg: 16px;
+  --builder-v3-radius-xl: 24px;
+  
+  /* Touch targets */
+  --builder-v3-touch-target: 44px;
+  
+  /* Canvas */
+  --builder-v3-canvas-bg: 0 0% 3%;
+  --builder-v3-canvas-grid: 0 0% 8%;
+}
+
+/* =============================================================================
+   Section 2: Device Frame Styles
+   ============================================================================= */
+
+/* Base device frame */
+.builder-v3-device-frame {
+  position: relative;
+  border-radius: var(--builder-v3-radius-xl);
+  overflow: visible;
+  box-shadow: 
+    0 0 0 1px hsl(var(--builder-v3-border) / 0.3),
+    0 25px 50px -12px rgba(0, 0, 0, 0.4),
+    0 0 80px -20px hsl(var(--builder-v3-accent) / 0.15);
+}
+
+.builder-v3-device-frame--mobile {
+  width: 375px;
+  border-radius: 52px;
+}
+
+.builder-v3-device-frame--tablet {
+  width: 768px;
+  border-radius: 28px;
+}
+
+.builder-v3-device-frame--desktop {
+  width: 1200px;
+  border-radius: 12px;
+}
+
+/* Phone notch / dynamic island */
+.builder-v3-phone-notch {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 126px;
+  height: 37px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Home indicator */
+.builder-v3-home-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 134px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 100px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Browser bar for desktop */
+.builder-v3-browser-bar {
+  height: 36px;
+  background: hsl(var(--builder-v3-surface));
+  border-bottom: 1px solid hsl(var(--builder-v3-border));
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+}
+
+.builder-v3-traffic-lights {
+  display: flex;
+  gap: 6px;
+}
+
+.builder-v3-traffic-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.builder-v3-traffic-light--red { background: #ff5f57; }
+.builder-v3-traffic-light--yellow { background: #febc2e; }
+.builder-v3-traffic-light--green { background: #28c840; }
+
+.builder-v3-url-bar {
+  flex: 1;
+  height: 24px;
+  background: hsl(var(--builder-v3-surface-hover));
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 11px;
+  color: hsl(var(--builder-v3-text-muted));
+}
+
+/* =============================================================================
+   Section 3: Selection States
+   ============================================================================= */
+
+/* Block selection system */
+.builder-v3-selectable {
+  position: relative;
+  cursor: pointer;
+  transition: all var(--builder-v3-transition-fast);
+}
+
+.builder-v3-selectable:hover {
+  outline: 1px solid hsl(var(--builder-v3-selection-element) / 0.4);
+  outline-offset: 2px;
+}
+
+.builder-v3-selected {
+  outline: 2px solid hsl(var(--builder-v3-selection-element));
+  outline-offset: 3px;
+}
+
+.builder-v3-selected--block {
+  outline: 2px solid hsl(var(--builder-v3-selection-block));
+  outline-offset: 2px;
+}
+
+.builder-v3-selected--section {
+  outline: 2px dashed hsl(var(--builder-v3-selection-section));
+  outline-offset: 4px;
+}
+
+/* Hide selection in preview mode */
+[data-preview="true"] .builder-v3-selectable:hover,
+[data-preview="true"] .builder-v3-selected,
+[data-preview="true"] .builder-v3-selected--block,
+[data-preview="true"] .builder-v3-selected--section {
+  outline: none !important;
+}
+
+/* Drag states */
+.builder-v3-dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.builder-v3-drop-target {
+  outline: 2px dashed hsl(var(--builder-v3-accent));
+  outline-offset: 2px;
+  background: hsl(var(--builder-v3-accent) / 0.05);
+}
+
+/* =============================================================================
+   Section 4: Animation Keyframes
+   ============================================================================= */
+
+@keyframes builder-v3-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes builder-v3-slide-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes builder-v3-slide-down {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes builder-v3-slide-left {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes builder-v3-slide-right {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes builder-v3-scale-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes builder-v3-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes builder-v3-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes builder-v3-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes builder-v3-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+
+@keyframes builder-v3-blur-in {
+  from { filter: blur(10px); opacity: 0; }
+  to { filter: blur(0); opacity: 1; }
+}
+
+@keyframes builder-v3-rotate-in {
+  from { transform: rotate(-10deg) scale(0.9); opacity: 0; }
+  to { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+
+@keyframes builder-v3-glow-pulse {
+  0%, 100% { box-shadow: 0 0 5px hsl(var(--builder-v3-accent) / 0.5); }
+  50% { box-shadow: 0 0 20px hsl(var(--builder-v3-accent) / 0.8); }
+}
+
+@keyframes builder-v3-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes builder-v3-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Animation utility classes */
+.builder-v3-animate-fade-in { animation: builder-v3-fade-in 0.5s ease-out forwards; }
+.builder-v3-animate-slide-up { animation: builder-v3-slide-up 0.5s ease-out forwards; }
+.builder-v3-animate-slide-down { animation: builder-v3-slide-down 0.5s ease-out forwards; }
+.builder-v3-animate-slide-left { animation: builder-v3-slide-left 0.5s ease-out forwards; }
+.builder-v3-animate-slide-right { animation: builder-v3-slide-right 0.5s ease-out forwards; }
+.builder-v3-animate-scale-in { animation: builder-v3-scale-in 0.4s ease-out forwards; }
+.builder-v3-animate-bounce { animation: builder-v3-bounce 0.6s ease-in-out; }
+.builder-v3-animate-pulse { animation: builder-v3-pulse 2s ease-in-out infinite; }
+.builder-v3-animate-shake { animation: builder-v3-shake 0.5s ease-in-out; }
+.builder-v3-animate-wiggle { animation: builder-v3-wiggle 0.5s ease-in-out infinite; }
+.builder-v3-animate-blur-in { animation: builder-v3-blur-in 0.6s ease-out forwards; }
+.builder-v3-animate-rotate-in { animation: builder-v3-rotate-in 0.6s ease-out forwards; }
+.builder-v3-animate-glow { animation: builder-v3-glow-pulse 2s ease-in-out infinite; }
+.builder-v3-animate-float { animation: builder-v3-float 3s ease-in-out infinite; }
+.builder-v3-animate-spin { animation: builder-v3-spin 1s linear infinite; }
+
+/* =============================================================================
+   Section 5: Inspector Styles
+   ============================================================================= */
+
+/* Inspector panel sections */
+.builder-v3-inspector-section {
+  border-bottom: 1px solid hsl(var(--builder-v3-border-subtle));
+}
+
+.builder-v3-inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  background: transparent;
+  transition: background var(--builder-v3-transition-fast);
+}
+
+.builder-v3-inspector-header:hover {
+  background: hsl(var(--builder-v3-surface-hover));
+}
+
+.builder-v3-inspector-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--builder-v3-text-muted));
+}
+
+.builder-v3-inspector-header-chevron {
+  transition: transform var(--builder-v3-transition-fast);
+  color: hsl(var(--builder-v3-text-dim));
+}
+
+.builder-v3-inspector-header[data-open="true"] .builder-v3-inspector-header-chevron {
+  transform: rotate(180deg);
+}
+
+.builder-v3-inspector-content {
+  padding: 12px 16px;
+  padding-top: 0;
+}
+
+/* Form controls */
+.builder-v3-input {
+  width: 100%;
+  height: 36px;
+  border-radius: var(--builder-v3-radius-md);
+  background: hsl(var(--builder-v3-surface-hover));
+  border: 1px solid hsl(var(--builder-v3-border));
+  color: hsl(var(--builder-v3-text));
+  font-size: 14px;
+  padding: 0 12px;
+  transition: all var(--builder-v3-transition-fast);
+}
+
+.builder-v3-input:focus {
+  outline: none;
+  border-color: hsl(var(--builder-v3-accent));
+  box-shadow: 0 0 0 2px hsl(var(--builder-v3-accent) / 0.2);
+}
+
+.builder-v3-input::placeholder {
+  color: hsl(var(--builder-v3-text-dim));
+}
+
+.builder-v3-input--sm {
+  height: 32px;
+  font-size: 13px;
+}
+
+/* Textarea */
+.builder-v3-textarea {
+  width: 100%;
+  min-height: 80px;
+  border-radius: var(--builder-v3-radius-md);
+  background: hsl(var(--builder-v3-surface-hover));
+  border: 1px solid hsl(var(--builder-v3-border));
+  color: hsl(var(--builder-v3-text));
+  font-size: 14px;
+  padding: 10px 12px;
+  resize: vertical;
+  transition: all var(--builder-v3-transition-fast);
+}
+
+.builder-v3-textarea:focus {
+  outline: none;
+  border-color: hsl(var(--builder-v3-accent));
+  box-shadow: 0 0 0 2px hsl(var(--builder-v3-accent) / 0.2);
+}
+
+/* Toggle pill controls */
+.builder-v3-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: var(--builder-v3-radius-md);
+  background: hsl(var(--builder-v3-surface-hover));
+  border: 1px solid hsl(var(--builder-v3-border-subtle));
+}
+
+.builder-v3-toggle-option {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all var(--builder-v3-transition-fast);
+  color: hsl(var(--builder-v3-text-dim));
+  cursor: pointer;
+}
+
+.builder-v3-toggle-option:hover {
+  color: hsl(var(--builder-v3-text-muted));
+}
+
+.builder-v3-toggle-option--active {
+  background: hsl(var(--builder-v3-accent));
+  color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.builder-v3-toggle-option--compact {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+/* Field labels */
+.builder-v3-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: hsl(var(--builder-v3-text-muted));
+  margin-bottom: 6px;
+}
+
+.builder-v3-hint {
+  font-size: 10px;
+  color: hsl(var(--builder-v3-text-dim));
+  margin-top: 4px;
+}
+
+/* =============================================================================
+   Section 6: Pattern Backgrounds
+   ============================================================================= */
+
+.builder-v3-pattern-grid {
+  background-image: 
+    linear-gradient(var(--pattern-color, rgba(139, 92, 246, 0.05)) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pattern-color, rgba(139, 92, 246, 0.05)) 1px, transparent 1px);
+  background-size: var(--pattern-size, 40px) var(--pattern-size, 40px);
+}
+
+.builder-v3-pattern-dots {
+  background-image: radial-gradient(var(--pattern-color, rgba(139, 92, 246, 0.1)) 1px, transparent 1px);
+  background-size: var(--pattern-size, 20px) var(--pattern-size, 20px);
+}
+
+.builder-v3-pattern-lines {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--pattern-color, rgba(139, 92, 246, 0.05)),
+    var(--pattern-color, rgba(139, 92, 246, 0.05)) 1px,
+    transparent 1px,
+    transparent var(--pattern-size, 40px)
+  );
+}
+
+.builder-v3-pattern-diagonal {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--pattern-color, rgba(139, 92, 246, 0.03)),
+    var(--pattern-color, rgba(139, 92, 246, 0.03)) 1px,
+    transparent 1px,
+    transparent var(--pattern-size, 20px)
+  );
+}
+
+/* =============================================================================
+   Section 7: Shadow Presets
+   ============================================================================= */
+
+/* Text shadows */
+.builder-v3-text-shadow-subtle { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); }
+.builder-v3-text-shadow-medium { text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25); }
+.builder-v3-text-shadow-strong { text-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); }
+.builder-v3-text-shadow-glow {
+  text-shadow: 
+    0 0 10px rgba(255, 255, 255, 0.5),
+    0 0 20px rgba(255, 255, 255, 0.3),
+    0 0 30px rgba(255, 255, 255, 0.2);
+}
+.builder-v3-text-shadow-neon {
+  text-shadow: 
+    0 0 5px currentColor,
+    0 0 10px currentColor,
+    0 0 20px currentColor;
+}
+
+/* Block shadows */
+.builder-v3-shadow-none { box-shadow: none; }
+.builder-v3-shadow-sm { box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.15); }
+.builder-v3-shadow-md { box-shadow: 0 4px 12px -3px rgba(0, 0, 0, 0.2); }
+.builder-v3-shadow-lg { box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.3); }
+.builder-v3-shadow-xl { box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.35); }
+.builder-v3-shadow-glow {
+  box-shadow: 0 0 30px -5px var(--glow-color, rgba(139, 92, 246, 0.4));
+}
+.builder-v3-shadow-inner {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* =============================================================================
+   Section 8: Hover Effects
+   ============================================================================= */
+
+.builder-v3-hover-lift {
+  transition: transform var(--builder-v3-transition), box-shadow var(--builder-v3-transition);
+}
+
+.builder-v3-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.builder-v3-hover-glow {
+  transition: box-shadow var(--builder-v3-transition);
+}
+
+.builder-v3-hover-glow:hover {
+  box-shadow: 0 0 20px var(--glow-color, rgba(139, 92, 246, 0.4));
+}
+
+.builder-v3-hover-scale {
+  transition: transform var(--builder-v3-transition);
+}
+
+.builder-v3-hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.builder-v3-hover-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.builder-v3-hover-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.builder-v3-hover-shine:hover::after {
+  left: 100%;
+}
+
+/* =============================================================================
+   Section 9: Utility Classes
+   ============================================================================= */
+
+/* Scrollbar */
+.builder-v3-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--builder-v3-border)) transparent;
+}
+
+.builder-v3-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.builder-v3-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.builder-v3-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--builder-v3-border));
+  border-radius: 100px;
+}
+
+.builder-v3-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--builder-v3-text-dim));
+}
+
+/* Glass effect */
+.builder-v3-glass {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: hsl(var(--builder-v3-surface) / 0.85);
+}
+
+.builder-v3-glass-heavy {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  background: hsl(var(--builder-v3-surface) / 0.95);
+}
+
+/* Gradient text */
+.builder-v3-text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Truncate */
+.builder-v3-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Focus ring */
+.builder-v3-focus-ring:focus-visible {
+  outline: 2px solid hsl(var(--builder-v3-accent));
+  outline-offset: 2px;
+}
+
+/* Visually hidden (for a11y) */
+.builder-v3-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* =============================================================================
+   Section 10: Mobile Touch Styles
+   ============================================================================= */
+
+.builder-v3-touch-target {
+  min-width: var(--builder-v3-touch-target);
+  min-height: var(--builder-v3-touch-target);
+}
+
+.builder-v3-mobile-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 12px;
+  background: hsl(var(--builder-v3-surface));
+  border-bottom: 1px solid hsl(var(--builder-v3-border));
+  touch-action: manipulation;
+}
+
+.builder-v3-mobile-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--builder-v3-touch-target);
+  min-height: var(--builder-v3-touch-target);
+  padding: 10px;
+  border-radius: var(--builder-v3-radius-md);
+  background: hsl(var(--builder-v3-surface-hover));
+  color: hsl(var(--builder-v3-text-muted));
+  transition: all var(--builder-v3-transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.builder-v3-mobile-toolbar-btn:active {
+  transform: scale(0.95);
+  background: hsl(var(--builder-v3-surface-active));
+}
+
+/* Bottom sheet */
+.builder-v3-bottom-sheet {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 50;
+  background: hsl(var(--builder-v3-surface));
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  box-shadow: 0 -10px 40px hsl(0 0% 0% / 0.25);
+  touch-action: none;
+}
+
+.builder-v3-bottom-sheet-handle {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  cursor: grab;
+}
+
+.builder-v3-bottom-sheet-handle-bar {
+  width: 40px;
+  height: 5px;
+  background: hsl(var(--builder-v3-border));
+  border-radius: 3px;
+}
+
+/* Block picker grid */
+.builder-v3-block-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 20px;
+}
+
+.builder-v3-block-picker-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  aspect-ratio: 1;
+  min-height: 90px;
+  padding: 16px;
+  background: hsl(var(--builder-v3-surface-hover));
+  border-radius: var(--builder-v3-radius-lg);
+  border: 2px solid transparent;
+  transition: all var(--builder-v3-transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.builder-v3-block-picker-tile:active {
+  transform: scale(0.95);
+  background: hsl(var(--builder-v3-surface-active));
+  border-color: hsl(var(--builder-v3-accent));
+}
+
+/* =============================================================================
+   Section 11: Color Preset Grid
+   ============================================================================= */
+
+.builder-v3-color-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+
+.builder-v3-color-swatch {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all var(--builder-v3-transition-fast);
+  border: 2px solid transparent;
+}
+
+.builder-v3-color-swatch:hover {
+  transform: scale(1.1);
+  z-index: 1;
+}
+
+.builder-v3-color-swatch--active {
+  border-color: white;
+  box-shadow: 0 0 0 2px hsl(var(--builder-v3-accent));
+}
+
+.builder-v3-gradient-preview {
+  height: 24px;
+  border-radius: var(--builder-v3-radius-sm);
+  border: 1px solid hsl(var(--builder-v3-border));
+}
