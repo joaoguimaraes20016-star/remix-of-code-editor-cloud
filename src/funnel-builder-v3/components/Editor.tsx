@@ -5,9 +5,10 @@
  * Three-panel layout: LeftPanel | Canvas | RightPanel
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Funnel, Screen, Block, BlockType, ScreenType } from '../types/funnel';
 import { useFunnelState } from '../hooks/useFunnelState';
+import { useHistory } from '../hooks/useHistory';
 import { LeftPanel } from './LeftPanel';
 import { Canvas } from './Canvas';
 import { RightPanel } from './RightPanel';
@@ -24,9 +25,21 @@ interface EditorProps {
 }
 
 export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps) {
+  // History management
+  const {
+    funnel: historyFunnel,
+    pushState,
+    undo: historyUndo,
+    redo: historyRedo,
+    canUndo,
+    canRedo,
+    reset: resetHistory,
+  } = useHistory(initialFunnel);
+
   const {
     funnel,
     isDirty,
+    setFunnel,
     updateSettings,
     addScreen,
     updateScreen,
@@ -40,6 +53,24 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
     duplicateBlock,
     forceSave,
   } = useFunnelState(initialFunnel, { onSave });
+
+  // Sync history state to funnel state
+  const lastHistoryFunnelRef = useRef(historyFunnel);
+  useEffect(() => {
+    if (JSON.stringify(historyFunnel) !== JSON.stringify(lastHistoryFunnelRef.current)) {
+      lastHistoryFunnelRef.current = historyFunnel;
+      setFunnel(historyFunnel);
+    }
+  }, [historyFunnel, setFunnel]);
+
+  // Push funnel changes to history
+  const lastFunnelRef = useRef(funnel);
+  useEffect(() => {
+    if (JSON.stringify(funnel) !== JSON.stringify(lastFunnelRef.current)) {
+      lastFunnelRef.current = funnel;
+      pushState(funnel);
+    }
+  }, [funnel, pushState]);
 
   // Selection state
   const [selectedScreenId, setSelectedScreenId] = useState<string>(
@@ -91,36 +122,79 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
     }
   }, [isDirty]);
 
-  // Keyboard shortcuts for undo/redo (placeholder - needs history hook)
+  // Undo/Redo handlers
+  const handleUndo = useCallback(() => {
+    historyUndo();
+  }, [historyUndo]);
+
+  const handleRedo = useCallback(() => {
+    historyRedo();
+  }, [historyRedo]);
+
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't capture when typing in inputs
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
       const isModifier = e.metaKey || e.ctrlKey;
-      if (!isModifier) return;
       
       // Undo: Cmd+Z
-      if (e.key === 'z' && !e.shiftKey) {
+      if (isModifier && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
-        // TODO: Implement undo when history hook is added
-        console.log('Undo triggered');
+        handleUndo();
+        return;
       }
       
       // Redo: Cmd+Shift+Z or Cmd+Y
-      if ((e.key === 'z' && e.shiftKey) || e.key === 'y') {
+      if (isModifier && ((e.key === 'z' && e.shiftKey) || e.key === 'y')) {
         e.preventDefault();
-        // TODO: Implement redo when history hook is added
-        console.log('Redo triggered');
+        handleRedo();
+        return;
       }
       
       // Save: Cmd+S
-      if (e.key === 's') {
+      if (isModifier && e.key === 's') {
         e.preventDefault();
         forceSave();
+        return;
+      }
+
+      // Duplicate: Cmd+D
+      if (isModifier && e.key === 'd') {
+        e.preventDefault();
+        if (selectedBlockId && selectedScreenId) {
+          duplicateBlock(selectedScreenId, selectedBlockId);
+        }
+        return;
+      }
+
+      // Delete: Backspace or Delete
+      if ((e.key === 'Backspace' || e.key === 'Delete') && selectedBlockId && selectedScreenId) {
+        e.preventDefault();
+        deleteBlock(selectedScreenId, selectedBlockId);
+        setSelectedBlockId(null);
+        return;
+      }
+
+      // Escape: Deselect
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setSelectedBlockId(null);
+        return;
       }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [forceSave]);
+  }, [forceSave, handleUndo, handleRedo, selectedBlockId, selectedScreenId, duplicateBlock, deleteBlock]);
 
   // Screen handlers
   const handleSelectScreen = useCallback((screenId: string) => {
@@ -222,10 +296,10 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
           onDeviceModeChange={setDeviceMode}
           editorTheme={editorTheme}
           onThemeToggle={handleThemeToggle}
-          canUndo={false} // TODO: Wire up when history hook is added
-          canRedo={false}
-          onUndo={() => console.log('Undo')}
-          onRedo={() => console.log('Redo')}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
           saveStatus={saveStatus}
         />
 
@@ -238,7 +312,9 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
             <LeftPanel
               screens={funnel.screens}
               selectedScreenId={selectedScreenId}
+              selectedBlockId={selectedBlockId}
               onSelectScreen={handleSelectScreen}
+              onSelectBlock={handleSelectBlock}
               onAddScreen={handleAddScreen}
               onDeleteScreen={handleDeleteScreen}
               onDuplicateScreen={handleDuplicateScreen}

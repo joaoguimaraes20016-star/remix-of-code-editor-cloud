@@ -38,13 +38,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Screen, ScreenType, SCREEN_TYPE_CONFIG } from '../types/funnel';
+import { Screen, ScreenType, Block, SCREEN_TYPE_CONFIG, BLOCK_TYPE_CONFIG, BlockType } from '../types/funnel';
 import { cn } from '@/lib/utils';
 
 interface LeftPanelProps {
   screens: Screen[];
   selectedScreenId: string;
+  selectedBlockId?: string | null;
   onSelectScreen: (screenId: string) => void;
+  onSelectBlock?: (blockId: string | null) => void;
   onAddScreen: (type: ScreenType) => void;
   onDeleteScreen: (screenId: string) => void;
   onDuplicateScreen: (screenId: string) => void;
@@ -61,12 +63,27 @@ const SCREEN_ICONS: Record<ScreenType, React.ComponentType<{ className?: string 
   thankyou: CheckCircle,
 };
 
+// Block icons for layer tree
+const LAYER_BLOCK_ICONS: Partial<Record<BlockType, React.ComponentType<{ className?: string }>>> = {
+  heading: FileText,
+  text: FileText,
+  image: FileText,
+  video: FileText,
+  button: FileText,
+  input: FormInput,
+  choice: ListChecks,
+  divider: FileText,
+  spacer: FileText,
+};
+
 type PanelTab = 'pages' | 'layers';
 
 export function LeftPanel({
   screens,
   selectedScreenId,
+  selectedBlockId,
   onSelectScreen,
+  onSelectBlock,
   onAddScreen,
   onDeleteScreen,
   onDuplicateScreen,
@@ -76,6 +93,9 @@ export function LeftPanel({
 }: LeftPanelProps) {
   const [addScreenOpen, setAddScreenOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<PanelTab>('pages');
+  
+  // Get current screen for layer tree
+  const currentScreen = screens.find(s => s.id === selectedScreenId);
 
   if (isCollapsed) {
     return null;
@@ -226,16 +246,58 @@ export function LeftPanel({
             })}
           </div>
         ) : (
-          <div className="p-4">
-            <div className="builder-v3-inspector-empty">
-              <div className="builder-v3-inspector-empty-icon">
-                <Layers className="h-5 w-5" />
+          <div className="builder-v3-layer-tree">
+            {currentScreen && currentScreen.blocks.length > 0 ? (
+              <>
+                <div className="px-3 py-2 border-b border-[hsl(var(--builder-v3-border))]">
+                  <span className="text-[10px] font-medium text-[hsl(var(--builder-v3-text-dim))] uppercase tracking-wider">
+                    {currentScreen.name}
+                  </span>
+                </div>
+                <div className="builder-v3-layer-list">
+                  {currentScreen.blocks.map((block, index) => {
+                    const config = BLOCK_TYPE_CONFIG[block.type];
+                    const isSelected = block.id === selectedBlockId;
+                    const preview = block.content?.substring(0, 20) || config?.label || block.type;
+                    
+                    return (
+                      <button
+                        key={block.id}
+                        onClick={() => onSelectBlock?.(block.id)}
+                        className={cn(
+                          'builder-v3-layer-item group',
+                          isSelected && 'builder-v3-layer-item--active'
+                        )}
+                      >
+                        <span className="builder-v3-layer-index">{index + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-[hsl(var(--builder-v3-text))] truncate">
+                            {config?.label || block.type}
+                          </div>
+                          {block.content && (
+                            <div className="text-[10px] text-[hsl(var(--builder-v3-text-dim))] truncate">
+                              {preview}{block.content.length > 20 ? '...' : ''}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <div className="p-4">
+                <div className="builder-v3-inspector-empty">
+                  <div className="builder-v3-inspector-empty-icon">
+                    <Layers className="h-5 w-5" />
+                  </div>
+                  <h4 className="builder-v3-inspector-empty-title">No Blocks</h4>
+                  <p className="builder-v3-inspector-empty-description">
+                    Add blocks to see them in the layer tree
+                  </p>
+                </div>
               </div>
-              <h4 className="builder-v3-inspector-empty-title">Layer Tree</h4>
-              <p className="builder-v3-inspector-empty-description">
-                View and organize the element hierarchy of your current page
-              </p>
-            </div>
+            )}
           </div>
         )}
       </ScrollArea>

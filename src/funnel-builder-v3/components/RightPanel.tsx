@@ -24,6 +24,11 @@ import {
   AlignRight,
   MousePointerClick,
   Plus,
+  ExternalLink,
+  ArrowRight,
+  ArrowLeft,
+  Send,
+  Link,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,7 +38,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Screen, Block, BlockType, BLOCK_TYPE_CONFIG, SCREEN_TYPE_CONFIG } from '../types/funnel';
+import { Screen, Block, BlockType, ButtonAction, BLOCK_TYPE_CONFIG, SCREEN_TYPE_CONFIG } from '../types/funnel';
 import { cn } from '@/lib/utils';
 import { CollapsibleSection, InspectorBreadcrumb, EmptyState } from './inspector';
 
@@ -368,50 +373,54 @@ function BlockStyleEditor({ block, onUpdate, onDelete, onDuplicate }: BlockStyle
 
       {/* Button Section */}
       {block.type === 'button' && (
-        <CollapsibleSection 
-          title="Button Style" 
-          icon={<MousePointer size={14} />}
-        >
-          <div className="builder-v3-field-group">
-            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Variant</Label>
-            <Select
-              value={block.props.variant || 'primary'}
-              onValueChange={(value) => onUpdate({ props: { ...block.props, variant: value as any } })}
-            >
-              <SelectTrigger className="builder-v3-control-md bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]">
-                <SelectItem value="primary" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Primary</SelectItem>
-                <SelectItem value="secondary" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Secondary</SelectItem>
-                <SelectItem value="outline" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Outline</SelectItem>
-                <SelectItem value="ghost" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Ghost</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="builder-v3-field-group">
-            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Alignment</Label>
-            <div className="builder-v3-toggle-pill w-full">
-              {([
-                { value: 'left', icon: AlignLeft },
-                { value: 'center', icon: AlignCenter },
-                { value: 'right', icon: AlignRight },
-              ] as const).map(({ value, icon: Icon }) => (
-                <button
-                  key={value}
-                  onClick={() => onUpdate({ props: { ...block.props, align: value } })}
-                  className={cn(
-                    'builder-v3-toggle-option flex-1 flex items-center justify-center',
-                    block.props.align === value && 'builder-v3-toggle-option--active'
-                  )}
-                >
-                  <Icon size={14} />
-                </button>
-              ))}
+        <>
+          <CollapsibleSection 
+            title="Button Style" 
+            icon={<MousePointer size={14} />}
+          >
+            <div className="builder-v3-field-group">
+              <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Variant</Label>
+              <Select
+                value={block.props.variant || 'primary'}
+                onValueChange={(value) => onUpdate({ props: { ...block.props, variant: value as any } })}
+              >
+                <SelectTrigger className="builder-v3-control-md bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]">
+                  <SelectItem value="primary" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Primary</SelectItem>
+                  <SelectItem value="secondary" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Secondary</SelectItem>
+                  <SelectItem value="outline" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Outline</SelectItem>
+                  <SelectItem value="ghost" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Ghost</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-        </CollapsibleSection>
+
+            <div className="builder-v3-field-group">
+              <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Alignment</Label>
+              <div className="builder-v3-toggle-pill w-full">
+                {([
+                  { value: 'left', icon: AlignLeft },
+                  { value: 'center', icon: AlignCenter },
+                  { value: 'right', icon: AlignRight },
+                ] as const).map(({ value, icon: Icon }) => (
+                  <button
+                    key={value}
+                    onClick={() => onUpdate({ props: { ...block.props, align: value } })}
+                    className={cn(
+                      'builder-v3-toggle-option flex-1 flex items-center justify-center',
+                      block.props.align === value && 'builder-v3-toggle-option--active'
+                    )}
+                  >
+                    <Icon size={14} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          <ButtonActionEditor block={block} onUpdate={onUpdate} />
+        </>
       )}
 
       {/* Input Fields Section */}
@@ -793,5 +802,120 @@ function ScreenStyleEditor({ screen, onUpdate }: ScreenStyleEditorProps) {
         )}
       </CollapsibleSection>
     </div>
+  );
+}
+
+// =============================================================================
+// BUTTON ACTION EDITOR
+// =============================================================================
+
+interface ButtonActionEditorProps {
+  block: Block;
+  onUpdate: (updates: Partial<Block>) => void;
+}
+
+function ButtonActionEditor({ block, onUpdate }: ButtonActionEditorProps) {
+  const action = block.props.action || { type: 'next-screen' };
+  const actionType = action.type;
+
+  const handleActionTypeChange = (type: string) => {
+    let newAction: ButtonAction;
+    switch (type) {
+      case 'next-screen':
+        newAction = { type: 'next-screen' };
+        break;
+      case 'previous-screen':
+        newAction = { type: 'previous-screen' };
+        break;
+      case 'go-to-screen':
+        newAction = { type: 'go-to-screen', screenId: '' };
+        break;
+      case 'submit':
+        newAction = { type: 'submit' };
+        break;
+      case 'url':
+        newAction = { type: 'url', url: '', openInNewTab: false };
+        break;
+      default:
+        newAction = { type: 'next-screen' };
+    }
+    onUpdate({ props: { ...block.props, action: newAction } });
+  };
+
+  return (
+    <CollapsibleSection 
+      title="Button Action" 
+      icon={<Link size={14} />}
+      defaultOpen
+    >
+      <div className="builder-v3-field-group">
+        <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">On Click</Label>
+        <Select
+          value={actionType}
+          onValueChange={handleActionTypeChange}
+        >
+          <SelectTrigger className="builder-v3-control-md bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]">
+            <SelectItem value="next-screen" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">
+              <div className="flex items-center gap-2">
+                <ArrowRight size={12} />
+                Next Screen
+              </div>
+            </SelectItem>
+            <SelectItem value="previous-screen" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">
+              <div className="flex items-center gap-2">
+                <ArrowLeft size={12} />
+                Previous Screen
+              </div>
+            </SelectItem>
+            <SelectItem value="submit" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">
+              <div className="flex items-center gap-2">
+                <Send size={12} />
+                Submit Form
+              </div>
+            </SelectItem>
+            <SelectItem value="url" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">
+              <div className="flex items-center gap-2">
+                <ExternalLink size={12} />
+                Open URL
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {actionType === 'url' && action.type === 'url' && (
+        <>
+          <div className="builder-v3-field-group">
+            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">URL</Label>
+            <Input
+              value={action.url || ''}
+              onChange={(e) => onUpdate({ 
+                props: { 
+                  ...block.props, 
+                  action: { ...action, url: e.target.value } 
+                } 
+              })}
+              placeholder="https://..."
+              className="builder-v3-input builder-v3-control-md"
+            />
+          </div>
+          <div className="builder-v3-field-row">
+            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Open in New Tab</Label>
+            <Switch
+              checked={action.openInNewTab || false}
+              onCheckedChange={(checked) => onUpdate({ 
+                props: { 
+                  ...block.props, 
+                  action: { ...action, openInNewTab: checked } 
+                } 
+              })}
+            />
+          </div>
+        </>
+      )}
+    </CollapsibleSection>
   );
 }
