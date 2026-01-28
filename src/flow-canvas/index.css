@@ -460,13 +460,16 @@
       0 0 80px -20px hsl(var(--builder-accent) / 0.15);
   }
   
-  /* Ensure font cascades to all device frame content */
-  .device-frame *,
-  .device-frame button,
-  .device-frame input,
-  .device-frame textarea,
-  .device-frame select {
+  /* User content inherits custom fonts */
+  .device-frame .user-content,
+  .device-frame .user-content * {
     font-family: inherit;
+  }
+  
+  /* Builder UI always uses system font */
+  .device-frame .builder-chrome,
+  .device-frame .builder-chrome * {
+    font-family: 'Inter', 'DM Sans', system-ui, -apple-system, sans-serif !important;
   }
   
   /* Inner content wrapper clips overflow but allows positioned toolbars */
