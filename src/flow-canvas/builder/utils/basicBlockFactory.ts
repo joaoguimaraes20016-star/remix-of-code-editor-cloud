@@ -351,54 +351,60 @@ function createReviewsBlock(): Block {
 }
 
 /**
- * List Block - Bullet points with checkmark icons
+ * List Block - Perspective-style feature list with emoji icons
  */
 function createListBlock(): Block {
   return {
     id: generateId(),
-    type: 'text-block' as BlockType,
+    type: 'custom' as BlockType,
     label: 'List',
-    elements: [
-      {
-        id: generateId(),
-        type: 'text' as ElementType,
-        content: '✓ First benefit or feature point',
-        props: {
-          fontSize: 'base',
-          textColor: '#111827',
-          lineHeight: '1.6',
-          icon: 'check',
-          iconColor: '#10B981',
-        }
-      },
-      {
-        id: generateId(),
-        type: 'text' as ElementType,
-        content: '✓ Second benefit or feature point',
-        props: {
-          fontSize: 'base',
-          textColor: '#111827',
-          lineHeight: '1.6',
-          icon: 'check',
-          iconColor: '#10B981',
-        }
-      },
-      {
-        id: generateId(),
-        type: 'text' as ElementType,
-        content: '✓ Third benefit or feature point',
-        props: {
-          fontSize: 'base',
-          textColor: '#111827',
-          lineHeight: '1.6',
-          icon: 'check',
-          iconColor: '#10B981',
-        }
-      },
-    ],
+    elements: [{
+      id: generateId(),
+      type: 'feature-list' as ElementType,
+      content: '',
+      props: {
+        items: [
+          {
+            id: generateId(),
+            icon: '⚡',
+            title: 'Fastest possible loading times',
+            description: 'ensure high conversion rates',
+          },
+          {
+            id: generateId(),
+            icon: '📊',
+            title: '90% more interaction',
+            description: 'through click flows instead of endless text',
+          },
+          {
+            id: generateId(),
+            icon: '🎨',
+            title: '34% higher conversion rate',
+            description: 'through beautiful design',
+          },
+          {
+            id: generateId(),
+            icon: '👤',
+            title: 'Higher lead quality',
+            description: 'through personalized results pages',
+          },
+        ],
+        // Perspective-style layout
+        layout: 'vertical',
+        gap: 20,
+        iconSize: 32,
+        titleFontSize: 'base',
+        titleFontWeight: '600',
+        titleColor: '#111827',
+        descriptionFontSize: 'base',
+        descriptionFontWeight: '400',
+        descriptionColor: '#6B7280',
+        backgroundColor: 'transparent',
+        padding: '16px 0',
+      }
+    }],
     props: {
       alignment: 'left',
-      gap: 12,
     }
   };
 }
