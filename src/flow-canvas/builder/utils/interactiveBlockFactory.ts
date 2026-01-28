@@ -768,29 +768,103 @@ function createDropdownBlock(): Block {
 }
 
 /**
- * Payment Block - Stripe checkout placeholder
+ * Payment Block - Perspective-style Stripe payment form
  */
 function createPaymentBlock(): Block {
   return {
     id: generateId(),
     type: 'custom' as BlockType,
     label: 'Payment',
-    elements: [{
-      id: generateId(),
-      type: 'payment-form' as ElementType,
-      content: '',
-      props: {
-        placeholder: true,
-        placeholderText: 'Stripe payment form will appear here',
-        borderRadius: '12px',
-        backgroundColor: '#F9FAFB',
-        border: '2px dashed #E5E7EB',
-        padding: '32px',
-        provider: 'stripe',
-      }
-    }],
+    elements: [
+      {
+        id: generateId(),
+        type: 'heading' as ElementType,
+        content: 'Pay for your webinar now!',
+        props: {
+          level: 2,
+          fontSize: '2xl',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          textColor: '#111827',
+          lineHeight: '1.2',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'text' as ElementType,
+        content: 'Get expert insights and premium content - secure your spot now!',
+        props: {
+          textAlign: 'center',
+          textColor: '#6B7280',
+          fontSize: 'base',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'payment-form' as ElementType,
+        content: '',
+        props: {
+          // Perspective-style payment form
+          provider: 'stripe',
+          // Card number field
+          cardNumberPlaceholder: 'Card number',
+          cardNumberBorderRadius: '16px',
+          cardNumberPadding: '20px 24px',
+          cardNumberBorder: '1px solid #E5E7EB',
+          cardNumberBackgroundColor: '#F9FAFB',
+          showCardBrands: true,
+          // Expiry and CVC side by side
+          expiryPlaceholder: 'MM / YY',
+          cvcPlaceholder: 'CVC',
+          splitRowBorderRadius: '16px',
+          splitRowPadding: '20px 24px',
+          splitRowBorder: '1px solid #E5E7EB',
+          splitRowBackgroundColor: '#F9FAFB',
+          // Country dropdown
+          showCountryDropdown: true,
+          countryLabel: 'Country',
+          countryDefaultValue: 'United States',
+          countryBorderRadius: '16px',
+          countryPadding: '16px 24px',
+          countryBorder: '1px solid #E5E7EB',
+          countryBackgroundColor: '#F9FAFB',
+          // Form layout
+          gap: 12,
+        }
+      },
+      {
+        id: generateId(),
+        type: 'button' as ElementType,
+        content: 'Pay $ 29.90 now',
+        props: {
+          variant: 'primary',
+          size: 'lg',
+          fullWidth: true,
+          borderRadius: '16px',
+          backgroundColor: '#2563EB',
+          textColor: '#FFFFFF',
+          fontWeight: '600',
+          paddingVertical: 20,
+          shadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'text' as ElementType,
+        content: '🔒 Secured by Stripe',
+        props: {
+          textAlign: 'center',
+          textColor: '#9CA3AF',
+          fontSize: 'sm',
+          icon: 'lock',
+          iconPosition: 'left',
+          iconColor: '#9CA3AF',
+        }
+      },
+    ],
     props: {
       alignment: 'stretch',
+      gap: 16,
     }
   };
 }
