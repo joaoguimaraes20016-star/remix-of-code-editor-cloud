@@ -1933,3 +1933,62 @@
   background: hsl(0 0% 100%) !important;
   border-color: hsl(0 0% 88%) !important;
 }
+
+/* =============================================================================
+   Section 12: Layer Tree
+   ============================================================================= */
+
+.builder-v3-layer-tree {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.builder-v3-layer-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 2px;
+}
+
+.builder-v3-layer-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--builder-v3-radius-sm);
+  cursor: pointer;
+  transition: background var(--builder-v3-transition);
+  border: none;
+  background: transparent;
+  text-align: left;
+  width: 100%;
+}
+
+.builder-v3-layer-item:hover {
+  background: hsl(var(--builder-v3-surface-hover));
+}
+
+.builder-v3-layer-item--active {
+  background: hsl(var(--builder-v3-accent) / 0.15);
+}
+
+.builder-v3-layer-item--active:hover {
+  background: hsl(var(--builder-v3-accent) / 0.2);
+}
+
+.builder-v3-layer-index {
+  font-size: 9px;
+  font-weight: 500;
+  color: hsl(var(--builder-v3-text-dim));
+  background: hsl(var(--builder-v3-surface-hover));
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.builder-v3-layer-item--active .builder-v3-layer-index {
+  background: hsl(var(--builder-v3-accent) / 0.3);
+  color: hsl(var(--builder-v3-accent));
+}
