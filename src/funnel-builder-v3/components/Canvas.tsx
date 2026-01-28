@@ -1,5 +1,6 @@
 /**
  * Funnel Builder v3 - Canvas (Preview Area)
+ * Dark charcoal theme matching flow-canvas aesthetic
  */
 
 import { Screen, Block, FunnelSettings } from '../types/funnel';
@@ -26,8 +27,11 @@ export function Canvas({
 }: CanvasProps) {
   if (!screen) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-muted/30">
-        <p className="text-muted-foreground">No screen selected</p>
+      <div 
+        className="flex-1 flex items-center justify-center"
+        style={{ backgroundColor: 'hsl(var(--builder-v3-canvas-bg))' }}
+      >
+        <p className="text-[hsl(var(--builder-v3-text-muted))]">No screen selected</p>
       </div>
     );
   }
@@ -62,12 +66,17 @@ export function Canvas({
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center bg-muted/30 p-8 overflow-auto">
+    <div 
+      className="flex-1 flex items-center justify-center p-8 overflow-auto"
+      style={{ backgroundColor: 'hsl(var(--builder-v3-canvas-bg))' }}
+      data-preview={previewMode ? 'true' : undefined}
+    >
       {/* Device Frame */}
       <div
         className={cn(
-          'w-full max-w-md min-h-[600px] rounded-2xl shadow-2xl overflow-hidden transition-all',
-          previewMode ? 'ring-0' : 'ring-1 ring-border'
+          'builder-v3-device-frame builder-v3-device-frame--mobile',
+          'min-h-[600px] overflow-hidden relative',
+          !previewMode && 'ring-1 ring-[hsl(var(--builder-v3-border)/0.3)]'
         )}
         style={{
           ...getBackgroundStyle(),
@@ -75,18 +84,21 @@ export function Canvas({
         }}
         onClick={handleCanvasClick}
       >
+        {/* Phone Notch */}
+        <div className="builder-v3-phone-notch" />
+        
         {/* Progress Bar */}
         {settings.showProgress && (
-          <div className="h-1 bg-muted">
+          <div className="h-1 bg-[hsl(var(--builder-v3-surface))]">
             <div 
-              className="h-full bg-primary transition-all" 
+              className="h-full bg-[hsl(var(--builder-v3-accent))] transition-all" 
               style={{ width: '33%' }}
             />
           </div>
         )}
 
         {/* Screen Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 flex-1">
           {screen.blocks.length === 0 ? (
             <EmptyState previewMode={previewMode} />
           ) : (
@@ -102,6 +114,9 @@ export function Canvas({
             ))
           )}
         </div>
+        
+        {/* Home Indicator */}
+        <div className="builder-v3-home-indicator" />
       </div>
     </div>
   );
@@ -118,11 +133,11 @@ function EmptyState({ previewMode }: { previewMode: boolean }) {
 
   return (
     <div className="py-20 flex flex-col items-center justify-center text-center">
-      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
-        <Plus className="h-6 w-6 text-muted-foreground" />
+      <div className="w-12 h-12 rounded-full bg-[hsl(var(--builder-v3-surface-hover))] flex items-center justify-center mb-4">
+        <Plus className="h-6 w-6 text-[hsl(var(--builder-v3-text-muted))]" />
       </div>
-      <p className="text-muted-foreground mb-2">This screen is empty</p>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-[hsl(var(--builder-v3-text-secondary))] mb-2">This screen is empty</p>
+      <p className="text-sm text-[hsl(var(--builder-v3-text-dim))]">
         Add blocks from the right panel
       </p>
     </div>
