@@ -634,32 +634,68 @@ function createMessageBlock(): Block {
 }
 
 /**
- * Date Block - Date picker input
+ * Date Block - Perspective-style date picker
  */
 function createDateBlock(): Block {
   return {
     id: generateId(),
     type: 'form-field' as BlockType,
     label: 'Date Picker',
-    elements: [{
-      id: generateId(),
-      type: 'date-picker' as ElementType,
-      content: '',
-      props: {
-        placeholder: 'Select a date',
-        required: false,
-        borderRadius: '12px',
-        padding: '16px 20px',
-        fontSize: '16px',
-        border: '1px solid #E5E7EB',
-        fullWidth: true,
-        icon: 'calendar',
-        iconPosition: 'right',
-        label: 'Date',
-      }
-    }],
+    elements: [
+      {
+        id: generateId(),
+        type: 'heading' as ElementType,
+        content: 'Please choose a date:',
+        props: {
+          level: 2,
+          fontSize: '2xl',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          textColor: '#111827',
+          lineHeight: '1.2',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'date-picker' as ElementType,
+        content: '',
+        props: {
+          placeholder: 'Pick a date',
+          required: false,
+          // Perspective-style rounded date picker
+          borderRadius: '16px',
+          padding: '20px 24px 20px 56px',
+          fontSize: '16px',
+          border: '1px solid #E5E7EB',
+          backgroundColor: '#F9FAFB',
+          fullWidth: true,
+          icon: 'calendar',
+          iconPosition: 'left',
+          iconColor: '#9CA3AF',
+          chevronIcon: 'chevrons-up-down',
+          chevronPosition: 'right',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'button' as ElementType,
+        content: 'Submit',
+        props: {
+          variant: 'primary',
+          size: 'lg',
+          fullWidth: true,
+          borderRadius: '16px',
+          backgroundColor: '#2563EB',
+          textColor: '#FFFFFF',
+          fontWeight: '600',
+          paddingVertical: 20,
+          shadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+        }
+      },
+    ],
     props: {
       alignment: 'stretch',
+      gap: 16,
     }
   };
 }
