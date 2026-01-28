@@ -82,38 +82,87 @@ export function createInteractiveBlock(blockId: string): Block | null {
 }
 
 /**
- * Multiple Choice Block - Perspective-style option cards
+ * Multiple Choice Block - Perspective-style clean white cards with radio circles
  */
 function createMultipleChoiceBlock(): Block {
   return {
     id: generateId(),
     type: 'custom' as BlockType,
     label: 'Multiple Choice',
-    elements: [{
-      id: generateId(),
-      type: 'multiple-choice' as ElementType,
-      content: 'Select an option',
-      props: {
-        options: [
-          { id: generateId(), label: 'Option A', icon: '🎯' },
-          { id: generateId(), label: 'Option B', icon: '🚀' },
-          { id: generateId(), label: 'Option C', icon: '⭐' },
-          { id: generateId(), label: 'Option D', icon: '💡' },
-        ],
-        layout: 'grid',
-        columns: 2,
-        multiSelect: false,
-        cardStyle: true,
-        cardBackgroundColor: '#2563EB',
-        cardTextColor: '#FFFFFF',
-        cardBorderRadius: '12px',
-        cardPadding: '16px 20px',
-        gap: 12,
-        hoverEffect: true,
-      }
-    }],
+    elements: [
+      {
+        id: generateId(),
+        type: 'heading' as ElementType,
+        content: 'What goals do you hope to achieve?',
+        props: {
+          level: 3,
+          fontSize: 'xl',
+          fontWeight: '600',
+          textAlign: 'center',
+          textColor: '#111827',
+          lineHeight: '1.3',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'text' as ElementType,
+        content: '(Multiple choice possible)',
+        props: {
+          fontSize: 'sm',
+          textAlign: 'center',
+          textColor: 'rgba(0, 0, 0, 0.5)',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'multiple-choice' as ElementType,
+        content: '',
+        props: {
+          options: [
+            { id: generateId(), label: 'Increase number of leads' },
+            { id: generateId(), label: 'Collect more qualified leads' },
+            { id: generateId(), label: 'Streamline lead collection' },
+            { id: generateId(), label: 'Simplify lead management' },
+          ],
+          layout: 'vertical',
+          multiSelect: true,
+          // Perspective-style white cards
+          cardStyle: 'outline',
+          cardBackgroundColor: '#FFFFFF',
+          cardTextColor: '#111827',
+          cardBorderColor: '#E5E7EB',
+          cardBorderRadius: '16px',
+          cardPadding: '20px 24px',
+          gap: 12,
+          // Radio button on right
+          indicatorPosition: 'right',
+          indicatorStyle: 'circle',
+          hoverEffect: true,
+          hoverBackgroundColor: '#F9FAFB',
+          selectedBorderColor: '#2563EB',
+          selectedBackgroundColor: '#EFF6FF',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'button' as ElementType,
+        content: 'Submit and proceed',
+        props: {
+          variant: 'primary',
+          size: 'lg',
+          fullWidth: true,
+          borderRadius: '16px',
+          backgroundColor: '#2563EB',
+          textColor: '#FFFFFF',
+          fontWeight: '600',
+          paddingVertical: 18,
+        }
+      },
+    ],
     props: {
       alignment: 'stretch',
+      gap: 20,
+      maxWidth: '480px',
     }
   };
 }
