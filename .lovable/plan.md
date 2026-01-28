@@ -1,287 +1,441 @@
 
-# Complete Funnel Builder Unification - Full Refactor Plan
 
-## Executive Summary
+# Complete Funnel Builder Reset - Perspective Parity Architecture
 
-The funnel builder has become a tangled mess of **redundant systems, broken factories, and disconnected flows**. This plan addresses the core issue: **clicking "Multi-step Quiz" creates an `application-flow` block, but the canvas doesn't know how to properly initialize or display it**, resulting in "Step not found" errors.
+## The Reality Check
 
-## Root Cause Analysis
+The current funnel builder is **beyond repair through incremental fixes**. Here's why:
 
-### Issue 1: Block Factory Creates Empty Steps
-The `createQuizBlock()` in `blockFactory.ts` creates an `application-flow` block with steps that have `elements: []` arrays:
+| File | Lines | Problem |
+|------|-------|---------|
+| `EditorShell.tsx` | 2,093 | Monolithic, 50+ state variables |
+| `RightPanel.tsx` | 6,176 | Giant switch statement, unmaintainable |
+| `CanvasRenderer.tsx` | 5,860 | Renders 40+ element types, tangled |
+| `infostack.ts` | 776 | 90+ type definitions, deprecated markers everywhere |
 
-```typescript
-// Current broken code (blockFactory.ts line 472-513)
-function createQuizBlock(): Block {
-  return {
-    type: 'application-flow',
-    props: {
-      flowSettings: {
-        steps: [{
-          name: 'Question 1',
-          elements: [],  // <-- EMPTY! No actual content
-          settings: { questionType: 'multiple-choice', options: ['Beginner', 'Intermediate', 'Expert'] },
-        }]
-      }
-    }
-  };
-}
-```
-
-The `ApplicationFlowCard` expects steps to have proper structure, but renders nothing when `elements: []`.
-
-### Issue 2: RightPanel Can't Find Parent Block
-When you click on the quiz block, the RightPanel tries to find the parent block using `selection.applicationEngineId`:
-
-```typescript
-// RightPanel.tsx line 6082
-const { node: parentBlock } = findNodeById(page, selection.applicationEngineId);
-if (parentBlock && parentBlock.type === 'application-flow') {
-  // Show inspector
-} else {
-  // "Flow Step Not Found" error
-}
-```
-
-But `applicationEngineId` is never set properly when clicking the quiz.
-
-### Issue 3: Three Competing Builder Systems
-
-| System | Location | Status |
-|--------|----------|--------|
-| `flow-canvas/builder/` | Active | Used by FunnelEditor |
-| `builder_v2/` | Legacy | Has templates, used for conversion |
-| `components/funnel-builder/` | Legacy | 32 separate files, partially used |
+**Total: 14,905 lines** in just 4 files. Plus 3 competing builder systems, 4 flow systems, and 28 files with overlapping "flow" logic.
 
 ---
 
-## Solution Architecture
+## The Nuclear Option: Fresh Start
 
-### New Mental Model: "Screens" Not "Flows"
+Instead of patching, we build a **clean, Perspective-style architecture** from scratch in a new folder, then migrate the FunnelEditor to use it.
 
-Perspective's approach is simple:
-- **Screen = Full-page content** (Hero, Form, Thank You)
-- **Each screen can have elements** (text, images, buttons, inputs)
-- **Quiz = Multi-screen flow** with progress bar
-
-We should follow this pattern:
+### Target Architecture
 
 ```text
-CURRENT (Broken):                    TARGET (Clean):
-┌─────────────────────┐             ┌─────────────────────┐
-│ Page                │             │ Funnel              │
-│  └─ Steps           │             │  └─ Screens[]       │
-│      └─ Frames      │             │       └─ Elements[] │
-│          └─ Stacks  │     →       └─────────────────────┘
-│              └─ Blocks
-│                  └─ Elements
-└─────────────────────┘
+src/funnel-builder-v3/          ← NEW: Clean slate
+├── types/
+│   └── funnel.ts               ← 1 file, ~150 lines
+├── components/
+│   ├── Editor.tsx              ← Main shell, ~300 lines
+│   ├── Canvas.tsx              ← Preview area, ~200 lines
+│   ├── LeftPanel.tsx           ← Screen list, ~100 lines
+│   ├── RightPanel.tsx          ← Properties, ~400 lines
+│   ├── Toolbar.tsx             ← Top bar, ~150 lines
+│   └── blocks/                 ← Individual block renderers
+│       ├── TextBlock.tsx       ← ~50 lines each
+│       ├── ImageBlock.tsx
+│       ├── ButtonBlock.tsx
+│       ├── FormBlock.tsx
+│       └── ... (10-15 total)
+├── hooks/
+│   ├── useFunnelState.ts       ← Single state manager
+│   └── useBlockSelection.ts
+└── index.ts
+```
+
+**Target total: ~2,000 lines** (vs current 15,000+)
+
+---
+
+## Perspective's Mental Model (What We Copy)
+
+Perspective Funnels has a **dead-simple** structure:
+
+```text
+Funnel
+└── Screens[]
+    └── Blocks[]
+        └── Properties{}
+```
+
+That's it. No "Steps", no "Frames", no "Stacks", no "Elements", no "Flow Containers".
+
+### Screen Types (Perspective)
+1. **Content Screen** - Text, images, buttons (display only)
+2. **Form Screen** - Input fields (collects data)
+3. **Choice Screen** - Multiple/single choice (collects selection)
+4. **Calendar Screen** - Booking widget
+5. **Thank You Screen** - Confirmation
+
+### Block Types (Perspective)
+- Text (heading, paragraph)
+- Image
+- Button
+- Input (name, email, phone, custom)
+- Choice (single, multiple)
+- Divider
+- Video
+- Embed (calendar, HTML)
+
+---
+
+## Phase 1: Create New Type System (Day 1)
+
+**File: `src/funnel-builder-v3/types/funnel.ts`**
+
+```typescript
+// THE ENTIRE TYPE SYSTEM - ~150 lines
+
+export interface Funnel {
+  id: string;
+  name: string;
+  slug: string;
+  screens: Screen[];
+  settings: FunnelSettings;
+}
+
+export interface Screen {
+  id: string;
+  name: string;
+  type: ScreenType;
+  blocks: Block[];
+  background?: ScreenBackground;
+}
+
+export type ScreenType = 
+  | 'content'   // Display only
+  | 'form'      // Collects identity
+  | 'choice'    // Collects selection
+  | 'calendar'  // Booking
+  | 'thankyou'; // End
+
+export interface Block {
+  id: string;
+  type: BlockType;
+  content: string;
+  props: BlockProps;
+}
+
+export type BlockType = 
+  | 'text'
+  | 'heading'
+  | 'image'
+  | 'video'
+  | 'button'
+  | 'divider'
+  | 'spacer'
+  | 'input'      // Single field (name/email/phone/custom)
+  | 'choice'     // Single or multiple selection
+  | 'embed';     // Calendar, HTML, etc.
+
+export interface BlockProps {
+  // Text/Heading
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  align?: 'left' | 'center' | 'right';
+  color?: string;
+  
+  // Image/Video
+  src?: string;
+  alt?: string;
+  
+  // Button
+  action?: ButtonAction;
+  variant?: 'primary' | 'secondary' | 'outline';
+  
+  // Input
+  inputType?: 'text' | 'email' | 'phone' | 'name';
+  placeholder?: string;
+  required?: boolean;
+  fieldKey?: string;  // Key for form data
+  
+  // Choice
+  options?: ChoiceOption[];
+  multiSelect?: boolean;
+  
+  // Embed
+  embedType?: 'calendar' | 'html' | 'video';
+  embedCode?: string;
+}
+
+export interface ChoiceOption {
+  id: string;
+  label: string;
+  value: string;
+  imageUrl?: string;
+}
+
+export type ButtonAction = 
+  | { type: 'next-screen' }
+  | { type: 'go-to-screen'; screenId: string }
+  | { type: 'submit' }
+  | { type: 'url'; url: string };
+
+export interface FunnelSettings {
+  primaryColor?: string;
+  fontFamily?: string;
+  showProgress?: boolean;
+}
+
+export interface ScreenBackground {
+  type: 'solid' | 'gradient' | 'image';
+  color?: string;
+  gradient?: { from: string; to: string; angle: number };
+  image?: string;
+}
 ```
 
 ---
 
-## Implementation Plan
+## Phase 2: Create Editor Shell (Day 1-2)
 
-### Phase 1: Fix Block Factories (Critical - Day 1)
+**File: `src/funnel-builder-v3/components/Editor.tsx`**
 
-**Goal**: Make every block in the picker actually work.
-
-**File: `src/flow-canvas/builder/utils/blockFactory.ts`**
-
-1. **Fix `createQuizBlock()`** - Generate proper content:
 ```typescript
-function createQuizBlock(): Block {
-  return {
-    id: generateId(),
-    type: 'application-flow' as BlockType,
-    label: 'Quiz',
-    elements: [
-      // Welcome element
-      { id: generateId(), type: 'heading', content: 'Apply Now', props: { level: 2 } },
-      { id: generateId(), type: 'text', content: 'Answer a few quick questions to see if we are a good fit.' },
-      { id: generateId(), type: 'button', content: 'Start Application →', props: { action: { type: 'next-step' } } }
-    ],
-    props: {
-      flowSettings: {
-        displayMode: 'one-at-a-time',
-        showProgress: true,
-        currentStepIndex: 0,
-        steps: [
-          {
-            id: generateId(),
-            name: 'Welcome',
-            type: 'welcome',
-            settings: {
-              title: 'Apply Now',
-              description: 'Answer a few quick questions to see if we are a good fit.',
-              buttonText: 'Start Application →',
-            },
-          },
-          {
-            id: generateId(),
-            name: 'Question 1',
-            type: 'question',
-            settings: {
-              title: 'What describes you best?',
-              questionType: 'single-choice',
-              options: [
-                { id: generateId(), label: 'Beginner', value: 'beginner' },
-                { id: generateId(), label: 'Intermediate', value: 'intermediate' },
-                { id: generateId(), label: 'Expert', value: 'expert' },
-              ],
-              buttonText: 'Next',
-            },
-          },
-          {
-            id: generateId(),
-            name: 'Thank You',
-            type: 'ending',
-            settings: {
-              title: 'Thanks! We will be in touch.',
-              showConfetti: true,
-            },
-          },
-        ],
-      },
-    },
-  };
+// CLEAN EDITOR - ~300 lines
+
+import { useState, useCallback } from 'react';
+import { Funnel, Screen, Block } from '../types/funnel';
+import { LeftPanel } from './LeftPanel';
+import { Canvas } from './Canvas';
+import { RightPanel } from './RightPanel';
+import { Toolbar } from './Toolbar';
+import { useFunnelState } from '../hooks/useFunnelState';
+
+interface EditorProps {
+  initialFunnel: Funnel;
+  onSave: (funnel: Funnel) => void;
+  onPublish?: () => void;
+}
+
+export function Editor({ initialFunnel, onSave, onPublish }: EditorProps) {
+  const { 
+    funnel, 
+    updateScreen, 
+    addScreen, 
+    deleteScreen,
+    updateBlock,
+    addBlock,
+    deleteBlock,
+    reorderScreens,
+    reorderBlocks 
+  } = useFunnelState(initialFunnel, onSave);
+  
+  const [selectedScreenId, setSelectedScreenId] = useState(funnel.screens[0]?.id);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState(false);
+  
+  const selectedScreen = funnel.screens.find(s => s.id === selectedScreenId);
+  const selectedBlock = selectedScreen?.blocks.find(b => b.id === selectedBlockId);
+
+  return (
+    <div className="h-screen flex flex-col bg-gray-50">
+      <Toolbar 
+        funnelName={funnel.name}
+        previewMode={previewMode}
+        onTogglePreview={() => setPreviewMode(!previewMode)}
+        onPublish={onPublish}
+      />
+      
+      <div className="flex-1 flex overflow-hidden">
+        <LeftPanel
+          screens={funnel.screens}
+          selectedScreenId={selectedScreenId}
+          onSelectScreen={setSelectedScreenId}
+          onAddScreen={addScreen}
+          onDeleteScreen={deleteScreen}
+          onReorder={reorderScreens}
+        />
+        
+        <Canvas
+          screen={selectedScreen}
+          selectedBlockId={selectedBlockId}
+          onSelectBlock={setSelectedBlockId}
+          previewMode={previewMode}
+        />
+        
+        <RightPanel
+          screen={selectedScreen}
+          block={selectedBlock}
+          onUpdateScreen={updateScreen}
+          onUpdateBlock={updateBlock}
+          onAddBlock={addBlock}
+          onDeleteBlock={deleteBlock}
+        />
+      </div>
+    </div>
+  );
 }
 ```
 
-2. **Verify all 26 block factories** create proper structures with content.
+---
 
-3. **Add factory validation** - Every factory must return:
-   - Valid `id`
-   - Valid `type`
-   - At least one `element` OR valid `props.flowSettings.steps`
+## Phase 3: Simple Block Renderers (Day 2)
 
-### Phase 2: Fix Selection & Inspector Routing (Day 1-2)
+**File: `src/funnel-builder-v3/components/blocks/TextBlock.tsx`**
 
-**Goal**: Clicking any block opens the correct inspector.
-
-**File: `src/flow-canvas/builder/components/EditorShell.tsx`**
-
-1. **Fix selection propagation** for application-flow blocks:
 ```typescript
-// When clicking an application-flow block, set applicationEngineId
-const handleSelect = useCallback((newSelection: SelectionState, isShiftHeld?: boolean) => {
-  // If selecting an application-flow block, set applicationEngineId
-  if (newSelection.type === 'block') {
-    const block = findBlockById(page, newSelection.id);
-    if (block?.type === 'application-flow') {
-      newSelection.applicationEngineId = block.id;
-    }
-  }
-  setSelection(newSelection);
-}, [page]);
+// EACH BLOCK IS SIMPLE - ~50 lines
+
+import { Block } from '../../types/funnel';
+
+interface TextBlockProps {
+  block: Block;
+  isSelected: boolean;
+  onSelect: () => void;
+  previewMode: boolean;
+}
+
+export function TextBlock({ block, isSelected, onSelect, previewMode }: TextBlockProps) {
+  const { size = 'md', align = 'left', color } = block.props;
+  
+  const sizeClasses = {
+    sm: 'text-sm',
+    md: 'text-base',
+    lg: 'text-lg',
+    xl: 'text-xl',
+  };
+  
+  return (
+    <div 
+      onClick={previewMode ? undefined : onSelect}
+      className={`
+        p-2 rounded transition-all
+        ${!previewMode && isSelected ? 'ring-2 ring-blue-500' : ''}
+        ${!previewMode ? 'cursor-pointer hover:bg-gray-50' : ''}
+        text-${align}
+      `}
+    >
+      <p 
+        className={sizeClasses[size]}
+        style={{ color }}
+      >
+        {block.content || 'Click to edit text...'}
+      </p>
+    </div>
+  );
+}
 ```
 
-**File: `src/flow-canvas/builder/components/RightPanel.tsx`**
+---
 
-2. **Improve block lookup** to handle direct block selection:
+## Phase 4: Connect to FunnelEditor (Day 2-3)
+
+**File: `src/pages/FunnelEditor.tsx`** - Replace entirely
+
 ```typescript
-// Line ~6080: Add fallback for when applicationEngineId matches the selected block
-if (selection.type === 'block' && selectedNode?.type === 'application-flow') {
+// SIMPLE PAGE COMPONENT - ~100 lines
+
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Editor } from '@/funnel-builder-v3/components/Editor';
+import { Funnel } from '@/funnel-builder-v3/types/funnel';
+
+export default function FunnelEditor() {
+  const { funnelId } = useParams();
+  const navigate = useNavigate();
+  
+  const { data: funnel, isLoading } = useQuery({
+    queryKey: ['funnel', funnelId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('funnels')
+        .select('*')
+        .eq('id', funnelId)
+        .single();
+      return data as Funnel;
+    },
+  });
+  
+  const saveMutation = useMutation({
+    mutationFn: async (funnel: Funnel) => {
+      await supabase
+        .from('funnels')
+        .update({ content: funnel })
+        .eq('id', funnelId);
+    },
+  });
+  
+  if (isLoading) return <div>Loading...</div>;
+  if (!funnel) return <div>Not found</div>;
+  
   return (
-    <ApplicationFlowInspector 
-      block={selectedNode as Block}
-      onUpdateBlock={(updates) => handleUpdate(updates)}
-      selectedStepId={selectedFlowSteps[selectedNode.id] || null}
-      onSelectStep={onSelectApplicationStep}
+    <Editor
+      initialFunnel={funnel}
+      onSave={saveMutation.mutate}
+      onPublish={() => {/* publish logic */}}
     />
   );
 }
 ```
 
-### Phase 3: Consolidate Redundant Systems (Day 2-3)
+---
 
-**Goal**: Single source of truth for the builder.
+## Phase 5: Migration & Cleanup (Day 3-4)
 
-1. **Keep**: `src/flow-canvas/builder/` as the canonical implementation
-
-2. **Migrate from `builder_v2`**:
-   - Move `allSectionTemplates` to `src/flow-canvas/builder/templates/`
-   - Deprecate `builder_v2/EditorShell.tsx` (keep route for backward compatibility)
-
-3. **Audit `components/funnel-builder`**:
-   - Check what's still imported
-   - Mark for deprecation or removal
-
-4. **Create unified exports**:
-   ```typescript
-   // src/flow-canvas/builder/index.ts
-   export { EditorShell } from './components/EditorShell';
-   export { CanvasRenderer } from './components/CanvasRenderer';
-   export { createBlock, isValidBlockId } from './utils/blockFactory';
-   export { convertTemplateToFrame } from './utils/templateConverter';
-   ```
-
-### Phase 4: Simplify Block Picker Categories (Day 3)
-
-**Goal**: Clear mental model for users.
-
-**File: `src/flow-canvas/builder/components/SectionPicker/`**
-
-New categories:
-| Category | Contents | Badge |
-|----------|----------|-------|
-| **Content** | Text, Image, Video, Divider, Spacer, List, FAQ | "Display only" |
-| **Lead Capture** | Email Input, Phone Input, Contact Form | "Collects identity" |
-| **Questions** | Single Choice, Multiple Choice, Dropdown, Text Input | "Collects answers" |
-| **Multi-Step** | Quiz Flow, Application Form | "Full experience" |
-| **Embeds** | Calendar, Payment, HTML | "External" |
-
-### Phase 5: Runtime Parity (Day 4)
-
-**Goal**: Published funnels match editor exactly.
-
-1. **Verify `FlowCanvasRenderer`** uses the same rendering logic as `CanvasRenderer`
-2. **Test all block types** in published mode
-3. **Fix any discrepancies** between editor preview and runtime
+1. **Create data converter** - Transform old `Page` format to new `Funnel` format
+2. **Keep old code working** - Don't delete yet, just stop using
+3. **Add deprecation notices** - Point to new implementation
+4. **Clean up routes** - Remove `/builder-v2` and other legacy routes
 
 ---
 
-## Files to Modify
+## Files Created (New)
 
-| File | Action | Priority |
-|------|--------|----------|
-| `src/flow-canvas/builder/utils/blockFactory.ts` | Fix quiz/form factories | P0 |
-| `src/flow-canvas/builder/components/EditorShell.tsx` | Fix selection routing | P0 |
-| `src/flow-canvas/builder/components/RightPanel.tsx` | Fix block type detection | P0 |
-| `src/flow-canvas/builder/components/SectionPicker/*` | Reorganize categories | P1 |
-| `src/flow-canvas/builder/components/ApplicationFlowCard.tsx` | Handle empty steps | P1 |
-| `src/builder_v2/EditorShell.tsx` | Add deprecation banner | P2 |
-| `src/components/funnel-builder/*` | Audit and deprecate | P2 |
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/funnel-builder-v3/types/funnel.ts` | ~150 | Clean type system |
+| `src/funnel-builder-v3/components/Editor.tsx` | ~300 | Main shell |
+| `src/funnel-builder-v3/components/Canvas.tsx` | ~200 | Preview area |
+| `src/funnel-builder-v3/components/LeftPanel.tsx` | ~100 | Screen list |
+| `src/funnel-builder-v3/components/RightPanel.tsx` | ~400 | Properties |
+| `src/funnel-builder-v3/components/Toolbar.tsx` | ~150 | Top bar |
+| `src/funnel-builder-v3/components/blocks/*.tsx` | ~500 | Block renderers |
+| `src/funnel-builder-v3/hooks/useFunnelState.ts` | ~150 | State manager |
+| **Total** | **~1,950** | Clean implementation |
+
+---
+
+## Files Deprecated (Old)
+
+| Location | Lines | Action |
+|----------|-------|--------|
+| `src/flow-canvas/builder/` | ~15,000+ | Mark deprecated |
+| `src/builder_v2/` | ~5,000+ | Already deprecated |
+| `src/components/funnel-builder/` | ~3,000+ | Already deprecated |
 
 ---
 
 ## Success Criteria
 
-1. **Clicking "Multi-step Quiz" creates a working quiz with visible content**
-2. **Inspector opens correctly for all block types**
-3. **No "Template not found" or "Step not found" errors**
-4. **One clear path through the codebase (no confusion about which builder to use)**
-5. **Published funnels render identically to editor preview**
+1. Adding a Quiz creates visible, working content
+2. Every block type works on first click
+3. Inspector always shows correct properties
+4. No "Template not found" or "Step not found" errors
+5. Codebase is ~2,000 lines instead of 15,000+
+6. Any developer can understand the architecture in 10 minutes
 
 ---
 
-## Technical Constraints
+## Timeline
 
-- Must maintain backward compatibility with existing saved funnels
-- Cannot break published funnels (FlowCanvas format is canonical)
-- Keep `builder_v2` route working (but deprecated) for edge cases
-- All changes must work on mobile and desktop viewports
+| Phase | Time | Deliverable |
+|-------|------|-------------|
+| Phase 1: Types | 2 hours | Clean type system |
+| Phase 2: Editor | 4 hours | Working shell |
+| Phase 3: Blocks | 4 hours | All block renderers |
+| Phase 4: Integration | 3 hours | Connected to DB |
+| Phase 5: Migration | 3 hours | Data converter |
+| **Total** | **16 hours** | Complete rebuild |
 
 ---
 
-## Estimated Effort
+## Risk Mitigation
 
-| Phase | Time | Complexity |
-|-------|------|------------|
-| Phase 1: Fix Factories | 4 hours | Medium |
-| Phase 2: Fix Selection | 3 hours | Medium |
-| Phase 3: Consolidate | 4 hours | Low |
-| Phase 4: Simplify Picker | 2 hours | Low |
-| Phase 5: Runtime Parity | 3 hours | Medium |
-| **Total** | **16 hours** | - |
+1. **Keep old code** - Don't delete until new version is proven
+2. **Feature flag** - Add `?builder=v3` URL param to test
+3. **Data conversion** - Bidirectional, so we can rollback
+4. **Incremental deploy** - Test with team before users see it
 
