@@ -64,6 +64,7 @@ interface RightPanelProps {
   onClearBlockSelection?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onOpenSectionPicker?: () => void;
 }
 
 const BLOCK_ICONS: Record<BlockType, React.ComponentType<{ className?: string }>> = {
@@ -93,6 +94,7 @@ export function RightPanel({
   onClearBlockSelection,
   isCollapsed = false,
   onToggleCollapse,
+  onOpenSectionPicker,
 }: RightPanelProps) {
   const [activeTab, setActiveTab] = useState<'add' | 'style' | 'settings'>('add');
 
@@ -154,11 +156,29 @@ export function RightPanel({
           {/* Add Blocks Tab */}
           <TabsContent value="add" className="mt-0 p-4">
             <div className="space-y-4">
+              {/* Browse All Templates Button */}
+              {onOpenSectionPicker && (
+                <button
+                  onClick={onOpenSectionPicker}
+                  className={cn(
+                    'w-full flex items-center justify-center gap-2 p-3 rounded-xl transition-all',
+                    'bg-gradient-to-r from-blue-600 to-indigo-600',
+                    'hover:from-blue-500 hover:to-indigo-500',
+                    'text-white font-medium text-sm',
+                    'shadow-lg shadow-blue-500/25'
+                  )}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Browse All Templates
+                </button>
+              )}
+
               {/* Content Blocks */}
               <div>
-                <h3 className="text-[10px] font-medium text-[hsl(var(--builder-v3-text-dim))] uppercase tracking-wider mb-2">
-                  Content
-                </h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-xs font-semibold text-[hsl(var(--builder-v3-text-secondary))]">Content</h3>
+                  <span className="text-[9px] font-medium text-[hsl(var(--builder-v3-text-muted))] bg-[hsl(var(--builder-v3-surface-active))] px-1.5 py-0.5 rounded">Display</span>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   {allowedBlocks
                     .filter(type => BLOCK_TYPE_CONFIG[type].category === 'content')
@@ -170,16 +190,17 @@ export function RightPanel({
                           key={type}
                           onClick={() => onAddBlock(type)}
                           className={cn(
-                            'flex flex-col items-center gap-2 p-3 rounded-lg transition-all',
-                            'border border-[hsl(var(--builder-v3-border))]',
-                            'bg-[hsl(var(--builder-v3-surface-hover))]',
-                            'hover:bg-[hsl(var(--builder-v3-surface-active))]',
-                            'hover:border-[hsl(var(--builder-v3-accent)/0.3)]',
-                            'text-[hsl(var(--builder-v3-text-secondary))]'
+                            'flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-all',
+                            'bg-slate-800/50 border border-slate-700/50',
+                            'hover:bg-slate-700/50 hover:border-slate-600/50',
+                            'hover:scale-[1.02] hover:shadow-md',
+                            'aspect-square'
                           )}
                         >
-                          <Icon className="h-5 w-5 text-[hsl(var(--builder-v3-text-muted))]" />
-                          <span className="text-xs">{config.label}</span>
+                          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-slate-700/50">
+                            <Icon className="h-5 w-5 text-slate-300" />
+                          </div>
+                          <span className="text-xs font-medium text-slate-200">{config.label}</span>
                         </button>
                       );
                     })}
@@ -189,9 +210,10 @@ export function RightPanel({
               {/* Input Blocks */}
               {allowedBlocks.some(type => BLOCK_TYPE_CONFIG[type].category === 'input') && (
                 <div>
-                  <h3 className="text-[10px] font-medium text-[hsl(var(--builder-v3-text-dim))] uppercase tracking-wider mb-2">
-                    Inputs
-                  </h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <h3 className="text-xs font-semibold text-[hsl(var(--builder-v3-text-secondary))]">Inputs</h3>
+                    <span className="text-[9px] font-medium text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">Data</span>
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     {allowedBlocks
                       .filter(type => BLOCK_TYPE_CONFIG[type].category === 'input')
@@ -203,16 +225,17 @@ export function RightPanel({
                             key={type}
                             onClick={() => onAddBlock(type)}
                             className={cn(
-                              'flex flex-col items-center gap-2 p-3 rounded-lg transition-all',
-                              'border border-[hsl(var(--builder-v3-border))]',
-                              'bg-[hsl(var(--builder-v3-surface-hover))]',
-                              'hover:bg-[hsl(var(--builder-v3-surface-active))]',
-                              'hover:border-[hsl(var(--builder-v3-accent)/0.3)]',
-                              'text-[hsl(var(--builder-v3-text-secondary))]'
+                              'flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-all',
+                              'bg-emerald-900/20 border border-emerald-800/30',
+                              'hover:bg-emerald-800/30 hover:border-emerald-700/40',
+                              'hover:scale-[1.02] hover:shadow-md',
+                              'aspect-square'
                             )}
                           >
-                            <Icon className="h-5 w-5 text-[hsl(var(--builder-v3-text-muted))]" />
-                            <span className="text-xs">{config.label}</span>
+                            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-800/30">
+                              <Icon className="h-5 w-5 text-emerald-400" />
+                            </div>
+                            <span className="text-xs font-medium text-emerald-300">{config.label}</span>
                           </button>
                         );
                       })}
@@ -223,9 +246,10 @@ export function RightPanel({
               {/* Layout Blocks */}
               {allowedBlocks.some(type => BLOCK_TYPE_CONFIG[type].category === 'layout') && (
                 <div>
-                  <h3 className="text-[10px] font-medium text-[hsl(var(--builder-v3-text-dim))] uppercase tracking-wider mb-2">
-                    Layout
-                  </h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <h3 className="text-xs font-semibold text-[hsl(var(--builder-v3-text-secondary))]">Layout</h3>
+                    <span className="text-[9px] font-medium text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">Structure</span>
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     {allowedBlocks
                       .filter(type => BLOCK_TYPE_CONFIG[type].category === 'layout')
@@ -237,16 +261,17 @@ export function RightPanel({
                             key={type}
                             onClick={() => onAddBlock(type)}
                             className={cn(
-                              'flex flex-col items-center gap-2 p-3 rounded-lg transition-all',
-                              'border border-[hsl(var(--builder-v3-border))]',
-                              'bg-[hsl(var(--builder-v3-surface-hover))]',
-                              'hover:bg-[hsl(var(--builder-v3-surface-active))]',
-                              'hover:border-[hsl(var(--builder-v3-accent)/0.3)]',
-                              'text-[hsl(var(--builder-v3-text-secondary))]'
+                              'flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-all',
+                              'bg-amber-900/20 border border-amber-800/30',
+                              'hover:bg-amber-800/30 hover:border-amber-700/40',
+                              'hover:scale-[1.02] hover:shadow-md',
+                              'aspect-square'
                             )}
                           >
-                            <Icon className="h-5 w-5 text-[hsl(var(--builder-v3-text-muted))]" />
-                            <span className="text-xs">{config.label}</span>
+                            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-800/30">
+                              <Icon className="h-5 w-5 text-amber-400" />
+                            </div>
+                            <span className="text-xs font-medium text-amber-300">{config.label}</span>
                           </button>
                         );
                       })}

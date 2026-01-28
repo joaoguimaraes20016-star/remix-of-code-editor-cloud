@@ -18,11 +18,11 @@
   --builder-v3-border: 225 8% 20%;
   --builder-v3-border-subtle: 225 8% 16%;
   
-  /* Text hierarchy (from builder_v2) */
+  /* Text hierarchy (from builder_v2) - BRIGHTENED for visibility */
   --builder-v3-text: 210 20% 96%;
-  --builder-v3-text-secondary: 215 16% 65%;
-  --builder-v3-text-muted: 215 12% 50%;
-  --builder-v3-text-dim: 215 8% 40%;
+  --builder-v3-text-secondary: 215 16% 75%;  /* Was 65% - now visible */
+  --builder-v3-text-muted: 215 12% 60%;      /* Was 50% - now visible */
+  --builder-v3-text-dim: 215 8% 50%;         /* Was 40% - now visible */
   
   /* Accent colors */
   --builder-v3-accent: 217 91% 60%;

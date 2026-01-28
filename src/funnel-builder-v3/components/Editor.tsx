@@ -459,6 +459,7 @@ export function Editor({ initialFunnel, onSave, onPublish, onBack }: EditorProps
               onDuplicateBlock={handleDuplicateBlock}
               isCollapsed={false}
               onToggleCollapse={() => setRightPanelCollapsed(true)}
+              onOpenSectionPicker={handleOpenSectionPicker}
             />
           )}
         </div>
