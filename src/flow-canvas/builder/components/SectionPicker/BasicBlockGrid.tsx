@@ -21,6 +21,16 @@ import {
   HTMLIcon,
   FormIcon,
 } from './BlockIcons';
+import {
+  GradientTextMockup,
+  UnderlineTextMockup,
+  StatNumberMockup,
+  AvatarGroupMockup,
+  TickerMockup,
+  BadgeMockup,
+  ProcessStepMockup,
+} from './PremiumBlockIcons';
+import { InteractiveBlockCard } from './InteractiveBlockCard';
 
 interface BasicBlockGridProps {
   onAddBlock: (blockId: string) => void;
@@ -48,6 +58,16 @@ const EMBED_BLOCKS = [
   { id: 'calendar', name: 'Calendar', bgColor: 'bg-blue-50', icon: <CalendarIcon /> },
   { id: 'html', name: 'Custom HTML', bgColor: 'bg-gray-50', icon: <HTMLIcon /> },
   { id: 'form', name: 'Form', bgColor: 'bg-green-50', icon: <FormIcon /> },
+];
+
+const PREMIUM_BLOCKS = [
+  { id: 'gradient-text', name: 'Gradient Text', mockup: <GradientTextMockup /> },
+  { id: 'underline-text', name: 'Underline Text', mockup: <UnderlineTextMockup /> },
+  { id: 'stat-number', name: 'Stat Number', mockup: <StatNumberMockup /> },
+  { id: 'avatar-group', name: 'Avatar Group', mockup: <AvatarGroupMockup /> },
+  { id: 'ticker', name: 'Ticker', mockup: <TickerMockup /> },
+  { id: 'badge', name: 'Badge', mockup: <BadgeMockup /> },
+  { id: 'process-step', name: 'Process Step', mockup: <ProcessStepMockup /> },
 ];
 
 export function BasicBlockGrid({ onAddBlock }: BasicBlockGridProps) {
@@ -79,11 +99,25 @@ export function BasicBlockGrid({ onAddBlock }: BasicBlockGridProps) {
 
       {/* Embed Blocks */}
       <h3 className="text-sm font-semibold text-gray-700 mb-4">Embed Blocks</h3>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 mb-8">
         {EMBED_BLOCKS.map(block => (
           <BlockTileCard
             key={block.id}
             {...block}
+            onAdd={() => onAddBlock(block.id)}
+          />
+        ))}
+      </div>
+
+      {/* Premium Elements */}
+      <h3 className="text-sm font-semibold text-gray-700 mb-4">Premium Elements</h3>
+      <div className="grid grid-cols-2 gap-3">
+        {PREMIUM_BLOCKS.map(block => (
+          <InteractiveBlockCard
+            key={block.id}
+            id={block.id}
+            name={block.name}
+            mockup={block.mockup}
             onAdd={() => onAddBlock(block.id)}
           />
         ))}
