@@ -471,6 +471,64 @@
   margin-top: 4px;
 }
 
+/* Range slider */
+.builder-v3-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: hsl(var(--builder-v3-surface-active));
+  outline: none;
+  cursor: pointer;
+}
+
+.builder-v3-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: hsl(var(--builder-v3-accent));
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.builder-v3-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.builder-v3-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: hsl(var(--builder-v3-accent));
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Icon button (small) */
+.builder-v3-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--builder-v3-transition-fast);
+  color: hsl(var(--builder-v3-text-muted));
+}
+
+.builder-v3-icon-btn:hover {
+  background: hsl(var(--builder-v3-surface-hover));
+  color: hsl(var(--builder-v3-text));
+}
+
 /* =============================================================================
    Section 6: Pattern Backgrounds
    ============================================================================= */

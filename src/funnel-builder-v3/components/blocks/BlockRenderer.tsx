@@ -77,14 +77,26 @@ export function BlockRenderer({
   return (
     <div
       className={cn(
-        'builder-v3-selectable relative transition-all rounded-lg',
-        !previewMode && 'cursor-pointer',
-        isSelected && 'builder-v3-selected'
+        'builder-v3-block relative transition-all rounded-lg',
+        !previewMode && 'cursor-pointer hover:ring-2 hover:ring-[hsl(var(--builder-v3-accent)/0.3)]',
+        isSelected && 'ring-2 ring-[hsl(var(--builder-v3-accent))] shadow-[0_0_0_1px_hsl(var(--builder-v3-accent)/0.2)]'
       )}
       data-selected={isSelected || undefined}
-      onClick={previewMode ? undefined : onSelect}
+      onClick={(e) => {
+        if (!previewMode) {
+          e.stopPropagation();
+          onSelect();
+        }
+      }}
     >
       {getBlockComponent()}
+      
+      {/* Selection indicator label */}
+      {isSelected && !previewMode && (
+        <div className="absolute -top-6 left-0 text-[10px] font-medium text-[hsl(var(--builder-v3-accent))] bg-[hsl(var(--builder-v3-accent)/0.1)] px-1.5 py-0.5 rounded">
+          {block.type.charAt(0).toUpperCase() + block.type.slice(1)}
+        </div>
+      )}
     </div>
   );
 }

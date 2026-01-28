@@ -23,6 +23,7 @@ import {
   AlignCenter,
   AlignRight,
   MousePointerClick,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -459,7 +460,7 @@ function BlockStyleEditor({ block, onUpdate, onDelete, onDuplicate }: BlockStyle
         </CollapsibleSection>
       )}
 
-      {/* Media Section */}
+      {/* Media Section - Enhanced */}
       {['image', 'video'].includes(block.type) && (
         <CollapsibleSection 
           title="Media" 
@@ -477,10 +478,59 @@ function BlockStyleEditor({ block, onUpdate, onDelete, onDuplicate }: BlockStyle
               className="builder-v3-input builder-v3-control-md"
             />
           </div>
+
+          {block.type === 'image' && (
+            <div className="builder-v3-field-group">
+              <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Alt Text</Label>
+              <Input
+                value={block.props.alt || ''}
+                onChange={(e) => onUpdate({ props: { ...block.props, alt: e.target.value } })}
+                placeholder="Describe the image..."
+                className="builder-v3-input builder-v3-control-md"
+              />
+            </div>
+          )}
+
+          <div className="builder-v3-field-group">
+            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Aspect Ratio</Label>
+            <Select
+              value={block.props.aspectRatio || 'auto'}
+              onValueChange={(value) => onUpdate({ props: { ...block.props, aspectRatio: value as any } })}
+            >
+              <SelectTrigger className="builder-v3-control-md bg-[hsl(var(--builder-v3-surface-hover))] border-[hsl(var(--builder-v3-border))] text-[hsl(var(--builder-v3-text))]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[hsl(var(--builder-v3-surface))] border-[hsl(var(--builder-v3-border))]">
+                <SelectItem value="auto" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Auto</SelectItem>
+                <SelectItem value="16:9" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">16:9</SelectItem>
+                <SelectItem value="4:3" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">4:3</SelectItem>
+                <SelectItem value="1:1" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Square (1:1)</SelectItem>
+                <SelectItem value="9:16" className="text-[hsl(var(--builder-v3-text))] focus:bg-[hsl(var(--builder-v3-surface-hover))]">Portrait (9:16)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="builder-v3-field-group">
+            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Object Fit</Label>
+            <div className="builder-v3-toggle-pill w-full">
+              {(['cover', 'contain', 'fill'] as const).map((fit) => (
+                <button
+                  key={fit}
+                  onClick={() => onUpdate({ props: { ...block.props, objectFit: fit } })}
+                  className={cn(
+                    'builder-v3-toggle-option flex-1 text-xs capitalize',
+                    block.props.objectFit === fit && 'builder-v3-toggle-option--active'
+                  )}
+                >
+                  {fit}
+                </button>
+              ))}
+            </div>
+          </div>
         </CollapsibleSection>
       )}
 
-      {/* Layout Section (spacer) */}
+      {/* Spacer Section - Enhanced with slider */}
       {block.type === 'spacer' && (
         <CollapsibleSection 
           title="Layout" 
@@ -488,19 +538,158 @@ function BlockStyleEditor({ block, onUpdate, onDelete, onDuplicate }: BlockStyle
           defaultOpen
         >
           <div className="builder-v3-field-group">
-            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Height (px)</Label>
-            <Input
-              type="number"
-              value={block.props.height || 32}
-              onChange={(e) => onUpdate({ props: { ...block.props, height: parseInt(e.target.value) } })}
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Height</Label>
+              <span className="text-[11px] text-[hsl(var(--builder-v3-text-secondary))]">{block.props.height || 32}px</span>
+            </div>
+            <input
+              type="range"
               min={8}
               max={200}
-              className="builder-v3-input builder-v3-control-md"
+              step={4}
+              value={block.props.height || 32}
+              onChange={(e) => onUpdate({ props: { ...block.props, height: parseInt(e.target.value) } })}
+              className="builder-v3-slider w-full"
             />
+            <div className="flex justify-between text-[9px] text-[hsl(var(--builder-v3-text-dim))] mt-1">
+              <span>8px</span>
+              <span>200px</span>
+            </div>
           </div>
         </CollapsibleSection>
       )}
+
+      {/* Divider Section - Color control */}
+      {block.type === 'divider' && (
+        <CollapsibleSection 
+          title="Divider Style" 
+          icon={<Minus size={14} />}
+          defaultOpen
+        >
+          <div className="builder-v3-field-group">
+            <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Color</Label>
+            <div className="flex gap-2">
+              <div 
+                className="builder-v3-color-swatch"
+                style={{ background: block.props.color || '#e5e7eb' }}
+              >
+                <input
+                  type="color"
+                  value={block.props.color || '#e5e7eb'}
+                  onChange={(e) => onUpdate({ props: { ...block.props, color: e.target.value } })}
+                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                />
+              </div>
+              <Input
+                value={block.props.color || '#e5e7eb'}
+                onChange={(e) => onUpdate({ props: { ...block.props, color: e.target.value } })}
+                className="builder-v3-input builder-v3-control-md flex-1"
+                placeholder="#e5e7eb"
+              />
+            </div>
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {/* Choice Options Section */}
+      {block.type === 'choice' && (
+        <ChoiceOptionsEditor block={block} onUpdate={onUpdate} />
+      )}
     </div>
+  );
+}
+
+// =============================================================================
+// CHOICE OPTIONS EDITOR
+// =============================================================================
+
+interface ChoiceOptionsEditorProps {
+  block: Block;
+  onUpdate: (updates: Partial<Block>) => void;
+}
+
+function ChoiceOptionsEditor({ block, onUpdate }: ChoiceOptionsEditorProps) {
+  const options = block.props.options || [];
+
+  const addOption = () => {
+    const newOption = {
+      id: `opt_${Date.now()}`,
+      label: `Option ${options.length + 1}`,
+      value: `option_${options.length + 1}`,
+    };
+    onUpdate({ props: { ...block.props, options: [...options, newOption] } });
+  };
+
+  const updateOption = (index: number, updates: Partial<typeof options[0]>) => {
+    const newOptions = [...options];
+    newOptions[index] = { ...newOptions[index], ...updates };
+    onUpdate({ props: { ...block.props, options: newOptions } });
+  };
+
+  const removeOption = (index: number) => {
+    const newOptions = options.filter((_, i) => i !== index);
+    onUpdate({ props: { ...block.props, options: newOptions } });
+  };
+
+  return (
+    <CollapsibleSection 
+      title="Choice Options" 
+      icon={<ListChecks size={14} />}
+      defaultOpen
+    >
+      <div className="space-y-2">
+        {options.map((option, index) => (
+          <div key={option.id} className="flex gap-2 items-center">
+            <Input
+              value={option.label}
+              onChange={(e) => updateOption(index, { label: e.target.value, value: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
+              className="builder-v3-input builder-v3-control-md flex-1"
+              placeholder={`Option ${index + 1}`}
+            />
+            <button
+              onClick={() => removeOption(index)}
+              className="builder-v3-icon-btn text-[hsl(var(--builder-v3-error))]"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+
+        <button
+          onClick={addOption}
+          className="builder-v3-inspector-action builder-v3-inspector-action--secondary w-full mt-2"
+        >
+          <Plus size={14} />
+          Add Option
+        </button>
+      </div>
+
+      <div className="builder-v3-field-row mt-3">
+        <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Multi-select</Label>
+        <Switch
+          checked={block.props.multiSelect || false}
+          onCheckedChange={(checked) => onUpdate({ props: { ...block.props, multiSelect: checked } })}
+        />
+      </div>
+
+      <div className="builder-v3-field-group mt-3">
+        <Label className="text-[11px] font-medium text-[hsl(var(--builder-v3-text-muted))]">Layout</Label>
+        <div className="builder-v3-toggle-pill w-full">
+          {(['vertical', 'horizontal', 'grid'] as const).map((layout) => (
+            <button
+              key={layout}
+              onClick={() => onUpdate({ props: { ...block.props, layout } })}
+              className={cn(
+                'builder-v3-toggle-option flex-1 text-xs capitalize',
+                block.props.layout === layout && 'builder-v3-toggle-option--active'
+              )}
+            >
+              {layout}
+            </button>
+          ))}
+        </div>
+      </div>
+    </CollapsibleSection>
   );
 }
 
