@@ -398,30 +398,101 @@ function createFormBlockBlock(): Block {
 }
 
 /**
- * Appointment Block - Calendar booking widget placeholder
+ * Appointment Block - Perspective-style booking form with icons
  */
 function createAppointmentBlock(): Block {
   return {
     id: generateId(),
     type: 'booking' as BlockType,
     label: 'Appointment',
-    elements: [{
-      id: generateId(),
-      type: 'calendar-embed' as ElementType,
-      content: '',
-      props: {
-        placeholder: true,
-        placeholderText: 'Calendar booking will appear here',
-        aspectRatio: '4:3',
-        borderRadius: '12px',
-        backgroundColor: '#F9FAFB',
-        border: '2px dashed #E5E7EB',
-        embedType: 'calendly',
-        embedUrl: '',
-      }
-    }],
+    elements: [
+      {
+        id: generateId(),
+        type: 'heading' as ElementType,
+        content: 'Book an appointment now:',
+        props: {
+          level: 2,
+          fontSize: '2xl',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          textColor: '#111827',
+          lineHeight: '1.2',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'input' as ElementType,
+        content: '',
+        props: {
+          placeholder: 'Your name',
+          inputType: 'text',
+          required: true,
+          borderRadius: '16px',
+          padding: '20px 24px 20px 56px',
+          fontSize: '16px',
+          border: '1px solid #E5E7EB',
+          backgroundColor: '#F9FAFB',
+          fullWidth: true,
+          icon: 'user',
+          iconPosition: 'left',
+          iconColor: '#9CA3AF',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'input' as ElementType,
+        content: '',
+        props: {
+          placeholder: 'Your email address',
+          inputType: 'email',
+          required: true,
+          borderRadius: '16px',
+          padding: '20px 24px 20px 56px',
+          fontSize: '16px',
+          border: '1px solid #E5E7EB',
+          backgroundColor: '#F9FAFB',
+          fullWidth: true,
+          icon: 'mail',
+          iconPosition: 'left',
+          iconColor: '#9CA3AF',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'checkbox' as ElementType,
+        content: 'I accept the privacy policy.',
+        props: {
+          required: true,
+          checkboxSize: 20,
+          checkboxColor: '#2563EB',
+          checkboxBorderRadius: '4px',
+          labelColor: '#374151',
+          labelSize: 'sm',
+          gap: 12,
+          linkText: 'privacy policy.',
+          linkUrl: '/privacy',
+        }
+      },
+      {
+        id: generateId(),
+        type: 'button' as ElementType,
+        content: 'Continue to calendar',
+        props: {
+          variant: 'primary',
+          size: 'lg',
+          fullWidth: true,
+          borderRadius: '16px',
+          backgroundColor: '#2563EB',
+          textColor: '#FFFFFF',
+          fontWeight: '600',
+          paddingVertical: 20,
+          shadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+        }
+      },
+    ],
     props: {
-      alignment: 'center',
+      alignment: 'stretch',
+      gap: 16,
     }
   };
 }
