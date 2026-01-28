@@ -242,7 +242,7 @@ function createQuizBlock(): Block {
 }
 
 /**
- * Video Question Block - Video with multiple choice below
+ * Video Question Block - Perspective-style dark video player with play button
  */
 function createVideoQuestionBlock(): Block {
   return {
@@ -257,29 +257,16 @@ function createVideoQuestionBlock(): Block {
         props: {
           src: '',
           aspectRatio: '16:9',
-          borderRadius: '12px',
+          borderRadius: '20px',
           placeholder: true,
-          placeholderText: 'Add your video',
+          // Perspective-style dark video player
+          placeholderStyle: 'dark',
+          backgroundColor: '#1E293B',
+          showPlayButton: true,
+          playButtonStyle: 'circle',
+          playButtonColor: '#FFFFFF',
+          playButtonSize: 56,
           controls: true,
-        }
-      },
-      {
-        id: generateId(),
-        type: 'multiple-choice' as ElementType,
-        content: 'Select your answer',
-        props: {
-          options: [
-            { id: generateId(), label: 'Answer A' },
-            { id: generateId(), label: 'Answer B' },
-            { id: generateId(), label: 'Answer C' },
-          ],
-          layout: 'vertical',
-          cardStyle: true,
-          cardBackgroundColor: '#2563EB',
-          cardTextColor: '#FFFFFF',
-          cardBorderRadius: '12px',
-          gap: 12,
-          fullWidth: true,
         }
       },
     ],
