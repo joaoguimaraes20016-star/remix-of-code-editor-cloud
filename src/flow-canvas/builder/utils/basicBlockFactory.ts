@@ -139,7 +139,7 @@ function createHeadingBlock(): Block {
 }
 
 /**
- * Button Block - Primary CTA with polished styling
+ * Button Block - Perspective-style full-width CTA
  */
 function createButtonBlock(): Block {
   return {
@@ -149,23 +149,24 @@ function createButtonBlock(): Block {
     elements: [{
       id: generateId(),
       type: 'button' as ElementType,
-      content: 'Get Started',
+      content: 'Discover',
       props: {
         variant: 'primary',
         size: 'lg',
-        fullWidth: false,
-        borderRadius: '12px',
+        fullWidth: true,
+        borderRadius: '16px',
         backgroundColor: '#2563EB',
         textColor: '#FFFFFF',
         fontWeight: '600',
+        fontSize: '18px',
         paddingHorizontal: 32,
-        paddingVertical: 16,
-        hoverTransform: 'translateY(-2px)',
-        shadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+        paddingVertical: 20,
+        hoverTransform: 'translateY(-1px)',
+        shadow: '0 4px 14px rgba(37, 99, 235, 0.3)',
       }
     }],
     props: {
-      alignment: 'center',
+      alignment: 'stretch',
     }
   };
 }
