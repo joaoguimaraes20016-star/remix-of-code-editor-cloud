@@ -1,127 +1,73 @@
 
 
-# Fix v3 Builder Rendering Issues
+# Fix v3 Builder CSS Not Loading
 
-## Problems Found
+## Problem Identified
 
-Looking at the screenshot and the database data, I found several issues causing the "broken" appearance:
+The v3 builder **CSS is not being loaded** because the FunnelEditor page imports the Editor component directly from the component file instead of from the package index:
 
-### Issue 1: Raw HTML Being Rendered as Text
-The old builders stored rich text as HTML markup in the `content` field:
+```tsx
+// Current (BROKEN) - CSS not imported
+import { Editor } from '@/funnel-builder-v3/components/Editor';
+
+// Correct - CSS is imported via index.ts
+import { Editor } from '@/funnel-builder-v3';
 ```
-content: "<span style="font-weight: 700">200+ </span>STUDENTS BECAME TOGI..."
+
+The `src/funnel-builder-v3/index.ts` file contains the CSS import:
+```tsx
+import './styles/builder.css';  // ← This never runs
+export { Editor } from './components/Editor';
 ```
-But `TextBlock` and `HeadingBlock` render this as plain text.
 
-### Issue 2: Icon Names as Text
-Some blocks have icon references stored as strings like `"ArrowDown"` that should render as actual icons.
+## The Fix
 
-### Issue 3: Data Conversion Not Extracting Content Properly
-The `dataConverter.ts` extracts content directly from props, but the old format stores it differently. Some text appears with metadata tags inline.
+**One simple change** to `src/pages/FunnelEditor.tsx`:
 
-### Issue 4: Device Frame White Background
-The canvas area inside the device frame shows a white background instead of respecting the screen's background settings.
+```diff
+- import { Editor } from '@/funnel-builder-v3/components/Editor';
++ import { Editor } from '@/funnel-builder-v3';
+```
+
+This ensures the index file runs, which imports the CSS file with all the dark theme variables.
+
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/pages/FunnelEditor.tsx` | Update import path for Editor component |
+
+**Total: 1 line changed**
 
 ---
 
-## Fixes Required
+## Verification
 
-### 1. Update TextBlock to Render HTML Content (~15 lines)
-**File: `src/funnel-builder-v3/components/blocks/TextBlock.tsx`**
+After this fix:
+1. The CSS variables (`--builder-v3-bg`, `--builder-v3-surface`, etc.) will be defined
+2. The Editor shell will have the dark charcoal background (HSL 220 13% 8%)
+3. All panels will have proper dark surfaces
+4. The canvas will have the very dark background
+5. Selection states, animations, and all v3 CSS classes will work
 
-```tsx
-// Before
-<p>{block.content}</p>
+## Why This Works
 
-// After - sanitize and render HTML
-<p dangerouslySetInnerHTML={{ __html: sanitizeContent(block.content) }} />
+The CSS import chain:
 ```
-
-Also add logic to strip inline metadata strings (fontSize:, textAlign:, placeholder:) that got concatenated.
-
-### 2. Update HeadingBlock to Render HTML Content (~10 lines)
-**File: `src/funnel-builder-v3/components/blocks/HeadingBlock.tsx`**
-
-Same pattern - allow HTML rendering for styled headings.
-
-### 3. Add Icon Block Rendering (~35 lines)
-**File: `src/funnel-builder-v3/components/blocks/IconBlock.tsx`**
-
-Create a new block type for rendering icon elements with proper Lucide icon lookup.
-
-### 4. Fix Data Converter Content Extraction (~30 lines)
-**File: `src/funnel-builder-v3/utils/dataConverter.ts`**
-
-Update `extractBlocksFromCanvasNode` to:
-- Handle HTML content properly
-- Map `icon` type to proper block
-- Clean up inline metadata strings
-- Handle payment/checkout blocks
-
-### 5. Update BlockRenderer for Icon Type (~5 lines)
-**File: `src/funnel-builder-v3/components/blocks/BlockRenderer.tsx`**
-
-Add case for 'icon' block type.
-
-### 6. Fix Canvas Background Styling (~10 lines)
-**File: `src/funnel-builder-v3/components/Canvas.tsx`**
-
-Ensure the device frame internal content has proper default background (white for light theme content) while the canvas area itself is dark.
-
----
-
-## Summary
-
-| File | Changes |
-|------|---------|
-| `TextBlock.tsx` | Add dangerouslySetInnerHTML for HTML content |
-| `HeadingBlock.tsx` | Add dangerouslySetInnerHTML for HTML content |
-| `IconBlock.tsx` | NEW - Render Lucide icons from content string |
-| `dataConverter.ts` | Fix content extraction and metadata stripping |
-| `BlockRenderer.tsx` | Add icon case |
-| `Canvas.tsx` | Fix device frame background |
-
-**Total: ~105 lines modified/added**
-
----
-
-## Technical Details
-
-### Content Sanitization Helper
-```tsx
-function sanitizeContent(content: string): string {
-  // Strip inline metadata that got concatenated
-  return content
-    .replace(/\s*fontSize:\d+px\s*/g, '')
-    .replace(/\s*textAlign:\w+\s*/g, '')
-    .replace(/\s*placeholder:[^<]+/g, '');
-}
+FunnelEditor.tsx
+  └── import { Editor } from '@/funnel-builder-v3'
+        └── funnel-builder-v3/index.ts
+              └── import './styles/builder.css'  ✅ CSS loads!
 ```
-
-### Icon Block Component
-```tsx
-import * as Icons from 'lucide-react';
-
-export function IconBlock({ block }: IconBlockProps) {
-  const iconName = block.content || block.props?.icon || 'HelpCircle';
-  const Icon = Icons[iconName as keyof typeof Icons] || Icons.HelpCircle;
-  return <Icon className="w-6 h-6" style={{ color: block.props?.color }} />;
-}
-```
-
-### Data Converter Fix
-Update the element type mapping to handle:
-- `icon` → new IconBlock
-- `payment` → embedded payment block or placeholder
-- Content extraction from `props.content` with cleanup
 
 ---
 
 ## Success Criteria
 
-1. Rich text with `<span>` styling renders properly (bold, colors, italic)
-2. Icons render as actual Lucide icons, not text
-3. No metadata strings visible in content
-4. Device frame shows white background inside (for content) with dark canvas around it
-5. All existing block types continue to work
+1. Dark charcoal theme visible in the builder
+2. Left panel has dark surface with proper text colors
+3. Right panel has dark surface with themed tabs
+4. Canvas has very dark background
+5. Device frame has proper shadow/glow effects
+6. No TypeScript errors
 
