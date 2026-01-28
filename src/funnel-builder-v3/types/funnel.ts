@@ -56,6 +56,20 @@ export type BlockType =
   | 'embed';     // Calendar, HTML, etc.
 
 // =============================================================================
+// ANIMATION & GRADIENT TYPES (imported from shared)
+// =============================================================================
+
+// Re-export from shared for convenience
+export type { 
+  AnimationSettings, 
+  AnimationEffect, 
+  AnimationTrigger, 
+  AnimationEasing,
+  GradientValue,
+  GradientStop,
+} from '../shared';
+
+// =============================================================================
 // BLOCK PROPERTIES
 // =============================================================================
 
@@ -102,6 +116,16 @@ export interface BlockProps {
   // Universal
   hidden?: boolean;
   className?: string;
+  
+  // Animation (uses AnimationSettings from shared)
+  animation?: import('../shared').AnimationSettings;
+  
+  // Advanced styling
+  gradient?: import('../shared').GradientValue;
+  useGradient?: boolean;
+  shadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | 'glow';
+  borderRadius?: number;
+  hoverEffect?: 'none' | 'glow' | 'lift' | 'pulse' | 'shine';
 }
 
 export interface ChoiceOption {
@@ -144,15 +168,24 @@ export interface FunnelSettings {
 }
 
 export interface ScreenBackground {
-  type: 'solid' | 'gradient' | 'image';
+  type: 'solid' | 'gradient' | 'image' | 'video' | 'pattern';
   color?: string;
   gradient?: {
     from: string;
     to: string;
     angle: number;
   };
+  // Advanced gradient (uses GradientValue from shared)
+  gradientValue?: import('../shared').GradientValue;
   image?: string;
-  overlay?: string;
+  video?: string;
+  pattern?: {
+    type: 'dots' | 'grid' | 'lines';
+    color: string;
+    opacity: number;
+    size?: number;
+  };
+  overlay?: 'none' | 'dark' | 'light' | 'gradient-dark' | 'gradient-light';
   overlayOpacity?: number;
 }
 
