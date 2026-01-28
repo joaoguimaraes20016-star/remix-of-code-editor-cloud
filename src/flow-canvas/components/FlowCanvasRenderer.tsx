@@ -1786,6 +1786,8 @@ export function FlowCanvasRenderer({
               grayscale={element.props?.grayscale !== false}
               logoHeight={element.props?.logoHeight as number || 40}
               gap={element.props?.gap as number || 48}
+              showTextFallback={element.props?.showTextFallback === true}
+              hoverEffect={(element.props?.hoverEffect as 'none' | 'color' | 'scale' | 'both') || 'color'}
             />
           </React.Suspense>
         );

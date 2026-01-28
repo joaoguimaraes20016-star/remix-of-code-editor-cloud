@@ -3521,6 +3521,8 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                   grayscale={element.props?.grayscale !== false}
                   logoHeight={element.props?.logoHeight as number || 40}
                   gap={element.props?.gap as number || 48}
+                  showTextFallback={element.props?.showTextFallback === true}
+                  hoverEffect={(element.props?.hoverEffect as 'none' | 'color' | 'scale' | 'both') || 'color'}
                   isBuilder={true}
                   onLogosChange={(newLogos) => {
                     onUpdate?.({ props: { ...element.props, logos: newLogos } });

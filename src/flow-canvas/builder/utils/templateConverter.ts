@@ -100,6 +100,10 @@ function nodeToElement(node: CanvasNode): Element {
         pauseOnHover: true,
         grayscale: true,
         showTextFallback: true,
+        hoverEffect: 'color',
+        logoHeight: 32,
+        gap: 40,
+        animated: false,
       },
     };
   }
@@ -118,6 +122,7 @@ function nodeToElement(node: CanvasNode): Element {
         rating: (node.props?.rating as number) || 4.8,
         ratingCount: (node.props?.count as number) || 148,
         ratingSource: (node.props?.source as string) || 'reviews',
+        alignment: 'center',
       },
     };
   }
