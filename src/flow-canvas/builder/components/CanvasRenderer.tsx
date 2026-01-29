@@ -3685,7 +3685,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                 onDelete={onDelete}
               />
             )}
-            <div onClick={(e) => { e.stopPropagation(); onSelect(); }}>
+            <div onClick={(e) => { e.stopPropagation(); onSelect(); }} className="min-h-[60px]">
               <React.Suspense fallback={<div className="animate-pulse h-16 bg-muted rounded-xl" />}>
                 <LogoMarquee
                   logos={logos}
@@ -3696,6 +3696,8 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
                   grayscale={element.props?.grayscale !== false}
                   logoHeight={element.props?.logoHeight as number || 40}
                   gap={element.props?.gap as number || 48}
+                  fadeEdgeWidth={element.props?.fadeEdgeWidth as number || 48}
+                  backgroundColor={element.props?.backgroundColor as string || undefined}
                   showTextFallback={element.props?.showTextFallback === true}
                   hoverEffect={(element.props?.hoverEffect as 'none' | 'color' | 'scale' | 'both') || 'color'}
                   isBuilder={true}
