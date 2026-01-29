@@ -1,169 +1,152 @@
 
-# Fix Multiple Choice Rendering & Font Consistency
+# Bug Audit: Funnel Builder New Features
 
-## Problem Summary
+## Summary of Issues Found
 
-Two critical issues identified in the funnel builder:
-
-1. **Multiple Choice block renders as generic placeholder** - When adding a Multiple Choice block, instead of showing 4 Perspective-style blue choice cards with emoji icons, it displays a generic fallback that says "Multiple Choice"
-2. **Font inconsistencies remain** - The Inter font isn't being applied consistently across all builder components
-
-## Root Cause Analysis
-
-### Issue 1: Missing Case Handler
-The `CanvasRenderer.tsx` has no `case 'multiple-choice':` or `case 'single-choice':` handlers in its element type switch statement (around line 1132). When the interactive block factory creates a block with element type `multiple-choice`, it falls through to the `default:` case which renders a generic placeholder.
-
-**Factory output (correct):**
-```typescript
-// From interactiveBlockFactory.ts
-{
-  type: 'multiple-choice',
-  props: {
-    options: [
-      { id: '...', label: 'Social media', icon: '🎟️' },
-      { id: '...', label: 'Word of mouth', icon: '💬' },
-      { id: '...', label: 'Advertising', icon: '⭐' },
-      { id: '...', label: 'Search engine', icon: '👀' },
-    ],
-    layout: 'vertical',
-    cardStyle: 'filled',
-    cardBackgroundColor: '#2563EB',
-    ...
-  }
-}
-```
-
-**Actual rendering (broken):**
-Falls through to default case showing "Multiple Choice" text label instead of actual cards.
-
-### Issue 2: CSS Specificity
-Some builder components have inline styles or tailwind classes that override the global `font-family: var(--font-sans)` setting.
-
-## Implementation Plan
-
-### Phase 1: Add Multiple Choice Renderer (Priority: Critical)
-
-**File: `src/flow-canvas/builder/components/CanvasRenderer.tsx`**
-
-Add a new case handler for `multiple-choice` and `single-choice` element types that renders Perspective-style choice cards:
-
-1. Add `case 'multiple-choice':` and `case 'single-choice':` handlers before the default case
-2. Render a vertical stack of clickable cards, each showing:
-   - Emoji icon on the left
-   - Choice label text
-   - Full-width blue background (Perspective style)
-   - Rounded corners (16px)
-   - Hover/selected states
-3. Wire up selection handling for preview mode
-4. Support both `vertical` and `grid` layouts
-
-**Technical implementation:**
-- Extract `options` array from `element.props`
-- Map over options to render individual choice cards
-- Apply Perspective styling: `bg-[#2563EB]`, `text-white`, `rounded-2xl`, `px-7 py-6`
-- Handle selection state with ring indicator
-
-### Phase 2: Add Quiz/Grid Choice Renderer (Priority: High)
-
-For quiz blocks with image cards in a 2x2 grid layout:
-- Render placeholder image areas
-- Blue footer with label
-- Grid layout with gap
-
-### Phase 3: Force Font Inheritance (Priority: Medium)
-
-**File: `src/flow-canvas/index.css`**
-
-Add targeted rules to force Inter font across all canvas content:
-
-```css
-/* Force Inter font on all canvas content */
-.device-frame,
-.device-frame *,
-[data-canvas-element],
-[data-canvas-element] * {
-  font-family: var(--font-sans) !important;
-  -webkit-font-smoothing: antialiased !important;
-  -moz-osx-font-smoothing: grayscale !important;
-}
-```
-
-### Phase 4: Update Block Picker Components
-
-**Files:**
-- `src/flow-canvas/builder/components/SectionPicker/InteractiveBlockCard.tsx`
-- `src/flow-canvas/builder/components/SectionPicker/BlockTileCard.tsx`
-- `src/flow-canvas/builder/components/BlockAdder.tsx`
-
-Ensure all text elements explicitly use `font-sans` and proper tracking.
+After thoroughly investigating the codebase, I've identified **7 major bugs** causing the glitchy, flashing, non-editable behavior.
 
 ---
 
-## Detailed Code Changes
+## Issue 1: Missing Element Renderers (CRITICAL)
 
-### CanvasRenderer.tsx - New Choice Element Handlers
+**Symptoms:** Elements flash/pulse briefly then display fallback. Cannot edit.
 
-Insert before the `default:` case (around line 3645):
+**Root Cause:** Several new element types in `basicBlockFactory.ts` have NO corresponding `case` handlers in `CanvasRenderer.tsx`:
 
+| Element Type | Created In Factory | Case Handler in CanvasRenderer |
+|--------------|-------------------|-------------------------------|
+| `social-proof` | Reviews block | MISSING |
+| `feature-list` | List block | MISSING |
+| `input` | Form blocks | MISSING (falls to default) |
+| `checkbox` | Form/Consent blocks | MISSING |
+| `gradient-text` | Premium block | MISSING |
+| `underline-text` | Premium block | MISSING |
+| `stat-number` | Premium block | MISSING |
+| `avatar-group` | Premium block | MISSING |
+| `ticker` | Premium block | MISSING |
+| `badge` | Premium block | MISSING |
+| `process-step` | Premium block | MISSING |
+
+**Why It Flashes:** The `React.Suspense` fallback shows `animate-pulse` skeleton loaders. When the renderer hits the `default` case, it shows the fallback placeholder instead of real content.
+
+**Fix:** Add explicit `case` handlers for each missing element type in `CanvasRenderer.tsx`.
+
+---
+
+## Issue 2: Premium Blocks Have No Factory Functions
+
+**Symptoms:** Clicking premium blocks in the picker does nothing useful.
+
+**Root Cause:** `BasicBlockGrid.tsx` lists 7 premium blocks (gradient-text, underline-text, stat-number, avatar-group, ticker, badge, process-step), but these IDs are NOT handled by:
+- `createBasicBlock()` in `basicBlockFactory.ts`
+- `createInteractiveBlock()` in `interactiveBlockFactory.ts`
+
+The picker calls `onSelectTemplate(blockId)` but no factory knows how to create these blocks.
+
+**Fix:** Add factory functions for all premium block types OR remove them from the picker until implemented.
+
+---
+
+## Issue 3: Block ID Mismatch Between Picker and Factory
+
+**Symptoms:** Some blocks don't appear when added.
+
+**Root Cause:** Block IDs in `BasicBlockGrid.tsx` don't match factory function expectations:
+
+| Picker ID | Factory Expected ID |
+|-----------|---------------------|
+| `logo-bar` | `logo-bar` (OK) |
+| `video` | `video` (OK) |
+| `form` | `form` (BUT creates simple form, not form-block) |
+
+**Fix:** Ensure consistent ID mapping between picker and factory.
+
+---
+
+## Issue 4: Quiz/Choice Blocks Missing Grid Layout Renderer
+
+**Symptoms:** Quiz blocks with 2x2 grid layout don't render correctly.
+
+**Root Cause:** The `case 'single-choice':` handler was added but only supports vertical/flex layout. Quiz blocks specify `layout: 'grid'` with `columns: 2`, but the renderer doesn't properly handle the image-card grid style.
+
+The current code:
 ```typescript
-case 'multiple-choice':
-case 'single-choice': {
-  const options = (element.props?.options as Array<{
-    id: string;
-    label: string;
-    icon?: string;
-    imageUrl?: string;
-  }>) || [];
-  
-  const layout = (element.props?.layout as string) || 'vertical';
-  const cardBg = (element.props?.cardBackgroundColor as string) || '#2563EB';
-  const cardTextColor = (element.props?.cardTextColor as string) || '#FFFFFF';
-  const cardRadius = (element.props?.cardBorderRadius as string) || '16px';
-  const gap = (element.props?.gap as number) || 16;
-  const isMultiple = element.type === 'multiple-choice';
-  
-  return (
-    <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
-      {stateStylesCSS && <style>{stateStylesCSS}</style>}
-      {!readOnly && (
-        <UnifiedElementToolbar ... />
-      )}
-      <div 
-        className={cn(
-          'flex flex-col w-full',
-          layout === 'grid' ? 'grid grid-cols-2' : 'flex flex-col'
-        )}
-        style={{ gap: `${gap}px` }}
-        onClick={(e) => { e.stopPropagation(); onSelect(); }}
-      >
-        {options.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            className={cn(
-              'flex items-center gap-4 w-full text-left transition-all duration-200',
-              'hover:opacity-90 hover:scale-[1.01]',
-              'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-            )}
-            style={{
-              backgroundColor: cardBg,
-              color: cardTextColor,
-              borderRadius: cardRadius,
-              padding: '24px 28px',
-              fontWeight: 500,
-              fontSize: '16px',
-            }}
-          >
-            {option.icon && (
-              <span className="text-2xl">{option.icon}</span>
-            )}
-            <span className="font-medium">{option.label}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
+layout === 'grid' ? 'grid grid-cols-2' : 'flex flex-col'
+```
+
+But it doesn't render the image placeholders, footers, or card structure that quiz blocks define.
+
+**Fix:** Extend the choice renderer to support the `cardStyle: 'image-footer'` variant with proper image placeholders and blue footer labels.
+
+---
+
+## Issue 5: Form Input Elements Missing Proper Renderer
+
+**Symptoms:** Form blocks show raw placeholders instead of styled inputs.
+
+**Root Cause:** The interactive block factory creates elements with `type: 'input'` and rich props (borderRadius, padding, icon, iconPosition), but `CanvasRenderer.tsx` doesn't have a case handler for `'input'` type with these props.
+
+It falls through to the default case showing "Input" text instead of an actual input field.
+
+**Fix:** Add `case 'input':` handler that renders a proper styled input with icon support.
+
+---
+
+## Issue 6: Checkbox/Consent Elements Missing Renderer
+
+**Symptoms:** Consent checkboxes in forms don't render.
+
+**Root Cause:** `createFormBlockBlock()` creates elements with `type: 'checkbox'` containing:
+- checkboxSize, checkboxColor, checkboxBorderRadius
+- labelColor, labelSize
+- linkText, linkUrl
+
+No case handler exists for `'checkbox'` type elements.
+
+**Fix:** Add `case 'checkbox':` handler with proper styling.
+
+---
+
+## Issue 7: Font Inheritance Breaking in Lazy-Loaded Components
+
+**Symptoms:** Some elements show system fonts instead of Inter.
+
+**Root Cause:** Lazy-loaded components (`React.lazy()`) mount outside the CSS variable context briefly, causing font flicker. The `!important` rules in `index.css` help but don't fully solve it for dynamically rendered content.
+
+**Fix:** Ensure all lazy-loaded element components explicitly inherit `font-family: var(--font-sans)` in their root elements.
+
+---
+
+## Implementation Plan
+
+### Phase 1: Add Missing Element Renderers (Priority: Critical)
+
+**File: `src/flow-canvas/builder/components/CanvasRenderer.tsx`**
+
+Add case handlers before `default:` for:
+
+1. **`case 'social-proof':`** - Render avatar group + stars + rating text
+2. **`case 'feature-list':`** - Render emoji icon list with titles/descriptions
+3. **`case 'input':`** - Render styled input with icon support
+4. **`case 'checkbox':`** - Render checkbox with label and link
+
+### Phase 2: Fix Quiz/Choice Grid Layout
+
+Extend `case 'single-choice':` to detect `cardStyle: 'image-footer'` and render:
+- 2x2 grid layout
+- Image placeholder areas
+- Blue footer with white label text
+
+### Phase 3: Remove or Implement Premium Blocks
+
+**Option A (Quick):** Remove premium blocks from `BasicBlockGrid.tsx` until implemented
+**Option B (Full):** Add factory functions and renderers for all 7 premium types
+
+### Phase 4: Ensure Font Consistency
+
+Update all lazy-loaded components to explicitly set:
+```css
+font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
 ```
 
 ---
@@ -172,26 +155,20 @@ case 'single-choice': {
 
 | File | Changes |
 |------|---------|
-| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Add `case 'multiple-choice':` and `case 'single-choice':` handlers with full Perspective-style rendering |
-| `src/flow-canvas/index.css` | Add !important font rules for canvas content inheritance |
-| `src/flow-canvas/builder/components/BlockAdder.tsx` | Add explicit font-sans class |
-| `src/flow-canvas/builder/components/SectionPicker/InteractiveBlockCard.tsx` | Ensure font consistency |
-| `src/flow-canvas/builder/components/SectionPicker/BlockTileCard.tsx` | Ensure font consistency |
+| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Add 4+ new case handlers (social-proof, feature-list, input, checkbox) |
+| `src/flow-canvas/builder/components/CanvasRenderer.tsx` | Extend single-choice handler for image-footer grid style |
+| `src/flow-canvas/builder/utils/basicBlockFactory.ts` | Add premium block factory functions OR... |
+| `src/flow-canvas/builder/components/SectionPicker/BasicBlockGrid.tsx` | Remove premium blocks until implemented |
+| `src/flow-canvas/builder/components/elements/*.tsx` | Add explicit font-family to lazy-loaded components |
 
 ---
 
-## Expected Result
+## Expected Outcome
 
 After implementation:
-1. Adding a "Multiple Choice" block will render 4 Perspective-style blue cards with emoji icons (Social media, Word of mouth, Advertising, Search engine)
-2. Cards will have proper hover states and selection behavior
-3. All text in the builder will use Inter font consistently
-4. The visual output will match the Perspective screenshots provided
-
----
-
-## Technical Notes
-
-- The `multiple-choice` element already has all the data (4 options with icons/labels) in the factory - we just need to render it
-- Grid layouts (2x2) should use `grid grid-cols-2` with image placeholders for quiz-style blocks
-- Selection state tracking will integrate with the existing preview mode form values system
+1. All blocks from the picker will render correctly
+2. No more flashing/pulse animations on real content
+3. All elements will be editable when clicked
+4. Quiz blocks will show proper 2x2 image card grids
+5. Form blocks will show styled inputs with icons
+6. Fonts will be consistent across all components
