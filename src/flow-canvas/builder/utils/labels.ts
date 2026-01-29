@@ -98,6 +98,9 @@ export const elementTypeLabels: Record<ElementType, string> = {
   link: 'Link',
   'multiple-choice': 'Multiple Choice',
   'single-choice': 'Single Choice',
+  // Social proof elements
+  'social-proof': 'Social Proof',
+  'feature-list': 'Feature List',
   // Premium element types
   'gradient-text': 'Gradient Text',
   'underline-text': 'Underline Text',

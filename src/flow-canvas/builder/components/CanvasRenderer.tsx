@@ -2113,6 +2113,170 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           </div>
         );
 
+      // ===============================================
+      // SOCIAL PROOF - Perspective-style avatars + stars + rating
+      // ===============================================
+      case 'social-proof': {
+        const avatarCount = (element.props?.avatarCount as number) || 4;
+        const avatarSize = (element.props?.avatarSize as number) || 48;
+        const avatarOverlap = (element.props?.avatarOverlap as number) || 12;
+        const showStars = element.props?.showStars !== false;
+        const starCount = (element.props?.starCount as number) || 5;
+        const starSize = (element.props?.starSize as number) || 24;
+        const starColor = (element.props?.starColor as string) || '#FBBF24';
+        const rating = (element.props?.rating as number) || 5.0;
+        const ratingText = (element.props?.ratingText as string) || 'from 200+ reviews';
+        const ratingColor = (element.props?.ratingColor as string) || '#111827';
+        const subtextColor = (element.props?.subtextColor as string) || '#6B7280';
+        const alignment = (element.props?.alignment as string) || 'center';
+        const gap = (element.props?.gap as number) || 12;
+        
+        // Generate avatar placeholders with colors
+        const avatarColors = ['#8B5CF6', '#EC4899', '#3B82F6', '#10B981', '#F59E0B'];
+        
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="social-proof"
+                elementLabel="Social Proof"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div 
+              className={cn(
+                'flex flex-col items-center w-full font-sans',
+                alignment === 'left' && 'items-start',
+                alignment === 'right' && 'items-end'
+              )}
+              style={{ gap: `${gap}px`, padding: element.props?.padding as string || '24px' }}
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            >
+              {/* Avatar group */}
+              <div className="flex items-center">
+                {Array.from({ length: avatarCount }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-full border-2 border-white flex items-center justify-center text-white font-medium"
+                    style={{
+                      width: avatarSize,
+                      height: avatarSize,
+                      backgroundColor: avatarColors[i % avatarColors.length],
+                      marginLeft: i > 0 ? -avatarOverlap : 0,
+                      fontSize: avatarSize * 0.4,
+                      zIndex: avatarCount - i,
+                    }}
+                  >
+                    {String.fromCharCode(65 + i)}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Star rating */}
+              {showStars && (
+                <div className="flex items-center gap-0.5">
+                  {Array.from({ length: starCount }).map((_, i) => (
+                    <svg
+                      key={i}
+                      viewBox="0 0 24 24"
+                      fill={starColor}
+                      style={{ width: starSize, height: starSize }}
+                    >
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                  ))}
+                </div>
+              )}
+              
+              {/* Rating text */}
+              <div className="flex items-center gap-2 font-sans">
+                <span style={{ color: ratingColor, fontWeight: 600 }}>{rating.toFixed(1)}</span>
+                <span style={{ color: subtextColor }}>{ratingText}</span>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ===============================================
+      // FEATURE LIST - Perspective-style emoji icon list
+      // ===============================================
+      case 'feature-list': {
+        const items = (element.props?.items as Array<{
+          id: string;
+          icon: string;
+          title: string;
+          description?: string;
+        }>) || [];
+        const layout = (element.props?.layout as string) || 'vertical';
+        const listGap = (element.props?.gap as number) || 20;
+        const iconSize = (element.props?.iconSize as number) || 32;
+        const titleColor = (element.props?.titleColor as string) || '#111827';
+        const descriptionColor = (element.props?.descriptionColor as string) || '#6B7280';
+        const titleFontWeight = (element.props?.titleFontWeight as string) || '600';
+        
+        return (
+          <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
+            {stateStylesCSS && <style>{stateStylesCSS}</style>}
+            {renderIndicatorBadges()}
+            {!readOnly && (
+              <UnifiedElementToolbar
+                elementId={element.id}
+                elementType="feature-list"
+                elementLabel="Feature List"
+                isSelected={isSelected}
+                targetRef={wrapperRef}
+                deviceMode={deviceMode}
+                dragHandleProps={{ attributes, listeners }}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            )}
+            <div 
+              className={cn(
+                'w-full font-sans',
+                layout === 'vertical' ? 'flex flex-col' : 'grid grid-cols-2'
+              )}
+              style={{ 
+                gap: `${listGap}px`,
+                padding: element.props?.padding as string || '16px 0',
+              }}
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            >
+              {items.length > 0 ? items.map((item) => (
+                <div key={item.id} className="flex items-start gap-4">
+                  <span style={{ fontSize: iconSize }} className="flex-shrink-0">
+                    {item.icon}
+                  </span>
+                  <div className="flex flex-col gap-1">
+                    <span style={{ color: titleColor, fontWeight: titleFontWeight }}>
+                      {item.title}
+                    </span>
+                    {item.description && (
+                      <span style={{ color: descriptionColor }}>
+                        {item.description}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )) : (
+                <div className="text-center text-muted-foreground py-8 text-sm">
+                  No features configured
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
       case 'image':
         const imgSrc = element.props?.src as string;
         const isLogoImage = element.props?.isLogo === true;
@@ -3645,6 +3809,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
 
       // ===============================================
       // MULTIPLE CHOICE / SINGLE CHOICE - Perspective-style cards
+      // Supports both filled cards (with icons) and image-footer cards (quiz style)
       // ===============================================
       case 'multiple-choice':
       case 'single-choice': {
@@ -3653,13 +3818,25 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
           label: string;
           icon?: string;
           imageUrl?: string;
+          description?: string;
         }>) || [];
         
         const layout = (element.props?.layout as string) || 'vertical';
+        const cardStyle = (element.props?.cardStyle as string) || 'filled';
         const cardBg = (element.props?.cardBackgroundColor as string) || '#2563EB';
         const cardTextColor = (element.props?.cardTextColor as string) || '#FFFFFF';
         const cardRadius = (element.props?.cardBorderRadius as string) || '16px';
         const gap = (element.props?.gap as number) || 16;
+        const columns = (element.props?.columns as number) || 2;
+        
+        // Image-footer specific props (quiz style)
+        const footerBg = (element.props?.footerBackgroundColor as string) || '#2563EB';
+        const footerTextColor = (element.props?.footerTextColor as string) || '#FFFFFF';
+        const imageAspectRatio = (element.props?.imageAspectRatio as string) || '4:3';
+        
+        // Calculate aspect ratio as number
+        const aspectParts = imageAspectRatio.split(':').map(Number);
+        const aspectValue = aspectParts.length === 2 ? aspectParts[0] / aspectParts[1] : 4/3;
         
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
@@ -3679,36 +3856,92 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
             <div 
               className={cn(
                 'w-full',
-                layout === 'grid' ? 'grid grid-cols-2' : 'flex flex-col'
+                layout === 'grid' ? `grid` : 'flex flex-col'
               )}
-              style={{ gap: `${gap}px` }}
+              style={{ 
+                gap: `${gap}px`,
+                gridTemplateColumns: layout === 'grid' ? `repeat(${columns}, 1fr)` : undefined
+              }}
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
             >
-              {options.length > 0 ? options.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  className={cn(
-                    'flex items-center gap-4 w-full text-left transition-all duration-200',
-                    'hover:opacity-90 hover:scale-[1.01]',
-                    'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-                  )}
-                  style={{
-                    backgroundColor: cardBg,
-                    color: cardTextColor,
-                    borderRadius: cardRadius,
-                    padding: '24px 28px',
-                    fontWeight: 500,
-                    fontSize: '16px',
-                    fontFamily: 'inherit',
-                  }}
-                >
-                  {option.icon && (
-                    <span className="text-2xl flex-shrink-0">{option.icon}</span>
-                  )}
-                  <span className="font-medium">{option.label}</span>
-                </button>
-              )) : (
+              {options.length > 0 ? options.map((option) => {
+                // Image-footer card style (quiz blocks)
+                if (cardStyle === 'image-footer') {
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      className={cn(
+                        'flex flex-col w-full overflow-hidden transition-all duration-200',
+                        'hover:scale-[1.02] hover:shadow-lg',
+                        'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                      )}
+                      style={{
+                        borderRadius: cardRadius,
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      {/* Image placeholder area */}
+                      <div 
+                        className={cn(
+                          'w-full flex items-center justify-center',
+                          isDarkTheme ? 'bg-gray-700' : 'bg-gray-200'
+                        )}
+                        style={{ 
+                          aspectRatio: `${aspectValue}`,
+                          backgroundImage: option.imageUrl ? `url(${option.imageUrl})` : undefined,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                        }}
+                      >
+                        {!option.imageUrl && (
+                          <Image className={cn(
+                            "w-12 h-12",
+                            isDarkTheme ? "text-gray-600" : "text-gray-400"
+                          )} />
+                        )}
+                      </div>
+                      {/* Footer with label */}
+                      <div 
+                        className="w-full px-5 py-4 font-medium text-left"
+                        style={{
+                          backgroundColor: footerBg,
+                          color: footerTextColor,
+                        }}
+                      >
+                        {option.label}
+                      </div>
+                    </button>
+                  );
+                }
+                
+                // Default filled card style
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={cn(
+                      'flex items-center gap-4 w-full text-left transition-all duration-200',
+                      'hover:opacity-90 hover:scale-[1.01]',
+                      'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                    )}
+                    style={{
+                      backgroundColor: cardBg,
+                      color: cardTextColor,
+                      borderRadius: cardRadius,
+                      padding: '24px 28px',
+                      fontWeight: 500,
+                      fontSize: '16px',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    {option.icon && (
+                      <span className="text-2xl flex-shrink-0">{option.icon}</span>
+                    )}
+                    <span className="font-medium">{option.label}</span>
+                  </button>
+                );
+              }) : (
                 // Fallback if no options defined
                 <div className="text-center text-muted-foreground py-8 text-sm">
                   No choices configured
