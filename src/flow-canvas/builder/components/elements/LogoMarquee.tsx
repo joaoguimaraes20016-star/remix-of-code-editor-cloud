@@ -136,12 +136,13 @@ export const LogoMarquee: React.FC<LogoMarqueeProps> = ({
   return (
     <div 
       className={cn(
-        'relative w-full overflow-hidden group',
+        'relative w-full overflow-hidden group py-4',
         className
       )}
       style={{ 
         backgroundColor,
         fontFamily: 'var(--font-sans, Inter, system-ui, sans-serif)',
+        minHeight: logoHeight + 32, // Ensure visible height
       }}
     >
       {/* Fade edges - use backgroundColor prop */}
