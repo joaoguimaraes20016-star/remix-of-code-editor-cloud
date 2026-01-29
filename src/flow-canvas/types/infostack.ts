@@ -28,6 +28,9 @@ export type ElementType =
   // Extended types for flexibility
   | 'multiple-choice'
   | 'single-choice'
+  // Social proof elements
+  | 'social-proof'       // Avatar group + stars + rating text
+  | 'feature-list'       // Emoji icon list with titles/descriptions
   // Premium elements for high-converting funnels
   | 'gradient-text'      // Text with gradient fill (bold accent phrases)
   | 'underline-text'     // Text with custom styled underline
