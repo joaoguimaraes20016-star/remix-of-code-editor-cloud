@@ -17,6 +17,18 @@ import { BuilderContextMenu } from './ContextMenu';
 import { ApplicationFlowCard } from './ApplicationFlowCard';
 import { useFlowContainerSafe, buttonActionToIntent, FlowIntent } from '../contexts/FlowContainerContext';
 import { CanvasErrorBoundary } from './inspectors/shared/CanvasErrorBoundary';
+
+// ============================================
+// HOISTED LAZY IMPORTS - Module Scope (Prevents flashing)
+// These MUST be at module scope, NOT inside render functions
+// ============================================
+const CountdownTimer = React.lazy(() => import('./elements/CountdownTimer'));
+const LoaderAnimation = React.lazy(() => import('./elements/LoaderAnimation'));
+const ImageCarousel = React.lazy(() => import('./elements/ImageCarousel'));
+const LogoMarquee = React.lazy(() => import('./elements/LogoMarquee'));
+const MapEmbed = React.lazy(() => import('./elements/MapEmbed'));
+const HTMLEmbed = React.lazy(() => import('./elements/HTMLEmbed'));
+const TrustpilotWidget = React.lazy(() => import('./elements/TrustpilotWidget'));
 import {
   DndContext,
   closestCenter,
@@ -3504,8 +3516,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
       // ============================================
       
       case 'countdown': {
-        // Import the component dynamically to avoid circular deps
-        const CountdownTimer = React.lazy(() => import('./elements/CountdownTimer'));
+        // CountdownTimer is hoisted to module scope
         const endDate = (element.props?.endDate as string) || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         const countdownStyle = (element.props?.style as 'boxes' | 'inline' | 'minimal' | 'flip') || 'boxes';
         const expiredAction = (element.props?.expiredAction as 'hide' | 'show-message' | 'redirect') || 'show-message';
@@ -3559,7 +3570,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
       }
 
       case 'loader': {
-        const LoaderAnimation = React.lazy(() => import('./elements/LoaderAnimation'));
+        // LoaderAnimation is hoisted to module scope
         const animationType = (element.props?.animationType as 'spinner' | 'progress' | 'dots' | 'pulse' | 'analyzing') || 'analyzing';
         const duration = (element.props?.duration as number) || 3000;
         const loaderText = element.content || 'Analyzing your results...';
@@ -3612,7 +3623,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
       }
 
       case 'carousel': {
-        const ImageCarousel = React.lazy(() => import('./elements/ImageCarousel'));
+        // ImageCarousel is hoisted to module scope
         const slides = (element.props?.slides as Array<{ id: string; src: string; alt?: string }>) || [];
         
         return (
@@ -3654,7 +3665,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
       }
 
       case 'logo-marquee': {
-        const LogoMarquee = React.lazy(() => import('./elements/LogoMarquee'));
+        // LogoMarquee is hoisted to module scope
         const logos = (element.props?.logos as Array<{ id: string; src: string; alt?: string }>) || [];
         
         return (
@@ -3699,7 +3710,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
       }
 
       case 'map-embed': {
-        const MapEmbed = React.lazy(() => import('./elements/MapEmbed'));
+        // MapEmbed is hoisted to module scope
         
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
@@ -3735,7 +3746,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
       }
 
       case 'html-embed': {
-        const HTMLEmbed = React.lazy(() => import('./elements/HTMLEmbed'));
+        // HTMLEmbed is hoisted to module scope
         
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>
@@ -3770,7 +3781,7 @@ const SortableElementRenderer = React.forwardRef<HTMLDivElement, SortableElement
       }
 
       case 'trustpilot': {
-        const TrustpilotWidget = React.lazy(() => import('./elements/TrustpilotWidget'));
+        // TrustpilotWidget is hoisted to module scope
         
         return (
           <div ref={combinedRef} style={style} className={cn(baseClasses, 'relative')} {...stateHandlers}>

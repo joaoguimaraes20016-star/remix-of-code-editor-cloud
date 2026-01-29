@@ -126,6 +126,7 @@ import {
   Star,
   ListOrdered,
   GripVertical,
+  User,
 } from 'lucide-react';
 import { 
   EffectsPickerPopover, 
@@ -2824,7 +2825,274 @@ const ElementInspector: React.FC<{
         </>
       )}
 
-      {/* ========== MAP EMBED SECTION ========== */}
+      {/* ========== SOCIAL PROOF SECTION ========== */}
+      {element.type === 'social-proof' && (
+        <>
+          <CollapsibleSection title="Avatar Group" icon={<User className="w-4 h-4" />} defaultOpen>
+            <div className="pt-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Show Avatars</span>
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.showAvatars, true)} 
+                  onValueChange={(v) => handlePropsChange('showAvatars', v)} 
+                />
+              </div>
+              {coerceBoolean(element.props?.showAvatars, true) && (
+                <>
+                  <FieldGroup label="Avatar Count">
+                    <div className="flex items-center gap-2">
+                      <CommitSlider
+                        value={Number(element.props?.avatarCount) || 4}
+                        onValueCommit={(v) => handlePropsChange('avatarCount', v)}
+                        min={1} max={8} step={1} className="flex-1"
+                      />
+                      <span className="text-xs text-builder-text w-8">{Number(element.props?.avatarCount) || 4}</span>
+                    </div>
+                  </FieldGroup>
+                  <FieldGroup label="Avatar Size">
+                    <div className="flex items-center gap-2">
+                      <CommitSlider
+                        value={Number(element.props?.avatarSize) || 48}
+                        onValueCommit={(v) => handlePropsChange('avatarSize', v)}
+                        min={32} max={72} step={4} className="flex-1"
+                      />
+                      <span className="text-xs text-builder-text w-10">{Number(element.props?.avatarSize) || 48}px</span>
+                    </div>
+                  </FieldGroup>
+                  <FieldGroup label="Avatar Overlap">
+                    <div className="flex items-center gap-2">
+                      <CommitSlider
+                        value={Number(element.props?.avatarOverlap) || 12}
+                        onValueCommit={(v) => handlePropsChange('avatarOverlap', v)}
+                        min={0} max={32} step={2} className="flex-1"
+                      />
+                      <span className="text-xs text-builder-text w-10">{Number(element.props?.avatarOverlap) || 12}px</span>
+                    </div>
+                  </FieldGroup>
+                </>
+              )}
+            </div>
+          </CollapsibleSection>
+          <CollapsibleSection title="Star Rating" icon={<Sparkles className="w-4 h-4" />}>
+            <div className="pt-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-builder-text-muted">Show Stars</span>
+                <BooleanToggle 
+                  value={coerceBoolean(element.props?.showStars, true)} 
+                  onValueChange={(v) => handlePropsChange('showStars', v)} 
+                />
+              </div>
+              {coerceBoolean(element.props?.showStars, true) && (
+                <>
+                  <FieldGroup label="Star Count">
+                    <div className="flex items-center gap-2">
+                      <CommitSlider
+                        value={Number(element.props?.starCount) || 5}
+                        onValueCommit={(v) => handlePropsChange('starCount', v)}
+                        min={1} max={5} step={1} className="flex-1"
+                      />
+                      <span className="text-xs text-builder-text w-8">{Number(element.props?.starCount) || 5}</span>
+                    </div>
+                  </FieldGroup>
+                  <FieldGroup label="Star Size">
+                    <div className="flex items-center gap-2">
+                      <CommitSlider
+                        value={Number(element.props?.starSize) || 24}
+                        onValueCommit={(v) => handlePropsChange('starSize', v)}
+                        min={16} max={48} step={2} className="flex-1"
+                      />
+                      <span className="text-xs text-builder-text w-10">{Number(element.props?.starSize) || 24}px</span>
+                    </div>
+                  </FieldGroup>
+                  <FieldGroup label="Star Color">
+                    <ColorPickerPopover
+                      color={element.props?.starColor as string || '#FBBF24'}
+                      onChange={(color) => handlePropsChange('starColor', color)}
+                    >
+                      <button className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.props?.starColor as string || '#FBBF24' }} />
+                    </ColorPickerPopover>
+                  </FieldGroup>
+                </>
+              )}
+            </div>
+          </CollapsibleSection>
+          <CollapsibleSection title="Rating Text" icon={<Type className="w-4 h-4" />}>
+            <div className="pt-3 space-y-3">
+              <FieldGroup label="Rating Value">
+                <div className="flex items-center gap-2">
+                  <CommitSlider
+                    value={Number(element.props?.rating) || 5.0}
+                    onValueCommit={(v) => handlePropsChange('rating', v)}
+                    min={1} max={5} step={0.1} className="flex-1"
+                  />
+                  <span className="text-xs text-builder-text w-10">{(Number(element.props?.rating) || 5.0).toFixed(1)}</span>
+                </div>
+              </FieldGroup>
+              <FieldGroup label="Review Count">
+                <Input
+                  type="number"
+                  value={Number(element.props?.ratingCount) || 200}
+                  onChange={(e) => handlePropsChange('ratingCount', parseInt(e.target.value))}
+                  className="builder-input"
+                />
+              </FieldGroup>
+              <FieldGroup label="Rating Text">
+                <Input
+                  value={element.props?.ratingText as string || 'from 200+ reviews'}
+                  onChange={(e) => handlePropsChange('ratingText', e.target.value)}
+                  className="builder-input"
+                  placeholder="from 200+ reviews"
+                />
+              </FieldGroup>
+              <FieldGroup label="Text Color">
+                <ColorPickerPopover
+                  color={element.props?.ratingColor as string || '#111827'}
+                  onChange={(color) => handlePropsChange('ratingColor', color)}
+                >
+                  <button className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.props?.ratingColor as string || '#111827' }} />
+                </ColorPickerPopover>
+              </FieldGroup>
+            </div>
+          </CollapsibleSection>
+        </>
+      )}
+
+      {/* ========== FEATURE LIST SECTION ========== */}
+      {element.type === 'feature-list' && (
+        <>
+          <CollapsibleSection title="List Items" icon={<Layers className="w-4 h-4" />} defaultOpen>
+            <div className="pt-3 space-y-2">
+              {((element.props?.items as Array<{ id: string; icon: string; title: string; description: string }>) || []).map((item, idx) => (
+                <div key={item.id} className="p-3 rounded-lg bg-builder-surface-alt border border-builder-border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-builder-text">Item {idx + 1}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const items = (element.props?.items as Array<any>) || [];
+                        handlePropsChange('items', items.filter((_, i) => i !== idx));
+                      }}
+                      className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  <FieldGroup label="Icon (Emoji)">
+                    <Input
+                      value={item.icon || '⚡'}
+                      onChange={(e) => {
+                        const items = (element.props?.items as Array<any>) || [];
+                        const updated = [...items];
+                        updated[idx] = { ...updated[idx], icon: e.target.value };
+                        handlePropsChange('items', updated);
+                      }}
+                      className="builder-input"
+                      maxLength={4}
+                    />
+                  </FieldGroup>
+                  <FieldGroup label="Title">
+                    <Input
+                      value={item.title || ''}
+                      onChange={(e) => {
+                        const items = (element.props?.items as Array<any>) || [];
+                        const updated = [...items];
+                        updated[idx] = { ...updated[idx], title: e.target.value };
+                        handlePropsChange('items', updated);
+                      }}
+                      className="builder-input"
+                      placeholder="Feature title..."
+                    />
+                  </FieldGroup>
+                  <FieldGroup label="Description">
+                    <Input
+                      value={item.description || ''}
+                      onChange={(e) => {
+                        const items = (element.props?.items as Array<any>) || [];
+                        const updated = [...items];
+                        updated[idx] = { ...updated[idx], description: e.target.value };
+                        handlePropsChange('items', updated);
+                      }}
+                      className="builder-input"
+                      placeholder="Feature description..."
+                    />
+                  </FieldGroup>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const items = (element.props?.items as Array<any>) || [];
+                  handlePropsChange('items', [...items, {
+                    id: `item-${Date.now()}`,
+                    icon: '✓',
+                    title: 'New feature',
+                    description: 'Description here'
+                  }]);
+                }}
+                className="w-full mt-2"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Item
+              </Button>
+            </div>
+          </CollapsibleSection>
+          <CollapsibleSection title="List Style" icon={<Palette className="w-4 h-4" />}>
+            <div className="pt-3 space-y-3">
+              <FieldGroup label="Layout">
+                <Select 
+                  value={element.props?.layout as string || 'vertical'}
+                  onValueChange={(value) => handlePropsChange('layout', value)}
+                >
+                  <SelectTrigger className="builder-input"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="vertical">Vertical</SelectItem>
+                    <SelectItem value="grid">Grid</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FieldGroup>
+              <FieldGroup label="Gap">
+                <div className="flex items-center gap-2">
+                  <CommitSlider
+                    value={Number(element.props?.gap) || 20}
+                    onValueCommit={(v) => handlePropsChange('gap', v)}
+                    min={8} max={48} step={4} className="flex-1"
+                  />
+                  <span className="text-xs text-builder-text w-10">{Number(element.props?.gap) || 20}px</span>
+                </div>
+              </FieldGroup>
+              <FieldGroup label="Icon Size">
+                <div className="flex items-center gap-2">
+                  <CommitSlider
+                    value={Number(element.props?.iconSize) || 32}
+                    onValueCommit={(v) => handlePropsChange('iconSize', v)}
+                    min={20} max={64} step={4} className="flex-1"
+                  />
+                  <span className="text-xs text-builder-text w-10">{Number(element.props?.iconSize) || 32}px</span>
+                </div>
+              </FieldGroup>
+              <FieldGroup label="Title Color">
+                <ColorPickerPopover
+                  color={element.props?.titleColor as string || '#111827'}
+                  onChange={(color) => handlePropsChange('titleColor', color)}
+                >
+                  <button className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.props?.titleColor as string || '#111827' }} />
+                </ColorPickerPopover>
+              </FieldGroup>
+              <FieldGroup label="Description Color">
+                <ColorPickerPopover
+                  color={element.props?.descriptionColor as string || '#6B7280'}
+                  onChange={(color) => handlePropsChange('descriptionColor', color)}
+                >
+                  <button className="w-6 h-6 rounded-md border border-builder-border" style={{ backgroundColor: element.props?.descriptionColor as string || '#6B7280' }} />
+                </ColorPickerPopover>
+              </FieldGroup>
+            </div>
+          </CollapsibleSection>
+        </>
+      )}
+
       {element.type === 'map-embed' && (
         <>
           <CollapsibleSection title="Map Settings" icon={<MapPin className="w-4 h-4" />} defaultOpen>

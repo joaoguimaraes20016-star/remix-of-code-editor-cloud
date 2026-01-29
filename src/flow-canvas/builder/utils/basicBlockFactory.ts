@@ -280,6 +280,7 @@ function createSpacerBlock(): Block {
 
 /**
  * Logo Bar Block - Perspective-style horizontal logo display
+ * Fixed: Aligned defaults with component expectations
  */
 function createLogoBarBlock(): Block {
   const brandNames = ['Zalando', 'Google', 'Deutsche Bahn', 'Coca-Cola', 'Sony'];
@@ -299,23 +300,21 @@ function createLogoBarBlock(): Block {
           alt: name,
           name,
         })),
-        // Perspective-style logo bar
-        layout: 'horizontal',
-        animated: false,
+        // Aligned with LogoMarquee component defaults
+        animated: true, // Enable animation by default
+        speed: 30,
+        direction: 'left',
+        pauseOnHover: true,
         grayscale: true,
-        showTextFallback: true,
-        hoverEffect: 'color',
         logoHeight: 28,
         gap: 32,
+        fadeEdgeWidth: 48,
+        hoverEffect: 'color',
+        showTextFallback: true, // Show brand names as text when no image
+        // Styling
         padding: '24px 16px',
         backgroundColor: '#F9FAFB',
         borderRadius: '16px',
-        justifyContent: 'center',
-        alignItems: 'center',
-        fontFamily: 'inherit',
-        fontWeight: '600',
-        textColor: '#6B7280',
-        opacity: 0.7,
       }
     }],
     props: {
