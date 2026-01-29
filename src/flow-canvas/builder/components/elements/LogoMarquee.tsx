@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Plus, X, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -128,7 +128,10 @@ export const LogoMarquee: React.FC<LogoMarqueeProps> = ({
 
   // Animated marquee
   // We duplicate the logos to create seamless loop
-  const duplicatedLogos = [...logos, ...logos];
+  const duplicatedLogos = useMemo(() => [...logos, ...logos], [logos]);
+
+  // Stable animation key to prevent CSS animation restart on prop changes
+  const animationKey = useMemo(() => `marquee-${logos.map(l => l.id).join('-')}`, [logos]);
 
   return (
     <div 
@@ -136,7 +139,10 @@ export const LogoMarquee: React.FC<LogoMarqueeProps> = ({
         'relative w-full overflow-hidden group',
         className
       )}
-      style={{ backgroundColor }}
+      style={{ 
+        backgroundColor,
+        fontFamily: 'var(--font-sans, Inter, system-ui, sans-serif)',
+      }}
     >
       {/* Fade edges - use backgroundColor prop */}
       {fadeEdgeWidth > 0 && (
@@ -158,29 +164,33 @@ export const LogoMarquee: React.FC<LogoMarqueeProps> = ({
         </>
       )}
       
-      {/* Marquee track */}
-      <div 
-        className={cn(
-          'flex items-center',
-          pauseOnHover && 'group-hover:[animation-play-state:paused]'
-        )}
-        style={{
-          gap,
-          animation: `marquee-${direction} ${speed}s linear infinite`,
-        }}
-      >
-        {duplicatedLogos.map((logo, index) => (
-          <LogoItem 
-            key={`${logo.id}-${index}`}
-            logo={logo}
-            height={logoHeight}
-            grayscale={grayscale}
-            hoverEffect={hoverEffect}
-            isBuilder={isBuilder && index < logos.length}
-            onRemove={(e) => handleRemoveLogo(logo.id, e)}
-            showTextFallback={showTextFallback}
-          />
-        ))}
+      {/* Stable wrapper to prevent animation restart on re-render */}
+      <div key={animationKey} className="marquee-stable-wrapper">
+        {/* Marquee track */}
+        <div 
+          className={cn(
+            'flex items-center',
+            pauseOnHover && 'group-hover:[animation-play-state:paused]'
+          )}
+          style={{
+            gap,
+            animation: `marquee-${direction} ${speed}s linear infinite`,
+            willChange: 'transform',
+          }}
+        >
+          {duplicatedLogos.map((logo, index) => (
+            <LogoItem 
+              key={`${logo.id}-${index}`}
+              logo={logo}
+              height={logoHeight}
+              grayscale={grayscale}
+              hoverEffect={hoverEffect}
+              isBuilder={isBuilder && index < logos.length}
+              onRemove={(e) => handleRemoveLogo(logo.id, e)}
+              showTextFallback={showTextFallback}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Builder: Add button */}
