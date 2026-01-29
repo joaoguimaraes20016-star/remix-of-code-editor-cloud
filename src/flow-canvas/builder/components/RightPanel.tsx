@@ -1319,11 +1319,11 @@ const ElementInspector: React.FC<{
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-builder-text-muted">Line Height</span>
                   <span className="text-xs font-mono text-builder-text-dim">
-                    {((element.props?.lineHeight as number) ?? 1.5).toFixed(1)}
+                    {(Number(element.props?.lineHeight) || 1.5).toFixed(1)}
                   </span>
                 </div>
                 <CommitSlider 
-                  value={(element.props?.lineHeight as number) ?? 1.5}
+                  value={Number(element.props?.lineHeight) || 1.5}
                   onValueCommit={(v) => handlePropsChange('lineHeight', v)}
                   min={1} max={2.5} step={0.1}
                   className="w-full"
@@ -1909,7 +1909,7 @@ const ElementInspector: React.FC<{
                   className="flex-1"
                 />
                 <span className="text-xs text-builder-text-muted w-10 text-right">
-                  {(((element.props?.duration as number) || 3000) / 1000).toFixed(1)}s
+                  {((Number(element.props?.duration) || 3000) / 1000).toFixed(1)}s
                 </span>
               </div>
             </FieldGroup>
@@ -2381,7 +2381,7 @@ const ElementInspector: React.FC<{
                     onValueCommit={(v) => handlePropsChange('duration', v * 1000)}
                     min={1} max={10} step={0.5} className="flex-1"
                   />
-                  <span className="text-xs text-builder-text w-10">{((element.props?.duration as number || 3000) / 1000).toFixed(1)}s</span>
+                  <span className="text-xs text-builder-text w-10">{((Number(element.props?.duration) || 3000) / 1000).toFixed(1)}s</span>
                 </div>
               </FieldGroup>
               <FieldGroup label="Easing">
@@ -2583,7 +2583,7 @@ const ElementInspector: React.FC<{
                       onValueCommit={(v) => handlePropsChange('autoplayInterval', v * 1000)}
                       min={2} max={10} step={0.5} className="flex-1"
                     />
-                    <span className="text-xs text-builder-text w-10">{((element.props?.autoplayInterval as number || 4000) / 1000).toFixed(1)}s</span>
+                    <span className="text-xs text-builder-text w-10">{((Number(element.props?.autoplayInterval) || 4000) / 1000).toFixed(1)}s</span>
                   </div>
                 </FieldGroup>
               )}
@@ -2929,7 +2929,7 @@ const ElementInspector: React.FC<{
                     onValueCommit={(v) => handlePropsChange('rating', v)}
                     min={1} max={5} step={0.1} className="flex-1"
                   />
-                  <span className="text-xs text-builder-text w-10">{(element.props?.rating as number || 4.5).toFixed(1)}</span>
+                  <span className="text-xs text-builder-text w-10">{(Number(element.props?.rating) || 4.5).toFixed(1)}</span>
                 </div>
               </FieldGroup>
               <FieldGroup label="Review Count">
