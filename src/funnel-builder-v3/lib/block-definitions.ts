@@ -1,4 +1,4 @@
-import { BlockDefinition, BlockType, BlockStyles } from '../types/funnel';
+import { BlockDefinition, BlockType, BlockStyles } from '@/funnel-builder-v3/types/funnel';
 
 const defaultStyles: BlockStyles = {
   padding: { top: 16, right: 16, bottom: 16, left: 16 },
@@ -308,7 +308,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
         { id: '3', src: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop', alt: 'Slide 3' },
       ],
       autoplay: true,
-      interval: 5,
+      interval: 5, // Now in seconds
       showDots: true,
       showArrows: true,
     },
@@ -498,7 +498,14 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
   },
 };
 
-// Get all block types by category
-export function getBlocksByCategory(category: BlockDefinition['category']): BlockDefinition[] {
+export const blockCategories = [
+  { id: 'content', name: 'Content', icon: 'FileText' },
+  { id: 'conversion', name: 'Conversion', icon: 'Zap' },
+  { id: 'trust', name: 'Trust', icon: 'Shield' },
+  { id: 'layout', name: 'Layout', icon: 'Layout' },
+  { id: 'advanced', name: 'Advanced', icon: 'Sparkles' },
+] as const;
+
+export function getBlocksByCategory(category: string): BlockDefinition[] {
   return Object.values(blockDefinitions).filter(b => b.category === category);
 }

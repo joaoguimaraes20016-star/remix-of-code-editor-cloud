@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { Funnel, FunnelStep } from '../types/funnel';
+import { Funnel, FunnelStep } from '@/funnel-builder-v3/types/funnel';
 
 // Form data collected during funnel execution
 export interface FunnelFormData {
@@ -8,7 +8,7 @@ export interface FunnelFormData {
 
 // Quiz/option selections
 export interface FunnelSelections {
-  [blockId: string]: string | string[];
+  [blockId: string]: string | string[]; // Selected option IDs
 }
 
 interface FunnelRuntimeContextType {

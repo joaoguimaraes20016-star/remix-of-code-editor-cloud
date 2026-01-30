@@ -1,6 +1,4 @@
-// Core Funnel Types for v3 Builder
-// Simplified architecture: Funnel -> Steps -> Blocks
-
+// Core Funnel Types
 export type StepType = 'capture' | 'sell' | 'book' | 'educate' | 'result';
 
 export type BlockType = 
@@ -129,7 +127,7 @@ export interface VideoContent {
   src: string;
   type: 'youtube' | 'vimeo' | 'hosted';
   autoplay?: boolean;
-  controls?: boolean;
+  controls?: boolean; // Only applies to hosted videos
 }
 
 export interface ButtonContent {
@@ -155,7 +153,7 @@ export interface FormFieldConfig {
   label: string;
   placeholder?: string;
   required?: boolean;
-  options?: string[];
+  options?: string[]; // For select fields
 }
 
 export interface FormContent {
@@ -165,6 +163,7 @@ export interface FormContent {
   webhookUrl?: string;
   submitButtonColor?: string;
   submitButtonGradient?: string;
+  // Button text styling
   submitButtonTextColor?: string;
   submitButtonTextGradient?: string;
 }
@@ -175,6 +174,7 @@ export interface EmailCaptureContent {
   subtitle?: string;
   buttonColor?: string;
   buttonGradient?: string;
+  // Button text styling
   buttonTextColor?: string;
   buttonTextGradient?: string;
 }
@@ -185,6 +185,7 @@ export interface PhoneCaptureContent {
   defaultCountry?: string;
   buttonColor?: string;
   buttonGradient?: string;
+  // Button text styling
   buttonTextColor?: string;
   buttonTextGradient?: string;
 }
@@ -195,6 +196,7 @@ export interface TestimonialContent {
   authorTitle?: string;
   authorImage?: string;
   rating?: number;
+  // Style properties
   cardStyle?: 'outline' | 'filled';
   quoteColor?: string;
   authorColor?: string;
@@ -206,9 +208,10 @@ export interface ReviewsContent {
     id: string;
     text: string;
     author: string;
-    rating: number;
-    avatar?: string;
+    rating: number; // Supports half-stars (e.g., 4.5)
+    avatar?: string; // URL to avatar image
   }[];
+  // Style properties
   cardStyle?: 'outline' | 'filled';
   reviewTextColor?: string;
   authorColor?: string;
@@ -220,6 +223,7 @@ export interface LogoBarContent {
   logos: { id: string; src: string; alt: string }[];
   title?: string;
   titleStyles?: TextStyles;
+  // Animation properties for marquee effect
   animated?: boolean;
   speed?: 'slow' | 'medium' | 'fast';
   direction?: 'left' | 'right';
@@ -234,6 +238,7 @@ export interface SocialProofContent {
     label: string;
     suffix?: string;
   }[];
+  // Style properties
   valueColor?: string;
   valueGradient?: string;
   valueFontSize?: number;
@@ -262,6 +267,7 @@ export interface QuizContent {
     nextStepId?: string;
   }[];
   multiSelect?: boolean;
+  // Style properties
   optionStyle?: 'outline' | 'filled';
   questionColor?: string;
   optionTextColor?: string;
@@ -286,6 +292,7 @@ export interface AccordionContent {
     content: string;
     defaultOpen?: boolean;
   }[];
+  // Style properties
   itemStyle?: 'outline' | 'filled';
   titleColor?: string;
   contentColor?: string;
@@ -312,9 +319,11 @@ export interface SpacerContent {
   height: number;
 }
 
+// New Block Content Types
 export interface ListContent {
   items: { id: string; text: string }[];
   style: 'bullet' | 'numbered' | 'check';
+  // Style properties
   iconColor?: string;
   textColor?: string;
   fontSize?: number;
@@ -323,7 +332,7 @@ export interface ListContent {
 export interface SliderContent {
   images: { id: string; src: string; alt: string }[];
   autoplay?: boolean;
-  interval?: number;
+  interval?: number; // Now stored in seconds
   showDots?: boolean;
   showArrows?: boolean;
 }
@@ -363,6 +372,7 @@ export interface EmbedContent {
   height?: number;
 }
 
+// Interactive - Questions Content Types
 export interface ImageQuizContent {
   question: string;
   options: {
@@ -371,6 +381,7 @@ export interface ImageQuizContent {
     text: string;
     nextStepId?: string;
   }[];
+  // Style properties
   optionStyle?: 'outline' | 'filled';
   questionColor?: string;
   optionTextColor?: string;
@@ -387,6 +398,7 @@ export interface VideoQuestionContent {
     text: string;
     nextStepId?: string;
   }[];
+  // Style properties
   optionStyle?: 'outline' | 'filled';
   questionColor?: string;
   optionTextColor?: string;
@@ -394,6 +406,7 @@ export interface VideoQuestionContent {
   questionStyles?: TextStyles;
 }
 
+// Interactive - Forms Content Types
 export interface UploadContent {
   label: string;
   acceptedTypes: string[];
@@ -433,6 +446,7 @@ export interface PaymentContent {
   url?: string;
   height?: number;
   stripeUrl?: string;
+  // Style properties
   buttonColor?: string;
   buttonGradient?: string;
   amountColor?: string;
@@ -503,7 +517,7 @@ export interface Funnel {
     primaryColor: string;
     fontFamily: string;
     favicon?: string;
-    showStepIndicator?: boolean;
+    showStepIndicator?: boolean; // Toggle step dots at bottom
   };
   createdAt: string;
   updatedAt: string;
