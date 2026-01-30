@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { EmailCaptureContent, TextStyles } from '@/types/funnel';
+import { EmailCaptureContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useFunnelRuntimeOptional } from '@/context/FunnelRuntimeContext';
-import { useFunnel } from '@/context/FunnelContext';
-import { EditableText } from '@/components/editor/EditableText';
+import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { toast } from 'sonner';
-import { useSimpleStyleSync } from '@/hooks/useEditableStyleSync';
+import { useSimpleStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
 
 interface EmailCaptureBlockProps {
   content: EmailCaptureContent;

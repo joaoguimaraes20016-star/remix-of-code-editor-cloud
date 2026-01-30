@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFunnel } from '@/context/FunnelContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,

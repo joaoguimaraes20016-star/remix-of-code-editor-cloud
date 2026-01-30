@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { useFunnel } from '@/context/FunnelContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
 import {
   Select,
   SelectContent,
@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ColorGradientSwatchPicker, ColorSwatchPicker } from './inspector/InspectorUI';
-import { TextStyles } from '@/types/funnel';
+import { TextStyles } from '@/funnel-builder-v3/types/funnel';
 import {
   hasSelectionInElement,
   getSelectionStyles,
@@ -28,7 +28,7 @@ import {
   createLink,
   removeLink,
   SelectionStyles,
-} from '@/lib/selection-utils';
+} from '@/funnel-builder-v3/lib/selection-utils';
 
 interface InlineTextToolbarProps {
   elementRef: React.RefObject<HTMLElement>;

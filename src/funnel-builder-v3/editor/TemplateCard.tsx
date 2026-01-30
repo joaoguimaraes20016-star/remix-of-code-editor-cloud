@@ -1,5 +1,5 @@
 import React from 'react';
-import { Funnel, Block } from '@/types/funnel';
+import { Funnel, Block } from '@/funnel-builder-v3/types/funnel';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ChevronRight } from 'lucide-react';

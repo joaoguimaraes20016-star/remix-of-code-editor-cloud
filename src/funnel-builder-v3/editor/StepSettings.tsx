@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFunnel } from '@/context/FunnelContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { StepType } from '@/types/funnel';
+import { StepType } from '@/funnel-builder-v3/types/funnel';
 import { FileInput, ShoppingCart, Calendar, GraduationCap, Trophy } from 'lucide-react';
 
 const stepTypeConfig: Record<StepType, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {

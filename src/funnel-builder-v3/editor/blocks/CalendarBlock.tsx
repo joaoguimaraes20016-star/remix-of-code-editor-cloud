@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { CalendarContent } from '@/types/funnel';
+import { CalendarContent } from '@/funnel-builder-v3/types/funnel';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useFunnel } from '@/context/FunnelContext';
-import { EditableText } from '@/components/editor/EditableText';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 
 interface CalendarBlockProps {
   content: CalendarContent;

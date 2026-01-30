@@ -9,61 +9,7 @@ import { Button } from '@/components/ui/button';
 import { FunnelProvider, useFunnel, createEmptyFunnel } from '@/funnel-builder-v3';
 import type { Funnel } from '@/funnel-builder-v3/types/funnel';
 
-// Placeholder Editor UI until full migration
-function EditorContent({ onSave, onPublish, isSaving, isPublishing }: {
-  onSave: () => void;
-  onPublish: () => void;
-  isSaving: boolean;
-  isPublishing: boolean;
-}) {
-  const { funnel, isDirty } = useFunnel();
-  const { teamId } = useParams();
-  const navigate = useNavigate();
-
-  return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 shrink-0">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/team/${teamId}/funnels`)}
-            className="h-8 px-2"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Dashboard
-          </Button>
-          <span className="font-medium">{funnel.name}</span>
-          {isDirty && <span className="text-xs text-muted-foreground">(unsaved)</span>}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={onSave} disabled={isSaving}>
-            {isSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-            Save Draft
-          </Button>
-          <Button size="sm" onClick={onPublish} disabled={isPublishing}>
-            {isPublishing && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-            Publish
-          </Button>
-        </div>
-      </header>
-      
-      {/* Placeholder - Full editor will be migrated here */}
-      <div className="flex-1 flex items-center justify-center bg-muted/30">
-        <div className="text-center max-w-md p-8">
-          <h2 className="text-xl font-semibold mb-2">Funnel Builder v3</h2>
-          <p className="text-muted-foreground mb-4">
-            The full editor UI is being migrated. This page shows the persistence layer is working.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Funnel: {funnel.name} ({funnel.steps.length} steps)
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { FunnelEditor } from '@/funnel-builder-v3/editor/FunnelEditor';
 
 export default function FunnelEditorV3() {
   const { teamId, funnelId } = useParams<{ teamId: string; funnelId: string }>();
@@ -225,12 +171,7 @@ export default function FunnelEditorV3() {
 
   return (
     <FunnelProvider initialFunnel={initialFunnel} onFunnelChange={handleFunnelChange}>
-      <EditorContent
-        onSave={() => saveMutation.mutate()}
-        onPublish={() => publishMutation.mutate()}
-        isSaving={saveMutation.isPending}
-        isPublishing={publishMutation.isPending}
-      />
+      <FunnelEditor />
     </FunnelProvider>
   );
 }

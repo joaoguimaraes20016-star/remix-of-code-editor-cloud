@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useFunnel } from '@/context/FunnelContext';
-import { useFunnelPersistence } from '@/hooks/useFunnelPersistence';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelPersistence } from '@/funnel-builder-v3/hooks/useFunnelPersistence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -26,7 +26,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { ViewportType } from '@/types/funnel';
+import { ViewportType } from '@/funnel-builder-v3/types/funnel';
 import { ZoomControl } from './ZoomControl';
 import { ThemeToggle } from './ThemeToggle';
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ColumnsContent, Block } from '@/types/funnel';
+import { ColumnsContent, Block } from '@/funnel-builder-v3/types/funnel';
 import { BlockRenderer } from './BlockRenderer';
 import { cn } from '@/lib/utils';
 

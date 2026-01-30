@@ -1,14 +1,14 @@
 import React from 'react';
-import { useFunnel } from '@/context/FunnelContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { blockDefinitions } from '@/lib/block-definitions';
+import { blockDefinitions } from '@/funnel-builder-v3/lib/block-definitions';
 import { X } from 'lucide-react';
 import { StepSettings } from './StepSettings';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { AnimationType } from '@/types/funnel';
+import { AnimationType } from '@/funnel-builder-v3/types/funnel';
 import {
   InspectorSection,
   VisualSlider,

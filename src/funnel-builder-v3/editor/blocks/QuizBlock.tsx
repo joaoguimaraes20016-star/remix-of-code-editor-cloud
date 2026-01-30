@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { QuizContent, TextStyles } from '@/types/funnel';
+import { QuizContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
-import { useFunnelRuntimeOptional } from '@/context/FunnelRuntimeContext';
-import { useFunnel } from '@/context/FunnelContext';
-import { EditableText } from '@/components/editor/EditableText';
-import { useEditableStyleSync } from '@/hooks/useEditableStyleSync';
+import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
+import { useEditableStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
 
 interface QuizBlockProps {
   content: QuizContent;

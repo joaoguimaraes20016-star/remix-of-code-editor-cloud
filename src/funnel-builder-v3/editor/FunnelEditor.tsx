@@ -4,7 +4,7 @@ import { Canvas } from './Canvas';
 import { RightPanel } from './RightPanel';
 import { EditorHeader } from './EditorHeader';
 import { PreviewMode } from './PreviewMode';
-import { FunnelProvider, useFunnel } from '@/context/FunnelContext';
+import { FunnelProvider, useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
 import { 
   DndContext, 
   closestCenter, 
@@ -19,7 +19,7 @@ import {
 } from '@dnd-kit/core';
 import { AnimatePresence } from 'framer-motion';
 import { DragOverlayItem } from './DragOverlayItem';
-import { Block } from '@/types/funnel';
+import { Block } from '@/funnel-builder-v3/types/funnel';
 
 // Smooth drop animation
 const dropAnimation: DropAnimation = {

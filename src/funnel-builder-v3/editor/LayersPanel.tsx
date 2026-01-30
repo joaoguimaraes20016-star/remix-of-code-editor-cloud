@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { useFunnel } from '@/context/FunnelContext';
-import { blockDefinitions } from '@/lib/block-definitions';
-import { Block } from '@/types/funnel';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { blockDefinitions } from '@/funnel-builder-v3/lib/block-definitions';
+import { Block } from '@/funnel-builder-v3/types/funnel';
 import { cn } from '@/lib/utils';
 import {
   DndContext,

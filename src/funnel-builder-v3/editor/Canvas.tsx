@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useLayoutEffect } from 'react';
-import { useFunnel } from '@/context/FunnelContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BlockRenderer } from './blocks/BlockRenderer';
 import { useDroppable } from '@dnd-kit/core';
@@ -7,11 +7,11 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { GripVertical, Trash2, Copy, Plus } from 'lucide-react';
-import { Block, ViewportType } from '@/types/funnel';
+import { Block, ViewportType } from '@/funnel-builder-v3/types/funnel';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AddBlockModal } from './AddBlockModal';
-import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useKeyboardShortcuts } from '@/funnel-builder-v3/hooks/useKeyboardShortcuts';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 // Viewport configuration
