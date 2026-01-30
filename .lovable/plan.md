@@ -1,273 +1,177 @@
 
-# Unify Funnel Builder Apps
+# Use the Fresh Funnel Builder from apps/funnel-flow-studio
 
-## Executive Summary
+## What You Want
+You want the main app to use the **complete, working funnel builder** from `apps/funnel-flow-studio` - not the placeholder v3 page, not the flow-canvas builder, and not any legacy builders. Just the fresh, working editor with all its 34+ block types, canvas, panels, and rich editing capabilities.
 
-We'll merge the `apps/funnel-flow-studio` editor directly into the main app, completely replacing the existing `flow-canvas` builder. This eliminates:
-- The separate monorepo app complexity
-- Session sharing issues between apps
-- The need for complex data converters
-- Two different data models fighting each other
+## Current Problem
+Right now when you open `/team/:teamId/funnels/:funnelId/edit`, you see a placeholder page that says "Funnel Builder v3 - The full editor UI is being migrated." The actual working editor exists in `apps/funnel-flow-studio` but is not connected.
 
-After this unification, you'll have **one app** with the new `Funnel → Steps → Blocks` builder that saves directly to Supabase.
-
----
-
-## Current State (Problem)
-
-```text
-┌─────────────────────────────────────┐
-│          MAIN APP (root)            │
-│  • Uses flow-canvas builder         │
-│  • Complex Page/Step/Frame/Stack    │
-│    /Block/Element hierarchy         │
-│  • dataConverter.ts to bridge       │
-└─────────────────────────────────────┘
-                 ↕ (session sharing issues)
-┌─────────────────────────────────────┐
-│  apps/funnel-flow-studio (separate) │
-│  • Clean Funnel/Steps/Blocks model  │
-│  • Working localStorage persistence │
-│  • Needs Supabase integration       │
-└─────────────────────────────────────┘
-```
-
----
-
-## Target State (Solution)
-
-```text
-┌─────────────────────────────────────────────────────┐
-│                   UNIFIED MAIN APP                  │
-│                                                     │
-│  src/funnel-builder-v3/                             │
-│  ├── editor/          ← FunnelEditor, Canvas, etc. │
-│  ├── context/         ← FunnelContext (w/ Supabase)│
-│  ├── blocks/          ← Block components           │
-│  ├── inspector/       ← Property editors           │
-│  ├── hooks/           ← Keyboard shortcuts, etc.   │
-│  ├── lib/             ← Templates, block defs      │
-│  └── types/           ← Funnel, Step, Block types  │
-│                                                     │
-│  Route: /team/:teamId/funnels/:funnelId/edit        │
-│  Uses: FunnelEditorPage (unified wrapper)           │
-└─────────────────────────────────────────────────────┘
-```
+## Solution Overview
+Copy all the builder components from `apps/funnel-flow-studio/src/` into `src/funnel-builder-v3/`, then wire them into the existing `FunnelEditorV3.tsx` page that already has Supabase persistence working.
 
 ---
 
 ## Implementation Steps
 
-### Step 1: Copy Builder App Files to Main App
+### Step 1: Copy Editor Components
+Copy the full editor structure from `apps/funnel-flow-studio/src/components/editor/` to `src/funnel-builder-v3/editor/`:
 
-Create new directory `src/funnel-builder-v3/` and copy these files from `apps/funnel-flow-studio/src/`:
+| Source | Target |
+|--------|--------|
+| `components/editor/FunnelEditor.tsx` | `editor/FunnelEditor.tsx` |
+| `components/editor/Canvas.tsx` | `editor/Canvas.tsx` |
+| `components/editor/LeftPanel.tsx` | `editor/LeftPanel.tsx` |
+| `components/editor/RightPanel.tsx` | `editor/RightPanel.tsx` |
+| `components/editor/EditorHeader.tsx` | `editor/EditorHeader.tsx` |
+| `components/editor/PreviewMode.tsx` | `editor/PreviewMode.tsx` |
+| `components/editor/AddBlockModal.tsx` | `editor/AddBlockModal.tsx` |
+| `components/editor/blocks/*` (34 files) | `editor/blocks/*` |
+| `components/editor/inspector/*` | `editor/inspector/*` |
+| All other editor files | `editor/` |
 
-| Source (apps/funnel-flow-studio/src/) | Target (src/funnel-builder-v3/) |
-|---------------------------------------|----------------------------------|
-| `components/editor/*`                 | `editor/*`                       |
-| `context/FunnelContext.tsx`           | `context/FunnelContext.tsx`      |
-| `context/FunnelRuntimeContext.tsx`    | `context/FunnelRuntimeContext.tsx`|
-| `types/funnel.ts`                     | `types/funnel.ts`                |
-| `lib/block-definitions.ts`            | `lib/block-definitions.ts`       |
-| `lib/templates.ts`                    | `lib/templates.ts`               |
-| `lib/color-presets.ts`                | `lib/color-presets.ts`           |
-| `lib/selection-utils.ts`              | `lib/selection-utils.ts`         |
-| `hooks/useKeyboardShortcuts.ts`       | `hooks/useKeyboardShortcuts.ts`  |
+### Step 2: Copy Supporting Files
+Copy context, hooks, lib, and types:
 
-### Step 2: Fix Import Paths
+| Source | Target |
+|--------|--------|
+| `context/FunnelContext.tsx` | Replace `context/FunnelContext.tsx` |
+| `types/funnel.ts` | Replace `types/funnel.ts` |
+| `lib/block-definitions.ts` | Replace `lib/block-definitions.ts` |
+| `lib/templates.ts` | `lib/templates.ts` |
+| `lib/color-presets.ts` | `lib/color-presets.ts` |
+| `lib/niche-presets.ts` | `lib/niche-presets.ts` |
+| `lib/selection-utils.ts` | `lib/selection-utils.ts` |
+| `hooks/useKeyboardShortcuts.ts` | `hooks/useKeyboardShortcuts.ts` |
+| `hooks/useEditableStyleSync.ts` | `hooks/useEditableStyleSync.ts` |
 
-All `@/` imports need to be updated:
-- `@/components/...` → `@/funnel-builder-v3/...` or existing main app components
-- `@/types/funnel` → `@/funnel-builder-v3/types/funnel`
-- `@/lib/...` → `@/funnel-builder-v3/lib/...`
-- `@/context/...` → `@/funnel-builder-v3/context/...`
+### Step 3: Update Import Paths
+All imports need to change from the builder app pattern to main app pattern:
+- `@/context/FunnelContext` becomes `@/funnel-builder-v3/context/FunnelContext`
+- `@/types/funnel` becomes `@/funnel-builder-v3/types/funnel`
+- `@/lib/block-definitions` becomes `@/funnel-builder-v3/lib/block-definitions`
+- `@/components/ui/*` stays the same (use main app UI components)
+- `@/hooks/*` becomes `@/funnel-builder-v3/hooks/*` for builder-specific hooks
 
-### Step 3: Add Supabase Persistence to FunnelContext
-
-Update `FunnelContext.tsx` to:
-
-1. Accept props for `funnelId` and `teamId`
-2. Load funnel from Supabase on mount (instead of localStorage)
-3. Auto-save to Supabase with debouncing
-4. Support publish action
+### Step 4: Modify FunnelContext for Supabase Persistence
+Update the FunnelContext to accept props for database persistence instead of localStorage:
 
 ```typescript
 interface FunnelProviderProps {
   children: ReactNode;
-  funnelId?: string;
-  teamId?: string;
-  onSave?: (funnel: Funnel) => void;
-  onPublish?: (funnel: Funnel) => void;
+  initialFunnel?: Funnel;
+  onFunnelChange?: (funnel: Funnel) => void;
 }
 ```
 
-### Step 4: Create Unified FunnelEditorPage
+This allows `FunnelEditorV3.tsx` to pass the funnel from Supabase and receive updates for saving.
 
-Create `src/pages/FunnelEditorV3.tsx` that:
-
-1. Gets `funnelId` and `teamId` from URL params
-2. Fetches funnel data from Supabase
-3. Passes data to `FunnelProvider`
-4. Handles save/publish mutations
+### Step 5: Update FunnelEditorV3.tsx
+Replace the placeholder editor with the real FunnelEditor:
 
 ```typescript
-export default function FunnelEditorV3() {
-  const { teamId, funnelId } = useParams();
-  
-  // Fetch funnel from Supabase
-  const { data: funnel, isLoading } = useQuery({...});
-  
-  // Convert DB format to editor format
-  const initialFunnel = useMemo(() => 
-    dbFunnelToEditorFunnel(funnel), [funnel]
-  );
-  
-  return (
-    <FunnelProvider 
-      initialFunnel={initialFunnel}
-      funnelId={funnelId}
-      teamId={teamId}
-      onSave={handleSave}
-      onPublish={handlePublish}
-    >
-      <FunnelEditor />
-    </FunnelProvider>
-  );
-}
+import { FunnelEditor } from '@/funnel-builder-v3/editor/FunnelEditor';
+import { FunnelProvider } from '@/funnel-builder-v3/context/FunnelContext';
+
+// In the render:
+<FunnelProvider 
+  initialFunnel={initialFunnel} 
+  onFunnelChange={handleFunnelChange}
+>
+  <FunnelEditor />
+</FunnelProvider>
 ```
 
-### Step 5: Data Model Mapping
+### Step 6: Update EditorHeader for Navigation
+Modify `EditorHeader.tsx` to use React Router navigation instead of href links:
+- "Dashboard" button uses `navigate(`/team/${teamId}/funnels`)`
+- Get teamId from URL params instead of calculating from window.location
 
-The new builder stores data in a simpler format. Map to existing DB columns:
+---
+
+## File Structure After Migration
 
 ```text
-Editor State (Funnel)          →    Supabase funnels table
-───────────────────────────────────────────────────────────
-funnel.id                      →    id (existing)
-funnel.name                    →    name (existing)
-funnel (full JSON)             →    builder_document (JSON column)
-funnel.settings                →    settings (JSON column)
-'draft' / 'published'          →    status (existing)
-funnel (snapshot on publish)   →    published_document_snapshot
-```
-
-### Step 6: Update Routes in App.tsx
-
-```typescript
-// Remove old import
-// import FlowCanvasIndex from "./flow-canvas/pages/Index";
-
-// Add new import
-import FunnelEditorV3 from "./pages/FunnelEditorV3";
-
-// Update route
-<Route path="/team/:teamId/funnels/:funnelId/edit" element={<FunnelEditorV3 />} />
-```
-
-### Step 7: Update Runtime Renderer
-
-Create a simple runtime renderer that reads the new format:
-
-```typescript
-// src/components/funnel-runtime/FunnelRuntime.tsx
-export function FunnelRuntime({ funnel }: { funnel: Funnel }) {
-  // Uses same block components as editor but in read-only mode
-  return (
-    <FunnelRuntimeProvider funnel={funnel}>
-      <RuntimeCanvas />
-    </FunnelRuntimeProvider>
-  );
-}
-```
-
-Update `PublicFunnel.tsx` to use this for published funnels.
-
-### Step 8: Clean Up Old Code
-
-After verification, remove:
-- `src/flow-canvas/` directory entirely
-- `apps/funnel-flow-studio/` directory entirely
-- `src/lib/funnel/dataConverter.ts` (no longer needed)
-- Old builder_v2 references
-
----
-
-## File Structure After Unification
-
-```text
-src/
-├── funnel-builder-v3/
-│   ├── editor/
-│   │   ├── FunnelEditor.tsx      ← Main editor shell
-│   │   ├── Canvas.tsx            ← Preview canvas
-│   │   ├── LeftPanel.tsx         ← Steps list + add blocks
-│   │   ├── RightPanel.tsx        ← Inspector
-│   │   ├── EditorHeader.tsx      ← Header with save/publish
-│   │   ├── PreviewMode.tsx       ← Full preview mode
-│   │   ├── blocks/               ← Block renderers
-│   │   └── inspector/            ← Property editors
-│   ├── context/
-│   │   ├── FunnelContext.tsx     ← State management
-│   │   └── FunnelRuntimeContext.tsx
-│   ├── hooks/
-│   │   └── useKeyboardShortcuts.ts
-│   ├── lib/
-│   │   ├── block-definitions.ts
-│   │   ├── templates.ts
-│   │   └── color-presets.ts
-│   ├── types/
-│   │   └── funnel.ts
-│   └── index.ts                  ← Public exports
-├── pages/
-│   └── FunnelEditorV3.tsx        ← Route handler with DB logic
-└── components/
-    └── funnel-runtime/
-        └── FunnelRuntime.tsx     ← Published funnel renderer
+src/funnel-builder-v3/
+├── context/
+│   ├── FunnelContext.tsx          ← State management (modified for props)
+│   └── FunnelRuntimeContext.tsx   ← Runtime navigation
+├── editor/
+│   ├── FunnelEditor.tsx           ← Main shell with DnD
+│   ├── Canvas.tsx                 ← Device frame + blocks
+│   ├── LeftPanel.tsx              ← Steps + Add blocks
+│   ├── RightPanel.tsx             ← Inspector panel
+│   ├── EditorHeader.tsx           ← Header with actions
+│   ├── PreviewMode.tsx            ← Full preview overlay
+│   ├── AddBlockModal.tsx          ← Block picker dialog
+│   ├── ZoomControl.tsx            ← Zoom slider
+│   ├── ThemeToggle.tsx            ← Dark/light toggle
+│   ├── blocks/                    ← 34 block components
+│   │   ├── BlockRenderer.tsx
+│   │   ├── HeadingBlock.tsx
+│   │   ├── TextBlock.tsx
+│   │   ├── ButtonBlock.tsx
+│   │   └── ... (31 more)
+│   └── inspector/
+│       ├── BlockInspector.tsx
+│       └── InspectorUI.tsx
+├── hooks/
+│   ├── useKeyboardShortcuts.ts
+│   └── useEditableStyleSync.ts
+├── lib/
+│   ├── block-definitions.ts       ← Full 34-block library
+│   ├── templates.ts               ← Pre-built funnels
+│   ├── color-presets.ts
+│   ├── niche-presets.ts
+│   └── selection-utils.ts
+├── types/
+│   └── funnel.ts                  ← Complete type definitions
+└── index.ts                       ← Public exports
 ```
 
 ---
 
-## Benefits
+## What You'll Get
 
-1. **Single app** - No monorepo complexity for funnels
-2. **Shared auth** - Uses main app's auth session natively
-3. **Simple data model** - `Funnel → Steps → Blocks` vs 6-level hierarchy
-4. **Direct Supabase access** - No edge function needed for saves
-5. **Same components for edit and runtime** - True WYSIWYG
-6. **Easier maintenance** - One codebase to update
+After this migration:
 
----
-
-## Migration Considerations
-
-### Existing Funnels
-
-Existing funnels use the flow-canvas format in `builder_document`. Options:
-1. **Write a one-time migration** - Convert old format to new
-2. **Support both formats** - Detect format version and convert on load
-3. **Start fresh** - Old funnels stay read-only, new ones use v3
-
-Recommendation: **Option 2** - Detect format on load and convert automatically.
-
-### Dependencies
-
-The builder app uses these packages already in main app:
-- `@dnd-kit/core`, `@dnd-kit/sortable` ✓
-- `framer-motion` ✓
-- `uuid` → use crypto.randomUUID() or install uuid
-
-Missing: None significant - both apps share the same base.
+1. **Full editor UI** - Canvas with device frames, left panel with steps, right panel with inspector
+2. **34+ block types** - Heading, Text, Button, Form, Quiz, Video, Testimonial, Countdown, etc.
+3. **Drag & drop reordering** - Blocks can be dragged within steps
+4. **Live preview mode** - Full-screen preview with navigation
+5. **Viewport switching** - Mobile, Tablet, Desktop views
+6. **Zoom controls** - Scale the canvas up/down
+7. **Keyboard shortcuts** - Delete, duplicate, undo/redo
+8. **Auto-save to Supabase** - Uses existing persistence from FunnelEditorV3
+9. **Publish to Supabase** - Uses existing publish flow
 
 ---
 
-## Note on Lock File
+## Technical Notes
 
-The project is missing a lock file. To ensure consistent dependency versions, please run:
+### Dependencies Already Available
+All required dependencies are already in the main app:
+- `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
+- `framer-motion`
+- `uuid` (or use `crypto.randomUUID()`)
+- All Radix UI components
 
+### UUID Usage
+The builder uses `uuid` package but the main app might prefer `crypto.randomUUID()`. We can either:
+1. Add `uuid` to dependencies
+2. Create a helper that uses `crypto.randomUUID()`
+
+### CSS Animations
+The builder has custom animation classes. These will need to be added to the main app's `index.css` or Tailwind config.
+
+---
+
+## Lock File Warning
+
+The project is missing a lock file (`package-lock.json` or `bun.lockb`). Please run:
 ```bash
 npm install
 # or
 bun install
 ```
-
-This will generate `package-lock.json` or `bun.lockb` which you should commit to the repository.
+This generates the lock file to ensure consistent dependency versions.
