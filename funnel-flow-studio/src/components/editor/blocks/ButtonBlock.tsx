@@ -1,0 +1,137 @@
+import React from 'react';
+import { ButtonContent, TextStyles } from '@/types/funnel';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { useFunnelRuntimeOptional } from '@/context/FunnelRuntimeContext';
+import { useFunnel } from '@/context/FunnelContext';
+import { EditableText } from '@/components/editor/EditableText';
+
+interface ButtonBlockProps {
+  content: ButtonContent;
+  blockId?: string;
+  stepId?: string;
+  isPreview?: boolean;
+}
+
+export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlockProps) {
+  const runtime = useFunnelRuntimeOptional();
+  const { updateBlockContent } = useFunnel();
+  const { text, variant, size, fullWidth, backgroundColor, backgroundGradient, color, textGradient, action, actionValue } = content;
+
+  const sizeClasses: Record<string, string> = {
+    sm: 'h-9 px-4 text-sm',
+    md: 'h-10 px-6',
+    lg: 'h-12 px-8 text-lg',
+  };
+
+  // Only apply custom styles if they exist
+  // NOTE: borderRadius is now controlled by styles.borderRadius on the wrapper (Style tab)
+  const customStyle: React.CSSProperties = {};
+  if (backgroundGradient) {
+    customStyle.background = backgroundGradient;
+  } else if (backgroundColor) {
+    customStyle.backgroundColor = backgroundColor;
+  }
+  if (!textGradient && color) customStyle.color = color;
+
+  // When custom backgroundColor or gradient is set, don't use variant classes for bg
+  const hasCustomBg = !!backgroundColor || !!backgroundGradient;
+  const hasTextGradient = !!textGradient;
+
+  const handleClick = () => {
+    if (!runtime) return; // In editor mode, don't do anything
+
+    switch (action) {
+      case 'next-step':
+        runtime.goToNextStep();
+        break;
+      case 'url':
+        if (actionValue) {
+          window.open(actionValue, '_blank');
+        }
+        break;
+      case 'scroll':
+        if (actionValue) {
+          const element = document.getElementById(actionValue);
+          element?.scrollIntoView({ behavior: 'smooth' });
+        }
+        break;
+      case 'submit':
+        runtime.submitForm();
+        break;
+      default:
+        // Default to next step for conversion-focused behavior
+        runtime.goToNextStep();
+    }
+  };
+
+  const handleTextChange = (newText: string) => {
+    if (blockId && stepId) {
+      updateBlockContent(stepId, blockId, { text: newText });
+    }
+  };
+
+  const canEdit = blockId && stepId && !isPreview;
+
+  // Inline toolbar should be unified with the inspector: it must write back to
+  // ButtonContent.color / ButtonContent.textGradient so the inspector swatch and
+  // the toolbar swatch stay in sync.
+  const toolbarTextStyles: TextStyles = {
+    // Provide a sensible default so the toolbar swatch isn't misleading when
+    // the user hasn't explicitly set a custom text color yet.
+    color:
+      color || (variant === 'outline' || variant === 'ghost' ? '#000000' : '#ffffff'),
+    textGradient: textGradient || '',
+  };
+
+  const handleTextStyleChange = (updates: Partial<TextStyles>) => {
+    if (!blockId || !stepId) return;
+
+    const next: Partial<ButtonContent> = {};
+    if (typeof updates.color === 'string') next.color = updates.color;
+    if (typeof updates.textGradient === 'string') next.textGradient = updates.textGradient;
+
+    if (Object.keys(next).length) {
+      updateBlockContent(stepId, blockId, next);
+    }
+  };
+
+  return (
+    <Button
+      variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
+      className={cn(
+        sizeClasses[size],
+        fullWidth && 'w-full',
+        hasCustomBg && 'hover:opacity-90',
+        runtime && 'cursor-pointer' // Only show pointer in runtime mode
+      )}
+      style={customStyle}
+      onClick={handleClick}
+    >
+      {canEdit ? (
+        <EditableText
+          value={text}
+          onChange={handleTextChange}
+          as="span"
+          isPreview={isPreview}
+          showToolbar={true}
+          richText={true}
+          styles={toolbarTextStyles}
+          onStyleChange={handleTextStyleChange}
+          className="inline"
+        />
+      ) : hasTextGradient ? (
+        <span
+          className="text-gradient-clip"
+          style={{ '--text-gradient': textGradient } as React.CSSProperties}
+        >
+          {text}
+        </span>
+      ) : color ? (
+        <span style={{ color }}>{text}</span>
+      ) : (
+        text
+      )}
+    </Button>
+  );
+}
