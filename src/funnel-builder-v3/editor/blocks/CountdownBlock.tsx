@@ -1,0 +1,138 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { CountdownContent, TextStyles } from '@/types/funnel';
+import { useFunnel } from '@/context/FunnelContext';
+import { EditableText } from '@/components/editor/EditableText';
+import { cn } from '@/lib/utils';
+
+interface CountdownBlockProps {
+  content: CountdownContent;
+  blockId?: string;
+  stepId?: string;
+  isPreview?: boolean;
+}
+
+interface TimeLeft {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+function calculateTimeLeft(endDate: string): TimeLeft | null {
+  const difference = new Date(endDate).getTime() - new Date().getTime();
+  
+  if (difference <= 0) {
+    return null;
+  }
+
+  return {
+    days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+    hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+    minutes: Math.floor((difference / 1000 / 60) % 60),
+    seconds: Math.floor((difference / 1000) % 60),
+  };
+}
+
+interface TimeUnitProps {
+  value: number;
+  label: string;
+  textColor?: string;
+  textGradient?: string;
+}
+
+function TimeUnit({ value, label, textColor, textGradient }: TimeUnitProps) {
+  // Text gradient uses CSS variable approach
+  const hasGradient = !!textGradient;
+  const labelStyle: React.CSSProperties = hasGradient
+    ? { '--text-gradient': textGradient } as React.CSSProperties
+    : textColor ? { color: textColor } : {};
+
+  return (
+    <div className="flex flex-col items-center">
+      <div 
+        className="w-16 h-16 rounded-xl bg-foreground text-background flex items-center justify-center"
+        style={textColor ? { backgroundColor: textColor } : undefined}
+      >
+        <span className="text-2xl font-bold tabular-nums">
+          {String(value).padStart(2, '0')}
+        </span>
+      </div>
+      <span 
+        className={cn(
+          "text-xs mt-2 uppercase tracking-wider",
+          hasGradient && "text-gradient-clip"
+        )}
+        style={labelStyle}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+export function CountdownBlock({ content, blockId, stepId, isPreview }: CountdownBlockProps) {
+  const { updateBlockContent } = useFunnel();
+  const { endDate, showDays, expiredText, backgroundColor, backgroundGradient, textColor, textGradient } = content;
+  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(() => calculateTimeLeft(endDate));
+
+  const canEdit = blockId && stepId && !isPreview;
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft(endDate));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [endDate]);
+
+  const handleExpiredTextChange = useCallback((newText: string) => {
+    if (blockId && stepId) {
+      updateBlockContent(stepId, blockId, { expiredText: newText });
+    }
+  }, [blockId, stepId, updateBlockContent]);
+
+  const containerStyle: React.CSSProperties = {};
+  if (backgroundGradient) {
+    containerStyle.background = backgroundGradient;
+  } else if (backgroundColor) {
+    containerStyle.backgroundColor = backgroundColor;
+  }
+  
+  // Use text gradient or solid color
+  const effectiveTextColor = textGradient ? undefined : textColor;
+
+  if (!timeLeft) {
+    return (
+      <div className="text-center py-4 rounded-lg" style={containerStyle}>
+        <div 
+          className="text-lg font-medium"
+          style={textColor ? { color: textColor } : undefined}
+        >
+          {canEdit ? (
+            <EditableText
+              value={expiredText || 'Offer Expired'}
+              onChange={handleExpiredTextChange}
+              as="p"
+              isPreview={isPreview}
+              showToolbar={true}
+              richText={true}
+              styles={{}}
+              onStyleChange={() => {}}
+            />
+          ) : (
+            expiredText || 'Offer Expired'
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex justify-center gap-3 py-4 rounded-lg" style={containerStyle}>
+      {showDays && <TimeUnit value={timeLeft.days} label="Days" textColor={effectiveTextColor} textGradient={textGradient} />}
+      <TimeUnit value={timeLeft.hours} label="Hours" textColor={effectiveTextColor} textGradient={textGradient} />
+      <TimeUnit value={timeLeft.minutes} label="Mins" textColor={effectiveTextColor} textGradient={textGradient} />
+      <TimeUnit value={timeLeft.seconds} label="Secs" textColor={effectiveTextColor} textGradient={textGradient} />
+    </div>
+  );
+}

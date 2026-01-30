@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
-import { Funnel, FunnelStep, Block, ViewportType } from '../types/funnel';
-import { createEmptyFunnel } from '../lib/templates';
-import { blockDefinitions } from '../lib/block-definitions';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import { Funnel, FunnelStep, Block, ViewportType } from '@/funnel-builder-v3/types/funnel';
+import { createEmptyFunnel } from '@/funnel-builder-v3/lib/templates';
+import { v4 as uuid } from 'uuid';
+import { blockDefinitions } from '@/funnel-builder-v3/lib/block-definitions';
 
 interface FunnelContextType {
   funnel: Funnel;
@@ -12,7 +13,6 @@ interface FunnelContextType {
   canvasZoom: number;
   effectiveZoom: number;
   mediaGallery: string[];
-  isDirty: boolean;
   setFunnel: (funnel: Funnel) => void;
   setCurrentStepId: (id: string | null) => void;
   setSelectedBlockId: (id: string | null) => void;
@@ -20,7 +20,6 @@ interface FunnelContextType {
   setCurrentViewport: (viewport: ViewportType) => void;
   setCanvasZoom: (zoom: number) => void;
   setEffectiveZoom: (zoom: number) => void;
-  markClean: () => void;
   
   // Step operations
   addStep: () => void;
@@ -52,20 +51,42 @@ interface FunnelContextType {
   canRedo: boolean;
 }
 
-// Context for funnel state management
+// Context for funnel state management - exported for direct access in components that need graceful null handling
 export const FunnelContext = createContext<FunnelContextType | null>(null);
 
 const MAX_HISTORY = 50;
 
-interface FunnelProviderProps {
-  children: ReactNode;
-  initialFunnel?: Funnel;
-  onFunnelChange?: (funnel: Funnel) => void;
+const FUNNEL_STORAGE_KEY = 'funnel-editor-state';
+
+// Load funnel from localStorage
+function loadFunnelFromStorage(): Funnel | null {
+  try {
+    const saved = localStorage.getItem(FUNNEL_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.id && parsed.steps && Array.isArray(parsed.steps)) {
+        return parsed;
+      }
+    }
+  } catch {
+    // Invalid JSON, ignore
+  }
+  return null;
 }
 
-export function FunnelProvider({ children, initialFunnel, onFunnelChange }: FunnelProviderProps) {
+// Save funnel to localStorage
+function saveFunnelToStorage(funnel: Funnel) {
+  try {
+    localStorage.setItem(FUNNEL_STORAGE_KEY, JSON.stringify(funnel));
+  } catch {
+    // Storage full or unavailable, ignore
+  }
+}
+
+export function FunnelProvider({ children }: { children: ReactNode }) {
+  // Initialize from localStorage or create new
   const [funnel, setFunnelState] = useState<Funnel>(() => {
-    return initialFunnel || createEmptyFunnel();
+    return loadFunnelFromStorage() || createEmptyFunnel();
   });
   const [currentStepId, setCurrentStepId] = useState<string | null>(null);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
@@ -74,17 +95,10 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   const [canvasZoom, setCanvasZoom] = useState<number>(1);
   const [effectiveZoom, setEffectiveZoom] = useState<number>(1);
   const [mediaGallery, setMediaGallery] = useState<string[]>([]);
-  const [isDirty, setIsDirty] = useState(false);
-  
-  const [history, setHistory] = useState<Funnel[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
 
-  // Notify parent of funnel changes
-  const onFunnelChangeRef = useRef(onFunnelChange);
-  onFunnelChangeRef.current = onFunnelChange;
-
+  // Auto-save funnel to localStorage whenever it changes
   useEffect(() => {
-    onFunnelChangeRef.current?.(funnel);
+    saveFunnelToStorage(funnel);
   }, [funnel]);
 
   // Load media gallery from localStorage on mount
@@ -106,10 +120,10 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
 
   // Add to gallery
   const addToGallery = useCallback((url: string) => {
-    if (!url || url.startsWith('data:')) return;
+    if (!url || url.startsWith('data:')) return; // Don't store base64 in localStorage (too large)
     setMediaGallery(prev => {
       if (prev.includes(url)) return prev;
-      return [url, ...prev].slice(0, 50);
+      return [url, ...prev].slice(0, 50); // Keep last 50
     });
   }, []);
 
@@ -118,25 +132,24 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
     setMediaGallery(prev => prev.filter(u => u !== url));
   }, []);
 
-  // When viewport changes, reset zoom to 100%
+  // When viewport changes, reset zoom to 100% (baseline)
   const setCurrentViewport = (viewport: ViewportType) => {
     setCurrentViewportState(viewport);
-    setCanvasZoom(1);
+    setCanvasZoom(1); // Always reset to 100% on viewport change
   };
-
-  const markClean = useCallback(() => {
-    setIsDirty(false);
-  }, []);
+  
+  const [history, setHistory] = useState<Funnel[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   
   // Initialize current step when funnel changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (!currentStepId && funnel.steps.length > 0) {
       setCurrentStepId(funnel.steps[0].id);
     }
   }, [funnel, currentStepId]);
 
   // Handle escape key for preview mode
-  useEffect(() => {
+  React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isPreviewMode) {
         setPreviewMode(false);
@@ -148,8 +161,10 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   
   const pushToHistory = useCallback((currentFunnel: Funnel) => {
     setHistory(prev => {
+      // Slice history to current position (discard any "future" states after undo)
       const newHistory = prev.slice(0, historyIndex + 1);
       newHistory.push(currentFunnel);
+      // Keep within max limit
       if (newHistory.length > MAX_HISTORY) {
         newHistory.shift();
         return newHistory;
@@ -160,9 +175,9 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   }, [historyIndex]);
   
   const setFunnel = useCallback((newFunnel: Funnel) => {
+    // Save current state to history before updating
     pushToHistory(funnel);
     setFunnelState({ ...newFunnel, updatedAt: new Date().toISOString() });
-    setIsDirty(true);
   }, [funnel, pushToHistory]);
   
   const undo = useCallback(() => {
@@ -170,7 +185,6 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
       const previousState = history[historyIndex];
       setHistoryIndex(prev => prev - 1);
       setFunnelState(previousState);
-      setIsDirty(true);
     }
   }, [history, historyIndex]);
   
@@ -179,14 +193,13 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
       const nextState = history[historyIndex + 1];
       setHistoryIndex(prev => prev + 1);
       setFunnelState(nextState);
-      setIsDirty(true);
     }
   }, [history, historyIndex]);
   
   // Step operations
   const addStep = useCallback(() => {
     const newStep: FunnelStep = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       name: `Step ${funnel.steps.length + 1}`,
       type: 'capture',
       slug: `step-${funnel.steps.length + 1}`,
@@ -227,7 +240,7 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   const addBlock = useCallback((stepId: string, blockType: Block['type'], index?: number) => {
     const definition = blockDefinitions[blockType];
     const newBlock: Block = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       type: blockType,
       content: JSON.parse(JSON.stringify(definition.defaultContent)),
       styles: JSON.parse(JSON.stringify(definition.defaultStyles)),
@@ -249,11 +262,12 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
     setSelectedBlockId(newBlock.id);
   }, [funnel, setFunnel]);
 
+  // Batch add multiple blocks atomically (avoids race conditions)
   const addBlocks = useCallback((stepId: string, blockTypes: Block['type'][]) => {
     const newBlocks: Block[] = blockTypes.map(blockType => {
       const definition = blockDefinitions[blockType];
       return {
-        id: crypto.randomUUID(),
+        id: uuid(),
         type: blockType,
         content: JSON.parse(JSON.stringify(definition.defaultContent)),
         styles: JSON.parse(JSON.stringify(definition.defaultStyles)),
@@ -339,7 +353,7 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
         const originalBlock = step.blocks[blockIndex];
         const newBlock: Block = {
           ...JSON.parse(JSON.stringify(originalBlock)),
-          id: crypto.randomUUID(),
+          id: uuid(),
         };
         const newBlocks = [...step.blocks];
         newBlocks.splice(blockIndex + 1, 0, newBlock);
@@ -378,7 +392,6 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
       canvasZoom,
       effectiveZoom,
       mediaGallery,
-      isDirty,
       setFunnel,
       setCurrentStepId,
       setSelectedBlockId,
@@ -386,7 +399,6 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
       setCurrentViewport,
       setCanvasZoom,
       setEffectiveZoom,
-      markClean,
       addStep,
       deleteStep,
       updateStep,
