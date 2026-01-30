@@ -1,5 +1,5 @@
 import React from 'react';
-import { SpacerContent } from '@/types/funnel';
+import { SpacerContent } from '@/funnel-builder-v3/types/funnel';
 
 interface SpacerBlockProps {
   content: SpacerContent;

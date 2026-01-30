@@ -1,5 +1,5 @@
 import React from 'react';
-import { ImageContent } from '@/types/funnel';
+import { ImageContent } from '@/funnel-builder-v3/types/funnel';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { cn } from '@/lib/utils';
 

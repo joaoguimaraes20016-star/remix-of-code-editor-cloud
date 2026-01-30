@@ -1063,6 +1063,9 @@ export const templates = [
   { ...quizTemplate, thumbnail: 'quiz', category: 'general' },
 ];
 
+// Alias for backwards compatibility with index.ts export
+export const funnelTemplates = templates;
+
 export function createEmptyFunnel(): Funnel {
   return {
     id: uuid(),

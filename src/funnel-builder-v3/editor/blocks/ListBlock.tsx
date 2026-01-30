@@ -1,8 +1,8 @@
 import React, { useCallback } from 'react';
-import { ListContent, TextStyles } from '@/types/funnel';
+import { ListContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { Check, Circle } from 'lucide-react';
-import { useFunnel } from '@/context/FunnelContext';
-import { EditableText } from '@/components/editor/EditableText';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 
 interface ListBlockProps {
   content: ListContent;

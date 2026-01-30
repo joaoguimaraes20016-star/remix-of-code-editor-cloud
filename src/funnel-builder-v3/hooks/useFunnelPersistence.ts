@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import type { Funnel } from '@/funnel-builder-v3/types/funnel';
+import type { Json } from '@/integrations/supabase/types';
 
 interface UseFunnelPersistenceOptions {
   funnel: Funnel;
@@ -52,12 +53,11 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
 
         if (data?.builder_document) {
           // Load the funnel from the stored builder_document
-          const storedFunnel = data.builder_document as Funnel;
+          const storedFunnel = data.builder_document as unknown as Funnel;
           setFunnel({
             ...storedFunnel,
             id: data.id,
             name: data.name || storedFunnel.name,
-            slug: data.slug || storedFunnel.slug,
           });
           lastSavedRef.current = JSON.stringify(storedFunnel);
           toast.success('Funnel loaded');
@@ -87,12 +87,12 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
     try {
       const saveData = {
         name: funnel.name || 'Untitled Funnel',
-        slug: funnel.slug || `funnel-${Date.now().toString(36)}`,
+        slug: funnel.name?.toLowerCase().replace(/\s+/g, '-') || `funnel-${Date.now().toString(36)}`,
         team_id: teamId,
         created_by: user.id,
-        builder_document: funnel,
-        settings: funnel.settings || {},
-        status: 'draft',
+        builder_document: JSON.parse(JSON.stringify(funnel)) as Json,
+        settings: (funnel.settings || {}) as Json,
+        status: 'draft' as const,
         updated_at: new Date().toISOString(),
       };
 

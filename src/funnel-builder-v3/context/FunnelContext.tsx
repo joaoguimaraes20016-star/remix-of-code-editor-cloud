@@ -83,9 +83,16 @@ function saveFunnelToStorage(funnel: Funnel) {
   }
 }
 
-export function FunnelProvider({ children }: { children: ReactNode }) {
-  // Initialize from localStorage or create new
+interface FunnelProviderProps {
+  children: ReactNode;
+  initialFunnel?: Funnel;
+  onFunnelChange?: (funnel: Funnel) => void;
+}
+
+export function FunnelProvider({ children, initialFunnel, onFunnelChange }: FunnelProviderProps) {
+  // Initialize from prop, localStorage, or create new
   const [funnel, setFunnelState] = useState<Funnel>(() => {
+    if (initialFunnel) return initialFunnel;
     return loadFunnelFromStorage() || createEmptyFunnel();
   });
   const [currentStepId, setCurrentStepId] = useState<string | null>(null);
@@ -96,10 +103,12 @@ export function FunnelProvider({ children }: { children: ReactNode }) {
   const [effectiveZoom, setEffectiveZoom] = useState<number>(1);
   const [mediaGallery, setMediaGallery] = useState<string[]>([]);
 
-  // Auto-save funnel to localStorage whenever it changes
+  // Auto-save funnel to localStorage whenever it changes (only if no external handler)
   useEffect(() => {
-    saveFunnelToStorage(funnel);
-  }, [funnel]);
+    if (!onFunnelChange) {
+      saveFunnelToStorage(funnel);
+    }
+  }, [funnel, onFunnelChange]);
 
   // Load media gallery from localStorage on mount
   useEffect(() => {
@@ -177,8 +186,11 @@ export function FunnelProvider({ children }: { children: ReactNode }) {
   const setFunnel = useCallback((newFunnel: Funnel) => {
     // Save current state to history before updating
     pushToHistory(funnel);
-    setFunnelState({ ...newFunnel, updatedAt: new Date().toISOString() });
-  }, [funnel, pushToHistory]);
+    const updated = { ...newFunnel, updatedAt: new Date().toISOString() };
+    setFunnelState(updated);
+    // Notify external handler if provided
+    onFunnelChange?.(updated);
+  }, [funnel, pushToHistory, onFunnelChange]);
   
   const undo = useCallback(() => {
     if (historyIndex >= 0 && history[historyIndex]) {

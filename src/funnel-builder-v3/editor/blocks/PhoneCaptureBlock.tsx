@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { PhoneCaptureContent } from '@/types/funnel';
+import { PhoneCaptureContent } from '@/funnel-builder-v3/types/funnel';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Phone } from 'lucide-react';
-import { useFunnelRuntimeOptional } from '@/context/FunnelRuntimeContext';
-import { useFunnel } from '@/context/FunnelContext';
-import { EditableText } from '@/components/editor/EditableText';
+import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { useSimpleStyleSync } from '@/hooks/useEditableStyleSync';
+import { useSimpleStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
 
 interface PhoneCaptureBlockProps {
   content: PhoneCaptureContent;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { DividerContent } from '@/types/funnel';
+import { DividerContent } from '@/funnel-builder-v3/types/funnel';
 import { cn } from '@/lib/utils';
 
 interface DividerBlockProps {

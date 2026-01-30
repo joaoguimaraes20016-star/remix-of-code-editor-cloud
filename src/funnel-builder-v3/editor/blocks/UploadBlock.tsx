@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { UploadContent } from '@/types/funnel';
+import { UploadContent } from '@/funnel-builder-v3/types/funnel';
 import { cn } from '@/lib/utils';
 import { Upload, File, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useFunnelRuntimeOptional } from '@/context/FunnelRuntimeContext';
-import { useFunnel } from '@/context/FunnelContext';
-import { EditableText } from '@/components/editor/EditableText';
+import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 
 interface UploadBlockProps {
   content: UploadContent;
