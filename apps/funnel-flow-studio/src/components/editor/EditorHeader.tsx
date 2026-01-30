@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useFunnel } from '@/context/FunnelContext';
+import { useFunnelPersistence } from '@/hooks/useFunnelPersistence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -20,6 +22,8 @@ import {
   Monitor,
   Save,
   MoreHorizontal,
+  ArrowLeft,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ViewportType } from '@/types/funnel';
@@ -28,8 +32,17 @@ import { ThemeToggle } from './ThemeToggle';
 
 export function EditorHeader() {
   const { funnel, setFunnel, exportFunnel, importFunnel, undo, redo, canUndo, canRedo, setPreviewMode, currentViewport, setCurrentViewport } = useFunnel();
+  const { teamId, saveDraft, publish, isAuthenticated } = useFunnelPersistence({ funnel, setFunnel });
+  const [searchParams] = useSearchParams();
+  
   const [name, setName] = React.useState(funnel.name);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Main app URL for dashboard link
+  const mainAppUrl = window.location.origin.replace(/:\d+$/, ':8080');
+  const dashboardUrl = teamId ? `${mainAppUrl}/team/${teamId}/funnels` : mainAppUrl;
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
@@ -39,6 +52,29 @@ export function EditorHeader() {
     if (name !== funnel.name) {
       setFunnel({ ...funnel, name });
     }
+  };
+
+  const handleSave = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please log in to save');
+      return;
+    }
+    setIsSaving(true);
+    const success = await saveDraft();
+    setIsSaving(false);
+    if (success) {
+      toast.success('Draft saved');
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please log in to publish');
+      return;
+    }
+    setIsPublishing(true);
+    await publish();
+    setIsPublishing(false);
   };
 
   const handleExport = () => {
@@ -75,6 +111,19 @@ export function EditorHeader() {
     <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 gap-4 shrink-0">
       {/* Left Section */}
       <div className="flex items-center gap-3">
+        {/* Back to Dashboard */}
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="h-8 px-2"
+        >
+          <a href={dashboardUrl}>
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Dashboard
+          </a>
+        </Button>
+        
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-sm">F</span>
@@ -179,6 +228,22 @@ export function EditorHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* Save Draft Button */}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-8"
+          onClick={handleSave}
+          disabled={isSaving || !isAuthenticated}
+        >
+          {isSaving ? (
+            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4 mr-1" />
+          )}
+          Save
+        </Button>
+
         <Button 
           variant="outline" 
           size="sm" 
@@ -189,7 +254,15 @@ export function EditorHeader() {
           Preview
         </Button>
 
-        <Button size="sm" className="h-8">
+        <Button 
+          size="sm" 
+          className="h-8"
+          onClick={handlePublish}
+          disabled={isPublishing || !isAuthenticated}
+        >
+          {isPublishing ? (
+            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+          ) : null}
           Publish
         </Button>
       </div>

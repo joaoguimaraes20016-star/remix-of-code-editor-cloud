@@ -25,6 +25,8 @@ interface PublishFunnelInput {
   funnel_id: string;
   name?: string;
   steps: PublishFunnelStepInput[];
+  builder_document?: unknown;
+  settings?: unknown;
 }
 
 function isUuid(value: string): boolean {
@@ -104,6 +106,8 @@ serve(async (req: Request): Promise<Response> => {
     const funnel_id = rawBody?.funnel_id;
     const name = rawBody?.name;
     const steps = Array.isArray(rawBody?.steps) ? rawBody.steps : [];
+    const builder_document = rawBody?.builder_document ?? null;
+    const settings = rawBody?.settings ?? null;
 
     if (!funnel_id || typeof funnel_id !== "string" || !isUuid(funnel_id)) {
       return new Response(
@@ -163,13 +167,25 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
+    // Build update payload - include builder_document and settings if provided
+    const updatePayload: Record<string, unknown> = {
+      name: name.trim(),
+      status: "published",
+      updated_at: new Date().toISOString(),
+    };
+
+    if (builder_document !== null) {
+      updatePayload.published_document_snapshot = builder_document;
+      updatePayload.builder_document = builder_document;
+    }
+
+    if (settings !== null) {
+      updatePayload.settings = settings;
+    }
+
     const { error: updateFunnelError } = await supabase
       .from("funnels")
-      .update({
-        name: name.trim(),
-        status: "published",
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq("id", funnel_id);
 
     if (updateFunnelError) {
