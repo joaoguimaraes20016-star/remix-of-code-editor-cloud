@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageContent, TextStyles } from '@/types/funnel';
+import { MessageContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { Textarea } from '@/components/ui/textarea';
-import { useFunnelRuntimeOptional } from '@/context/FunnelRuntimeContext';
-import { useFunnel } from '@/context/FunnelContext';
-import { EditableText } from '@/components/editor/EditableText';
+import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 
 interface MessageBlockProps {
   content: MessageContent;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DropdownContent, TextStyles } from '@/types/funnel';
+import { DropdownContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import {
   Select,
   SelectContent,
@@ -7,9 +7,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useFunnelRuntimeOptional } from '@/context/FunnelRuntimeContext';
-import { useFunnel } from '@/context/FunnelContext';
-import { EditableText } from '@/components/editor/EditableText';
+import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 
 interface DropdownBlockProps {
   content: DropdownContent;

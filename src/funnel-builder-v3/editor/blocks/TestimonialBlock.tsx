@@ -1,11 +1,11 @@
 import React, { useCallback } from 'react';
-import { TestimonialContent, TextStyles } from '@/types/funnel';
+import { TestimonialContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useFunnel } from '@/context/FunnelContext';
-import { EditableText } from '@/components/editor/EditableText';
-import { useEditableStyleSync } from '@/hooks/useEditableStyleSync';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
+import { useEditableStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
 
 interface TestimonialBlockProps {
   content: TestimonialContent;

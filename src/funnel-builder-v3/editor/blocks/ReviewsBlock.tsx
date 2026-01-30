@@ -1,9 +1,9 @@
 import React, { useCallback } from 'react';
-import { ReviewsContent, TextStyles } from '@/types/funnel';
+import { ReviewsContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { Star, StarHalf, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useFunnel } from '@/context/FunnelContext';
-import { EditableText } from '@/components/editor/EditableText';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 
 interface ReviewsBlockProps {
   content: ReviewsContent;

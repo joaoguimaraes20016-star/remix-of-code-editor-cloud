@@ -1,5 +1,5 @@
 import React from 'react';
-import { PaymentContent } from '@/types/funnel';
+import { PaymentContent } from '@/funnel-builder-v3/types/funnel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

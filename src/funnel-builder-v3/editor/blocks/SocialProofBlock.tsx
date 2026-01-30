@@ -1,10 +1,10 @@
 import React, { useCallback } from 'react';
-import { SocialProofContent, TextStyles } from '@/types/funnel';
+import { SocialProofContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { motion } from 'framer-motion';
-import { useFunnel } from '@/context/FunnelContext';
-import { EditableText } from '@/components/editor/EditableText';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { cn } from '@/lib/utils';
-import { useSimpleStyleSync } from '@/hooks/useEditableStyleSync';
+import { useSimpleStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
 
 interface SocialProofBlockProps {
   content: SocialProofContent;

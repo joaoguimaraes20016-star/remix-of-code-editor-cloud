@@ -1,5 +1,5 @@
 import React from 'react';
-import { GraphicContent } from '@/types/funnel';
+import { GraphicContent } from '@/funnel-builder-v3/types/funnel';
 import * as LucideIcons from 'lucide-react';
 import { cn } from '@/lib/utils';
 

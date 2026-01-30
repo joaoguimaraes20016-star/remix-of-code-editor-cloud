@@ -1,5 +1,5 @@
 import React from 'react';
-import { VideoContent } from '@/types/funnel';
+import { VideoContent } from '@/funnel-builder-v3/types/funnel';
 import { Play } from 'lucide-react';
 
 interface VideoBlockProps {
