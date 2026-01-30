@@ -21,7 +21,7 @@ import Schedule from "./pages/Schedule";
 import OnboardingForm from "./pages/OnboardingForm";
 import NotFound from "./pages/NotFound";
 import FunnelList from "./pages/FunnelList";
-import FunnelEditor from "./pages/FunnelEditor";
+import FunnelEditorV3 from "./pages/FunnelEditorV3";
 import PublicFunnel from "./pages/PublicFunnel";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Marketing from "./pages/Marketing";
@@ -97,7 +97,7 @@ const App = () => (
             <Route path="/builder/token-test" element={<TokenTestHarness />} />
             
             {/* Funnel Editor - Full screen, no team layout */}
-            <Route path="/team/:teamId/funnels/:funnelId/edit" element={<FunnelEditor />} />
+            <Route path="/team/:teamId/funnels/:funnelId/edit" element={<FunnelEditorV3 />} />
             
             {/* Automation Editor - Full screen, no team layout */}
             <Route path="/team/:teamId/workflows/:automationId/edit" element={<AutomationEditor />} />
