@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Upload, Image, Film, Link, X, Check, Trash2, Loader2 } from 'lucide-react';
-import { useFunnel } from '@/context/FunnelContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
 
 interface MediaPickerProps {
   value: string;

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DatePickerContent, TextStyles } from '@/types/funnel';
+import { DatePickerContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useFunnelRuntimeOptional } from '@/context/FunnelRuntimeContext';
-import { useFunnel } from '@/context/FunnelContext';
-import { EditableText } from '@/components/editor/EditableText';
+import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 
 interface DatePickerBlockProps {
   content: DatePickerContent;

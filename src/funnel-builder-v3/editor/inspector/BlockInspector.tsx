@@ -1,6 +1,6 @@
 import React from 'react';
-import { Block } from '@/types/funnel';
-import { blockDefinitions } from '@/lib/block-definitions';
+import { Block } from '@/funnel-builder-v3/types/funnel';
+import { blockDefinitions } from '@/funnel-builder-v3/lib/block-definitions';
 import { 
   InspectorSection, 
   IconToggleRow, 
@@ -20,12 +20,12 @@ import {
   GradientColorPicker,
   GradientPicker,
 } from './InspectorUI';
-import { allButtonPresets, allHeadingPresets } from '@/lib/niche-presets';
+import { allButtonPresets, allHeadingPresets } from '@/funnel-builder-v3/lib/niche-presets';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { MediaPicker } from '@/components/editor/MediaPicker';
+import { MediaPicker } from '@/funnel-builder-v3/editor/MediaPicker';
 import { 
   Type, Image, Star, Play, Calendar, Users, Quote,
   AlignLeft, AlignCenter, AlignRight,

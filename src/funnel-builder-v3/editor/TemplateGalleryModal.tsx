@@ -9,8 +9,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TemplateCard, TemplateMetadata } from './TemplateCard';
-import { templates } from '@/lib/templates';
-import { Funnel } from '@/types/funnel';
+import { templates } from '@/funnel-builder-v3/lib/templates';
+import { Funnel } from '@/funnel-builder-v3/types/funnel';
 import { Sparkles, LayoutTemplate, Target } from 'lucide-react';
 
 interface TemplateGalleryModalProps {

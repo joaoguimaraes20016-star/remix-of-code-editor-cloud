@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { useFunnel } from '@/context/FunnelContext';
-import { FunnelRuntimeProvider, useFunnelRuntime, FunnelFormData, FunnelSelections } from '@/context/FunnelRuntimeContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { FunnelRuntimeProvider, useFunnelRuntime, FunnelFormData, FunnelSelections } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { BlockRenderer } from './blocks/BlockRenderer';

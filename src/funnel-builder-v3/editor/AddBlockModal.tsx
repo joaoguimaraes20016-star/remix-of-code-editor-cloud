@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { useFunnel } from '@/context/FunnelContext';
-import { blockDefinitions } from '@/lib/block-definitions';
-import { BlockType } from '@/types/funnel';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { blockDefinitions } from '@/funnel-builder-v3/lib/block-definitions';
+import { BlockType } from '@/funnel-builder-v3/types/funnel';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import {

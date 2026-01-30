@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Block, ViewportType } from '@/types/funnel';
+import { Block, ViewportType } from '@/funnel-builder-v3/types/funnel';
 import { HeadingBlock } from './HeadingBlock';
 import { TextBlock } from './TextBlock';
 import { ImageBlock } from './ImageBlock';
@@ -34,8 +34,8 @@ import { DatePickerBlock } from './DatePickerBlock';
 import { DropdownBlock } from './DropdownBlock';
 import { PaymentBlock } from './PaymentBlock';
 import { cn } from '@/lib/utils';
-import { FunnelContext } from '@/context/FunnelContext';
-import { AnimationType, AnimationDuration, AnimationEasing } from '@/types/funnel';
+import { FunnelContext } from '@/funnel-builder-v3/context/FunnelContext';
+import { AnimationType, AnimationDuration, AnimationEasing } from '@/funnel-builder-v3/types/funnel';
 
 export interface BlockRendererProps {
   block: Block;

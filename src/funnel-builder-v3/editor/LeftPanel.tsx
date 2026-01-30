@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useFunnel } from '@/context/FunnelContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LayersPanel } from './LayersPanel';
 import { TemplateGalleryModal } from './TemplateGalleryModal';
 import { cn } from '@/lib/utils';
-import { Funnel } from '@/types/funnel';
+import { Funnel } from '@/funnel-builder-v3/types/funnel';
 import {
   Plus,
   MoreHorizontal,

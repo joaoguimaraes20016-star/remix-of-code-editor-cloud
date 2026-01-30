@@ -1,5 +1,5 @@
 import React from 'react';
-import { CardContent, Block } from '@/types/funnel';
+import { CardContent, Block } from '@/funnel-builder-v3/types/funnel';
 import { BlockRenderer } from './BlockRenderer';
 import { cn } from '@/lib/utils';
 

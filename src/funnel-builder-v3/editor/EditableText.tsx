@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect, useCallback, memo } from 'react';
 import { cn } from '@/lib/utils';
-import { InlineTextToolbar } from '@/components/editor/InlineTextToolbar';
-import { sanitizeHtml, containsHtml, applyInlineStyle } from '@/lib/selection-utils';
-import { TextStyles } from '@/types/funnel';
+import { InlineTextToolbar } from '@/funnel-builder-v3/editor/InlineTextToolbar';
+import { sanitizeHtml, containsHtml, applyInlineStyle } from '@/funnel-builder-v3/lib/selection-utils';
+import { TextStyles } from '@/funnel-builder-v3/types/funnel';
 
 export interface EditableTextProps {
   /** The text/html content to display and edit */

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Block } from '@/types/funnel';
-import { blockDefinitions } from '@/lib/block-definitions';
+import { Block } from '@/funnel-builder-v3/types/funnel';
+import { blockDefinitions } from '@/funnel-builder-v3/lib/block-definitions';
 import { cn } from '@/lib/utils';
 import { GripVertical, Type, AlignLeft, Image, Play, Minus, Square, MousePointer, FileText, Mail, Phone, Calendar, Quote, Star, Layers, Users, LayoutGrid, ChevronDown, Clock, HelpCircle } from 'lucide-react';
 

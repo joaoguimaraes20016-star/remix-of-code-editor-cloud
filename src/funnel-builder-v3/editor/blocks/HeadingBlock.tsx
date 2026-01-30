@@ -1,9 +1,9 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { HeadingContent } from '@/types/funnel';
+import { HeadingContent } from '@/funnel-builder-v3/types/funnel';
 import { cn } from '@/lib/utils';
-import { useFunnel } from '@/context/FunnelContext';
-import { InlineTextToolbar } from '@/components/editor/InlineTextToolbar';
-import { sanitizeHtml, containsHtml, applyInlineStyle } from '@/lib/selection-utils';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { InlineTextToolbar } from '@/funnel-builder-v3/editor/InlineTextToolbar';
+import { sanitizeHtml, containsHtml, applyInlineStyle } from '@/funnel-builder-v3/lib/selection-utils';
 
 interface HeadingBlockProps {
   content: HeadingContent;
