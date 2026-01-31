@@ -138,28 +138,34 @@ Deno.serve(async (req) => {
     console.log(`[fanbasis-oauth-callback] Using redirect_uri: ${REDIRECT_URI}`);
     console.log(`[fanbasis-oauth-callback] Client ID: ${clientId.substring(0, 8)}...`);
     
+    const tokenRequestBody = new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: REDIRECT_URI,
+      code: code,
+      code_verifier: codeVerifier,
+    }).toString();
+
+    console.log(`[fanbasis-oauth-callback] Requesting: ${fanbasisBaseUrl}/oauth/token`);
+    console.log(`[fanbasis-oauth-callback] Body params: grant_type, client_id, client_secret, redirect_uri, code, code_verifier`);
+
     const tokenResponse = await fetch(`${fanbasisBaseUrl}/oauth/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: REDIRECT_URI,
-        code: code,
-        code_verifier: codeVerifier,
-      }).toString(),
+      body: tokenRequestBody,
     });
 
     console.log(`[fanbasis-oauth-callback] Token response status: ${tokenResponse.status}`);
+    console.log(`[fanbasis-oauth-callback] Token response content-type: ${tokenResponse.headers.get('content-type')}`);
 
     if (!tokenResponse.ok) {
       const errorBody = await tokenResponse.text();
-      console.error("[fanbasis-oauth-callback] Token exchange failed:", errorBody);
+      console.error(`[fanbasis-oauth-callback] Token exchange failed (${tokenResponse.status}):`, errorBody.substring(0, 500));
       const redirectUrl = buildRedirectUrl(callbackPage, {
-        error: `Token exchange failed: ${errorBody.substring(0, 100)}`,
+        error: `Token exchange failed with status ${tokenResponse.status}`,
       });
       return Response.redirect(redirectUrl, 302);
     }
