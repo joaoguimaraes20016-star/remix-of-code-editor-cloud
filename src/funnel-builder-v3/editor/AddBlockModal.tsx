@@ -13,7 +13,6 @@ import {
   Users,
   MessageCircle,
   Layers,
-  X,
   Clock,
   Play,
   Info,
@@ -797,12 +796,6 @@ export function AddBlockModal({ isOpen, onClose }: AddBlockModalProps) {
                   {isSection ? 'Choose a template to add multiple blocks' : 'Click to add to page'}
                 </p>
               </div>
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-lg hover:bg-accent transition-colors"
-              >
-                <X className="h-4 w-4 text-muted-foreground" />
-              </button>
             </div>
 
             {/* Grid */}
