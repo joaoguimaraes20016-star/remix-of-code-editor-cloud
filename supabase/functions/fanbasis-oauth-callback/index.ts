@@ -138,7 +138,10 @@ Deno.serve(async (req) => {
     console.log(`[fanbasis-oauth-callback] Exchanging code with PKCE for team ${teamId}`);
     console.log(`[fanbasis-oauth-callback] Using redirect_uri: ${REDIRECT_URI}`);
     
-    const basicAuth = btoa(`${clientId}:${clientSecret}`);
+    // Use Deno's base64 encoding
+    const encoder = new TextEncoder();
+    const credentials = encoder.encode(`${clientId}:${clientSecret}`);
+    const basicAuth = btoa(String.fromCharCode(...credentials));
     
     const tokenResponse = await fetch(`${fanbasisBaseUrl}/oauth/token`, {
       method: "POST",
