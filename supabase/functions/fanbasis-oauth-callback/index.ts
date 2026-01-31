@@ -125,8 +125,22 @@ Deno.serve(async (req) => {
     const clientSecret = Deno.env.get("FANBASIS_CLIENT_SECRET");
     const REDIRECT_URI = "https://kqfyevdblvgxaycdvfxe.supabase.co/functions/v1/fanbasis-oauth-callback";
 
+    console.log(`[fanbasis-oauth-callback] Client ID present: ${!!clientId}, length: ${clientId?.length || 0}`);
+    console.log(`[fanbasis-oauth-callback] Client Secret present: ${!!clientSecret}, length: ${clientSecret?.length || 0}`);
+    
+    // Log partial values for verification (first 4 and last 4 chars)
+    if (clientId) {
+      console.log(`[fanbasis-oauth-callback] Client ID value: ${clientId}`);
+    }
+    if (clientSecret) {
+      const masked = clientSecret.substring(0, 4) + '...' + clientSecret.substring(clientSecret.length - 4);
+      console.log(`[fanbasis-oauth-callback] Client Secret (masked): ${masked}`);
+    }
+
     if (!clientId || !clientSecret) {
       console.error("[fanbasis-oauth-callback] Missing Fanbasis credentials");
+      console.error(`[fanbasis-oauth-callback] clientId: ${clientId ? 'present' : 'MISSING'}`);
+      console.error(`[fanbasis-oauth-callback] clientSecret: ${clientSecret ? 'present' : 'MISSING'}`);
       const redirectUrl = buildRedirectUrl(callbackPage, {
         error: "Server configuration error",
       });
@@ -155,6 +169,16 @@ Deno.serve(async (req) => {
     
     console.log(`[fanbasis-oauth-callback] Requesting: ${tokenEndpoint}`);
     console.log(`[fanbasis-oauth-callback] Body params: grant_type, client_id, client_secret, redirect_uri, code, code_verifier`);
+    
+    // Log request details for debugging (with sensitive data masked)
+    const debugBody = new URLSearchParams(tokenRequestBody);
+    console.log(`[fanbasis-oauth-callback] Request details:`);
+    console.log(`  - grant_type: ${debugBody.get('grant_type')}`);
+    console.log(`  - client_id: ${debugBody.get('client_id')}`);
+    console.log(`  - client_secret: ${debugBody.get('client_secret')?.substring(0, 4)}...${debugBody.get('client_secret')?.substring(debugBody.get('client_secret')!.length - 4)}`);
+    console.log(`  - redirect_uri: ${debugBody.get('redirect_uri')}`);
+    console.log(`  - code: ${debugBody.get('code')?.substring(0, 20)}... (${debugBody.get('code')?.length} chars)`);
+    console.log(`  - code_verifier: ${debugBody.get('code_verifier')?.substring(0, 10)}... (${debugBody.get('code_verifier')?.length} chars)`);
 
     const tokenResponse = await fetch(tokenEndpoint, {
       method: "POST",
@@ -169,7 +193,8 @@ Deno.serve(async (req) => {
 
     if (!tokenResponse.ok) {
       const errorBody = await tokenResponse.text();
-      console.error(`[fanbasis-oauth-callback] Token exchange failed (${tokenResponse.status}):`, errorBody.substring(0, 500));
+      console.error(`[fanbasis-oauth-callback] Token exchange failed (${tokenResponse.status}):`, errorBody);
+      console.error(`[fanbasis-oauth-callback] Full error response:`, errorBody);
       const redirectUrl = buildRedirectUrl(callbackPage, {
         error: `Token exchange failed with status ${tokenResponse.status}`,
       });
