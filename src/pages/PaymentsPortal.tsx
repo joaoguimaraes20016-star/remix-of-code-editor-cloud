@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { ProcessorCard } from "@/components/payments/ProcessorCard";
 import { StripeConfig } from "@/components/StripeConfig";
 import { WhopConfig } from "@/components/payments/WhopConfig";
+import { FanbasisConfig } from "@/components/FanbasisConfig";
 import {
   Sheet,
   SheetContent,
@@ -13,6 +14,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import whopLogo from "@/assets/integrations/whop-logo.png";
+import { connectFanbasis } from "@/lib/integrations/fanbasis";
 
 interface PaymentProcessor {
   id: string;
@@ -65,7 +67,7 @@ const processors: PaymentProcessor[] = [
     description: "Creator subscriptions & tips",
     gradient: "bg-gradient-to-br from-pink-500 via-rose-500 to-red-500",
     logo: <FanbasisLogo />,
-    status: "coming_soon",
+    status: "available",
   },
 ];
 
@@ -104,6 +106,8 @@ export default function PaymentsPortal() {
   const [whopSheetOpen, setWhopSheetOpen] = useState(false);
   const [stripeConnecting, setStripeConnecting] = useState(false);
   const [whopConnecting, setWhopConnecting] = useState(false);
+  const [fanbasisConnecting, setFanbasisConnecting] = useState(false);
+  const [fanbasisSheetOpen, setFanbasisSheetOpen] = useState(false);
 
   // Refs for popup tracking
   const popupRef = useRef<Window | null>(null);
@@ -143,6 +147,22 @@ export default function PaymentsPortal() {
     enabled: !!teamId,
   });
 
+  // Query Fanbasis connection status from secure view (tokens masked)
+  const { data: fanbasisIntegration, refetch: refetchFanbasis } = useQuery({
+    queryKey: ["fanbasis-integration", teamId],
+    queryFn: async () => {
+      if (!teamId) return null;
+      const { data } = await supabase
+        .from("team_integrations_public" as any)
+        .select("is_connected, config_safe")
+        .eq("team_id", teamId)
+        .eq("integration_type", "fanbasis")
+        .maybeSingle();
+      return data as unknown as { is_connected: boolean; config_safe: Record<string, any> | null } | null;
+    },
+    enabled: !!teamId,
+  });
+
   const isStripeConnected = stripeIntegration?.is_connected ?? false;
   const stripeConfig = stripeIntegration?.config_safe;
   const stripeAccountId = stripeConfig?.stripe_account_id;
@@ -150,6 +170,10 @@ export default function PaymentsPortal() {
   const isWhopConnected = whopIntegration?.is_connected ?? false;
   const whopConfig = whopIntegration?.config_safe;
   const whopCompanyId = whopConfig?.company_id || whopConfig?.company_name;
+
+  const isFanbasisConnected = fanbasisIntegration?.is_connected ?? false;
+  const fanbasisConfig = fanbasisIntegration?.config_safe;
+  const fanbasisCreatorName = fanbasisConfig?.creator_name || fanbasisConfig?.creator_id;
 
   // Handle postMessage from OAuth popup (primary method)
   useEffect(() => {
@@ -176,21 +200,31 @@ export default function PaymentsPortal() {
         console.log("[PaymentsPortal] Received whop-oauth-error message:", event.data.error);
         toast.error(`Connection failed: ${event.data.error}`);
         setWhopConnecting(false);
+      } else if (event.data?.type === "fanbasis-oauth-success") {
+        queryClient.invalidateQueries({ queryKey: ["fanbasis-integration", teamId] });
+        refetchFanbasis();
+        toast.success("Fanbasis connected successfully!");
+        setFanbasisConnecting(false);
+      } else if (event.data?.type === "fanbasis-oauth-error") {
+        toast.error(`Connection failed: ${event.data?.error ?? "Unknown error"}`);
+        setFanbasisConnecting(false);
       }
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [teamId, queryClient, refetchStripe, refetchWhop]);
+  }, [teamId, queryClient, refetchStripe, refetchWhop, refetchFanbasis]);
 
-  // Fallback: Handle OAuth redirect callback via URL params
+  // Handle OAuth redirect callback via URL params
   useEffect(() => {
     const stripeConnected = searchParams.get("stripe_connected");
     const stripeError = searchParams.get("stripe_error");
     const whopConnected = searchParams.get("whop_connected");
     const whopError = searchParams.get("whop_error");
+    const fanbasisConnected = searchParams.get("fanbasis_connected");
+    const fanbasisError = searchParams.get("fanbasis_error");
 
-    if (stripeConnected === "success" || stripeError || whopConnected === "success" || whopError) {
+    if (stripeConnected === "success" || stripeError || whopConnected === "success" || whopError || fanbasisConnected === "success" || fanbasisError) {
       setSearchParams({}, { replace: true });
 
       if (stripeConnected === "success") {
@@ -212,8 +246,18 @@ export default function PaymentsPortal() {
         toast.error(`Connection failed: ${whopError}`);
         setWhopConnecting(false);
       }
+
+      if (fanbasisConnected === "success") {
+        queryClient.invalidateQueries({ queryKey: ["fanbasis-integration", teamId] });
+        refetchFanbasis();
+        toast.success("Fanbasis connected successfully!");
+        setFanbasisConnecting(false);
+      } else if (fanbasisError) {
+        toast.error(`Connection failed: ${fanbasisError}`);
+        setFanbasisConnecting(false);
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, teamId, queryClient, refetchStripe, refetchWhop, refetchFanbasis]);
 
   // Cleanup popup polling on unmount
   useEffect(() => {
@@ -237,8 +281,84 @@ export default function PaymentsPortal() {
     popupRef.current = null;
     setStripeConnecting(false);
     setWhopConnecting(false);
+    setFanbasisConnecting(false);
     toast.info("Connection cancelled");
   }, []);
+
+  const openFanbasisOAuth = async () => {
+    if (!teamId) return;
+
+    setFanbasisConnecting(true);
+
+    const width = 600;
+    const height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+
+    // Open popup FIRST (synchronously) to avoid popup blockers
+    const popup = window.open(
+      "about:blank",
+      "fanbasis-oauth",
+      `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=yes,status=no,scrollbars=yes`
+    );
+
+    if (!popup || popup.closed) {
+      toast.error("Popup blocked. Please allow popups and try again.", {
+        duration: 10000,
+      });
+      setFanbasisConnecting(false);
+      return;
+    }
+
+    popupRef.current = popup;
+    try {
+      popup.document.write(POPUP_LOADING_HTML("Fanbasis"));
+      popup.document.close();
+    } catch (e) {
+      // Ignore
+    }
+
+    try {
+      const redirectUri = `${window.location.origin}/team/${teamId}/payments`;
+
+      const { data, error } = await supabase.functions.invoke("fanbasis-oauth-start", {
+        body: { teamId, redirectUri },
+      });
+
+      if (error) throw error;
+
+      if (data?.authUrl) {
+        popup.location.href = data.authUrl;
+
+        pollTimerRef.current = window.setInterval(() => {
+          try {
+            if (popup.closed) {
+              if (pollTimerRef.current) {
+                clearInterval(pollTimerRef.current);
+                pollTimerRef.current = null;
+              }
+              popupRef.current = null;
+              setFanbasisConnecting(false);
+            }
+          } catch (e) {
+            // Cross-origin error
+          }
+        }, 500);
+      } else {
+        popup.close();
+        popupRef.current = null;
+        throw new Error("No auth URL returned");
+      }
+    } catch (error) {
+      console.error("Fanbasis connect error:", error);
+      toast.error("Failed to start Fanbasis connection");
+      try {
+        popup.close();
+      } catch (e) {}
+      popupRef.current = null;
+      setFanbasisConnecting(false);
+    }
+  };
 
   const openOAuthPopup = async (provider: "stripe" | "whop") => {
     if (!teamId) return;
@@ -335,32 +455,33 @@ export default function PaymentsPortal() {
       } else {
         openOAuthPopup("whop");
       }
+    } else if (processor.id === "fanbasis") {
+      if (isFanbasisConnected) {
+        setFanbasisSheetOpen(true);
+      } else {
+        openFanbasisOAuth();
+      }
     }
   };
 
   const getProcessorStatus = (processor: PaymentProcessor): "connected" | "available" | "coming_soon" => {
-    if (processor.id === "stripe" && isStripeConnected) {
-      return "connected";
-    }
-    if (processor.id === "whop" && isWhopConnected) {
-      return "connected";
-    }
+    if (processor.id === "stripe" && isStripeConnected) return "connected";
+    if (processor.id === "whop" && isWhopConnected) return "connected";
+    if (processor.id === "fanbasis" && isFanbasisConnected) return "connected";
     return processor.status;
   };
 
   const getAccountInfo = (processor: PaymentProcessor): string | undefined => {
-    if (processor.id === "stripe" && isStripeConnected) {
-      return stripeAccountId;
-    }
-    if (processor.id === "whop" && isWhopConnected) {
-      return whopCompanyId;
-    }
+    if (processor.id === "stripe" && isStripeConnected) return stripeAccountId;
+    if (processor.id === "whop" && isWhopConnected) return whopCompanyId;
+    if (processor.id === "fanbasis" && isFanbasisConnected) return fanbasisCreatorName;
     return undefined;
   };
 
   const isProcessorConnecting = (processor: PaymentProcessor): boolean => {
     if (processor.id === "stripe") return stripeConnecting;
     if (processor.id === "whop") return whopConnecting;
+    if (processor.id === "fanbasis") return fanbasisConnecting;
     return false;
   };
 
@@ -428,6 +549,24 @@ export default function PaymentsPortal() {
               onUpdate={() => {
                 refetchWhop();
                 setWhopSheetOpen(false);
+              }}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Fanbasis Config Sheet */}
+      <Sheet open={fanbasisSheetOpen} onOpenChange={setFanbasisSheetOpen}>
+        <SheetContent className="sm:max-w-lg overflow-y-auto">
+          <SheetHeader className="mb-6">
+            <SheetTitle>Fanbasis Connection</SheetTitle>
+          </SheetHeader>
+          {teamId && (
+            <FanbasisConfig
+              teamId={teamId}
+              onUpdate={() => {
+                refetchFanbasis();
+                setFanbasisSheetOpen(false);
               }}
             />
           )}
