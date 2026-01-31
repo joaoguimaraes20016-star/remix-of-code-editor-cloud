@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "next-themes";
+import { AppThemeProvider } from "./components/AppThemeProvider";
 
 import SalesDashboard from "./pages/SalesDashboard";
 import Auth from "./pages/Auth";
@@ -84,12 +85,12 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" enableSystem={false}>
-      <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+    <BrowserRouter>
+      <AppThemeProvider>
+        <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
           <Routes>
             {/* 🔓 TEMP DEV ROUTE — must stay outside auth */}
             <Route path="/builder-v2" element={<EditorShell />} />
@@ -167,11 +168,10 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-        
-      </AuthProvider>
-      </TooltipProvider>
-    </ThemeProvider>
+        </AuthProvider>
+        </TooltipProvider>
+      </AppThemeProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 

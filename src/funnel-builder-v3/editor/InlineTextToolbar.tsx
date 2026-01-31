@@ -225,63 +225,13 @@ export function InlineTextToolbar({
       onContentChange?.();
       setSelectionStyles(getSelectionStyles());
     } else {
-      // Apply immediately to avoid needing a blur/click-out for preview
-      if (elementRef.current) {
-        // Remove gradient class and variable when switching to solid color
-        elementRef.current.classList.remove('text-gradient-clip');
-        elementRef.current.style.removeProperty('--text-gradient');
-        // Clear all gradient-related styles
-        elementRef.current.style.background = '';
-        elementRef.current.style.backgroundImage = '';
-        elementRef.current.style.setProperty('-webkit-background-clip', '');
-        elementRef.current.style.setProperty('background-clip', '');
-        elementRef.current.style.setProperty('-webkit-text-fill-color', '');
-        elementRef.current.style.color = color;
-        
-        // Also reset child elements that may have inherited gradient styles
-        elementRef.current.querySelectorAll('*').forEach((child) => {
-          if (child instanceof HTMLElement) {
-            child.style.setProperty('-webkit-text-fill-color', '');
-            child.style.color = '';
-          }
-        });
-      }
+      // Block-level color change: persist to state and apply to DOM
       onStyleChange({ color, textGradient: '' }); // Clear gradient when setting solid color
     }
   };
 
   const handleGradientChange = (gradient: string) => {
     // Gradients apply to block level only (not inline selections)
-    // Apply immediately for in-place preview (no click-out needed)
-    if (elementRef.current) {
-      if (gradient) {
-        // Use the CSS utility class + variable for consistent descendant clipping
-        elementRef.current.classList.add('text-gradient-clip');
-        elementRef.current.style.setProperty('--text-gradient', gradient);
-        // Clear any inline overrides that might conflict with gradient clipping
-        elementRef.current.style.background = '';
-        elementRef.current.style.backgroundColor = '';
-        elementRef.current.style.color = '';
-        (elementRef.current.style as any).webkitTextFillColor = '';
-        
-        // Also clear inline styles on child elements that could interfere
-        elementRef.current.querySelectorAll('*').forEach((child) => {
-          if (child instanceof HTMLElement) {
-            child.style.color = '';
-            (child.style as any).webkitTextFillColor = '';
-          }
-        });
-      } else {
-        // Remove gradient class and variable
-        elementRef.current.classList.remove('text-gradient-clip');
-        elementRef.current.style.removeProperty('--text-gradient');
-        elementRef.current.style.background = '';
-        (elementRef.current.style as any).webkitBackgroundClip = '';
-        (elementRef.current.style as any).webkitTextFillColor = '';
-        (elementRef.current.style as any).backgroundClip = '';
-        elementRef.current.style.color = styles.color || '';
-      }
-    }
     onStyleChange({ textGradient: gradient });
   };
 
@@ -344,6 +294,7 @@ export function InlineTextToolbar({
 
   return createPortal(
     <div
+      data-inline-toolbar
       className="fixed z-[100] flex items-center gap-0.5 bg-card border border-border shadow-lg rounded-lg px-1.5 py-1"
       style={{
         top: position.top,

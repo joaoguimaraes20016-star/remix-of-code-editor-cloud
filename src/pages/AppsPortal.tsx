@@ -95,6 +95,13 @@ interface App {
   configurable?: boolean;
 }
 
+const categoryLabels: Record<string, string> = {
+  scheduling: "Scheduling",
+  communication: "Communication",
+  analytics: "Analytics",
+  ads: "Ads & Marketing",
+};
+
 // Non-Google apps
 const apps: App[] = [
   {
@@ -188,13 +195,6 @@ const apps: App[] = [
   },
 ];
 
-const categoryLabels: Record<string, string> = {
-  scheduling: "Scheduling",
-  communication: "Communication",
-  analytics: "Analytics",
-  ads: "Ads & Marketing",
-};
-
 export default function AppsPortal() {
   const { teamId } = useParams();
   const [calendlyDialogOpen, setCalendlyDialogOpen] = useState(false);
@@ -240,7 +240,7 @@ export default function AppsPortal() {
       const metaIntegration = integrations.find(i => i.integration_type === "meta");
       const googleAdsIntegration = integrations.find(i => i.integration_type === "google_ads");
       const tiktokIntegration = integrations.find(i => i.integration_type === "tiktok");
-      
+
       return {
         ...teamsResult.data,
         slack_connected: slackIntegration?.is_connected ?? false,
@@ -572,6 +572,7 @@ export default function AppsPortal() {
             <TikTokConfig teamId={teamId || ""} onUpdate={refetch} />
           </DialogContent>
         </Dialog>
+
       </div>
     </div>
   );

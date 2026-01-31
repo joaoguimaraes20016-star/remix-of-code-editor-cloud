@@ -250,7 +250,7 @@ export function Canvas() {
   });
 
   // Calculate auto-scaling to fit canvas in available space
-  // The goal: at 100% user zoom, the device frame should fill ~85% of available space
+  // The goal: at 100% user zoom, the device frame should be large and easy to see
   const isPhone = viewport.frame === 'phone';
   const isTablet = viewport.frame === 'tablet';
   const isBrowser = viewport.frame === 'browser';
@@ -260,13 +260,13 @@ export function Canvas() {
   const totalFrameHeight = viewport.height + (isBrowser ? chromeHeight : 0) + (framePadding * 2);
   const totalFrameWidth = viewport.width + (framePadding * 2);
   // Use more of the available space (less padding) for a larger default frame
-  const availableHeight = Math.max(containerSize.height - 32, 400);
-  const availableWidth = Math.max(containerSize.width - 32, 300);
+  const availableHeight = Math.max(containerSize.height - 80, 400);
+  const availableWidth = Math.max(containerSize.width - 80, 300);
   const scaleY = availableHeight / totalFrameHeight;
   const scaleX = availableWidth / totalFrameWidth;
-  // Use the smaller dimension to ensure the frame fits, with a higher max cap
-  // This ensures frames appear properly sized at 100% zoom
-  const autoScale = Math.max(Math.min(scaleX, scaleY, 2.0), 0.5);
+  // Use the smaller dimension to ensure the frame fits, with a much higher max cap for close-up editing
+  // Increased from 2.0 to 4.0 to allow much closer zoom for detailed editing
+  const autoScale = Math.max(Math.min(scaleX, scaleY, 4.0), 0.5);
   // Final scale = user zoom * baseline auto-scale
   const finalScale = canvasZoom * autoScale;
 
@@ -286,10 +286,14 @@ export function Canvas() {
     );
   }
 
-  // Motion values (px) for smooth viewport morphing without fade-out
+  // Instant viewport switching with minimal animation
   const frameRadius = isPhone ? 48 : isTablet ? 32 : 12;
   const screenRadius = isPhone ? 36 : isTablet ? 24 : 0;
-  const viewportTransition = { duration: 0.35, ease: [0.32, 0.72, 0, 1] as const };
+  // Very fast, near-instant transitions
+  const viewportTransition = { 
+    duration: 0.15,
+    ease: "easeOut" as const
+  };
 
   return (
     <>
@@ -298,66 +302,71 @@ export function Canvas() {
         className="flex-1 bg-[hsl(var(--canvas-bg))] flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden"
         onClick={() => setSelectedBlockId(null)}
       >
-        {/* Zoom wrapper - smooth scaling with CSS transition */}
+        {/* Zoom wrapper - instant scaling */}
         <div 
           className="origin-center"
           style={{ 
             transform: `scale(${finalScale})`,
-            transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+            transition: 'transform 0.1s ease-out'
           }}
         >
-          {/* Device Frame - Smooth resize (no remount, no fade-out) */}
-          <motion.div
+          {/* Device Frame - Instant resize */}
+          <div
             className={cn(
               'relative overflow-hidden bg-[hsl(var(--phone-frame))]',
-              'shadow-2xl'
+              'shadow-2xl transition-all duration-150 ease-out'
             )}
-            style={{ boxShadow: 'var(--shadow-phone)' as any, willChange: 'border-radius,padding' }}
-            animate={{ borderRadius: frameRadius, padding: framePadding }}
-            transition={viewportTransition}
+            style={{ 
+              boxShadow: 'var(--shadow-phone)' as any,
+              borderRadius: frameRadius,
+              padding: framePadding
+            }}
           >
-
-          {/* Browser chrome - fixed height animation (no 'auto' height) */}
-          <motion.div
-            className="browser-chrome"
-            style={{ overflow: 'hidden', transformOrigin: 'top' }}
-            animate={{ height: isBrowser ? chromeHeight : 0, opacity: isBrowser ? 1 : 0 }}
-            transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
-          >
-            <div className="flex items-center gap-1.5 px-3 h-10">
-              <div className="w-3 h-3 rounded-full bg-red-400/80" />
-              <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
-              <div className="w-3 h-3 rounded-full bg-green-400/80" />
+            {/* Browser chrome - instant show/hide */}
+            <div
+              className="browser-chrome transition-all duration-100 ease-out"
+              style={{ 
+                overflow: 'hidden',
+                height: isBrowser ? chromeHeight : 0,
+                opacity: isBrowser ? 1 : 0
+              }}
+            >
+              <div className="flex items-center gap-1.5 px-3 h-10">
+                <div className="w-3 h-3 rounded-full bg-red-400/80" />
+                <div className="w-3 h-3 rounded-full bg-yellow-400/80" />
+                <div className="w-3 h-3 rounded-full bg-green-400/80" />
+              </div>
             </div>
-          </motion.div>
 
-          {/* Screen - animate width/height directly for a true resize (no transform scaling) */}
-          <motion.div
-            ref={setNodeRef}
-            className={cn(
-              'relative overflow-hidden bg-[hsl(var(--phone-screen))]',
-              isOver && 'ring-2 ring-primary ring-inset bg-primary/5'
-            )}
-            style={{ willChange: 'width,height,border-radius' }}
-            animate={{ width: viewport.width, height: viewport.height, borderRadius: screenRadius }}
-            transition={viewportTransition}
-          >
-            {/* Phone notch - overlay inside screen */}
-            {isPhone && (
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[hsl(var(--phone-frame))] rounded-b-2xl z-20" />
-            )}
-            
-            <ScrollArea className="h-full w-full">
-                <div 
-                  className="canvas-content flex flex-col p-4 w-full max-w-full overflow-x-hidden"
-                  style={{ 
-                    backgroundColor: currentStep.settings?.backgroundColor,
-                    minHeight: viewport.height,
-                    paddingTop: isPhone ? 40 : 16,
-                    paddingBottom: funnel.steps.length > 1 ? 64 : 24,
-                  }}
-                >
-                  <AnimatePresence mode="popLayout">
+            {/* Screen - instant resize */}
+            <div
+                ref={setNodeRef}
+              className={cn(
+                'relative overflow-hidden bg-[hsl(var(--phone-screen))] transition-all duration-150 ease-out',
+                isOver && 'ring-2 ring-primary ring-inset bg-primary/5'
+              )}
+              style={{ 
+                width: viewport.width,
+                height: viewport.height,
+                borderRadius: screenRadius
+              }}
+            >
+              {/* Phone notch - overlay inside screen */}
+              {isPhone && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[hsl(var(--phone-frame))] rounded-b-2xl z-20" />
+              )}
+              
+              <ScrollArea className="h-full w-full" key={currentViewport}>
+                  <div 
+                    className="canvas-content flex flex-col p-4 w-full max-w-full overflow-x-hidden"
+                    style={{ 
+                      backgroundColor: currentStep.settings?.backgroundColor,
+                      minHeight: viewport.height,
+                      paddingTop: isPhone ? 40 : 16,
+                      paddingBottom: funnel.steps.length > 1 ? 64 : 24,
+                    }}
+                  >
+                    <AnimatePresence mode="sync">
                     {currentStep.blocks.length === 0 ? (
                       <div className="flex-1 flex items-center justify-center">
                         <EmptyState onAddClick={() => setIsAddModalOpen(true)} viewport={currentViewport} />
@@ -382,31 +391,31 @@ export function Canvas() {
                         </div>
                       </SortableContext>
                     )}
-                  </AnimatePresence>
-                </div>
-            </ScrollArea>
+                    </AnimatePresence>
+                  </div>
+              </ScrollArea>
 
-            {/* Step Indicator */}
-            {funnel.steps.length > 1 && funnel.settings.showStepIndicator !== false && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
-                {funnel.steps.map((step, i) => (
-                  <motion.div
-                    key={step.id}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: i * 0.1 }}
-                    className={cn(
-                      'h-2 rounded-full transition-all duration-300',
-                      step.id === currentStepId 
-                        ? 'bg-primary w-6' 
-                        : 'bg-muted-foreground/30 w-2'
-                    )}
-                  />
-                ))}
-              </div>
-            )}
-          </motion.div>
-        </motion.div>
+              {/* Step Indicator */}
+              {funnel.steps.length > 1 && funnel.settings.showStepIndicator !== false && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {funnel.steps.map((step, i) => (
+                    <motion.div
+                      key={step.id}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: i * 0.1 }}
+                      className={cn(
+                        'h-2 rounded-full transition-all duration-300',
+                        step.id === currentStepId 
+                          ? 'bg-primary w-6' 
+                          : 'bg-muted-foreground/30 w-2'
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

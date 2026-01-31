@@ -58,6 +58,15 @@ const MAX_HISTORY = 50;
 
 const FUNNEL_STORAGE_KEY = 'funnel-editor-state';
 
+// Normalize funnel to ensure steps is always an array (guards against malformed data)
+function normalizeFunnel(f: Funnel): Funnel {
+  return {
+    ...f,
+    steps: Array.isArray(f?.steps) ? f.steps : [],
+    settings: f?.settings ?? {},
+  };
+}
+
 // Load funnel from localStorage
 function loadFunnelFromStorage(): Funnel | null {
   try {
@@ -92,8 +101,8 @@ interface FunnelProviderProps {
 export function FunnelProvider({ children, initialFunnel, onFunnelChange }: FunnelProviderProps) {
   // Initialize from prop, localStorage, or create new
   const [funnel, setFunnelState] = useState<Funnel>(() => {
-    if (initialFunnel) return initialFunnel;
-    return loadFunnelFromStorage() || createEmptyFunnel();
+    const raw = initialFunnel ?? loadFunnelFromStorage() ?? createEmptyFunnel();
+    return normalizeFunnel(raw);
   });
   const [currentStepId, setCurrentStepId] = useState<string | null>(null);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
@@ -186,7 +195,7 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   const setFunnel = useCallback((newFunnel: Funnel) => {
     // Save current state to history before updating
     pushToHistory(funnel);
-    const updated = { ...newFunnel, updatedAt: new Date().toISOString() };
+    const updated = normalizeFunnel({ ...newFunnel, updatedAt: new Date().toISOString() });
     setFunnelState(updated);
     // Notify external handler if provided
     onFunnelChange?.(updated);
@@ -196,7 +205,7 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
     if (historyIndex >= 0 && history[historyIndex]) {
       const previousState = history[historyIndex];
       setHistoryIndex(prev => prev - 1);
-      setFunnelState(previousState);
+      setFunnelState(normalizeFunnel(previousState));
     }
   }, [history, historyIndex]);
   
@@ -204,7 +213,7 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
     if (historyIndex < history.length - 1) {
       const nextState = history[historyIndex + 1];
       setHistoryIndex(prev => prev + 1);
-      setFunnelState(nextState);
+      setFunnelState(normalizeFunnel(nextState));
     }
   }, [history, historyIndex]);
   
@@ -326,21 +335,33 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   }, [funnel, setFunnel]);
 
   const updateBlockContent = useCallback((stepId: string, blockId: string, contentUpdates: any) => {
-    setFunnel({
-      ...funnel,
-      steps: funnel.steps.map(step => {
-        if (step.id !== stepId) return step;
-        return {
-          ...step,
-          blocks: step.blocks.map(b => 
-            b.id === blockId 
-              ? { ...b, content: { ...b.content, ...contentUpdates } } 
-              : b
-          ),
-        };
-      }),
+    // Use functional update to avoid race conditions when multiple updates happen in quick succession
+    setFunnelState(currentFunnel => {
+      const updated = normalizeFunnel({
+        ...currentFunnel,
+        steps: currentFunnel.steps.map(step => {
+          if (step.id !== stepId) return step;
+          return {
+            ...step,
+            blocks: step.blocks.map(b => 
+              b.id === blockId 
+                ? { ...b, content: { ...b.content, ...contentUpdates } } 
+                : b
+            ),
+          };
+        }),
+        updatedAt: new Date().toISOString(),
+      });
+      
+      // Save to history
+      pushToHistory(currentFunnel);
+      
+      // Notify external handler if provided
+      onFunnelChange?.(updated);
+      
+      return updated;
     });
-  }, [funnel, setFunnel]);
+  }, [pushToHistory, onFunnelChange]);
   
   const reorderBlocks = useCallback((stepId: string, fromIndex: number, toIndex: number) => {
     setFunnel({

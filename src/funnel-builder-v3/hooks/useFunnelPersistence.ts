@@ -1,5 +1,5 @@
 import { useCallback, useRef, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -24,54 +24,21 @@ interface FunnelRecord {
 }
 
 export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistenceOptions) {
-  const [searchParams] = useSearchParams();
+  const { teamId: teamIdParam, funnelId: funnelIdParam } = useParams<{ teamId?: string; funnelId?: string }>();
+  const navigate = useNavigate();
   const { user, session } = useAuth();
   
-  const funnelId = searchParams.get('funnelId');
-  const teamId = searchParams.get('teamId');
+  const teamId = teamIdParam ?? null;
+  const funnelId = funnelIdParam && funnelIdParam !== 'new' ? funnelIdParam : null;
   
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef<string>('');
 
-  // Load funnel from database on mount
-  useEffect(() => {
-    if (!funnelId || !user) return;
+  // NOTE: Loading is handled by FunnelEditorV3 (parent component).
+  // This hook only handles save/publish to avoid duplicate loads and infinite loops.
 
-    const loadFunnel = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('funnels')
-          .select('id, name, slug, builder_document, settings, status')
-          .eq('id', funnelId)
-          .single();
-
-        if (error) {
-          console.error('Failed to load funnel:', error);
-          toast.error('Failed to load funnel');
-          return;
-        }
-
-        if (data?.builder_document) {
-          // Load the funnel from the stored builder_document
-          const storedFunnel = data.builder_document as unknown as Funnel;
-          setFunnel({
-            ...storedFunnel,
-            id: data.id,
-            name: data.name || storedFunnel.name,
-          });
-          lastSavedRef.current = JSON.stringify(storedFunnel);
-          toast.success('Funnel loaded');
-        }
-      } catch (e) {
-        console.error('Error loading funnel:', e);
-      }
-    };
-
-    loadFunnel();
-  }, [funnelId, user, setFunnel]);
-
-  // Auto-save with debounce
-  const saveDraft = useCallback(async () => {
+  // Auto-save with debounce - returns funnel id on success (for publish flow)
+  const saveDraft = useCallback(async (): Promise<string | false> => {
     if (!user || !teamId) {
       console.log('Cannot save: missing user or teamId');
       return false;
@@ -81,7 +48,7 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
     
     // Skip if nothing changed
     if (funnelJson === lastSavedRef.current) {
-      return true;
+      return funnelId || (funnel as any).id || false;
     }
 
     try {
@@ -122,21 +89,20 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
       }
 
       lastSavedRef.current = funnelJson;
-      
-      // Update URL with new funnel ID if this was a create
-      if (!funnelId && result.data?.id) {
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.set('funnelId', result.data.id);
-        window.history.replaceState({}, '', newUrl.toString());
+      const savedFunnelId = result.data?.id;
+
+      // Update URL with new funnel ID if this was a create (main app uses path params)
+      if (!funnelId && savedFunnelId && teamId) {
+        navigate(`/team/${teamId}/funnels/${savedFunnelId}/edit`, { replace: true });
       }
 
-      return true;
+      return (savedFunnelId ?? funnelId) ?? true;
     } catch (e) {
       console.error('Error saving funnel:', e);
       toast.error('Failed to save draft');
       return false;
     }
-  }, [funnel, funnelId, teamId, user]);
+  }, [funnel, funnelId, teamId, user, navigate]);
 
   // Debounced auto-save
   const debouncedSave = useCallback(() => {
@@ -156,13 +122,12 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
       return false;
     }
 
-    if (!funnelId) {
-      // Save first to get an ID
+    let currentFunnelId = funnelId;
+    if (!currentFunnelId) {
       const saved = await saveDraft();
-      if (!saved) return false;
+      currentFunnelId = typeof saved === 'string' ? saved : null;
+      if (!currentFunnelId) return false;
     }
-
-    const currentFunnelId = funnelId || searchParams.get('funnelId');
     if (!currentFunnelId) {
       toast.error('No funnel ID available');
       return false;
@@ -196,7 +161,7 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
       toast.error('Failed to publish funnel');
       return false;
     }
-  }, [session, funnelId, funnel, saveDraft, searchParams]);
+  }, [session, funnelId, funnel, saveDraft]);
 
   // Clean up timeout on unmount
   useEffect(() => {

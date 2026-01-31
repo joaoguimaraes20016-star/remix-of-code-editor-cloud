@@ -18,7 +18,7 @@ interface EmailCaptureBlockProps {
 
 export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: EmailCaptureBlockProps) {
   const runtime = useFunnelRuntimeOptional();
-  const { updateBlockContent } = useFunnel();
+  const { updateBlockContent, currentViewport } = useFunnel();
   const { 
     placeholder, 
     buttonText, 
@@ -32,6 +32,27 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canEdit = blockId && stepId && !isPreview;
+  const isMobile = currentViewport === 'mobile';
+  
+  // Context-aware text sizing based on content length
+  const getButtonTextSize = () => {
+    const textLength = buttonText?.length || 0;
+    if (!isMobile) return 'text-base';
+    if (textLength > 20) return 'text-[10px]';
+    if (textLength > 15) return 'text-xs';
+    return 'text-sm';
+  };
+  
+  const getPlaceholderTextSize = () => {
+    const textLength = placeholder?.length || 0;
+    if (!isMobile) return '';
+    if (textLength > 25) return 'text-[11px] placeholder:text-[11px]';
+    if (textLength > 20) return 'text-xs placeholder:text-xs';
+    return 'text-sm placeholder:text-sm';
+  };
+  
+  const buttonTextSize = getButtonTextSize();
+  const placeholderTextSize = getPlaceholderTextSize();
 
   // Wire button text toolbar to block content
   const { styles: buttonTextStyles, handleStyleChange: handleButtonTextStyleChange } = useSimpleStyleSync(
@@ -113,24 +134,35 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
       : {};
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="flex gap-2">
+    <form onSubmit={handleSubmit} className="space-y-2">
+      <div className="flex gap-1.5">
         <Input
           type="email"
           placeholder={placeholder}
-          className="flex-1 h-12"
+          className={cn(
+            "flex-1",
+            isMobile ? "h-9 px-2.5" : "h-12",
+            placeholderTextSize
+          )}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <Button 
           type="submit"
-          className={cn("h-12 px-6 shrink-0", hasCustomBg && "hover:opacity-90")}
+          className={cn(
+            "shrink-0 whitespace-nowrap",
+            isMobile ? "h-9 px-3" : "h-12 px-6",
+            hasCustomBg && "hover:opacity-90"
+          )}
           variant={hasCustomBg ? "ghost" : "default"}
           style={buttonStyle}
           disabled={isSubmitting}
         >
           <span 
-            className={cn(hasTextGradient && "text-gradient-clip")}
+            className={cn(
+              hasTextGradient && "text-gradient-clip",
+              buttonTextSize
+            )}
             style={buttonTextWrapperStyle}
           >
             {canEdit ? (
@@ -151,7 +183,10 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
         </Button>
       </div>
       {(subtitle || canEdit) && (
-        <div className="text-xs text-center text-muted-foreground">
+        <div className={cn(
+          "text-center text-muted-foreground leading-tight",
+          isMobile ? "text-[10px] px-1" : "text-xs"
+        )}>
           {canEdit ? (
             <EditableText
               value={subtitle || ''}

@@ -2,6 +2,8 @@
 
 export type RevenueProviderId = 'stripe' | 'whop' | 'fanbasis' | 'manual';
 
+export type IntegrationProviderId = RevenueProviderId | 'slack' | 'discord' | 'zoom' | 'typeform' | 'tiktok' | 'meta' | 'google' | 'fathom' | 'calendly' | 'zapier';
+
 export interface RevenueCustomer {
   id: string; // provider customer id
   email: string | null;

@@ -15,7 +15,7 @@ export interface SelectionStyles {
 }
 
 // Allowed tags for HTML sanitization
-const ALLOWED_TAGS = ['strong', 'b', 'em', 'i', 'u', 's', 'strike', 'del', 'span', 'a', 'br', 'mark'];
+const ALLOWED_TAGS = ['strong', 'b', 'em', 'i', 'u', 's', 'strike', 'del', 'span', 'a', 'br', 'mark', 'font'];
 
 /**
  * Check if there's a non-collapsed text selection within the given element
@@ -256,6 +256,31 @@ export function sanitizeHtml(html: string): string {
         if (bgColor) cleanElement.style.backgroundColor = bgColor;
       } else {
         // If span has no relevant styles, just return children
+        const fragment = document.createDocumentFragment();
+        Array.from(element.childNodes).forEach(child => {
+          const cleanedChild = cleanNode(child);
+          if (cleanedChild) {
+            fragment.appendChild(cleanedChild);
+          }
+        });
+        return fragment;
+      }
+    } else if (tagName === 'font') {
+      // Convert old <font> tags to <span> with inline color
+      // Some browsers still use <font> for execCommand('foreColor')
+      const color = element.getAttribute('color');
+      if (color) {
+        const span = document.createElement('span');
+        span.style.color = color;
+        Array.from(element.childNodes).forEach(child => {
+          const cleanedChild = cleanNode(child);
+          if (cleanedChild) {
+            span.appendChild(cleanedChild);
+          }
+        });
+        return span;
+      } else {
+        // If font has no color, just return children
         const fragment = document.createDocumentFragment();
         Array.from(element.childNodes).forEach(child => {
           const cleanedChild = cleanNode(child);

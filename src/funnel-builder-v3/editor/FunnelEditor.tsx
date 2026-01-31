@@ -4,7 +4,7 @@ import { Canvas } from './Canvas';
 import { RightPanel } from './RightPanel';
 import { EditorHeader } from './EditorHeader';
 import { PreviewMode } from './PreviewMode';
-import { FunnelProvider, useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
 import { 
   DndContext, 
   closestCenter, 
@@ -113,9 +113,5 @@ function EditorContent() {
 }
 
 export function FunnelEditor() {
-  return (
-    <FunnelProvider>
-      <EditorContent />
-    </FunnelProvider>
-  );
+  return <EditorContent />;
 }

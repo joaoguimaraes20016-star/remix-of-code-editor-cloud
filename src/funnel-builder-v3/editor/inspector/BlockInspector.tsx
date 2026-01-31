@@ -34,6 +34,14 @@ import {
 } from 'lucide-react';
 import { v4 as uuid } from 'uuid';
 
+// Helper function to strip HTML tags for display in inspector inputs
+function stripHtmlTags(html: string): string {
+  if (!html) return '';
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  return temp.textContent || temp.innerText || '';
+}
+
 interface BlockInspectorProps {
   block: Block;
   onContentChange: (updates: any) => void;
@@ -104,7 +112,7 @@ export function HeadingInspector({ block, onContentChange }: BlockInspectorProps
 
       <InspectorSection title="Text">
         <Input
-          value={content.text}
+          value={stripHtmlTags(content.text)}
           onChange={(e) => onContentChange({ text: e.target.value })}
           className="h-9 bg-muted border-0"
           placeholder="Enter heading..."
@@ -219,7 +227,7 @@ export function TextInspector({ block, onContentChange }: BlockInspectorProps) {
 
       <InspectorSection title="Text">
         <Textarea
-          value={content.text}
+          value={stripHtmlTags(content.text)}
           onChange={(e) => onContentChange({ text: e.target.value })}
           className="min-h-[80px] bg-muted border-0 resize-none"
           placeholder="Enter text..."

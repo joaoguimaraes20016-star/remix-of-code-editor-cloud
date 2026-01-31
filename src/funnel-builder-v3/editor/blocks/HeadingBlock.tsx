@@ -44,9 +44,8 @@ export function HeadingBlock({ content, blockId, stepId, isPreview }: HeadingBlo
       const oldHtml = sanitizeHtml(originalValueRef.current).trim();
       if (newHtml && newHtml !== oldHtml) {
         updateBlockContent(stepId, blockId, { text: newHtml });
-      } else if (elementRef.current) {
-        elementRef.current.innerHTML = originalValueRef.current;
       }
+      // Don't revert innerHTML if unchanged - style changes (like gradients) may have been applied
     }
     setIsEditing(false);
   }, [blockId, stepId, updateBlockContent]);
@@ -71,6 +70,44 @@ export function HeadingBlock({ content, blockId, stepId, isPreview }: HeadingBlo
       }
     }, 0);
   };
+
+  // Handle clicks outside the element to close editing
+  useEffect(() => {
+    if (!isEditing) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      
+      // Don't close if clicking on the element itself
+      if (elementRef.current?.contains(target)) {
+        return;
+      }
+      
+      // Don't close if clicking on the toolbar (it's portaled to body)
+      const toolbar = document.querySelector('[data-inline-toolbar]');
+      if (toolbar?.contains(target)) {
+        return;
+      }
+      
+      // Don't close if a popover is open (user is interacting with color picker, etc.)
+      if (toolbarPopoverOpenRef.current) {
+        return;
+      }
+      
+      // Close editing
+      handleSave();
+    };
+
+    // Add listener after a short delay to avoid immediate trigger
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isEditing, handleSave]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const isMod = e.metaKey || e.ctrlKey;

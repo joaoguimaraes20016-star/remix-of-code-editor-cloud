@@ -78,8 +78,8 @@ const animationOptions: { value: AnimationType; label: string; icon: React.React
 export function RightPanel() {
   const { funnel, currentStepId, selectedBlockId, setSelectedBlockId, updateBlock } = useFunnel();
 
-  const currentStep = funnel.steps.find(s => s.id === currentStepId);
-  const selectedBlock = currentStep?.blocks.find(b => b.id === selectedBlockId);
+  const currentStep = funnel?.steps?.find(s => s.id === currentStepId) ?? null;
+  const selectedBlock = currentStep?.blocks?.find(b => b.id === selectedBlockId) ?? null;
 
   // No block selected - show step settings
   if (!selectedBlock) {
@@ -98,7 +98,7 @@ export function RightPanel() {
     );
   }
 
-  const blockDef = blockDefinitions[selectedBlock.type];
+  const blockDef = blockDefinitions[selectedBlock.type] ?? { name: 'Block', category: 'unknown' };
 
   const handleStyleChange = (updates: any) => {
     if (!currentStepId || !selectedBlockId) return;
@@ -114,7 +114,7 @@ export function RightPanel() {
     });
   };
 
-  const styles = selectedBlock.styles;
+  const styles = selectedBlock.styles ?? {};
 
   // Render the appropriate inspector based on block type
   const renderContentInspector = () => {
