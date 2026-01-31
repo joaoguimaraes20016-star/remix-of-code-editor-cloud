@@ -321,6 +321,13 @@ export default function PaymentsPortal() {
     try {
       const redirectUri = `${window.location.origin}/team/${teamId}/payments`;
 
+      // Get the current session to ensure we're authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error("Not authenticated. Please log in again.");
+      }
+
       const { data, error } = await supabase.functions.invoke("fanbasis-oauth-start", {
         body: { teamId, redirectUri },
       });
