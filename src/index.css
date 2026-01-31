@@ -480,3 +480,54 @@
   animation: float-bg 16s ease-in-out infinite;
   will-change: transform;
 }
+
+/* Marquee animations for logo bar */
+@keyframes marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Marquee animation classes - left direction */
+.animate-marquee-slow {
+  animation: marquee-left 60s linear infinite;
+}
+
+.animate-marquee-medium {
+  animation: marquee-left 30s linear infinite;
+}
+
+.animate-marquee-fast {
+  animation: marquee-left 15s linear infinite;
+}
+
+/* Marquee animation classes - right direction */
+.animate-marquee-slow-right {
+  animation: marquee-right 60s linear infinite;
+}
+
+.animate-marquee-medium-right {
+  animation: marquee-right 30s linear infinite;
+}
+
+.animate-marquee-fast-right {
+  animation: marquee-right 15s linear infinite;
+}
+
+/* Pause animation on hover */
+.marquee-track[style*="animation-play-state: paused"],
+.marquee-track:hover {
+  animation-play-state: paused !important;
+}

@@ -74,16 +74,27 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
 
       // Ensure the segment is at least as wide as the container.
       const repeats = Math.max(1, Math.ceil(containerWidth / baseWidth));
-      setSegmentRepeats(repeats);
+      setSegmentRepeats(prev => prev === repeats ? prev : repeats); // Only update if changed
     };
 
-    computeRepeats();
+    // Small delay to ensure DOM is ready
+    const timeoutId = setTimeout(() => {
+      computeRepeats();
+    }, 50);
 
-    const ro = new ResizeObserver(() => computeRepeats());
+    const ro = new ResizeObserver(() => {
+      // Debounce resize calculations
+      clearTimeout(timeoutId);
+      setTimeout(computeRepeats, 100);
+    });
+    
     ro.observe(el);
     ro.observe(measureEl);
 
-    return () => ro.disconnect();
+    return () => {
+      clearTimeout(timeoutId);
+      ro.disconnect();
+    };
   }, [animated, logos.length]);
 
   const renderLogoSet = useCallback((suffix: string) => {
