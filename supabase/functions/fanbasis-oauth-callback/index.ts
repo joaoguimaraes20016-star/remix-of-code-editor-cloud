@@ -137,15 +137,16 @@ Deno.serve(async (req) => {
     const fanbasisBaseUrl = Deno.env.get("FANBASIS_BASE_URL") || "https://www.fanbasis.com";
 
     // Token exchange with PKCE (per Fanbasis documentation)
-    // Requires: grant_type, client_id, client_secret, redirect_uri, code, code_verifier
+    // Fanbasis requires Basic Auth header with client credentials
     console.log(`[fanbasis-oauth-callback] Exchanging code with PKCE for team ${teamId}`);
     console.log(`[fanbasis-oauth-callback] Using redirect_uri: ${REDIRECT_URI}`);
     console.log(`[fanbasis-oauth-callback] Client ID: ${clientId.substring(0, 8)}...`);
     
+    // Create Basic Auth header
+    const basicAuth = btoa(`${clientId}:${clientSecret}`);
+    
     const tokenRequestBody = new URLSearchParams({
       grant_type: "authorization_code",
-      client_id: clientId,
-      client_secret: clientSecret,
       redirect_uri: REDIRECT_URI,
       code: code,
       code_verifier: codeVerifier,
@@ -154,12 +155,13 @@ Deno.serve(async (req) => {
     const tokenEndpoint = `${fanbasisBaseUrl}/oauth/token`;
     
     console.log(`[fanbasis-oauth-callback] Requesting: ${tokenEndpoint}`);
-    console.log(`[fanbasis-oauth-callback] Body params: grant_type, client_id, client_secret, redirect_uri, code, code_verifier`);
+    console.log(`[fanbasis-oauth-callback] Using Basic Auth header + body params: grant_type, redirect_uri, code, code_verifier`);
 
     const tokenResponse = await fetch(tokenEndpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": `Basic ${basicAuth}`,
       },
       body: tokenRequestBody,
     });
