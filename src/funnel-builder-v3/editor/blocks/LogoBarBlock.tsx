@@ -151,10 +151,10 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
 
   // Animated marquee version - segment x2 (two identical halves) for seamless loop
   return (
-    <div className="space-y-4 w-full overflow-hidden box-border">
+    <div className="space-y-4 w-full">
       {renderTitle()}
       <div 
-        className="relative w-full box-border overflow-hidden"
+        className="relative w-full overflow-hidden"
         style={{ 
           maskImage: maskGradient,
           WebkitMaskImage: maskGradient,
@@ -163,12 +163,13 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
         {/* Marquee track - two identical halves (segment A + segment B) for seamless loop */}
         <div 
           className={cn(
-            "inline-flex items-center gap-8 will-change-transform marquee-track",
+            "flex items-center gap-8 will-change-transform marquee-track",
             speedClasses[speed] || 'animate-marquee-medium',
             pauseOnHover && "hover:[animation-play-state:paused]"
           )}
           style={{ 
             whiteSpace: 'nowrap',
+            width: 'max-content',
           }}
         >
           {renderSegment('a')}
