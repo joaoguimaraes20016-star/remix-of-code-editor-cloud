@@ -289,54 +289,55 @@ export function TextInspector({ block, onContentChange }: BlockInspectorProps) {
 }
 
 // ========== BUTTON PRESETS (Enhanced with niche-specific styles) ==========
+// Note: borderRadius is controlled via Style tab, not content
 const buttonPresets = [
   {
     id: 'primary',
     name: 'Primary',
     preview: <div className="w-full h-3 bg-primary rounded" />,
-    config: { variant: 'primary', backgroundColor: '#6366f1', size: 'lg', borderRadius: 8 }
+    config: { variant: 'primary', backgroundColor: '#6366f1', size: 'lg' }
   },
   {
     id: 'success',
     name: 'Success',
     preview: <div className="w-full h-3 bg-green-500 rounded" />,
-    config: { variant: 'primary', backgroundColor: '#10b981', size: 'lg', borderRadius: 8 }
+    config: { variant: 'primary', backgroundColor: '#10b981', size: 'lg' }
   },
   {
     id: 'gold',
     name: 'Gold',
     preview: <div className="w-full h-3 rounded" style={{ backgroundColor: '#ffd700' }} />,
-    config: { variant: 'primary', backgroundColor: '#ffd700', color: '#000000', size: 'lg', borderRadius: 8 }
+    config: { variant: 'primary', backgroundColor: '#ffd700', color: '#000000', size: 'lg' }
   },
   {
     id: 'urgency',
     name: 'Urgency',
     preview: <div className="w-full h-3 bg-red-500 rounded" />,
-    config: { variant: 'primary', backgroundColor: '#dc2626', size: 'lg', borderRadius: 8 }
+    config: { variant: 'primary', backgroundColor: '#dc2626', size: 'lg' }
   },
   {
     id: 'agency',
     name: 'Agency',
     preview: <div className="w-full h-3 bg-blue-500 rounded-full" />,
-    config: { variant: 'primary', backgroundColor: '#3b82f6', size: 'lg', borderRadius: 999 }
+    config: { variant: 'primary', backgroundColor: '#3b82f6', size: 'lg' }
   },
   {
     id: 'premium',
     name: 'Premium',
     preview: <div className="w-full h-3 rounded" style={{ backgroundColor: '#0f172a' }} />,
-    config: { variant: 'primary', backgroundColor: '#0f172a', size: 'lg', borderRadius: 4 }
+    config: { variant: 'primary', backgroundColor: '#0f172a', size: 'lg' }
   },
   {
     id: 'warm',
     name: 'Warm',
     preview: <div className="w-full h-3 rounded-xl" style={{ backgroundColor: '#f59e0b' }} />,
-    config: { variant: 'primary', backgroundColor: '#f59e0b', color: '#000000', size: 'lg', borderRadius: 12 }
+    config: { variant: 'primary', backgroundColor: '#f59e0b', color: '#000000', size: 'lg' }
   },
   {
     id: 'outline',
     name: 'Outline',
     preview: <div className="w-full h-3 border-2 border-foreground rounded" />,
-    config: { variant: 'outline', size: 'lg', borderRadius: 8 }
+    config: { variant: 'outline', size: 'lg' }
   },
 ];
 
@@ -677,8 +678,8 @@ export function TestimonialInspector({ block, onContentChange }: BlockInspectorP
         <GradientColorPicker
           solidColor={content.quoteColor || ''}
           gradient={content.quoteStyles?.textGradient || ''}
-          onSolidChange={(v) => onContentChange({ quoteColor: v, quoteStyles: { ...content.quoteStyles, textGradient: '' } })}
-          onGradientChange={(v) => onContentChange({ quoteStyles: { ...content.quoteStyles, textGradient: v } })}
+          onSolidChange={(v) => onContentChange({ quoteColor: v, quoteStyles: { ...(content.quoteStyles || {}), textGradient: '' } })}
+          onGradientChange={(v) => onContentChange({ quoteStyles: { ...(content.quoteStyles || {}), textGradient: v } })}
         />
       </InspectorSection>
 
@@ -1089,8 +1090,8 @@ export function QuizInspector({ block, onContentChange, funnel }: BlockInspector
         <GradientColorPicker
           solidColor={content.questionColor || ''}
           gradient={content.questionStyles?.textGradient || ''}
-          onSolidChange={(v) => onContentChange({ questionColor: v, questionStyles: { ...content.questionStyles, textGradient: '' } })}
-          onGradientChange={(v) => onContentChange({ questionStyles: { ...content.questionStyles, textGradient: v } })}
+          onSolidChange={(v) => onContentChange({ questionColor: v, questionStyles: { ...(content.questionStyles || {}), textGradient: '' } })}
+          onGradientChange={(v) => onContentChange({ questionStyles: { ...(content.questionStyles || {}), textGradient: v } })}
         />
       </InspectorSection>
 
@@ -1195,8 +1196,8 @@ export function AccordionInspector({ block, onContentChange }: BlockInspectorPro
         <GradientColorPicker
           solidColor={content.titleColor || ''}
           gradient={content.titleStyles?.textGradient || ''}
-          onSolidChange={(v) => onContentChange({ titleColor: v, titleStyles: { ...content.titleStyles, textGradient: '' } })}
-          onGradientChange={(v) => onContentChange({ titleStyles: { ...content.titleStyles, textGradient: v } })}
+          onSolidChange={(v) => onContentChange({ titleColor: v, titleStyles: { ...(content.titleStyles || {}), textGradient: '' } })}
+          onGradientChange={(v) => onContentChange({ titleStyles: { ...(content.titleStyles || {}), textGradient: v } })}
         />
       </InspectorSection>
 
@@ -2420,8 +2421,8 @@ export function ImageQuizInspector({ block, onContentChange, funnel }: BlockInsp
         <GradientColorPicker
           solidColor={content.questionColor || ''}
           gradient={content.questionStyles?.textGradient || ''}
-          onSolidChange={(v) => onContentChange({ questionColor: v, questionStyles: { ...content.questionStyles, textGradient: '' } })}
-          onGradientChange={(v) => onContentChange({ questionStyles: { ...content.questionStyles, textGradient: v } })}
+          onSolidChange={(v) => onContentChange({ questionColor: v, questionStyles: { ...(content.questionStyles || {}), textGradient: '' } })}
+          onGradientChange={(v) => onContentChange({ questionStyles: { ...(content.questionStyles || {}), textGradient: v } })}
         />
       </InspectorSection>
 
@@ -2565,8 +2566,8 @@ export function VideoQuestionInspector({ block, onContentChange, funnel }: Block
         <GradientColorPicker
           solidColor={content.questionColor || ''}
           gradient={content.questionStyles?.textGradient || ''}
-          onSolidChange={(v) => onContentChange({ questionColor: v, questionStyles: { ...content.questionStyles, textGradient: '' } })}
-          onGradientChange={(v) => onContentChange({ questionStyles: { ...content.questionStyles, textGradient: v } })}
+          onSolidChange={(v) => onContentChange({ questionColor: v, questionStyles: { ...(content.questionStyles || {}), textGradient: '' } })}
+          onGradientChange={(v) => onContentChange({ questionStyles: { ...(content.questionStyles || {}), textGradient: v } })}
         />
       </InspectorSection>
 
