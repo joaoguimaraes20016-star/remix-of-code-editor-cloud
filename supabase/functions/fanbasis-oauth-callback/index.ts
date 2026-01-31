@@ -26,6 +26,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Note: This is a PUBLIC callback endpoint - it receives redirects from Fanbasis
+  // and does NOT require authentication headers (unlike oauth-start which does)
+  
   try {
     const url = new URL(req.url);
     const code = url.searchParams.get("code");
