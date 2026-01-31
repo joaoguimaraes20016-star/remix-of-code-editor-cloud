@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
     }
 
     // Get Fanbasis base URL from environment or use default
-    const fanbasisBaseUrl = Deno.env.get("FANBASIS_BASE_URL") || "https://fanbasis.com";
+    const fanbasisBaseUrl = Deno.env.get("FANBASIS_BASE_URL") || "https://www.fanbasis.com";
 
     // Token exchange with PKCE (per Fanbasis documentation)
     // Requires: grant_type, client_id, client_secret, redirect_uri, code, code_verifier

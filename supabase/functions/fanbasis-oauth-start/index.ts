@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
     const encodedState = btoa(state);
 
     // Get Fanbasis base URL from environment or use default
-    const fanbasisBaseUrl = Deno.env.get("FANBASIS_BASE_URL") || "https://fanbasis.com";
+    const fanbasisBaseUrl = Deno.env.get("FANBASIS_BASE_URL") || "https://www.fanbasis.com";
 
     const authUrl = new URL(`${fanbasisBaseUrl}/oauth/authorize`);
     authUrl.searchParams.set("response_type", "code");
