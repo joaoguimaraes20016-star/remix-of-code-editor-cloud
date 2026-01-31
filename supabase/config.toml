@@ -203,3 +203,12 @@ verify_jwt = false
 
 [functions.zapier-oauth-test]
 verify_jwt = false
+
+[functions.fanbasis-oauth-start]
+verify_jwt = true
+
+[functions.fanbasis-oauth-callback]
+verify_jwt = false
+
+[functions.fanbasis-refresh-token]
+verify_jwt = true
