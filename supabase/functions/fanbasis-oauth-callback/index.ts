@@ -133,22 +133,21 @@ Deno.serve(async (req) => {
     // Get Fanbasis base URL from environment or use default
     const fanbasisBaseUrl = Deno.env.get("FANBASIS_BASE_URL") || "https://fanbasis.com";
 
-    // Token exchange with PKCE
+    // Token exchange with PKCE (per Fanbasis documentation)
     console.log(`[fanbasis-oauth-callback] Exchanging code with PKCE for team ${teamId}`);
-    
-    // Try Basic Auth (some OAuth providers require this)
-    const basicAuth = btoa(`${clientId}:${clientSecret}`);
+    console.log(`[fanbasis-oauth-callback] Using redirect_uri: ${REDIRECT_URI}`);
     
     const tokenResponse = await fetch(`${fanbasisBaseUrl}/oauth/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        "Authorization": `Basic ${basicAuth}`,
       },
       body: new URLSearchParams({
         grant_type: "authorization_code",
-        code: code,
+        client_id: clientId,
+        client_secret: clientSecret,
         redirect_uri: REDIRECT_URI,
+        code: code,
         code_verifier: codeVerifier,
       }).toString(),
     });
