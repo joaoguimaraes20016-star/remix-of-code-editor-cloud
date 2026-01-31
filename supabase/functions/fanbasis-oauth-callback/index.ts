@@ -136,17 +136,19 @@ Deno.serve(async (req) => {
     // Token exchange with PKCE
     console.log(`[fanbasis-oauth-callback] Exchanging code with PKCE for team ${teamId}`);
     
+    // Try Basic Auth (some OAuth providers require this)
+    const basicAuth = btoa(`${clientId}:${clientSecret}`);
+    
     const tokenResponse = await fetch(`${fanbasisBaseUrl}/oauth/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": `Basic ${basicAuth}`,
       },
       body: new URLSearchParams({
         grant_type: "authorization_code",
         code: code,
         redirect_uri: REDIRECT_URI,
-        client_id: clientId,
-        client_secret: clientSecret,
         code_verifier: codeVerifier,
       }).toString(),
     });
