@@ -166,10 +166,13 @@ Deno.serve(async (req) => {
       code_verifier: codeVerifier,
     }).toString();
 
-    console.log(`[fanbasis-oauth-callback] Requesting: ${fanbasisBaseUrl}/oauth/token`);
+    // Try /api/oauth/token path (some providers use this)
+    const tokenEndpoint = `${fanbasisBaseUrl}/api/oauth/token`;
+    
+    console.log(`[fanbasis-oauth-callback] Requesting: ${tokenEndpoint}`);
     console.log(`[fanbasis-oauth-callback] Using Basic Auth + body params (grant_type, redirect_uri, code, code_verifier)`);
 
-    const tokenResponse = await fetch(`${fanbasisBaseUrl}/oauth/token`, {
+    const tokenResponse = await fetch(tokenEndpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
