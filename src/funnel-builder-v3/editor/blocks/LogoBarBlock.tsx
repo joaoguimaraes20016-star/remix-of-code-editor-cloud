@@ -150,11 +150,23 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
   }
 
   // Animated marquee version - segment x2 (two identical halves) for seamless loop
+  // If no logos, show empty state
+  if (!logos || logos.length === 0) {
+    return (
+      <div className="space-y-4 w-full">
+        {renderTitle()}
+        <div className="flex items-center justify-center gap-4 flex-wrap w-full py-8 text-muted-foreground text-sm">
+          {canEdit ? 'Add logos in the inspector' : 'No logos to display'}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 w-full">
       {renderTitle()}
       <div 
-        className="relative w-full overflow-hidden"
+        className="relative w-full overflow-hidden flex justify-start"
         style={{ 
           maskImage: maskGradient,
           WebkitMaskImage: maskGradient,
@@ -163,14 +175,10 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
         {/* Marquee track - two identical halves (segment A + segment B) for seamless loop */}
         <div 
           className={cn(
-            "flex items-center gap-8 will-change-transform marquee-track",
+            "inline-flex items-center gap-8 will-change-transform marquee-track",
             speedClasses[speed] || 'animate-marquee-medium',
             pauseOnHover && "hover:[animation-play-state:paused]"
           )}
-          style={{ 
-            whiteSpace: 'nowrap',
-            width: 'max-content',
-          }}
         >
           {renderSegment('a')}
           {renderSegment('b')}
