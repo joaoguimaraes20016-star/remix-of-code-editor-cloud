@@ -48,10 +48,8 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
   };
 
   /**
-   * Animated marquee hooks - must be called unconditionally (Rules of Hooks)
+   * Animated marquee state - must be called unconditionally (Rules of Hooks)
    */
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const measureRef = useRef<HTMLDivElement | null>(null);
   const [segmentRepeats, setSegmentRepeats] = useState(1);
 
   const maskGradient = useMemo(() => {
@@ -66,44 +64,11 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
       return;
     }
     
-    const el = containerRef.current;
-    const measureEl = measureRef.current;
-    if (!el || !measureEl) return;
-
-    let timeoutId: NodeJS.Timeout | null = null;
-
-    const computeRepeats = () => {
-      const containerWidth = el.clientWidth;
-      const baseWidth = measureEl.scrollWidth;
-      
-      if (!containerWidth || !baseWidth) {
-        // Default to 3 repeats if we can't measure yet
-        setSegmentRepeats(3);
-        return;
-      }
-
-      // Ensure the segment is at least as wide as the container, with extra buffer
-      const repeats = Math.max(2, Math.ceil((containerWidth / baseWidth) * 1.5));
-      setSegmentRepeats(prev => prev === repeats ? prev : repeats);
-    };
-
-    // Initial computation with small delay to ensure DOM is ready
-    timeoutId = setTimeout(() => {
-      computeRepeats();
-    }, 100);
-
-    // Observe resize events with debouncing
-    const ro = new ResizeObserver(() => {
-      if (timeoutId) clearTimeout(timeoutId);
-      timeoutId = setTimeout(computeRepeats, 150);
-    });
-    
-    ro.observe(el);
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      ro.disconnect();
-    };
+    // For animated marquee, we need enough logos to fill the screen + extra for seamless loop
+    // Use a fixed multiplier based on typical screen sizes
+    // Each segment will be duplicated twice (segment A + segment B) in the render
+    const repeatsNeeded = Math.max(3, Math.ceil(logos.length * 0.5));
+    setSegmentRepeats(repeatsNeeded);
   }, [animated, logos.length]);
 
   const renderLogoSet = useCallback((suffix: string) => {
@@ -189,25 +154,13 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
     <div className="space-y-4 w-full overflow-hidden box-border">
       {renderTitle()}
       <div 
-        ref={containerRef}
         className="relative w-full box-border overflow-hidden"
         style={{ 
           maskImage: maskGradient,
           WebkitMaskImage: maskGradient,
         }}
       >
-        {/* Hidden measurement: one base logo set width */}
-        <div
-          ref={measureRef}
-          aria-hidden="true"
-          className="pointer-events-none absolute -z-10 h-0 overflow-hidden opacity-0"
-        >
-          <div className="inline-flex items-center gap-8 whitespace-nowrap">
-            {renderLogoSet('measure')}
-          </div>
-        </div>
-
-        {/* Marquee track - two identical halves (segment A + segment B) */}
+        {/* Marquee track - two identical halves (segment A + segment B) for seamless loop */}
         <div 
           className={cn(
             "inline-flex items-center gap-8 will-change-transform marquee-track",
