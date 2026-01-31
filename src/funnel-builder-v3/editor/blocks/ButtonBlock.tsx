@@ -16,7 +16,7 @@ interface ButtonBlockProps {
 export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlockProps) {
   const runtime = useFunnelRuntimeOptional();
   const { updateBlockContent } = useFunnel();
-  const { text, variant, size, fullWidth, backgroundColor, backgroundGradient, color, textGradient, action, actionValue } = content;
+  const { text, variant, size, fullWidth, backgroundColor, backgroundGradient, color, textGradient, action, actionValue, borderColor, borderWidth } = content;
 
   const sizeClasses: Record<string, string> = {
     sm: 'h-9 px-4 text-sm',
@@ -37,6 +37,16 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
       customStyle.background = backgroundGradient;
     } else if (backgroundColor) {
       customStyle.backgroundColor = backgroundColor;
+    }
+  }
+  
+  // For outline variant, apply custom border styles
+  if (variant === 'outline') {
+    if (borderColor) {
+      customStyle.borderColor = borderColor;
+    }
+    if (borderWidth) {
+      customStyle.borderWidth = `${borderWidth}px`;
     }
   }
   

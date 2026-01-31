@@ -337,7 +337,7 @@ const buttonPresets = [
     id: 'outline',
     name: 'Outline',
     preview: <div className="w-full h-3 border-2 border-foreground rounded" />,
-    config: { variant: 'outline', size: 'lg' }
+    config: { variant: 'outline', size: 'lg', borderColor: '#6366f1', borderWidth: 2, color: '#6366f1' }
   },
 ];
 
@@ -444,15 +444,40 @@ export function ButtonInspector({ block, onContentChange }: BlockInspectorProps)
         onChange={(v) => onContentChange({ fullWidth: v })}
       />
 
-      <InspectorSection title="Background">
-        <GradientColorPicker
-          solidColor={content.backgroundColor || '#6366f1'}
-          gradient={content.backgroundGradient || ''}
-          onSolidChange={(v) => onContentChange({ backgroundColor: v, backgroundGradient: '' })}
-          onGradientChange={(v) => onContentChange({ backgroundGradient: v })}
-          colorPresets={buttonColors}
-        />
-      </InspectorSection>
+      {content.variant !== 'outline' && (
+        <InspectorSection title="Background">
+          <GradientColorPicker
+            solidColor={content.backgroundColor || '#6366f1'}
+            gradient={content.backgroundGradient || ''}
+            onSolidChange={(v) => onContentChange({ backgroundColor: v, backgroundGradient: '' })}
+            onGradientChange={(v) => onContentChange({ backgroundGradient: v })}
+            colorPresets={buttonColors}
+          />
+        </InspectorSection>
+      )}
+
+      {content.variant === 'outline' && (
+        <>
+          <InspectorSection title="Border Color">
+            <ColorSwatchPicker
+              value={content.borderColor || '#6366f1'}
+              onChange={(v) => onContentChange({ borderColor: v })}
+              presets={buttonColors}
+            />
+          </InspectorSection>
+
+          <InspectorSection title="Border Thickness">
+            <VisualSlider
+              icon={<Square className="h-3.5 w-3.5" />}
+              value={content.borderWidth || 2}
+              onChange={(v) => onContentChange({ borderWidth: v })}
+              min={1}
+              max={6}
+              unit="px"
+            />
+          </InspectorSection>
+        </>
+      )}
 
       <InspectorSection title="Text Color">
         <GradientColorPicker

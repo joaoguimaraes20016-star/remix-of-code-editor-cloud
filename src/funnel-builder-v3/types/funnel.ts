@@ -143,6 +143,8 @@ export interface ButtonContent {
   color?: string;
   textGradient?: string;
   borderRadius?: number;
+  borderColor?: string;
+  borderWidth?: number;
   icon?: string;
   iconPosition?: 'left' | 'right';
 }
