@@ -27,15 +27,23 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
   // Only apply custom styles if they exist
   // NOTE: borderRadius is now controlled by styles.borderRadius on the wrapper (Style tab)
   const customStyle: React.CSSProperties = {};
-  if (backgroundGradient) {
-    customStyle.background = backgroundGradient;
-  } else if (backgroundColor) {
-    customStyle.backgroundColor = backgroundColor;
+  
+  // For outline and ghost variants, don't apply custom background colors
+  // as they have their own styling logic
+  const shouldApplyCustomBg = variant !== 'outline' && variant !== 'ghost';
+  
+  if (shouldApplyCustomBg) {
+    if (backgroundGradient) {
+      customStyle.background = backgroundGradient;
+    } else if (backgroundColor) {
+      customStyle.backgroundColor = backgroundColor;
+    }
   }
+  
   if (!textGradient && color) customStyle.color = color;
 
-  // When custom backgroundColor or gradient is set, don't use variant classes for bg
-  const hasCustomBg = !!backgroundColor || !!backgroundGradient;
+  // When custom backgroundColor or gradient is set AND we're using a filled variant
+  const hasCustomBg = shouldApplyCustomBg && (!!backgroundColor || !!backgroundGradient);
   const hasTextGradient = !!textGradient;
 
   const handleClick = () => {
