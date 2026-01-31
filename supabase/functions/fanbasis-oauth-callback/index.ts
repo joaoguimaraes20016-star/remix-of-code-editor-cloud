@@ -143,7 +143,13 @@ Deno.serve(async (req) => {
     console.log(`[fanbasis-oauth-callback] Client ID: ${clientId.substring(0, 8)}...`);
     
     // Fanbasis requires BOTH Basic Auth header AND body parameters
-    const basicAuth = btoa(`${clientId}:${clientSecret}`);
+    // Use proper base64 encoding for Deno
+    const credentials = `${clientId}:${clientSecret}`;
+    const encoder = new TextEncoder();
+    const data = encoder.encode(credentials);
+    const base64 = btoa(String.fromCharCode(...data));
+    
+    console.log(`[fanbasis-oauth-callback] Basic Auth credentials length: ${credentials.length}`);
     
     const tokenRequestBody = new URLSearchParams({
       grant_type: "authorization_code",
@@ -159,7 +165,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        "Authorization": `Basic ${basicAuth}`,
+        "Authorization": `Basic ${base64}`,
       },
       body: tokenRequestBody,
     });
