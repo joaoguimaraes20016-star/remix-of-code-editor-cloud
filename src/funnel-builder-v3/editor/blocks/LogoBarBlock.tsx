@@ -47,6 +47,69 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
     fast: direction === 'left' ? 'animate-marquee-fast' : 'animate-marquee-fast-right',
   };
 
+  /**
+   * Animated marquee hooks - must be called unconditionally (Rules of Hooks)
+   */
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const measureRef = useRef<HTMLDivElement | null>(null);
+  const [segmentRepeats, setSegmentRepeats] = useState(1);
+
+  const maskGradient = useMemo(() => {
+    // Mask uses alpha; use HSL to stay consistent with token rules.
+    const opaque = 'hsl(0 0% 0%)';
+    return `linear-gradient(to right, transparent 0%, ${opaque} 8%, ${opaque} 92%, transparent 100%)`;
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!animated) return; // Skip effect if not animated
+    
+    const el = containerRef.current;
+    const measureEl = measureRef.current;
+    if (!el || !measureEl) return;
+
+    const computeRepeats = () => {
+      const containerWidth = el.clientWidth;
+      const baseWidth = measureEl.scrollWidth;
+      if (!containerWidth || !baseWidth) return;
+
+      // Ensure the segment is at least as wide as the container.
+      const repeats = Math.max(1, Math.ceil(containerWidth / baseWidth));
+      setSegmentRepeats(repeats);
+    };
+
+    computeRepeats();
+
+    const ro = new ResizeObserver(() => computeRepeats());
+    ro.observe(el);
+    ro.observe(measureEl);
+
+    return () => ro.disconnect();
+  }, [animated, logos.length]);
+
+  const renderLogoSet = useCallback((suffix: string) => {
+    return logos.map((logo) => (
+      <img
+        key={`${logo.id}-${suffix}`}
+        src={logo.src}
+        alt={logo.alt}
+        className={cn(
+          'h-6 w-auto max-w-[48px] object-contain shrink-0 transition-all duration-300',
+          grayscale
+            ? 'opacity-50 grayscale hover:opacity-100 hover:grayscale-0'
+            : 'opacity-70 hover:opacity-100'
+        )}
+      />
+    ));
+  }, [logos, grayscale]);
+
+  const renderSegment = useCallback((segmentId: string) => {
+    return Array.from({ length: segmentRepeats }, (_, i) => (
+      <React.Fragment key={`${segmentId}-set-${i}`}>
+        {renderLogoSet(`${segmentId}-${i}`)}
+      </React.Fragment>
+    ));
+  }, [renderLogoSet, segmentRepeats]);
+
   const renderTitle = () => {
     if (!title && !canEdit) return null;
     
@@ -100,70 +163,6 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
       </div>
     );
   }
-
-  /**
-   * Animated marquee:
-   * Tailwind keyframes translate from 0 -> -50%, which assumes the track is two identical halves.
-   * To avoid any “dead space” on wide viewports, we first create a *segment* that is wide enough
-   * to cover the container (by repeating the logo set), then duplicate that segment twice.
-   */
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const measureRef = useRef<HTMLDivElement | null>(null);
-  const [segmentRepeats, setSegmentRepeats] = useState(1);
-
-  const maskGradient = useMemo(() => {
-    // Mask uses alpha; use HSL to stay consistent with token rules.
-    const opaque = 'hsl(0 0% 0%)';
-    return `linear-gradient(to right, transparent 0%, ${opaque} 8%, ${opaque} 92%, transparent 100%)`;
-  }, []);
-
-  useLayoutEffect(() => {
-    const el = containerRef.current;
-    const measureEl = measureRef.current;
-    if (!el || !measureEl) return;
-
-    const computeRepeats = () => {
-      const containerWidth = el.clientWidth;
-      const baseWidth = measureEl.scrollWidth;
-      if (!containerWidth || !baseWidth) return;
-
-      // Ensure the segment is at least as wide as the container.
-      const repeats = Math.max(1, Math.ceil(containerWidth / baseWidth));
-      setSegmentRepeats(repeats);
-    };
-
-    computeRepeats();
-
-    const ro = new ResizeObserver(() => computeRepeats());
-    ro.observe(el);
-    ro.observe(measureEl);
-
-    return () => ro.disconnect();
-  }, [logos.length]);
-
-  const renderLogoSet = useCallback((suffix: string) => {
-    return logos.map((logo) => (
-      <img
-        key={`${logo.id}-${suffix}`}
-        src={logo.src}
-        alt={logo.alt}
-        className={cn(
-          'h-6 w-auto max-w-[48px] object-contain shrink-0 transition-all duration-300',
-          grayscale
-            ? 'opacity-50 grayscale hover:opacity-100 hover:grayscale-0'
-            : 'opacity-70 hover:opacity-100'
-        )}
-      />
-    ));
-  }, [logos, grayscale]);
-
-  const renderSegment = useCallback((segmentId: string) => {
-    return Array.from({ length: segmentRepeats }, (_, i) => (
-      <React.Fragment key={`${segmentId}-set-${i}`}>
-        {renderLogoSet(`${segmentId}-${i}`)}
-      </React.Fragment>
-    ));
-  }, [renderLogoSet, segmentRepeats]);
 
   // Animated marquee version - segment x2 (two identical halves) for seamless loop
   return (
