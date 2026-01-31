@@ -142,22 +142,24 @@ Deno.serve(async (req) => {
     console.log(`[fanbasis-oauth-callback] Using redirect_uri: ${REDIRECT_URI}`);
     console.log(`[fanbasis-oauth-callback] Client ID: ${clientId.substring(0, 8)}...`);
     
+    // Fanbasis requires BOTH Basic Auth header AND body parameters
+    const basicAuth = btoa(`${clientId}:${clientSecret}`);
+    
     const tokenRequestBody = new URLSearchParams({
       grant_type: "authorization_code",
-      client_id: clientId,
-      client_secret: clientSecret,
       redirect_uri: REDIRECT_URI,
       code: code,
       code_verifier: codeVerifier,
     }).toString();
 
     console.log(`[fanbasis-oauth-callback] Requesting: ${fanbasisBaseUrl}/oauth/token`);
-    console.log(`[fanbasis-oauth-callback] Body params: grant_type, client_id, client_secret, redirect_uri, code, code_verifier`);
+    console.log(`[fanbasis-oauth-callback] Using Basic Auth + body params (grant_type, redirect_uri, code, code_verifier)`);
 
     const tokenResponse = await fetch(`${fanbasisBaseUrl}/oauth/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": `Basic ${basicAuth}`,
       },
       body: tokenRequestBody,
     });
