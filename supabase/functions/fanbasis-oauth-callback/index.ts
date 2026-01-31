@@ -131,7 +131,8 @@ Deno.serve(async (req) => {
     }
 
     // Get Fanbasis base URL from environment or use default
-    const fanbasisBaseUrl = Deno.env.get("FANBASIS_BASE_URL") || "https://fanbasis.com";
+    // Try API subdomain for token endpoint (common pattern)
+    const fanbasisBaseUrl = Deno.env.get("FANBASIS_BASE_URL") || "https://api.fanbasis.com";
 
     // Token exchange with PKCE (per Fanbasis documentation)
     console.log(`[fanbasis-oauth-callback] Exchanging code with PKCE for team ${teamId}`);
