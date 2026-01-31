@@ -156,10 +156,12 @@ Deno.serve(async (req) => {
     console.log(`[fanbasis-oauth-callback] Using redirect_uri: ${REDIRECT_URI}`);
     console.log(`[fanbasis-oauth-callback] Client ID: ${clientId.substring(0, 8)}...`);
     
+    // Attempt 1: PKCE-only authentication (no client_secret in body)
+    // Based on Fanbasis JavaScript example which omits client_secret
     const tokenRequestBody = new URLSearchParams({
       grant_type: "authorization_code",
       client_id: clientId,
-      client_secret: clientSecret,
+      // client_secret: clientSecret,  // Removed - trying PKCE-only auth
       redirect_uri: REDIRECT_URI,
       code: code,
       code_verifier: codeVerifier,
@@ -168,14 +170,14 @@ Deno.serve(async (req) => {
     const tokenEndpoint = `${fanbasisBaseUrl}/oauth/token`;
     
     console.log(`[fanbasis-oauth-callback] Requesting: ${tokenEndpoint}`);
-    console.log(`[fanbasis-oauth-callback] Body params: grant_type, client_id, client_secret, redirect_uri, code, code_verifier`);
+    console.log(`[fanbasis-oauth-callback] Body params: grant_type, client_id, redirect_uri, code, code_verifier (NO client_secret - PKCE only)`);
     
     // Log request details for debugging (with sensitive data masked)
     const debugBody = new URLSearchParams(tokenRequestBody);
     console.log(`[fanbasis-oauth-callback] Request details:`);
     console.log(`  - grant_type: ${debugBody.get('grant_type')}`);
     console.log(`  - client_id: ${debugBody.get('client_id')}`);
-    console.log(`  - client_secret: ${debugBody.get('client_secret')?.substring(0, 4)}...${debugBody.get('client_secret')?.substring(debugBody.get('client_secret')!.length - 4)}`);
+    console.log(`  - client_secret: NOT INCLUDED (PKCE-only auth)`);
     console.log(`  - redirect_uri: ${debugBody.get('redirect_uri')}`);
     console.log(`  - code: ${debugBody.get('code')?.substring(0, 20)}... (${debugBody.get('code')?.length} chars)`);
     console.log(`  - code_verifier: ${debugBody.get('code_verifier')?.substring(0, 10)}... (${debugBody.get('code_verifier')?.length} chars)`);
