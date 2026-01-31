@@ -21,7 +21,11 @@ Deno.serve(async (req) => {
   try {
     // Get the authorization header
     const authHeader = req.headers.get("Authorization");
+    console.log("[fanbasis-oauth-start] Authorization header present:", !!authHeader);
+    console.log("[fanbasis-oauth-start] All headers:", Object.fromEntries(req.headers.entries()));
+    
     if (!authHeader) {
+      console.error("[fanbasis-oauth-start] Missing authorization header");
       return new Response(
         JSON.stringify({ error: "No authorization header" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
