@@ -322,17 +322,29 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   }, [funnel, selectedBlockId, setFunnel]);
   
   const updateBlock = useCallback((stepId: string, blockId: string, updates: Partial<Block>) => {
-    setFunnel({
-      ...funnel,
-      steps: funnel.steps.map(step => {
-        if (step.id !== stepId) return step;
-        return {
-          ...step,
-          blocks: step.blocks.map(b => b.id === blockId ? { ...b, ...updates } : b),
-        };
-      }),
+    // Use functional update to avoid race conditions
+    setFunnelState(currentFunnel => {
+      const updated = normalizeFunnel({
+        ...currentFunnel,
+        steps: currentFunnel.steps.map(step => {
+          if (step.id !== stepId) return step;
+          return {
+            ...step,
+            blocks: step.blocks.map(b => b.id === blockId ? { ...b, ...updates } : b),
+          };
+        }),
+        updatedAt: new Date().toISOString(),
+      });
+      
+      // Save to history
+      pushToHistory(currentFunnel);
+      
+      // Notify external handler if provided
+      onFunnelChange?.(updated);
+      
+      return updated;
     });
-  }, [funnel, setFunnel]);
+  }, [pushToHistory, onFunnelChange]);
 
   const updateBlockContent = useCallback((stepId: string, blockId: string, contentUpdates: any) => {
     // Use functional update to avoid race conditions when multiple updates happen in quick succession

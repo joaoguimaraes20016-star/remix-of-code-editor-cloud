@@ -76,7 +76,7 @@ const animationOptions: { value: AnimationType; label: string; icon: React.React
 ];
 
 export function RightPanel() {
-  const { funnel, currentStepId, selectedBlockId, setSelectedBlockId, updateBlock } = useFunnel();
+  const { funnel, currentStepId, selectedBlockId, setSelectedBlockId, updateBlock, updateBlockContent } = useFunnel();
 
   const currentStep = funnel?.steps?.find(s => s.id === currentStepId) ?? null;
   const selectedBlock = currentStep?.blocks?.find(b => b.id === selectedBlockId) ?? null;
@@ -109,9 +109,8 @@ export function RightPanel() {
 
   const handleContentChange = (updates: any) => {
     if (!currentStepId || !selectedBlockId) return;
-    updateBlock(currentStepId, selectedBlockId, {
-      content: { ...selectedBlock.content, ...updates },
-    });
+    // Use updateBlockContent for content changes to avoid race conditions
+    updateBlockContent(currentStepId, selectedBlockId, updates);
   };
 
   const styles = selectedBlock.styles ?? {};
