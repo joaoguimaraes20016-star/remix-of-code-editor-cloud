@@ -61,38 +61,47 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
   }, []);
 
   useLayoutEffect(() => {
-    if (!animated) return; // Skip effect if not animated
+    if (!animated) {
+      setSegmentRepeats(1); // Reset when not animated
+      return;
+    }
     
     const el = containerRef.current;
     const measureEl = measureRef.current;
     if (!el || !measureEl) return;
 
+    let timeoutId: NodeJS.Timeout | null = null;
+
     const computeRepeats = () => {
       const containerWidth = el.clientWidth;
       const baseWidth = measureEl.scrollWidth;
-      if (!containerWidth || !baseWidth) return;
+      
+      if (!containerWidth || !baseWidth) {
+        // Default to 3 repeats if we can't measure yet
+        setSegmentRepeats(3);
+        return;
+      }
 
-      // Ensure the segment is at least as wide as the container.
-      const repeats = Math.max(1, Math.ceil(containerWidth / baseWidth));
-      setSegmentRepeats(prev => prev === repeats ? prev : repeats); // Only update if changed
+      // Ensure the segment is at least as wide as the container, with extra buffer
+      const repeats = Math.max(2, Math.ceil((containerWidth / baseWidth) * 1.5));
+      setSegmentRepeats(prev => prev === repeats ? prev : repeats);
     };
 
-    // Small delay to ensure DOM is ready
-    const timeoutId = setTimeout(() => {
+    // Initial computation with small delay to ensure DOM is ready
+    timeoutId = setTimeout(() => {
       computeRepeats();
-    }, 50);
+    }, 100);
 
+    // Observe resize events with debouncing
     const ro = new ResizeObserver(() => {
-      // Debounce resize calculations
-      clearTimeout(timeoutId);
-      setTimeout(computeRepeats, 100);
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(computeRepeats, 150);
     });
     
     ro.observe(el);
-    ro.observe(measureEl);
 
     return () => {
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
       ro.disconnect();
     };
   }, [animated, logos.length]);
@@ -181,12 +190,8 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
       {renderTitle()}
       <div 
         ref={containerRef}
-        className={cn(
-          "relative w-full box-border",
-          pauseOnHover && "[&:hover_.marquee-track]:pause"
-        )}
+        className="relative w-full box-border overflow-hidden"
         style={{ 
-          overflow: 'hidden',
           maskImage: maskGradient,
           WebkitMaskImage: maskGradient,
         }}
@@ -194,7 +199,7 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
         {/* Hidden measurement: one base logo set width */}
         <div
           ref={measureRef}
-          aria-hidden
+          aria-hidden="true"
           className="pointer-events-none absolute -z-10 h-0 overflow-hidden opacity-0"
         >
           <div className="inline-flex items-center gap-8 whitespace-nowrap">
@@ -205,12 +210,11 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
         {/* Marquee track - two identical halves (segment A + segment B) */}
         <div 
           className={cn(
-            "flex items-center gap-8 will-change-transform marquee-track",
-            speedClasses[speed],
+            "inline-flex items-center gap-8 will-change-transform marquee-track",
+            speedClasses[speed] || 'animate-marquee-medium',
             pauseOnHover && "hover:[animation-play-state:paused]"
           )}
           style={{ 
-            display: 'inline-flex',
             whiteSpace: 'nowrap',
           }}
         >
