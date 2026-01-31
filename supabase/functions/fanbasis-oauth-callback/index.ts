@@ -134,49 +134,31 @@ Deno.serve(async (req) => {
     }
 
     // Get Fanbasis base URL from environment or use default
-    // Try API subdomain for token endpoint (common pattern)
-    const fanbasisBaseUrl = Deno.env.get("FANBASIS_BASE_URL") || "https://api.fanbasis.com";
+    const fanbasisBaseUrl = Deno.env.get("FANBASIS_BASE_URL") || "https://fanbasis.com";
 
-    // Token exchange with PKCE (per Fanbasis documentation)
+    // Token exchange with PKCE (per Fanbasis documentation example)
+    // NOTE: Fanbasis uses PKCE WITHOUT client_secret - only client_id is sent!
     console.log(`[fanbasis-oauth-callback] Exchanging code with PKCE for team ${teamId}`);
     console.log(`[fanbasis-oauth-callback] Using redirect_uri: ${REDIRECT_URI}`);
     console.log(`[fanbasis-oauth-callback] Client ID: ${clientId.substring(0, 8)}...`);
     
-    // Fanbasis requires BOTH Basic Auth header AND body parameters
-    // Use Deno's standard base64 encoding
-    const credentials = `${clientId}:${clientSecret}`;
-    
-    // Try standard btoa (should work in Deno)
-    let base64: string;
-    try {
-      base64 = btoa(credentials);
-    } catch (e) {
-      // Fallback to manual encoding if btoa fails
-      const encoder = new TextEncoder();
-      const data = encoder.encode(credentials);
-      base64 = btoa(String.fromCharCode(...data));
-    }
-    
-    console.log(`[fanbasis-oauth-callback] Basic Auth header: Authorization: Basic ${base64.substring(0, 20)}...`);
-    
     const tokenRequestBody = new URLSearchParams({
       grant_type: "authorization_code",
+      client_id: clientId,
       redirect_uri: REDIRECT_URI,
       code: code,
       code_verifier: codeVerifier,
     }).toString();
 
-    // Try /api/oauth/token path (some providers use this)
-    const tokenEndpoint = `${fanbasisBaseUrl}/api/oauth/token`;
+    const tokenEndpoint = `${fanbasisBaseUrl}/oauth/token`;
     
     console.log(`[fanbasis-oauth-callback] Requesting: ${tokenEndpoint}`);
-    console.log(`[fanbasis-oauth-callback] Using Basic Auth + body params (grant_type, redirect_uri, code, code_verifier)`);
+    console.log(`[fanbasis-oauth-callback] Body params: grant_type, client_id, redirect_uri, code, code_verifier (NO client_secret, NO Basic Auth)`);
 
     const tokenResponse = await fetch(tokenEndpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        "Authorization": `Basic ${base64}`,
       },
       body: tokenRequestBody,
     });
