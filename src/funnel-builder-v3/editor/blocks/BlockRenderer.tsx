@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
-import { Block, ViewportType } from '@/funnel-builder-v3/types/funnel';
+import { Block, ViewportType, PopupSettings } from '@/funnel-builder-v3/types/funnel';
+import { PopupWrapper } from '@/funnel-builder-v3/editor/components/PopupWrapper';
 import { HeadingBlock } from './HeadingBlock';
 import { TextBlock } from './TextBlock';
 import { ImageBlock } from './ImageBlock';
@@ -7,7 +8,6 @@ import { ButtonBlock } from './ButtonBlock';
 import { DividerBlock } from './DividerBlock';
 import { SpacerBlock } from './SpacerBlock';
 import { EmailCaptureBlock } from './EmailCaptureBlock';
-import { TestimonialBlock } from './TestimonialBlock';
 import { SocialProofBlock } from './SocialProofBlock';
 import { CountdownBlock } from './CountdownBlock';
 import { QuizBlock } from './QuizBlock';
@@ -18,6 +18,7 @@ import { VideoBlock } from './VideoBlock';
 import { PhoneCaptureBlock } from './PhoneCaptureBlock';
 import { CalendarBlock } from './CalendarBlock';
 import { ReviewsBlock } from './ReviewsBlock';
+import { TestimonialSliderBlock } from './TestimonialSliderBlock';
 import { ColumnsBlock } from './ColumnsBlock';
 import { CardBlock } from './CardBlock';
 import { ListBlock } from './ListBlock';
@@ -43,31 +44,55 @@ export interface BlockRendererProps {
   isPreview?: boolean;
 }
 
-// Inline shadow styles - PROMINENT shadows for clear visual impact
-const shadowStyles: Record<string, string> = {
-  none: 'none',
-  sm: '0 2px 8px 0 rgba(0,0,0,0.15), 0 1px 3px 0 rgba(0,0,0,0.10)',
-  md: '0 6px 20px -4px rgba(0,0,0,0.22), 0 4px 8px -2px rgba(0,0,0,0.15)',
-  lg: '0 12px 32px -6px rgba(0,0,0,0.30), 0 6px 16px -4px rgba(0,0,0,0.20)',
-  xl: '0 24px 48px -10px rgba(0,0,0,0.38), 0 12px 24px -6px rgba(0,0,0,0.25)',
-  '2xl': '0 32px 64px -12px rgba(0,0,0,0.45), 0 16px 32px -8px rgba(0,0,0,0.30)',
+// Shadow definitions with offset/blur/spread values (color applied separately)
+const shadowDefinitions: Record<string, { offsets: string; opacities: [number, number] }> = {
+  none: { offsets: '', opacities: [0, 0] },
+  sm: { offsets: '0 2px 8px 0|0 1px 3px 0', opacities: [0.15, 0.10] },
+  md: { offsets: '0 6px 20px -4px|0 4px 8px -2px', opacities: [0.22, 0.15] },
+  lg: { offsets: '0 12px 32px -6px|0 6px 16px -4px', opacities: [0.30, 0.20] },
+  xl: { offsets: '0 24px 48px -10px|0 12px 24px -6px', opacities: [0.38, 0.25] },
+  '2xl': { offsets: '0 32px 64px -12px|0 16px 32px -8px', opacities: [0.45, 0.30] },
+};
+
+// Helper to generate shadow with custom color
+const getShadowStyle = (shadow: string, customColor?: string): string => {
+  if (shadow === 'none' || !shadowDefinitions[shadow]) return 'none';
+  
+  const def = shadowDefinitions[shadow];
+  const [offset1, offset2] = def.offsets.split('|');
+  const [opacity1, opacity2] = def.opacities;
+  
+  // Parse custom color to get RGB values, or use black
+  let colorBase = '0,0,0';
+  if (customColor && customColor !== 'transparent') {
+    // Handle hex colors
+    if (customColor.startsWith('#')) {
+      const hex = customColor.slice(1);
+      const r = parseInt(hex.slice(0, 2), 16);
+      const g = parseInt(hex.slice(2, 4), 16);
+      const b = parseInt(hex.slice(4, 6), 16);
+      if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+        colorBase = `${r},${g},${b}`;
+      }
+    }
+  }
+  
+  return `${offset1} rgba(${colorBase},${opacity1}), ${offset2} rgba(${colorBase},${opacity2})`;
 };
 
 // Animation class mapping for all animation types
 const animationClasses: Record<AnimationType, string> = {
   'none': '',
   'fade-in': 'animate-fade-in',
-  'fade-up': 'animate-fade-up',
   'fade-down': 'animate-fade-down',
   'fade-left': 'animate-fade-left',
   'fade-right': 'animate-fade-right',
   'scale-in': 'animate-scale-in',
-  'scale-up': 'animate-scale-up',
   'slide-up': 'animate-slide-up',
   'slide-down': 'animate-slide-down',
   'slide-left': 'animate-slide-left',
   'slide-right': 'animate-slide-right',
-  'bounce': 'animate-bounce',
+  'bounce': 'animate-bounce-custom',
   'pop': 'animate-pop',
   'blur-in': 'animate-blur-in',
 };
@@ -117,7 +142,10 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
     
     const result: React.CSSProperties = {};
     
-    if (styles.animationDuration) {
+    // Use new animationDurationMs if set, otherwise fall back to legacy animationDuration
+    if (styles.animationDurationMs) {
+      result.animationDuration = `${styles.animationDurationMs}ms`;
+    } else if (styles.animationDuration) {
       result.animationDuration = durationStyles[styles.animationDuration];
     }
     if (styles.animationDelay) {
@@ -125,6 +153,13 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
     }
     if (styles.animationEasing) {
       result.animationTimingFunction = easingStyles[styles.animationEasing];
+    }
+    // Set iteration count based on repeat setting (with legacy animationLoop fallback)
+    if (styles.animationRepeat) {
+      result.animationIterationCount = styles.animationRepeat === 'infinite' ? 'infinite' : String(styles.animationRepeat);
+    } else {
+      // Legacy fallback
+      result.animationIterationCount = styles.animationLoop ? 'infinite' : '1';
     }
     
     return result;
@@ -144,7 +179,7 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
     borderWidth: styles.borderWidth,
     borderColor: styles.borderColor,
     borderStyle: (styles.borderWidth || styles.borderColor) ? 'solid' : 'none',
-    boxShadow: shadowStyles[styles.shadow || 'none'],
+    boxShadow: getShadowStyle(styles.shadow || 'none', styles.shadowColor),
     // Apply background gradient if set
     ...(styles.backgroundGradient && { background: styles.backgroundGradient }),
     // Apply animation timing styles
@@ -167,8 +202,6 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
         return <SpacerBlock content={block.content as any} />;
       case 'email-capture':
         return <EmailCaptureBlock content={block.content as any} {...editableProps} />;
-      case 'testimonial':
-        return <TestimonialBlock content={block.content as any} {...editableProps} />;
       case 'social-proof':
         return <SocialProofBlock content={block.content as any} {...editableProps} />;
       case 'countdown':
@@ -176,6 +209,7 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
       case 'quiz':
         return <QuizBlock content={block.content as any} {...editableProps} />;
       case 'form':
+      case 'popup-form':
         return <FormBlock content={block.content as any} {...editableProps} />;
       case 'accordion':
         return <AccordionBlock content={block.content as any} {...editableProps} />;
@@ -189,6 +223,8 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
         return <CalendarBlock content={block.content as any} {...editableProps} />;
       case 'reviews':
         return <ReviewsBlock content={block.content as any} {...editableProps} />;
+      case 'testimonial-slider':
+        return <TestimonialSliderBlock content={block.content as any} {...editableProps} />;
       case 'columns':
         return <ColumnsBlock content={block.content as any} stepId={stepId} isPreview={isPreview} />;
       case 'card':
@@ -230,6 +266,33 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
         );
     }
   };
+
+  // Check if this block has popup settings enabled
+  const content = block.content as any;
+  const popupSettings: PopupSettings | undefined = content?.popupSettings;
+  const hasPopupEnabled = popupSettings?.enabled;
+
+  // Interactive blocks that support popup
+  const popupSupportedTypes = ['form', 'popup-form', 'quiz', 'multiple-choice', 'choice', 'email-capture', 'phone-capture', 'message', 'image-quiz', 'video-question'];
+  const supportsPopup = popupSupportedTypes.includes(block.type);
+
+  // Wrap with PopupWrapper if popup is enabled
+  if (hasPopupEnabled && supportsPopup) {
+    return (
+      <div
+        style={wrapperStyle}
+        className={cn(animationClasses[styles.animation || 'none'])}
+      >
+        <PopupWrapper
+          settings={popupSettings}
+          blockId={block.id}
+          isPreview={isPreview}
+        >
+          {renderBlock()}
+        </PopupWrapper>
+      </div>
+    );
+  }
 
   return (
     <div

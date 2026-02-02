@@ -215,8 +215,15 @@ export function InlineTextToolbar({
   };
 
   const handleFontSizeChange = (size: string) => {
-    // Font size always applies to block level
-    onStyleChange({ fontSize: parseInt(size, 10) });
+    const fontSizeValue = parseInt(size, 10);
+    
+    // Apply immediately to DOM element for instant feedback
+    if (elementRef.current) {
+      elementRef.current.style.fontSize = `${fontSizeValue}px`;
+    }
+    
+    // Also update the styles state
+    onStyleChange({ fontSize: fontSizeValue });
   };
 
   const handleColorChange = (color: string) => {

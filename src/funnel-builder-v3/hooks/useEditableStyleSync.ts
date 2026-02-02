@@ -44,14 +44,30 @@ export function useEditableStyleSync(
     
     const next: Record<string, any> = {};
     
+    // Determine if colorField and gradientPath share the same parent
+    const colorIsNested = colorField.includes('.');
+    const gradientIsNested = gradientPath.includes('.');
+    const colorParent = colorIsNested ? colorField.split('.')[0] : null;
+    const gradientParent = gradientIsNested ? gradientPath.split('.')[0] : null;
+    const sameParent = colorParent && gradientParent && colorParent === gradientParent;
+    
     // Handle solid color update
     if (updates.color !== undefined) {
-      next[colorField] = updates.color;
+      // Handle nested colorField path (e.g., 'titleStyles.color')
+      if (colorIsNested) {
+        const [parent, child] = colorField.split('.');
+        const parentObj = next[parent] || { ...existingStyles };
+        next[parent] = { ...parentObj, [child]: updates.color };
+      } else {
+        next[colorField] = updates.color;
+      }
       
       // Clear gradient when setting solid color
-      if (gradientPath.includes('.')) {
+      if (gradientIsNested) {
         const [parent, child] = gradientPath.split('.');
-        next[parent] = { ...existingStyles, [child]: '' };
+        // If same parent, merge with existing object in next
+        const parentObj = sameParent ? (next[parent] || { ...existingStyles }) : { ...existingStyles };
+        next[parent] = { ...parentObj, [child]: '' };
       } else {
         next[gradientPath] = '';
       }
@@ -59,16 +75,25 @@ export function useEditableStyleSync(
     
     // Handle gradient update
     if (updates.textGradient !== undefined) {
-      if (gradientPath.includes('.')) {
+      if (gradientIsNested) {
         const [parent, child] = gradientPath.split('.');
-        next[parent] = { ...existingStyles, [child]: updates.textGradient };
+        // If same parent, merge with existing object in next
+        const parentObj = sameParent ? (next[parent] || { ...existingStyles }) : { ...existingStyles };
+        next[parent] = { ...parentObj, [child]: updates.textGradient };
       } else {
         next[gradientPath] = updates.textGradient;
       }
       
       // Clear solid color when setting gradient
       if (updates.textGradient) {
-        next[colorField] = '';
+        if (colorIsNested) {
+          const [parent, child] = colorField.split('.');
+          // If same parent, merge with existing object in next
+          const parentObj = sameParent ? (next[parent] || { ...existingStyles }) : { ...existingStyles };
+          next[parent] = { ...parentObj, [child]: '' };
+        } else {
+          next[colorField] = '';
+        }
       }
     }
     

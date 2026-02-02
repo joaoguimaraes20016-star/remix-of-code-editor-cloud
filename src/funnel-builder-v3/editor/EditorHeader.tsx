@@ -24,20 +24,36 @@ import {
   MoreHorizontal,
   ArrowLeft,
   Loader2,
+  Settings,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ViewportType } from '@/funnel-builder-v3/types/funnel';
 import { ZoomControl } from './ZoomControl';
 import { ThemeToggle } from './ThemeToggle';
+import { PublishModal } from './PublishModal';
+import { FunnelSettingsModal } from './FunnelSettingsModal';
 
 export function EditorHeader() {
   const { funnel, setFunnel, exportFunnel, importFunnel, undo, redo, canUndo, canRedo, setPreviewMode, currentViewport, setCurrentViewport } = useFunnel();
-  const { teamId, saveDraft, publish, isAuthenticated } = useFunnelPersistence({ funnel, setFunnel });
+  const { 
+    teamId, 
+    funnelId,
+    saveDraft, 
+    publish, 
+    linkDomain,
+    isAuthenticated,
+    funnelStatus,
+    currentDomainId,
+    lastPublishedAt,
+    slug,
+  } = useFunnelPersistence({ funnel, setFunnel });
   const [searchParams] = useSearchParams();
   
   const [name, setName] = React.useState(funnel.name);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Main app URL for dashboard link
@@ -67,14 +83,15 @@ export function EditorHeader() {
     }
   };
 
-  const handlePublish = async () => {
+  const handlePublish = async (): Promise<boolean> => {
     if (!isAuthenticated) {
       toast.error('Please log in to publish');
-      return;
+      return false;
     }
     setIsPublishing(true);
-    await publish();
+    const success = await publish();
     setIsPublishing(false);
+    return success;
   };
 
   const handleExport = () => {
@@ -205,6 +222,16 @@ export function EditorHeader() {
 
         <ThemeToggle />
 
+        {/* Settings Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => setSettingsModalOpen(true)}
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -257,15 +284,37 @@ export function EditorHeader() {
         <Button 
           size="sm" 
           className="h-8"
-          onClick={handlePublish}
-          disabled={isPublishing || !isAuthenticated}
+          onClick={() => setPublishModalOpen(true)}
+          disabled={!isAuthenticated}
         >
-          {isPublishing ? (
-            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-          ) : null}
           Publish
         </Button>
       </div>
+
+      {/* Publish Modal */}
+      <PublishModal
+        isOpen={publishModalOpen}
+        onClose={() => setPublishModalOpen(false)}
+        onPublish={handlePublish}
+        onDomainChange={linkDomain}
+        pageSlug={slug}
+        pageTitle={funnel.name}
+        funnelId={funnelId}
+        teamId={teamId}
+        currentDomainId={currentDomainId}
+        isPublishing={isPublishing}
+        funnelStatus={funnelStatus}
+      />
+
+      {/* Settings Modal */}
+      <FunnelSettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        funnelId={funnelId}
+        teamId={teamId}
+        currentDomainId={currentDomainId}
+        onDomainChange={linkDomain}
+      />
     </header>
   );
 }

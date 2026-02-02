@@ -1,5 +1,6 @@
-import React from 'react';
-import { Block } from '@/funnel-builder-v3/types/funnel';
+import React, { useState } from 'react';
+import { cn } from '@/lib/utils';
+import { Block, CountryCode, FormContent, PhoneCaptureContent } from '@/funnel-builder-v3/types/funnel';
 import { blockDefinitions } from '@/funnel-builder-v3/lib/block-definitions';
 import { 
   InspectorSection, 
@@ -19,20 +20,26 @@ import {
   NichePresetPicker,
   GradientColorPicker,
   GradientPicker,
+  TrackingSection,
 } from './InspectorUI';
 import { allButtonPresets, allHeadingPresets } from '@/funnel-builder-v3/lib/niche-presets';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { MediaPicker } from '@/funnel-builder-v3/editor/MediaPicker';
+import { BrandfetchPicker } from '@/funnel-builder-v3/editor/BrandfetchPicker';
+import { IconPicker } from '@/funnel-builder-v3/editor/IconPicker';
+import { CountryCodeModal } from '@/funnel-builder-v3/editor/components/CountryCodeModal';
 import { 
   Type, Image, Star, Play, Calendar, Users, Quote,
   AlignLeft, AlignCenter, AlignRight,
   Square, Circle, Minus, Plus, Trash2, GripVertical,
-  Clock, Mail, Phone, ListChecks, ChevronDown
+  Clock, Mail, Phone, ListChecks, ChevronDown, Upload, Check, Info
 } from 'lucide-react';
 import { v4 as uuid } from 'uuid';
+import { generateTrackingId } from '@/funnel-builder-v3/lib/tracking-ids';
 
 // Helper function to strip HTML tags for display in inspector inputs
 function stripHtmlTags(html: string): string {
@@ -46,57 +53,210 @@ interface BlockInspectorProps {
   block: Block;
   onContentChange: (updates: any) => void;
   onStyleChange: (updates: any) => void;
+  onBlockChange?: (updates: Partial<Block>) => void;
 }
 
-// ========== HEADING PRESETS (Enhanced with niche options) ==========
+// ========== POPUP SETTINGS SECTION (reusable for interactive blocks) ==========
+function PopupSettingsSection({ content, onContentChange }: { content: any; onContentChange: (updates: any) => void }) {
+  const popupSettings = content.popupSettings || { enabled: false, trigger: 'on-load', delay: 3, required: false };
+  
+  const updatePopupSettings = (updates: any) => {
+    onContentChange({
+      popupSettings: { ...popupSettings, ...updates }
+    });
+  };
+
+  return (
+    <>
+      <Separator />
+      <InspectorSection title="Popup Settings">
+        <div className="space-y-3">
+          <ToggleSwitchRow
+            label="Show as Popup"
+            checked={popupSettings.enabled || false}
+            onChange={(v) => updatePopupSettings({ enabled: v })}
+          />
+          
+          {popupSettings.enabled && (
+            <>
+              <div className="space-y-1.5">
+                <span className="text-xs text-muted-foreground">Trigger</span>
+                <LabeledToggleRow
+                  value={popupSettings.trigger || 'on-load'}
+                  onChange={(v) => updatePopupSettings({ trigger: v })}
+                  options={[
+                    { value: 'on-load', label: 'On Load' },
+                    { value: 'on-delay', label: 'Delay' },
+                    { value: 'on-click', label: 'On Click' },
+                  ]}
+                />
+              </div>
+              
+              {popupSettings.trigger === 'on-delay' && (
+                <div className="space-y-1.5">
+                  <span className="text-xs text-muted-foreground">Delay (seconds)</span>
+                  <VisualSlider
+                    value={popupSettings.delay || 3}
+                    onChange={(v) => updatePopupSettings({ delay: v })}
+                    min={1}
+                    max={30}
+                    unit="s"
+                  />
+                </div>
+              )}
+              
+              <ToggleSwitchRow
+                label="Required (must complete)"
+                checked={popupSettings.required || false}
+                onChange={(v) => updatePopupSettings({ required: v })}
+              />
+              
+              {popupSettings.required && (
+                <p className="text-[10px] text-muted-foreground px-1">
+                  User cannot close this popup without completing the form.
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      </InspectorSection>
+    </>
+  );
+}
+
+// ========== PRIVACY CONSENT SECTION (reusable for conversion blocks) ==========
+function PrivacyConsentSection({ content, onContentChange }: { content: any; onContentChange: (updates: any) => void }) {
+  const consent = content.consent || { enabled: false, text: 'I have read and accept the', linkText: 'privacy policy', linkUrl: '#', required: true };
+  
+  const updateConsent = (updates: any) => {
+    onContentChange({
+      consent: { ...consent, ...updates }
+    });
+  };
+
+  return (
+    <>
+      <Separator />
+      <InspectorSection title="Privacy Consent">
+        <div className="space-y-3">
+          <ToggleSwitchRow
+            label="Show Privacy Checkbox"
+            checked={consent.enabled}
+            onChange={(v) => updateConsent({ enabled: v })}
+          />
+          
+          {consent.enabled && (
+            <>
+              <div className="space-y-1.5">
+                <span className="text-xs text-muted-foreground">Consent Text</span>
+                <Input
+                  value={consent.text}
+                  onChange={(e) => updateConsent({ text: e.target.value })}
+                  className="h-8 bg-muted border-0"
+                  placeholder="I have read and accept the"
+                />
+              </div>
+              
+              <div className="space-y-1.5">
+                <span className="text-xs text-muted-foreground">Link Text</span>
+                <Input
+                  value={consent.linkText}
+                  onChange={(e) => updateConsent({ linkText: e.target.value })}
+                  className="h-8 bg-muted border-0"
+                  placeholder="privacy policy"
+                />
+              </div>
+              
+              <div className="space-y-1.5">
+                <span className="text-xs text-muted-foreground">Link URL</span>
+                <Input
+                  value={consent.linkUrl}
+                  onChange={(e) => updateConsent({ linkUrl: e.target.value })}
+                  className="h-8 bg-muted border-0"
+                  placeholder="https://example.com/privacy"
+                />
+              </div>
+              
+              <ToggleSwitchRow
+                label="Required"
+                checked={consent.required}
+                onChange={(v) => updateConsent({ required: v })}
+              />
+            </>
+          )}
+        </div>
+      </InspectorSection>
+    </>
+  );
+}
+
+// ========== HEADING PRESETS (Style-only, don't change layout/level) ==========
 const headingPresets = [
   {
     id: 'hero',
     name: 'Hero',
     preview: <div className="font-bold text-[10px] leading-none">HERO</div>,
-    config: { level: 1, styles: { fontSize: 48, fontWeight: 800, textAlign: 'center' } }
+    config: { styles: { fontWeight: 800, textAlign: 'center' } }
   },
   {
     id: 'section',
     name: 'Section',
     preview: <div className="font-semibold text-[9px] leading-none">Section</div>,
-    config: { level: 2, styles: { fontSize: 32, fontWeight: 700, textAlign: 'left' } }
+    config: { styles: { fontWeight: 700, textAlign: 'left' } }
   },
   {
     id: 'subtitle',
     name: 'Subtitle',
     preview: <div className="text-[8px] text-muted-foreground leading-none">subtitle</div>,
-    config: { level: 3, styles: { fontSize: 20, fontWeight: 400, color: '#6b7280' } }
+    config: { styles: { fontWeight: 400, color: '#6b7280' } }
   },
   {
     id: 'profit',
     name: 'Profit',
     preview: <div className="text-[10px] font-bold leading-none" style={{ color: '#ffd700' }}>$$$</div>,
-    config: { level: 1, styles: { fontSize: 48, fontWeight: 800, color: '#ffd700', textAlign: 'center' } }
+    config: { styles: { fontWeight: 800, color: '#ffd700', textAlign: 'center' } }
   },
   {
     id: 'stats',
     name: 'Stats',
     preview: <div className="text-[10px] font-black leading-none" style={{ color: '#10b981' }}>89%</div>,
-    config: { level: 2, styles: { fontSize: 56, fontWeight: 900, color: '#10b981', textAlign: 'center' } }
+    config: { styles: { fontWeight: 900, color: '#10b981', textAlign: 'center' } }
   },
   {
     id: 'authority',
     name: 'Authority',
     preview: <div className="text-[9px] font-bold leading-none" style={{ color: '#6366f1' }}>Pro</div>,
-    config: { level: 1, styles: { fontSize: 48, fontWeight: 700, color: '#6366f1', textAlign: 'center' } }
+    config: { styles: { fontWeight: 700, color: '#6366f1', textAlign: 'center' } }
   },
 ];
+
+// Font sizes for each heading level (mobile-friendly)
+const headingLevelSizes: Record<number, number> = {
+  1: 36,
+  2: 28,
+  3: 24,
+  4: 20,
+  5: 18,
+  6: 16,
+};
 
 // ========== HEADING INSPECTOR ==========
 export function HeadingInspector({ block, onContentChange }: BlockInspectorProps) {
   const content = block.content as any;
   const styles = content.styles || {};
 
+  // Quick styles only affect styling, not level/layout
   const handlePresetApply = (config: Record<string, any>) => {
     onContentChange({ 
-      level: config.level,
       styles: { ...styles, ...config.styles } 
+    });
+  };
+
+  // H1-H6 selector changes both level and font size
+  const handleLevelChange = (newLevel: number) => {
+    onContentChange({ 
+      level: newLevel,
+      styles: { ...styles, fontSize: headingLevelSizes[newLevel] }
     });
   };
 
@@ -123,7 +283,7 @@ export function HeadingInspector({ block, onContentChange }: BlockInspectorProps
       <InspectorSection title="Size">
         <IconToggleRow
           value={String(content.level)}
-          onChange={(v) => onContentChange({ level: parseInt(v) })}
+          onChange={(v) => handleLevelChange(parseInt(v))}
           options={[
             { value: '1', icon: <span className="text-sm font-bold">H1</span>, label: 'Heading 1' },
             { value: '2', icon: <span className="text-sm font-bold">H2</span>, label: 'Heading 2' },
@@ -148,7 +308,7 @@ export function HeadingInspector({ block, onContentChange }: BlockInspectorProps
           value={styles.fontSize || 32}
           onChange={(v) => onContentChange({ styles: { ...styles, fontSize: v } })}
           min={12}
-          max={72}
+          max={48}
           unit="px"
         />
       </InspectorSection>
@@ -174,6 +334,14 @@ export function HeadingInspector({ block, onContentChange }: BlockInspectorProps
           onGradientChange={(v) => onContentChange({ styles: { ...styles, textGradient: v } })}
         />
       </InspectorSection>
+
+      <Separator />
+      {onBlockChange && (
+        <TrackingSection
+          trackingId={block.trackingId || ''}
+          onChange={(id) => onBlockChange({ trackingId: id })}
+        />
+      )}
     </div>
   );
 }
@@ -284,6 +452,16 @@ export function TextInspector({ block, onContentChange }: BlockInspectorProps) {
           onGradientChange={(v) => onContentChange({ styles: { ...styles, textGradient: v } })}
         />
       </InspectorSection>
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -295,7 +473,7 @@ const buttonPresets = [
     id: 'primary',
     name: 'Primary',
     preview: <div className="w-full h-3 bg-primary rounded" />,
-    config: { variant: 'primary', backgroundColor: '#6366f1', size: 'lg' }
+    config: { variant: 'primary', backgroundColor: '#3b82f6', size: 'lg' }
   },
   {
     id: 'success',
@@ -337,7 +515,7 @@ const buttonPresets = [
     id: 'outline',
     name: 'Outline',
     preview: <div className="w-full h-3 border-2 border-foreground rounded" />,
-    config: { variant: 'outline', size: 'lg', borderColor: '#6366f1', borderWidth: 2, color: '#6366f1' }
+    config: { variant: 'outline', size: 'lg', borderColor: '#3b82f6', borderWidth: 2, color: '#3b82f6' }
   },
 ];
 
@@ -346,7 +524,7 @@ export function ButtonInspector({ block, onContentChange }: BlockInspectorProps)
   const content = block.content as any;
 
   const buttonColors = [
-    '#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
+    '#3b82f6', '#6366f1', '#10b981', '#f59e0b', '#ef4444', 
     '#8b5cf6', '#ec4899', '#000000', '#ffffff', '#6b7280'
   ];
 
@@ -383,11 +561,51 @@ export function ButtonInspector({ block, onContentChange }: BlockInspectorProps)
           onChange={(v) => onContentChange({ action: v })}
           options={[
             { value: 'next-step', label: 'Next Step' },
-            { value: 'url', label: 'URL' },
-            { value: 'scroll', label: 'Scroll' },
             { value: 'submit', label: 'Submit' },
+            { value: 'url', label: 'URL' },
+            { value: 'webhook', label: 'Webhook' },
+            { value: 'scroll', label: 'Scroll' },
           ]}
         />
+        {/* Contextual help text for each action */}
+        <div className="mt-2 p-2 bg-muted/50 rounded-lg border border-border/50">
+          <div className="flex items-start gap-2">
+            <Info className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+            <div className="text-[10px] text-muted-foreground space-y-1">
+              {content.action === 'next-step' && (
+                <div>
+                  <p className="font-medium text-foreground mb-0.5">Next Step</p>
+                  <p>Navigates to the next step in sequence. If quiz options have custom routing configured, those will be respected. Lead data is saved as draft automatically.</p>
+                </div>
+              )}
+              {content.action === 'submit' && (
+                <div>
+                  <p className="font-medium text-foreground mb-0.5">Submit</p>
+                  <p className="font-semibold text-amber-600 dark:text-amber-500 mb-1">⚠️ Finalizes the lead</p>
+                  <p>Finalizes the lead with status "complete", triggers configured webhooks and automations, then navigates to the next step. Use this for final form submissions.</p>
+                </div>
+              )}
+              {content.action === 'url' && (
+                <div>
+                  <p className="font-medium text-foreground mb-0.5">URL</p>
+                  <p>Opens the specified URL in a new tab. Navigation within the funnel continues normally after the link opens.</p>
+                </div>
+              )}
+              {content.action === 'webhook' && (
+                <div>
+                  <p className="font-medium text-foreground mb-0.5">Webhook</p>
+                  <p>Sends form data to the specified webhook URL (e.g., Zapier, Make). Data is sent immediately on button click, then navigation proceeds. Lead is also saved to database separately.</p>
+                </div>
+              )}
+              {content.action === 'scroll' && (
+                <div>
+                  <p className="font-medium text-foreground mb-0.5">Scroll</p>
+                  <p>Smoothly scrolls to the element with the specified ID on the current page. Useful for same-page navigation without changing steps.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </InspectorSection>
 
       {content.action === 'url' && (
@@ -398,6 +616,20 @@ export function ButtonInspector({ block, onContentChange }: BlockInspectorProps)
             className="h-9 bg-muted border-0"
             placeholder="https://..."
           />
+        </InspectorSection>
+      )}
+
+      {content.action === 'webhook' && (
+        <InspectorSection title="Webhook URL">
+          <Input
+            value={content.actionValue || ''}
+            onChange={(e) => onContentChange({ actionValue: e.target.value })}
+            className="h-9 bg-muted border-0"
+            placeholder="https://..."
+          />
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Send form data to external services (Zapier, Make, etc.)
+          </p>
         </InspectorSection>
       )}
 
@@ -417,7 +649,18 @@ export function ButtonInspector({ block, onContentChange }: BlockInspectorProps)
       <InspectorSection title="Style">
         <IconToggleRow
           value={content.variant || 'primary'}
-          onChange={(v) => onContentChange({ variant: v })}
+          onChange={(v) => {
+            // Smart color contrast: when switching variants, update text color appropriately
+            const updates: Record<string, any> = { variant: v };
+            if (v === 'outline' || v === 'ghost') {
+              // For outline/ghost, use the border color or a dark color for contrast
+              updates.color = content.borderColor || '#3b82f6';
+            } else if (v === 'primary') {
+              // For filled buttons, use white text by default
+              updates.color = '#ffffff';
+            }
+            onContentChange(updates);
+          }}
           options={[
             { value: 'primary', icon: <Square className="h-4 w-4 fill-current" />, label: 'Filled' },
             { value: 'outline', icon: <Square className="h-4 w-4" />, label: 'Outline' },
@@ -438,6 +681,17 @@ export function ButtonInspector({ block, onContentChange }: BlockInspectorProps)
         />
       </InspectorSection>
 
+      <InspectorSection title="Font Size">
+        <VisualSlider
+          icon={<Type className="h-3.5 w-3.5" />}
+          value={content.fontSize || 16}
+          onChange={(v) => onContentChange({ fontSize: v })}
+          min={12}
+          max={24}
+          unit="px"
+        />
+      </InspectorSection>
+
       <ToggleSwitchRow
         label="Full Width"
         checked={content.fullWidth || false}
@@ -447,7 +701,7 @@ export function ButtonInspector({ block, onContentChange }: BlockInspectorProps)
       {content.variant !== 'outline' && (
         <InspectorSection title="Background">
           <GradientColorPicker
-            solidColor={content.backgroundColor || '#6366f1'}
+            solidColor={content.backgroundColor || '#3b82f6'}
             gradient={content.backgroundGradient || ''}
             onSolidChange={(v) => onContentChange({ backgroundColor: v, backgroundGradient: '' })}
             onGradientChange={(v) => onContentChange({ backgroundGradient: v })}
@@ -460,7 +714,7 @@ export function ButtonInspector({ block, onContentChange }: BlockInspectorProps)
         <>
           <InspectorSection title="Border Color">
             <ColorSwatchPicker
-              value={content.borderColor || '#6366f1'}
+              value={content.borderColor || '#3b82f6'}
               onChange={(v) => onContentChange({ borderColor: v })}
               presets={buttonColors}
             />
@@ -489,6 +743,12 @@ export function ButtonInspector({ block, onContentChange }: BlockInspectorProps)
         />
       </InspectorSection>
 
+      <Separator />
+      <TrackingSection
+        trackingId={content.trackingId || ''}
+        onChange={(id) => onContentChange({ trackingId: id })}
+        label="Tracking ID"
+      />
     </div>
   );
 }
@@ -504,33 +764,34 @@ const imagePresets = [
   {
     id: 'rounded',
     name: 'Rounded',
-    preview: <div className="w-6 h-4 bg-muted-foreground/30 rounded" />,
-    config: { borderRadius: 12, aspectRatio: 'auto' }
+    preview: <div className="w-6 h-4 bg-muted-foreground/30 rounded-lg" />,
+    config: { borderRadius: 24, aspectRatio: 'auto' }
   },
   {
     id: 'circle',
     name: 'Circle',
     preview: <div className="w-5 h-5 bg-muted-foreground/30 rounded-full" />,
-    config: { borderRadius: 999, aspectRatio: '1:1' }
+    config: { borderRadius: 100, aspectRatio: '1:1' }
   },
   {
     id: 'card',
     name: 'Card',
-    preview: <div className="w-6 h-4 bg-muted-foreground/30 rounded shadow-sm" />,
-    config: { borderRadius: 16, aspectRatio: '16:9' }
+    preview: <div className="w-6 h-4 bg-muted-foreground/30 rounded-xl shadow-sm" />,
+    config: { borderRadius: 32, aspectRatio: '16:9' }
   },
 ];
 
 // ========== IMAGE INSPECTOR ==========
 export function ImageInspector({ block, onContentChange }: BlockInspectorProps) {
   const content = block.content as any;
+  const currentRadius = content.borderRadius || 0;
 
   const handlePresetApply = (config: Record<string, any>) => {
     onContentChange({ ...config });
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <PresetPicker
         presets={imagePresets}
         currentConfig={content}
@@ -546,15 +807,26 @@ export function ImageInspector({ block, onContentChange }: BlockInspectorProps) 
         label="Image"
       />
 
-      <InspectorSection title="Alt Text">
-        <Input
-          value={content.alt || ''}
-          onChange={(e) => onContentChange({ alt: e.target.value })}
-          className="h-9 bg-muted border-0"
-          placeholder="Image description"
+      {/* Corner Radius - Prominent position with visual preview */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-medium text-muted-foreground">Corner Radius</span>
+          <div 
+            className="w-6 h-6 bg-muted-foreground/20 border border-muted-foreground/30"
+            style={{ borderRadius: Math.min(currentRadius, 12) }}
+          />
+        </div>
+        <VisualSlider
+          icon={<Circle className="h-4 w-4" />}
+          value={currentRadius}
+          onChange={(v) => onContentChange({ borderRadius: v })}
+          min={0}
+          max={100}
+          unit="px"
         />
-      </InspectorSection>
+      </div>
 
+      {/* Aspect Ratio */}
       <InspectorSection title="Aspect Ratio">
         <IconToggleRow
           value={content.aspectRatio || 'auto'}
@@ -568,16 +840,95 @@ export function ImageInspector({ block, onContentChange }: BlockInspectorProps) 
         />
       </InspectorSection>
 
-      <InspectorSection title="Corner Radius">
-        <VisualSlider
-          icon={<Circle className="h-4 w-4" />}
-          value={content.borderRadius || 0}
-          onChange={(v) => onContentChange({ borderRadius: v })}
-          min={0}
-          max={32}
-          unit="px"
+      {/* Alt Text - Compact with muted background */}
+      <div className="space-y-1.5">
+        <span className="text-[11px] font-medium text-muted-foreground">Alt Text</span>
+        <Input
+          value={content.alt || ''}
+          onChange={(e) => onContentChange({ alt: e.target.value })}
+          className="h-8 bg-muted/50 border-0 text-xs"
+          placeholder="Describe this image for accessibility"
         />
-      </InspectorSection>
+      </div>
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+// Auto-detect video type from URL
+function detectVideoType(url: string): 'youtube' | 'vimeo' | 'wistia' | 'loom' | 'hosted' {
+  if (!url) return 'hosted';
+  const lowerUrl = url.toLowerCase();
+  if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) return 'youtube';
+  if (lowerUrl.includes('vimeo.com')) return 'vimeo';
+  if (lowerUrl.includes('wistia')) return 'wistia';
+  if (lowerUrl.includes('loom.com')) return 'loom';
+  return 'hosted';
+}
+
+// Video preview component with native controls
+function VideoPreviewWithControls({ src, onRemove }: { src: string; onRemove: () => void }) {
+  const [error, setError] = React.useState<string | null>(null);
+
+  // Reset error when src changes
+  React.useEffect(() => {
+    setError(null);
+  }, [src]);
+
+  return (
+    <div className="space-y-2">
+      <div className="relative aspect-video rounded-lg overflow-hidden bg-black">
+        {error ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+            <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center mb-2">
+              <span className="text-red-500 text-lg">!</span>
+            </div>
+            <p className="text-xs text-red-400">{error}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Try a different format (MP4, WebM)</p>
+          </div>
+        ) : (
+          <video
+            src={src}
+            className="w-full h-full object-contain"
+            controls
+            playsInline
+            onError={() => setError('Video format not supported')}
+            onLoadedData={() => setError(null)}
+          />
+        )}
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full h-8 text-xs"
+        onClick={() => {
+          // Revoke blob URL to prevent memory leak
+          if (src.startsWith('blob:')) {
+            URL.revokeObjectURL(src);
+          }
+          onRemove();
+        }}
+      >
+        <Trash2 className="h-3 w-3 mr-1.5" />
+        Remove Video
+      </Button>
+
+      <Separator />
+      {onBlockChange && (
+        <TrackingSection
+          trackingId={block.trackingId || ''}
+          onChange={(id) => onBlockChange({ trackingId: id })}
+        />
+      )}
     </div>
   );
 }
@@ -585,33 +936,181 @@ export function ImageInspector({ block, onContentChange }: BlockInspectorProps) 
 // ========== VIDEO INSPECTOR ==========
 export function VideoInspector({ block, onContentChange }: BlockInspectorProps) {
   const content = block.content as any;
+  const isUploadedVideo = content.src?.startsWith('data:') || content.src?.startsWith('blob:');
+  const [inputMode, setInputMode] = React.useState<'url' | 'upload'>(
+    isUploadedVideo ? 'upload' : 'url'
+  );
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [uploadProgress, setUploadProgress] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Auto-detect type when URL changes
+  const handleUrlChange = (url: string) => {
+    const detectedType = detectVideoType(url);
+    onContentChange({ src: url, type: detectedType });
+  };
+
+  // Handle file upload - use blob URL for efficient streaming playback
+  const handleFileUpload = (file: File) => {
+    if (!file.type.startsWith('video/')) return;
+    
+    // Show file size in MB
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+    setUploadProgress(`Processing ${sizeMB}MB...`);
+    
+    // Use blob URL for efficient playback (much better than base64 data URLs)
+    const blobUrl = URL.createObjectURL(file);
+    onContentChange({ src: blobUrl, type: 'hosted' });
+    setUploadProgress(null);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileUpload(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  // Get platform name for display
+  const getPlatformName = () => {
+    switch (content.type) {
+      case 'youtube': return 'YouTube';
+      case 'vimeo': return 'Vimeo';
+      case 'wistia': return 'Wistia';
+      case 'loom': return 'Loom';
+      default: return null;
+    }
+  };
+
+  const platformName = getPlatformName();
 
   return (
     <div className="space-y-4">
-      <InspectorSection title="Video Type">
+      <InspectorSection title="Video Source">
         <LabeledToggleRow
-          value={content.type || 'youtube'}
-          onChange={(v) => onContentChange({ type: v })}
+          value={inputMode}
+          onChange={(v) => setInputMode(v as 'url' | 'upload')}
           options={[
-            { value: 'youtube', label: 'YouTube' },
-            { value: 'vimeo', label: 'Vimeo' },
-            { value: 'hosted', label: 'Hosted' },
+            { value: 'url', label: 'URL' },
+            { value: 'upload', label: 'Upload' },
           ]}
         />
       </InspectorSection>
 
-      <MediaPicker
-        value={content.src || ''}
-        onChange={(url) => onContentChange({ src: url })}
-        type="video"
-        label="Video"
-        placeholder={content.type === 'hosted' ? 'https://example.com/video.mp4' : 'https://youtube.com/watch?v=...'}
-      />
+      {inputMode === 'url' ? (
+        <InspectorSection title="Video URL">
+          <Input
+            value={isUploadedVideo ? '' : (content.src || '')}
+            onChange={(e) => handleUrlChange(e.target.value)}
+            className="h-9 bg-muted border-0"
+            placeholder="Paste any video link..."
+          />
+          {platformName && content.src && !isUploadedVideo && (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <span className="text-[10px] text-muted-foreground">{platformName} detected</span>
+            </div>
+          )}
+        </InspectorSection>
+      ) : (
+        <InspectorSection title="Upload Video">
+          {isUploadedVideo && content.src ? (
+            <VideoPreviewWithControls 
+              src={content.src} 
+              onRemove={() => onContentChange({ src: '', type: 'hosted' })}
+            />
+          ) : (
+            <div
+              className={cn(
+                "border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
+                isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-muted-foreground/50"
+              )}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileUpload(file);
+                }}
+              />
+              {uploadProgress ? (
+                <div className="space-y-2">
+                  <div className="w-6 h-6 mx-auto border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-xs text-muted-foreground">{uploadProgress}</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">
+                    Drop video here or click to browse
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/60">
+                    MP4, WebM, MOV (max 50MB recommended)
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </InspectorSection>
+      )}
+
+      {/* Show current video preview for URL mode too */}
+      {inputMode === 'url' && content.src && content.type === 'hosted' && !isUploadedVideo && (
+        <InspectorSection title="Preview">
+          <VideoPreviewWithControls 
+            src={content.src} 
+            onRemove={() => onContentChange({ src: '', type: 'hosted' })}
+          />
+        </InspectorSection>
+      )}
+
+      <InspectorSection title="Aspect Ratio">
+        <LabeledToggleRow
+          value={content.aspectRatio || '16:9'}
+          onChange={(v) => onContentChange({ aspectRatio: v })}
+          options={[
+            { value: '16:9', label: '16:9' },
+            { value: '9:16', label: '9:16' },
+            { value: '4:3', label: '4:3' },
+            { value: '1:1', label: '1:1' },
+          ]}
+        />
+      </InspectorSection>
+
+      <Separator />
 
       <ToggleSwitchRow
         label="Autoplay"
         checked={content.autoplay || false}
         onChange={(v) => onContentChange({ autoplay: v })}
+      />
+
+      <ToggleSwitchRow
+        label="Muted"
+        checked={content.muted || false}
+        onChange={(v) => onContentChange({ muted: v })}
+      />
+
+      <ToggleSwitchRow
+        label="Loop"
+        checked={content.loop || false}
+        onChange={(v) => onContentChange({ loop: v })}
       />
 
       {content.type === 'hosted' && (
@@ -622,99 +1121,13 @@ export function VideoInspector({ block, onContentChange }: BlockInspectorProps) 
         />
       )}
 
-      {content.type !== 'hosted' && (
-        <div className="text-xs text-muted-foreground bg-muted px-3 py-2 rounded">
-          Player controls are managed by {content.type === 'youtube' ? 'YouTube' : 'Vimeo'}
-        </div>
+      <Separator />
+      {onBlockChange && (
+        <TrackingSection
+          trackingId={block.trackingId || ''}
+          onChange={(id) => onBlockChange({ trackingId: id })}
+        />
       )}
-    </div>
-  );
-}
-
-// ========== TESTIMONIAL INSPECTOR ==========
-export function TestimonialInspector({ block, onContentChange }: BlockInspectorProps) {
-  const content = block.content as any;
-
-  return (
-    <div className="space-y-4">
-      <InspectorSection title="Quote">
-        <Textarea
-          value={content.quote}
-          onChange={(e) => onContentChange({ quote: e.target.value })}
-          className="min-h-[80px] bg-muted border-0 resize-none"
-          placeholder="Customer testimonial..."
-        />
-      </InspectorSection>
-
-      <InspectorSection title="Rating">
-        <VisualSlider
-          icon={<Star className="h-4 w-4" />}
-          value={content.rating || 5}
-          onChange={(v) => onContentChange({ rating: v })}
-          min={1}
-          max={5}
-          step={1}
-        />
-      </InspectorSection>
-
-      <Separator />
-
-      <InspectorSection title="Author Name">
-        <Input
-          value={content.authorName}
-          onChange={(e) => onContentChange({ authorName: e.target.value })}
-          className="h-9 bg-muted border-0"
-          placeholder="John Doe"
-        />
-      </InspectorSection>
-
-      <InspectorSection title="Author Title">
-        <Input
-          value={content.authorTitle || ''}
-          onChange={(e) => onContentChange({ authorTitle: e.target.value })}
-          className="h-9 bg-muted border-0"
-          placeholder="CEO at Company"
-        />
-      </InspectorSection>
-
-      <MediaPicker
-        value={content.authorImage || ''}
-        onChange={(url) => onContentChange({ authorImage: url })}
-        type="image"
-        label="Author Image"
-      />
-
-      <Separator />
-
-      {/* Card Style */}
-      <InspectorSection title="Card Style">
-        <LabeledToggleRow
-          value={content.cardStyle || 'outline'}
-          onChange={(v) => onContentChange({ cardStyle: v })}
-          options={[
-            { value: 'outline', label: 'Outline' },
-            { value: 'filled', label: 'Filled' },
-          ]}
-        />
-      </InspectorSection>
-
-      {/* Quote Color/Gradient */}
-      <InspectorSection title="Quote Color">
-        <GradientColorPicker
-          solidColor={content.quoteColor || ''}
-          gradient={content.quoteStyles?.textGradient || ''}
-          onSolidChange={(v) => onContentChange({ quoteColor: v, quoteStyles: { ...(content.quoteStyles || {}), textGradient: '' } })}
-          onGradientChange={(v) => onContentChange({ quoteStyles: { ...(content.quoteStyles || {}), textGradient: v } })}
-        />
-      </InspectorSection>
-
-      {/* Author Color */}
-      <InspectorSection title="Author Color">
-        <ColorSwatchPicker
-          value={content.authorColor || ''}
-          onChange={(v) => onContentChange({ authorColor: v })}
-        />
-      </InspectorSection>
     </div>
   );
 }
@@ -772,6 +1185,14 @@ export function CountdownInspector({ block, onContentChange }: BlockInspectorPro
           onGradientChange={(v) => onContentChange({ textGradient: v })}
         />
       </InspectorSection>
+
+      <Separator />
+      {onBlockChange && (
+        <TrackingSection
+          trackingId={block.trackingId || ''}
+          onChange={(id) => onBlockChange({ trackingId: id })}
+        />
+      )}
     </div>
   );
 }
@@ -810,6 +1231,16 @@ export function DividerInspector({ block, onContentChange }: BlockInspectorProps
           unit="px"
         />
       </InspectorSection>
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -846,21 +1277,14 @@ export function EmailCaptureInspector({ block, onContentChange }: BlockInspector
 
   return (
     <div className="space-y-4">
+      <PrivacyConsentSection content={content} onContentChange={onContentChange} />
+
       <InspectorSection title="Placeholder">
         <Input
           value={content.placeholder}
           onChange={(e) => onContentChange({ placeholder: e.target.value })}
           className="h-9 bg-muted border-0"
           placeholder="Enter your email"
-        />
-      </InspectorSection>
-
-      <InspectorSection title="Button Text">
-        <Input
-          value={content.buttonText}
-          onChange={(e) => onContentChange({ buttonText: e.target.value })}
-          className="h-9 bg-muted border-0"
-          placeholder="Subscribe"
         />
       </InspectorSection>
 
@@ -873,14 +1297,23 @@ export function EmailCaptureInspector({ block, onContentChange }: BlockInspector
         />
       </InspectorSection>
 
-      <InspectorSection title="Button Color">
-        <GradientColorPicker
-          solidColor={content.buttonColor || '#6366f1'}
-          gradient={content.buttonGradient || ''}
-          onSolidChange={(v) => onContentChange({ buttonColor: v, buttonGradient: '' })}
-          onGradientChange={(v) => onContentChange({ buttonGradient: v })}
-        />
-      </InspectorSection>
+      <Separator />
+
+      <p className="text-xs text-muted-foreground px-1">
+        Click the submit button on canvas to configure it.
+      </p>
+
+      <PopupSettingsSection content={content} onContentChange={onContentChange} />
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -888,9 +1321,40 @@ export function EmailCaptureInspector({ block, onContentChange }: BlockInspector
 // ========== PHONE CAPTURE INSPECTOR ==========
 export function PhoneCaptureInspector({ block, onContentChange }: BlockInspectorProps) {
   const content = block.content as any;
+  const countryCodes = content.countryCodes || [];
+  const [showModal, setShowModal] = React.useState(false);
+
+  const updateCountryCodes = (updates: any[]) => {
+    onContentChange({ countryCodes: updates });
+  };
+
+  const addCountryCode = (country: any) => {
+    const newCountry = {
+      id: uuid(),
+      ...country,
+    };
+    updateCountryCodes([...countryCodes, newCountry]);
+  };
+
+  const removeCountryCode = (id: string) => {
+    const updated = countryCodes.filter((c: any) => c.id !== id);
+    updateCountryCodes(updated);
+    // If removed country was default, reset default
+    if (content.defaultCountryId === id && updated.length > 0) {
+      onContentChange({ defaultCountryId: updated[0].id });
+    }
+  };
+
+  const setAsDefault = (id: string) => {
+    onContentChange({ defaultCountryId: id });
+  };
+
+  const existingCodes = countryCodes.map((c: any) => c.code);
 
   return (
     <div className="space-y-4">
+      <PrivacyConsentSection content={content} onContentChange={onContentChange} />
+
       <InspectorSection title="Placeholder">
         <Input
           value={content.placeholder}
@@ -900,32 +1364,87 @@ export function PhoneCaptureInspector({ block, onContentChange }: BlockInspector
         />
       </InspectorSection>
 
-      <InspectorSection title="Button Text">
-        <Input
-          value={content.buttonText}
-          onChange={(e) => onContentChange({ buttonText: e.target.value })}
-          className="h-9 bg-muted border-0"
-          placeholder="Call me"
-        />
-      </InspectorSection>
+      <Separator />
 
-      <InspectorSection title="Default Country">
-        <Input
-          value={content.defaultCountry || '+1'}
-          onChange={(e) => onContentChange({ defaultCountry: e.target.value })}
-          className="h-9 bg-muted border-0"
-          placeholder="+1"
-        />
-      </InspectorSection>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-foreground">Country Codes</span>
+          <Button variant="outline" size="sm" onClick={() => setShowModal(true)} className="h-7">
+            <Plus className="h-3 w-3 mr-1" /> Add
+          </Button>
+        </div>
 
-      <InspectorSection title="Button Color">
-        <GradientColorPicker
-          solidColor={content.buttonColor || '#6366f1'}
-          gradient={content.buttonGradient || ''}
-          onSolidChange={(v) => onContentChange({ buttonColor: v, buttonGradient: '' })}
-          onGradientChange={(v) => onContentChange({ buttonGradient: v })}
-        />
-      </InspectorSection>
+        {/* Simplified Country Codes List */}
+        {countryCodes.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-2 px-1">
+            No country codes added. Click "Add" to add countries.
+          </p>
+        ) : (
+          <div className="space-y-1">
+            {countryCodes.map((country: any) => (
+              <div 
+                key={country.id} 
+                className="group flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/50 transition-colors"
+              >
+                <span className="text-base shrink-0">{country.flag}</span>
+                <span className="text-sm font-medium shrink-0">{country.code}</span>
+                
+                {content.defaultCountryId === country.id && (
+                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">
+                    Default
+                  </span>
+                )}
+                
+                <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {content.defaultCountryId !== country.id && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAsDefault(country.id)}
+                      className="h-6 px-2 text-[10px]"
+                    >
+                      Set Default
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeCountryCode(country.id)}
+                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <CountryCodeModal
+        open={showModal}
+        onOpenChange={setShowModal}
+        onAdd={addCountryCode}
+        existingCodes={existingCodes}
+      />
+
+      <Separator />
+
+      <p className="text-xs text-muted-foreground px-1">
+        Click the submit button on canvas to configure it.
+      </p>
+
+      <PopupSettingsSection content={content} onContentChange={onContentChange} />
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -998,6 +1517,14 @@ export function CalendarInspector({ block, onContentChange }: BlockInspectorProp
           </InspectorSection>
         </>
       )}
+
+      <Separator />
+      {onBlockChange && (
+        <TrackingSection
+          trackingId={block.trackingId || ''}
+          onChange={(id) => onBlockChange({ trackingId: id })}
+        />
+      )}
     </div>
   );
 }
@@ -1010,11 +1537,11 @@ export function QuizInspector({ block, onContentChange, funnel }: BlockInspector
 
   const addOption = () => {
     onContentChange({
-      options: [...options, { id: uuid(), text: 'New option' }]
+      options: [...options, { id: uuid(), text: 'New option', trackingId: generateTrackingId('option') }]
     });
   };
 
-  const updateOption = (index: number, updates: Partial<{ text: string; nextStepId: string }>) => {
+  const updateOption = (index: number, updates: any) => {
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], ...updates };
     onContentChange({ options: newOptions });
@@ -1024,8 +1551,31 @@ export function QuizInspector({ block, onContentChange, funnel }: BlockInspector
     onContentChange({ options: options.filter((_: any, i: number) => i !== index) });
   };
 
+  // Always show submit button if multi-select is enabled, otherwise respect the toggle
+  const shouldShowSubmitButton = content.multiSelect || content.showSubmitButton !== false;
+
   return (
     <div className="space-y-4">
+      {/* Behavior Explanation */}
+      <div className="p-2 bg-muted/50 rounded-lg border border-border/50">
+        <div className="flex items-start gap-2">
+          <Info className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+          <div className="text-[10px] text-muted-foreground">
+            {shouldShowSubmitButton ? (
+              <div>
+                <p className="font-medium text-foreground mb-0.5">Submit Button Mode</p>
+                <p>Answer options mark selection. Submit button controls navigation and actions.</p>
+              </div>
+            ) : (
+              <div>
+                <p className="font-medium text-foreground mb-0.5">Direct Answer Mode</p>
+                <p>Each answer executes its own action immediately when clicked. Configure actions below.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <InspectorSection title="Question">
         <Textarea
           value={content.question}
@@ -1036,10 +1586,30 @@ export function QuizInspector({ block, onContentChange, funnel }: BlockInspector
       </InspectorSection>
 
       <ToggleSwitchRow
-        label="Multi-select"
-        checked={content.multiSelect || false}
-        onChange={(v) => onContentChange({ multiSelect: v })}
+        label="Show Submit Button"
+        checked={shouldShowSubmitButton}
+        onChange={(v) => {
+          // If multi-select is enabled, always keep submit button on
+          if (content.multiSelect) {
+            onContentChange({ showSubmitButton: true });
+          } else {
+            onContentChange({ showSubmitButton: v });
+          }
+        }}
+        disabled={content.multiSelect}
       />
+
+      {content.multiSelect && (
+        <p className="text-xs text-muted-foreground px-1">
+          Submit button is always shown when multi-select is enabled.
+        </p>
+      )}
+
+      {shouldShowSubmitButton && (
+        <p className="text-xs text-muted-foreground px-1">
+          Click the submit button on canvas to configure it.
+        </p>
+      )}
 
       <Separator />
 
@@ -1065,23 +1635,99 @@ export function QuizInspector({ block, onContentChange, funnel }: BlockInspector
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
-              {!content.multiSelect && steps.length > 1 && (
-                <div className="flex items-center gap-2 ml-7">
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                  <select
-                    value={opt.nextStepId || ''}
-                    onChange={(e) => updateOption(i, { nextStepId: e.target.value || undefined })}
-                    className="flex-1 h-7 px-2 text-xs bg-background rounded border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="">Go to next step (default)</option>
-                    {steps.map((step: any) => (
-                      <option key={step.id} value={step.id}>
-                        → {step.name}
-                      </option>
-                    ))}
-                  </select>
+              {/* Answer Action Configuration - Only show when NO submit button */}
+              {!shouldShowSubmitButton && (
+                <div className="space-y-1 ml-7 bg-background rounded p-1.5 border border-border/50">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-wide">Action:</span>
+                    <select
+                      value={opt.action || (opt.nextStepId ? 'next-step' : 'next-step')}
+                      onChange={(e) => {
+                        const action = e.target.value;
+                        updateOption(i, { 
+                          action: action as 'next-step' | 'url' | 'submit',
+                          // Clear actionValue if switching away from next-step
+                          actionValue: action === 'next-step' ? (opt.actionValue || opt.nextStepId) : undefined
+                        });
+                      }}
+                      className="flex-1 h-5 px-1 text-[10px] bg-muted rounded border-0"
+                    >
+                      <option value="next-step">Next Step</option>
+                      <option value="url">URL</option>
+                      <option value="submit">Submit</option>
+                    </select>
+                  </div>
+                  
+                  {/* Action value input (step selector or URL input) */}
+                  {(opt.action || (opt.nextStepId ? 'next-step' : 'next-step')) === 'next-step' && steps.length > 1 && (
+                    <select
+                      value={opt.actionValue || opt.nextStepId || ''}
+                      onChange={(e) => updateOption(i, { actionValue: e.target.value, nextStepId: e.target.value })}
+                      className="w-full h-5 px-1 text-[10px] bg-background rounded border border-border/50"
+                    >
+                      <option value="">→ Sequential next</option>
+                      {steps.map((step: any) => (
+                        <option key={step.id} value={step.id}>→ {step.name}</option>
+                      ))}
+                    </select>
+                  )}
+                  
+                  {(opt.action || 'next-step') === 'url' && (
+                    <Input
+                      value={opt.actionValue || ''}
+                      onChange={(e) => updateOption(i, { actionValue: e.target.value })}
+                      placeholder="https://..."
+                      className="h-5 text-[10px] bg-background"
+                    />
+                  )}
+                  
+                  {(opt.action || 'next-step') === 'submit' && (
+                    <p className="text-[9px] text-amber-600 dark:text-amber-500">
+                      Will finalize lead and trigger webhooks
+                    </p>
+                  )}
                 </div>
               )}
+              {/* Per-option colors */}
+              <div className="flex items-center gap-2 ml-7">
+                <span className="text-[10px] text-muted-foreground shrink-0 w-8">BG:</span>
+                <input
+                  type="color"
+                  value={opt.backgroundColor || '#ffffff'}
+                  onChange={(e) => updateOption(i, { backgroundColor: e.target.value })}
+                  className="w-6 h-6 rounded cursor-pointer border-0"
+                />
+                <span className="text-[10px] text-muted-foreground shrink-0 w-8 ml-2">Text:</span>
+                <input
+                  type="color"
+                  value={opt.textColor || '#000000'}
+                  onChange={(e) => updateOption(i, { textColor: e.target.value })}
+                  className="w-6 h-6 rounded cursor-pointer border-0"
+                />
+                {(opt.backgroundColor || opt.textColor) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-1 text-[10px] text-muted-foreground"
+                    onClick={() => updateOption(i, { backgroundColor: undefined, textColor: undefined })}
+                  >
+                    Reset
+                  </Button>
+                )}
+              </div>
+              {/* Option tracking ID */}
+              <div className="ml-7">
+                <Input
+                  value={opt.trackingId || ''}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
+                    updateOption(i, { trackingId: value });
+                  }}
+                  placeholder="opt_abc123"
+                  className="h-7 text-xs font-mono bg-background"
+                />
+                <p className="text-[9px] text-muted-foreground mt-0.5 px-1">Tracking ID</p>
+              </div>
             </div>
           ))}
         </div>
@@ -1135,6 +1781,317 @@ export function QuizInspector({ block, onContentChange, funnel }: BlockInspector
           onChange={(v) => onContentChange({ selectedOptionColor: v })}
         />
       </InspectorSection>
+
+      <PopupSettingsSection content={content} onContentChange={onContentChange} />
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+// ========== SUBMIT BUTTON INSPECTOR (Child Element) ==========
+// This wraps ButtonInspector to provide a unified button editing experience
+const defaultSubmitButton = {
+  text: 'Submit',
+  variant: 'primary' as const,
+  size: 'md' as const,
+  action: 'next-step' as const,
+  fullWidth: true,
+  backgroundColor: '#3b82f6',
+  color: '#ffffff',
+};
+
+export function SubmitButtonInspector({ block, onContentChange }: BlockInspectorProps) {
+  const content = block.content as any;
+  const submitButton = content.submitButton || defaultSubmitButton;
+  
+  // Create a virtual button block from the submitButton content
+  const buttonBlock = {
+    ...block,
+    type: 'button' as const,
+    content: submitButton,
+  };
+  
+  // Wrap onContentChange to update the submitButton property
+  const handleButtonChange = (updates: Record<string, any>) => {
+    onContentChange({
+      submitButton: { ...submitButton, ...updates }
+    });
+  };
+  
+  // No-op for style changes since submit button styles are embedded in content
+  const handleStyleChange = () => {};
+  
+  return <ButtonInspector block={buttonBlock} onContentChange={handleButtonChange} onStyleChange={handleStyleChange} />;
+}
+
+// ========== COUNTRY CODES INSPECTOR (Child Element) ==========
+interface CountryCodesInspectorProps {
+  funnel: any;
+  onFunnelChange: (updates: any) => void;
+}
+
+export function CountryCodesInspector({ funnel, onFunnelChange }: CountryCodesInspectorProps) {
+  const countryCodes = funnel.countryCodes || [];
+  const [showModal, setShowModal] = React.useState(false);
+
+  const updateCountryCodes = (updates: CountryCode[]) => {
+    onFunnelChange({ countryCodes: updates });
+  };
+
+  const addCountryCode = (country: CountryCode) => {
+    const newCountry = {
+      id: uuid(),
+      ...country,
+    };
+    updateCountryCodes([...countryCodes, newCountry]);
+  };
+
+  const removeCountryCode = (id: string) => {
+    const updated = countryCodes.filter((c: any) => c.id !== id);
+    updateCountryCodes(updated);
+    // If removed country was default, reset default
+    if (funnel.defaultCountryId === id && updated.length > 0) {
+      onFunnelChange({ defaultCountryId: updated[0].id });
+    }
+  };
+
+  const setAsDefault = (id: string) => {
+    onFunnelChange({ defaultCountryId: id });
+  };
+
+  const existingCodes = countryCodes.map((c: any) => c.code);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">Country Codes</h3>
+        <Button variant="outline" size="sm" onClick={() => setShowModal(true)} className="h-7">
+          <Plus className="h-3 w-3 mr-1" /> Add
+        </Button>
+      </div>
+
+      <p className="text-xs text-muted-foreground px-1">
+        Configure country codes that will be available for all phone inputs in this funnel.
+      </p>
+
+      <Separator />
+
+      {/* Simplified Country Codes List */}
+      {countryCodes.length === 0 ? (
+        <p className="text-xs text-muted-foreground py-2 px-1">
+          No country codes added. Click "Add" to add countries.
+        </p>
+      ) : (
+        <div className="space-y-1">
+          {countryCodes.map((country: any) => (
+            <div 
+              key={country.id} 
+              className="group flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/50 transition-colors"
+            >
+              <span className="text-base shrink-0">{country.flag}</span>
+              <span className="text-sm font-medium shrink-0">{country.code}</span>
+              
+              {funnel.defaultCountryId === country.id && (
+                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">
+                  Default
+                </span>
+              )}
+              
+              <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {funnel.defaultCountryId !== country.id && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAsDefault(country.id)}
+                    className="h-6 px-2 text-[10px]"
+                  >
+                    Set Default
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeCountryCode(country.id)}
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <CountryCodeModal
+        open={showModal}
+        onOpenChange={setShowModal}
+        onAdd={addCountryCode}
+        existingCodes={existingCodes}
+      />
+    </div>
+  );
+}
+
+// ========== FORM FIELD INSPECTOR (Child Element for Form Block) ==========
+interface FormFieldInspectorProps {
+  block: Block;
+  fieldId: string;
+  onContentChange: (updates: any) => void;
+  setSelectedChildElement: (element: string | null) => void;
+}
+
+export function FormFieldInspector({ block, fieldId, onContentChange, setSelectedChildElement }: FormFieldInspectorProps) {
+  const content = block.content as FormContent;
+  const field = content.fields?.find(f => f.id === fieldId);
+  
+  if (!field) {
+    return <div className="text-sm text-muted-foreground">Field not found</div>;
+  }
+
+  const updateField = (updates: Partial<typeof field>) => {
+    const updatedFields = content.fields?.map(f => 
+      f.id === fieldId ? { ...f, ...updates } : f
+    ) || [];
+    onContentChange({ fields: updatedFields });
+  };
+
+  const updateFieldOption = (index: number, value: string) => {
+    const options = [...(field.options || [])];
+    options[index] = value;
+    updateField({ options });
+  };
+
+  const addFieldOption = () => {
+    const options = [...(field.options || []), 'New option'];
+    updateField({ options });
+  };
+
+  const removeFieldOption = (index: number) => {
+    const options = field.options?.filter((_, i) => i !== index) || [];
+    updateField({ options });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Field Type Display */}
+      <div className="text-xs text-muted-foreground px-1 capitalize">
+        Type: {field.type}
+      </div>
+
+      <InspectorSection title="Label">
+        <Input
+          value={field.label || ''}
+          onChange={(e) => updateField({ label: e.target.value })}
+          placeholder="Field label"
+        />
+      </InspectorSection>
+      
+      <InspectorSection title="Placeholder">
+        <Input
+          value={field.placeholder || ''}
+          onChange={(e) => updateField({ placeholder: e.target.value })}
+          placeholder="Placeholder text"
+        />
+      </InspectorSection>
+      
+      <ToggleSwitchRow
+        label="Required"
+        checked={field.required || false}
+        onChange={(checked) => updateField({ required: checked })}
+      />
+
+      {/* Type-specific options */}
+      {field.type === 'select' && (
+        <>
+          <Separator />
+          <InspectorSection title="Options">
+            <div className="space-y-2">
+              {field.options?.map((option, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    value={option}
+                    onChange={(e) => updateFieldOption(index, e.target.value)}
+                    placeholder={`Option ${index + 1}`}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeFieldOption(index)}
+                    className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={addFieldOption}
+                className="w-full"
+              >
+                <Plus className="h-3 w-3 mr-1" /> Add Option
+              </Button>
+            </div>
+          </InspectorSection>
+        </>
+      )}
+
+      {field.type === 'phone' && (
+        <>
+          <Separator />
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setSelectedChildElement('country-codes')}
+            className="w-full"
+          >
+            Edit Country Codes
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ========== PHONE INPUT INSPECTOR (Child Element for Phone Capture Block) ==========
+interface PhoneInputInspectorProps {
+  block: Block;
+  onContentChange: (updates: any) => void;
+  setSelectedChildElement: (element: string | null) => void;
+}
+
+export function PhoneInputInspector({ block, onContentChange, setSelectedChildElement }: PhoneInputInspectorProps) {
+  const content = block.content as PhoneCaptureContent;
+  
+  return (
+    <div className="space-y-4">
+      <InspectorSection title="Placeholder">
+        <Input
+          value={content.placeholder || ''}
+          onChange={(e) => onContentChange({ placeholder: e.target.value })}
+          placeholder="Enter your phone number"
+        />
+      </InspectorSection>
+
+      <Separator />
+
+      <Button 
+        variant="outline" 
+        size="sm"
+        onClick={() => setSelectedChildElement('country-codes')}
+        className="w-full"
+      >
+        Edit Country Codes
+      </Button>
     </div>
   );
 }
@@ -1233,6 +2190,16 @@ export function AccordionInspector({ block, onContentChange }: BlockInspectorPro
           onChange={(v) => onContentChange({ contentColor: v })}
         />
       </InspectorSection>
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -1261,7 +2228,7 @@ export function SocialProofInspector({ block, onContentChange }: BlockInspectorP
   return (
     <div className="space-y-3">
       {/* Stats Section - Compact Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between h-6">
         <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Stats</span>
         <Button variant="ghost" size="sm" onClick={addItem} className="h-6 px-2 text-[11px]">
           <Plus className="h-3 w-3 mr-1" /> Add
@@ -1278,20 +2245,20 @@ export function SocialProofInspector({ block, onContentChange }: BlockInspectorP
                 type="number"
                 value={item.value}
                 onChange={(e) => updateItem(i, { value: parseInt(e.target.value) || 0 })}
-                className="h-7 w-16 bg-background border-0 text-sm font-medium"
+                className="h-7 w-16 bg-background border-0 text-sm font-medium flex-shrink-0"
                 placeholder="23"
               />
               <Input
                 value={item.suffix || ''}
                 onChange={(e) => updateItem(i, { suffix: e.target.value })}
-                className="h-7 w-12 bg-background border-0 text-sm text-center"
+                className="h-7 w-12 bg-background border-0 text-sm text-center flex-shrink-0"
                 placeholder="+"
               />
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => removeItem(i)}
-                className="h-6 w-6 ml-auto text-muted-foreground hover:text-destructive shrink-0"
+                className="h-6 w-6 ml-auto text-muted-foreground hover:text-destructive flex-shrink-0"
               >
                 <Trash2 className="h-3 w-3" />
               </Button>
@@ -1310,60 +2277,73 @@ export function SocialProofInspector({ block, onContentChange }: BlockInspectorP
       <Separator className="my-3" />
 
       {/* Layout Section */}
-      <div className="space-y-2">
-        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Layout</span>
-        <LabeledToggleRow
-          value={content.layout || 'horizontal'}
-          onChange={(v) => onContentChange({ layout: v })}
-          options={[
-            { value: 'horizontal', label: 'Horizontal' },
-            { value: 'vertical', label: 'Vertical' },
-          ]}
-        />
-        <VisualSlider
-          value={content.gap || 32}
-          onChange={(v) => onContentChange({ gap: v })}
-          min={8}
-          max={64}
-          unit="px"
-        />
-      </div>
+      <InspectorSection title="Layout">
+        <div className="space-y-2">
+          <LabeledToggleRow
+            value={content.layout || 'horizontal'}
+            onChange={(v) => onContentChange({ layout: v })}
+            options={[
+              { value: 'horizontal', label: 'Horizontal' },
+              { value: 'vertical', label: 'Vertical' },
+            ]}
+          />
+          <VisualSlider
+            value={content.gap || 32}
+            onChange={(v) => onContentChange({ gap: v })}
+            min={8}
+            max={64}
+            unit="px"
+          />
+        </div>
+      </InspectorSection>
 
       {/* Values Section - Grouped */}
-      <div className="space-y-2">
-        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Values</span>
-        <VisualSlider
-          icon={<Type className="h-3.5 w-3.5" />}
-          value={content.valueFontSize || 30}
-          onChange={(v) => onContentChange({ valueFontSize: v })}
-          min={16}
-          max={72}
-          unit="px"
-        />
-        <GradientColorPicker
-          solidColor={content.valueColor || ''}
-          gradient={content.valueGradient || ''}
-          onSolidChange={(v) => onContentChange({ valueColor: v, valueGradient: '' })}
-          onGradientChange={(v) => onContentChange({ valueGradient: v })}
-        />
-      </div>
+      <InspectorSection title="Value Style">
+        <div className="space-y-2">
+          <VisualSlider
+            icon={<Type className="h-3.5 w-3.5" />}
+            value={content.valueFontSize || 30}
+            onChange={(v) => onContentChange({ valueFontSize: v })}
+            min={16}
+            max={72}
+            unit="px"
+          />
+          <GradientColorPicker
+            solidColor={content.valueColor || ''}
+            gradient={content.valueGradient || ''}
+            onSolidChange={(v) => onContentChange({ valueColor: v, valueGradient: '' })}
+            onGradientChange={(v) => onContentChange({ valueGradient: v })}
+          />
+        </div>
+      </InspectorSection>
 
       {/* Labels Section - Grouped */}
-      <div className="space-y-2">
-        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Labels</span>
-        <VisualSlider
-          icon={<Type className="h-3.5 w-3.5" />}
-          value={content.labelFontSize || 12}
-          onChange={(v) => onContentChange({ labelFontSize: v })}
-          min={8}
-          max={24}
-          unit="px"
-        />
-        <ColorSwatchPicker
-          value={content.labelColor || ''}
-          onChange={(v) => onContentChange({ labelColor: v })}
-        />
-      </div>
+      <InspectorSection title="Label Style">
+        <div className="space-y-2">
+          <VisualSlider
+            icon={<Type className="h-3.5 w-3.5" />}
+            value={content.labelFontSize || 12}
+            onChange={(v) => onContentChange({ labelFontSize: v })}
+            min={8}
+            max={24}
+            unit="px"
+          />
+          <ColorSwatchPicker
+            value={content.labelColor || ''}
+            onChange={(v) => onContentChange({ labelColor: v })}
+          />
+        </div>
+      </InspectorSection>
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -1372,10 +2352,16 @@ export function SocialProofInspector({ block, onContentChange }: BlockInspectorP
 export function LogoBarInspector({ block, onContentChange }: BlockInspectorProps) {
   const content = block.content as any;
   const logos = content.logos || [];
+  const [showBrandfetchPicker, setShowBrandfetchPicker] = useState(false);
 
-  const addLogo = () => {
+  // Calculate if we should auto-enable marquee
+  const validLogos = logos.filter((logo: any) => logo.src);
+  const hasEnoughLogosForAutoScroll = validLogos.length >= 4;
+  const shouldAnimate = content.animated || hasEnoughLogosForAutoScroll;
+
+  const addLogo = (logoData: { src: string; alt: string }) => {
     onContentChange({
-      logos: [...logos, { id: uuid(), src: '', alt: 'Company logo' }]
+      logos: [...logos, { id: uuid(), src: logoData.src, alt: logoData.alt }]
     });
   };
 
@@ -1396,6 +2382,15 @@ export function LogoBarInspector({ block, onContentChange }: BlockInspectorProps
   };
 
   return (
+    <>
+    <BrandfetchPicker
+      isOpen={showBrandfetchPicker}
+      onClose={() => setShowBrandfetchPicker(false)}
+      onSelect={(logo) => {
+        addLogo(logo);
+        setShowBrandfetchPicker(false);
+      }}
+    />
     <div className="space-y-4">
       <InspectorSection title="Section Title">
         <Input
@@ -1437,13 +2432,14 @@ export function LogoBarInspector({ block, onContentChange }: BlockInspectorProps
       {/* Animation Controls */}
       <InspectorSection title="Animation">
         <ToggleSwitchRow
-          label="Marquee Scroll"
-          checked={content.animated || false}
+          label={hasEnoughLogosForAutoScroll ? "Marquee Scroll (Auto)" : "Marquee Scroll"}
+          checked={shouldAnimate}
           onChange={(v) => onContentChange({ animated: v })}
+          disabled={hasEnoughLogosForAutoScroll}
         />
       </InspectorSection>
 
-      {content.animated && (
+      {shouldAnimate && (
         <>
           <InspectorSection title="Speed">
             <IconToggleRow
@@ -1486,7 +2482,7 @@ export function LogoBarInspector({ block, onContentChange }: BlockInspectorProps
 
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-foreground">Logos</span>
-        <Button variant="outline" size="sm" onClick={addLogo} className="h-7">
+        <Button variant="outline" size="sm" onClick={() => setShowBrandfetchPicker(true)} className="h-7">
           <Plus className="h-3 w-3 mr-1" /> Add
         </Button>
       </div>
@@ -1552,7 +2548,18 @@ export function LogoBarInspector({ block, onContentChange }: BlockInspectorProps
           </div>
         ))}
       </div>
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
+    </>
   );
 }
 
@@ -1560,10 +2567,11 @@ export function LogoBarInspector({ block, onContentChange }: BlockInspectorProps
 export function FormInspector({ block, onContentChange }: BlockInspectorProps) {
   const content = block.content as any;
   const fields = content.fields || [];
+  const consent = content.consent || { enabled: false, text: 'I have read and accept the', linkText: 'privacy policy', linkUrl: '#', required: true };
 
   const addField = () => {
     onContentChange({
-      fields: [...fields, { id: uuid(), type: 'text', label: 'New field', placeholder: '' }]
+      fields: [...fields, { id: uuid(), type: 'text', label: 'New field', placeholder: '', trackingId: generateTrackingId('field') }]
     });
   };
 
@@ -1585,6 +2593,10 @@ export function FormInspector({ block, onContentChange }: BlockInspectorProps) {
     onContentChange({ fields: newFields });
   };
 
+  const updateConsent = (updates: any) => {
+    onContentChange({ consent: { ...consent, ...updates } });
+  };
+
   const fieldTypes = [
     { value: 'text', label: 'Text' },
     { value: 'email', label: 'Email' },
@@ -1592,54 +2604,112 @@ export function FormInspector({ block, onContentChange }: BlockInspectorProps) {
     { value: 'textarea', label: 'Textarea' },
   ];
 
-  const buttonColors = [
-    '#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
-    '#8b5cf6', '#000000', '#ffffff',
-  ];
+  const submitButton = content.submitButton || {};
+  const buttonAction = submitButton.action || 'next-step';
+  const isFinalSubmit = buttonAction === 'submit';
 
   return (
     <div className="space-y-4">
-      <InspectorSection title="Submit Button Text">
-        <Input
-          value={content.submitText || 'Submit'}
-          onChange={(e) => onContentChange({ submitText: e.target.value })}
-          className="h-9 bg-muted border-0"
-        />
-      </InspectorSection>
-
-      <InspectorSection title="Submit Button Color">
-        <GradientColorPicker
-          solidColor={content.submitButtonColor || '#6366f1'}
-          gradient={content.submitButtonGradient || ''}
-          onSolidChange={(v) => onContentChange({ submitButtonColor: v, submitButtonGradient: '' })}
-          onGradientChange={(v) => onContentChange({ submitButtonGradient: v })}
-        />
-      </InspectorSection>
-
-      <InspectorSection title="On Submit">
-        <LabeledToggleRow
-          value={content.submitAction || 'next-step'}
-          onChange={(v) => onContentChange({ submitAction: v })}
-          options={[
-            { value: 'next-step', label: 'Next Step' },
-            { value: 'webhook', label: 'Webhook' },
-          ]}
-        />
-      </InspectorSection>
-
-      {content.submitAction === 'webhook' && (
-        <InspectorSection title="Webhook URL">
-          <Input
-            value={content.webhookUrl || ''}
-            onChange={(e) => onContentChange({ webhookUrl: e.target.value })}
-            className="h-9 bg-muted border-0"
-            placeholder="https://..."
-          />
-        </InspectorSection>
-      )}
+      {/* Lead Capture Indicator */}
+      <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+        <div className="flex items-start gap-2">
+          <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <div className="flex-1 space-y-1">
+            <p className="text-xs font-medium text-foreground">Lead Capture: Enabled</p>
+            <div className="text-[10px] text-muted-foreground space-y-0.5">
+              {isFinalSubmit ? (
+                <>
+                  <p className="font-semibold text-amber-600 dark:text-amber-500">⚠️ Final Submission</p>
+                  <p>• Form data will be saved with status "complete"</p>
+                  <p>• Configured webhooks will be triggered</p>
+                  <p>• Automations will fire</p>
+                  <p>• Then navigates to next step</p>
+                </>
+              ) : (
+                <>
+                  <p>• Form data will be saved as draft automatically</p>
+                  <p>• Lead status: "incomplete" (saved progressively)</p>
+                  <p>• Webhooks will NOT trigger until final submit</p>
+                  <p>• Navigates to next step after submission</p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
       <Separator />
 
+      {/* Form Title */}
+      <InspectorSection title="Form Title (Optional)">
+        <Input
+          value={content.title || ''}
+          onChange={(e) => onContentChange({ title: e.target.value })}
+          placeholder="e.g., Where can we reach you?"
+        />
+        <p className="text-[10px] text-muted-foreground mt-1">
+          Leave empty to hide the title
+        </p>
+      </InspectorSection>
+      
+      <Separator />
+
+      {/* Privacy Consent Section */}
+      <InspectorSection title="Privacy Consent">
+        <div className="space-y-3">
+          <ToggleSwitchRow
+            label="Show Privacy Checkbox"
+            checked={consent.enabled}
+            onChange={(v) => updateConsent({ enabled: v })}
+          />
+          
+          {consent.enabled && (
+            <>
+              <div className="space-y-1.5">
+                <span className="text-xs text-muted-foreground">Consent Text</span>
+                <Input
+                  value={consent.text}
+                  onChange={(e) => updateConsent({ text: e.target.value })}
+                  className="h-8 bg-muted border-0"
+                  placeholder="I have read and accept the"
+                />
+              </div>
+              
+              <div className="space-y-1.5">
+                <span className="text-xs text-muted-foreground">Link Text</span>
+                <Input
+                  value={consent.linkText}
+                  onChange={(e) => updateConsent({ linkText: e.target.value })}
+                  className="h-8 bg-muted border-0"
+                  placeholder="privacy policy"
+                />
+              </div>
+              
+              <div className="space-y-1.5">
+                <span className="text-xs text-muted-foreground">Link URL</span>
+                <Input
+                  value={consent.linkUrl}
+                  onChange={(e) => updateConsent({ linkUrl: e.target.value })}
+                  className="h-8 bg-muted border-0"
+                  placeholder="https://example.com/privacy"
+                />
+              </div>
+              
+              <ToggleSwitchRow
+                label="Required"
+                checked={consent.required}
+                onChange={(v) => updateConsent({ required: v })}
+              />
+            </>
+          )}
+        </div>
+      </InspectorSection>
+
+      <PopupSettingsSection content={content} onContentChange={onContentChange} />
+
+      <Separator />
+
+      {/* Fields Section */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-foreground">Fields</span>
         <Button variant="outline" size="sm" onClick={addField} className="h-7">
@@ -1694,125 +2764,216 @@ export function FormInspector({ block, onContentChange }: BlockInspectorProps) {
               checked={field.required || false}
               onChange={(v) => updateField(i, { required: v })}
             />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ========== REVIEWS INSPECTOR ==========
-export function ReviewsInspector({ block, onContentChange }: BlockInspectorProps) {
-  const content = block.content as any;
-  const reviews = content.reviews || [];
-
-  const addReview = () => {
-    onContentChange({
-      reviews: [...reviews, { id: uuid(), text: 'New review', author: 'Customer', rating: 5 }]
-    });
-  };
-
-  const updateReview = (index: number, updates: any) => {
-    const newReviews = [...reviews];
-    newReviews[index] = { ...newReviews[index], ...updates };
-    onContentChange({ reviews: newReviews });
-  };
-
-  const removeReview = (index: number) => {
-    onContentChange({ reviews: reviews.filter((_: any, i: number) => i !== index) });
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-foreground">Reviews</span>
-        <Button variant="outline" size="sm" onClick={addReview} className="h-7">
-          <Plus className="h-3 w-3 mr-1" /> Add
-        </Button>
-      </div>
-
-      <div className="space-y-3">
-        {reviews.map((review: any, i: number) => (
-          <div key={review.id} className="bg-muted rounded-lg p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Review {i + 1}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => removeReview(i)}
-                className="h-6 w-6 text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
-            <Textarea
-              value={review.text}
-              onChange={(e) => updateReview(i, { text: e.target.value })}
-              className="min-h-[60px] text-sm bg-background border-0 resize-none"
-              placeholder="Review text"
-            />
-            <Input
-              value={review.author}
-              onChange={(e) => updateReview(i, { author: e.target.value })}
-              className="h-8 bg-background border-0"
-              placeholder="Author"
-            />
-            <InspectorSection title="Rating">
-              <VisualSlider
-                icon={<Star className="h-4 w-4" />}
-                value={review.rating || 5}
-                onChange={(v) => updateReview(i, { rating: v })}
-                min={0.5}
-                max={5}
-                step={0.5}
+            {/* Field tracking ID */}
+            <div>
+              <Input
+                value={field.trackingId || ''}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
+                  updateField(i, { trackingId: value });
+                }}
+                placeholder="fld_abc123"
+                className="h-7 text-xs font-mono bg-background"
               />
-            </InspectorSection>
-            <Input
-              value={review.avatar || ''}
-              onChange={(e) => updateReview(i, { avatar: e.target.value })}
-              className="h-8 bg-background border-0"
-              placeholder="Avatar URL (optional)"
-            />
+              <p className="text-[9px] text-muted-foreground mt-0.5 px-1">Tracking ID</p>
+            </div>
           </div>
         ))}
       </div>
 
       <Separator />
 
-      {/* Show Avatars Toggle */}
-      <ToggleSwitchRow
-        label="Show Avatars"
-        checked={content.showAvatars !== false}
-        onChange={(v) => onContentChange({ showAvatars: v })}
+      <p className="text-xs text-muted-foreground px-1">
+        Click the submit button on canvas to configure it.
+      </p>
+
+      <Separator />
+      {onBlockChange && (
+        <TrackingSection
+          trackingId={block.trackingId || ''}
+          onChange={(id) => onBlockChange({ trackingId: id })}
+        />
+      )}
+    </div>
+  );
+}
+
+// Avatar picker component with URL input and upload
+function AvatarPicker({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [showUrlInput, setShowUrlInput] = React.useState(false);
+
+  const handleFileUpload = (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    const blobUrl = URL.createObjectURL(file);
+    onChange(blobUrl);
+  };
+
+  const hasAvatar = !!value;
+
+  if (showUrlInput) {
+    return (
+      <div className="space-y-2">
+        <Input
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 bg-background border-0"
+          placeholder="Paste image URL..."
+          autoFocus
+        />
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs flex-1"
+            onClick={() => setShowUrlInput(false)}
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFileUpload(file);
+        }}
       />
+      
+      {hasAvatar ? (
+        <div className="flex items-center gap-2 flex-1">
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex-shrink-0">
+            <img src={value} alt="Avatar" className="w-full h-full object-cover" />
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs text-muted-foreground"
+            onClick={() => onChange('')}
+          >
+            Remove
+          </Button>
+        </div>
+      ) : (
+        <div className="flex gap-2 flex-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs flex-1"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-3 w-3 mr-1.5" />
+            Upload
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs"
+            onClick={() => setShowUrlInput(true)}
+          >
+            URL
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
-      {/* Card Style */}
-      <InspectorSection title="Card Style">
-        <LabeledToggleRow
-          value={content.cardStyle || 'outline'}
-          onChange={(v) => onContentChange({ cardStyle: v })}
-          options={[
-            { value: 'outline', label: 'Outline' },
-            { value: 'filled', label: 'Filled' },
-          ]}
+// ========== REVIEWS INSPECTOR (Social Proof Badge) ==========
+export function ReviewsInspector({ block, onContentChange }: BlockInspectorProps) {
+  const content = block.content as any;
+  const avatars = content.avatars || [];
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const addAvatar = (url: string) => {
+    onContentChange({ avatars: [...avatars, url] });
+  };
+
+  const removeAvatar = (index: number) => {
+    onContentChange({ avatars: avatars.filter((_: any, i: number) => i !== index) });
+  };
+
+  const handleFileUpload = (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    const blobUrl = URL.createObjectURL(file);
+    addAvatar(blobUrl);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Rating */}
+      <InspectorSection title="Rating">
+        <VisualSlider
+          icon={<Star className="h-4 w-4" />}
+          value={content.rating || 4.8}
+          onChange={(v) => onContentChange({ rating: v })}
+          min={1}
+          max={5}
+          step={0.1}
         />
       </InspectorSection>
 
-      {/* Review Text Color */}
-      <InspectorSection title="Review Text Color">
-        <ColorSwatchPicker
-          value={content.reviewTextColor || ''}
-          onChange={(v) => onContentChange({ reviewTextColor: v })}
+      {/* Review Count */}
+      <InspectorSection title="Review Count">
+        <Input
+          value={content.reviewCount || '200+'}
+          onChange={(e) => onContentChange({ reviewCount: e.target.value })}
+          className="h-9 bg-muted border-0"
+          placeholder="e.g., 200+"
         />
       </InspectorSection>
 
-      {/* Author Color */}
-      <InspectorSection title="Author Color">
-        <ColorSwatchPicker
-          value={content.authorColor || ''}
-          onChange={(v) => onContentChange({ authorColor: v })}
-        />
+      <Separator />
+
+      {/* Avatars */}
+      <InspectorSection title="Avatars">
+        <div className="space-y-2">
+          <div className="grid grid-cols-4 gap-2">
+            {avatars.map((avatar: string, i: number) => (
+              <div key={i} className="relative group">
+                <div className="w-full aspect-square rounded-full overflow-hidden bg-muted border-2 border-background">
+                  <img src={avatar} alt={`Avatar ${i + 1}`} className="w-full h-full object-cover" />
+                </div>
+                <button
+                  onClick={() => removeAvatar(i)}
+                  className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full text-[10px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                >
+                  ×
+                </button>
+                <span className="absolute bottom-0 left-0 bg-black/60 text-white text-[8px] px-1 rounded">{i + 1}</span>
+              </div>
+            ))}
+            {/* Add button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full aspect-square rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center hover:border-muted-foreground/50 transition-colors"
+            >
+              <Plus className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFileUpload(file);
+            }}
+          />
+          <p className="text-[10px] text-muted-foreground">Add up to 5 avatars. They will overlap in the display.</p>
+        </div>
       </InspectorSection>
+
+      <Separator />
 
       {/* Star Color */}
       <InspectorSection title="Star Color">
@@ -1821,6 +2982,183 @@ export function ReviewsInspector({ block, onContentChange }: BlockInspectorProps
           onChange={(v) => onContentChange({ starColor: v })}
         />
       </InspectorSection>
+
+      {/* Text Color */}
+      <InspectorSection title="Text Color">
+        <ColorSwatchPicker
+          value={content.textColor || ''}
+          onChange={(v) => onContentChange({ textColor: v })}
+        />
+      </InspectorSection>
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+// ========== TESTIMONIAL SLIDER INSPECTOR ==========
+export function TestimonialSliderInspector({ block, onContentChange }: BlockInspectorProps) {
+  const content = block.content as any;
+  const testimonials = content.testimonials || [];
+  const fileInputRefs = React.useRef<{ [key: number]: HTMLInputElement | null }>({});
+
+  const addTestimonial = () => {
+    onContentChange({
+      testimonials: [...testimonials, { 
+        id: uuid(), 
+        quote: 'This is an amazing product!', 
+        authorName: 'John Doe', 
+        authorTitle: 'CEO',
+        backgroundImage: '' 
+      }]
+    });
+  };
+
+  const updateTestimonial = (index: number, updates: any) => {
+    const newTestimonials = [...testimonials];
+    newTestimonials[index] = { ...newTestimonials[index], ...updates };
+    onContentChange({ testimonials: newTestimonials });
+  };
+
+  const removeTestimonial = (index: number) => {
+    onContentChange({ testimonials: testimonials.filter((_: any, i: number) => i !== index) });
+  };
+
+  const handleImageUpload = (index: number, file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    const blobUrl = URL.createObjectURL(file);
+    updateTestimonial(index, { backgroundImage: blobUrl });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-foreground">Testimonials</span>
+        <Button variant="outline" size="sm" onClick={addTestimonial} className="h-7">
+          <Plus className="h-3 w-3 mr-1" /> Add
+        </Button>
+      </div>
+
+      <div className="space-y-3">
+        {testimonials.map((testimonial: any, i: number) => (
+          <div key={testimonial.id} className="bg-muted rounded-lg p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Testimonial {i + 1}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => removeTestimonial(i)}
+                className="h-6 w-6 text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+
+            {/* Background Image */}
+            <div className="space-y-1">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Background Image</span>
+              {testimonial.backgroundImage ? (
+                <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
+                  <img 
+                    src={testimonial.backgroundImage} 
+                    alt="Background" 
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    onClick={() => updateTestimonial(i, { backgroundImage: '' })}
+                    className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center text-white text-xs hover:bg-black/80"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => fileInputRefs.current[i]?.click()}
+                  className="w-full aspect-[4/3] rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-1 hover:border-muted-foreground/50 transition-colors"
+                >
+                  <Upload className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Upload Image</span>
+                </button>
+              )}
+              <input
+                ref={(el) => { fileInputRefs.current[i] = el; }}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageUpload(i, file);
+                }}
+              />
+            </div>
+
+            {/* Quote */}
+            <Textarea
+              value={testimonial.quote}
+              onChange={(e) => updateTestimonial(i, { quote: e.target.value })}
+              className="min-h-[60px] text-sm bg-background border-0 resize-none"
+              placeholder="Quote text"
+            />
+
+            {/* Author Name */}
+            <Input
+              value={testimonial.authorName}
+              onChange={(e) => updateTestimonial(i, { authorName: e.target.value })}
+              className="h-8 bg-background border-0"
+              placeholder="Author name"
+            />
+
+            {/* Author Title */}
+            <Input
+              value={testimonial.authorTitle || ''}
+              onChange={(e) => updateTestimonial(i, { authorTitle: e.target.value })}
+              className="h-8 bg-background border-0"
+              placeholder="Title (e.g., CEO at Company)"
+            />
+          </div>
+        ))}
+      </div>
+
+      <Separator />
+
+      {/* Auto Play */}
+      <ToggleSwitchRow
+        label="Auto Play"
+        checked={content.autoPlay || false}
+        onChange={(v) => onContentChange({ autoPlay: v })}
+      />
+
+      {/* Interval (only show if autoPlay is on) */}
+      {content.autoPlay && (
+        <InspectorSection title="Slide Interval (seconds)">
+          <VisualSlider
+            icon={<Clock className="h-4 w-4" />}
+            value={content.interval || 5}
+            onChange={(v) => onContentChange({ interval: v })}
+            min={2}
+            max={10}
+            step={1}
+          />
+        </InspectorSection>
+      )}
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -1920,6 +3258,16 @@ export function CardInspector({ block, onContentChange, onStyleChange }: BlockIn
           onChange={(v) => onStyleChange({ borderColor: v, borderWidth: 1 })}
         />
       </InspectorSection>
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -1928,6 +3276,7 @@ export function CardInspector({ block, onContentChange, onStyleChange }: BlockIn
 export function ListInspector({ block, onContentChange }: BlockInspectorProps) {
   const content = block.content as any;
   const items = content.items || [];
+  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
 
   const addItem = () => {
     onContentChange({
@@ -1935,61 +3284,226 @@ export function ListInspector({ block, onContentChange }: BlockInspectorProps) {
     });
   };
 
-  const updateItem = (index: number, text: string) => {
+  const updateItem = (index: number, updates: any) => {
     const newItems = [...items];
-    newItems[index] = { ...newItems[index], text };
+    newItems[index] = { ...newItems[index], ...updates };
+    onContentChange({ items: newItems });
+  };
+
+  const updateItemIcon = (index: number, iconData: any) => {
+    const newItems = [...items];
+    const existingIcon = newItems[index].icon || {};
+    newItems[index] = { 
+      ...newItems[index], 
+      icon: {
+        ...existingIcon,
+        mode: iconData.iconMode,
+        iconName: iconData.iconName,
+        emoji: iconData.emoji,
+        imageSrc: iconData.imageSrc,
+      }
+    };
+    onContentChange({ items: newItems });
+  };
+
+  const updateItemIconSize = (index: number, size: number) => {
+    const newItems = [...items];
+    const existingIcon = newItems[index].icon || { mode: 'icon', iconName: 'check' };
+    newItems[index] = { 
+      ...newItems[index], 
+      icon: {
+        ...existingIcon,
+        size,
+      }
+    };
+    onContentChange({ items: newItems });
+  };
+
+  const clearItemIcon = (index: number) => {
+    const newItems = [...items];
+    const { icon, ...rest } = newItems[index];
+    newItems[index] = rest;
     onContentChange({ items: newItems });
   };
 
   const removeItem = (index: number) => {
     onContentChange({ items: items.filter((_: any, i: number) => i !== index) });
+    if (editingItemIndex === index) {
+      setEditingItemIndex(null);
+    }
   };
+
+  // Handle legacy 'check' style - treat as 'icon'
+  const normalizedStyle = content.style === 'check' ? 'icon' : (content.style || 'bullet');
+
+  // Get icon preview for an item
+  const getItemIconPreview = (item: any) => {
+    const icon = item.icon;
+    if (!icon) return null;
+    
+    if (icon.mode === 'emoji') return icon.emoji;
+    if (icon.mode === 'image') return '🖼';
+    if (icon.mode === 'icon') return '✓';
+    return null;
+  };
+
+  // Check if item has custom icon
+  const hasCustomIcon = (item: any) => !!item.icon;
 
   return (
     <div className="space-y-4">
       <InspectorSection title="Style">
         <LabeledToggleRow
-          value={content.style || 'bullet'}
+          value={normalizedStyle}
           onChange={(v) => onContentChange({ style: v })}
           options={[
             { value: 'bullet', label: 'Bullet' },
             { value: 'numbered', label: 'Numbered' },
-            { value: 'check', label: 'Check' },
+            { value: 'icon', label: 'Icon' },
           ]}
         />
       </InspectorSection>
 
+      {/* Default Icon Picker - only show when style is 'icon' */}
+      {normalizedStyle === 'icon' && (
+        <>
+          <Separator />
+          <InspectorSection title="Default Icon">
+            <p className="text-[10px] text-muted-foreground mb-2">Used when item has no custom icon</p>
+            <IconPicker
+              iconMode={content.defaultIconMode || 'icon'}
+              iconName={content.defaultIconName || 'check'}
+              emoji={content.defaultEmoji || '✅'}
+              imageSrc={content.defaultImageSrc || ''}
+              iconColor={content.iconColor}
+              onChange={(value) => onContentChange({
+                defaultIconMode: value.iconMode,
+                defaultIconName: value.iconName,
+                defaultEmoji: value.emoji,
+                defaultImageSrc: value.imageSrc,
+              })}
+            />
+          </InspectorSection>
+        </>
+      )}
+
       <Separator />
 
       <InspectorSection title="Items">
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {items.map((item: any, i: number) => (
-            <div key={item.id} className="flex gap-2 items-center">
-              <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
-                {i + 1}
+            <div key={item.id}>
+              <div className="flex gap-1.5 items-center">
+                {/* Icon button - only for icon style */}
+                {normalizedStyle === 'icon' && (
+                  <button
+                    onClick={() => setEditingItemIndex(editingItemIndex === i ? null : i)}
+                    className={cn(
+                      "h-7 w-7 shrink-0 rounded-md flex items-center justify-center text-xs transition-colors border",
+                      editingItemIndex === i
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : hasCustomIcon(item)
+                        ? "bg-primary/10 border-primary/30 text-primary"
+                        : "bg-muted border-transparent text-muted-foreground hover:border-muted-foreground/30"
+                    )}
+                    title="Customize icon"
+                  >
+                    {getItemIconPreview(item) || '✓'}
+                  </button>
+                )}
+                {normalizedStyle !== 'icon' && (
+                  <div className="w-6 h-6 rounded-md bg-muted flex items-center justify-center text-[10px] text-muted-foreground shrink-0">
+                    {i + 1}
+                  </div>
+                )}
+                <Input
+                  value={item.text}
+                  onChange={(e) => updateItem(i, { text: e.target.value })}
+                  className="h-7 flex-1 bg-muted border-0 text-xs"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeItem(i)}
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
               </div>
-              <Input
-                value={item.text}
-                onChange={(e) => updateItem(i, e.target.value)}
-                className="h-8 flex-1 bg-muted border-0"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => removeItem(i)}
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+              
+              {/* Per-item icon picker - full width, compact mode */}
+              {normalizedStyle === 'icon' && editingItemIndex === i && (
+                <div className="mt-1.5 p-2 bg-muted/30 rounded-md border border-muted-foreground/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-muted-foreground">
+                      {hasCustomIcon(item) ? 'Custom Icon' : 'Set Custom Icon'}
+                    </span>
+                    {hasCustomIcon(item) && (
+                      <button
+                        onClick={() => clearItemIcon(i)}
+                        className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                  <IconPicker
+                    iconMode={item.icon?.mode || content.defaultIconMode || 'icon'}
+                    iconName={item.icon?.iconName || content.defaultIconName || 'check'}
+                    emoji={item.icon?.emoji || content.defaultEmoji || '✅'}
+                    imageSrc={item.icon?.imageSrc || content.defaultImageSrc || ''}
+                    iconColor={content.iconColor}
+                    compact={true}
+                    onChange={(value) => updateItemIcon(i, value)}
+                  />
+                  {/* Per-item size control */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-muted-foreground/10">
+                    <span className="text-[10px] text-muted-foreground shrink-0 w-8">Size</span>
+                    <div className="flex-1">
+                      <VisualSlider
+                        value={item.icon?.size || content.iconSize || 40}
+                        onChange={(v) => updateItemIconSize(i, v)}
+                        min={20}
+                        max={80}
+                        unit="px"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
-        <Button variant="outline" size="sm" onClick={addItem} className="w-full mt-2">
+        <Button variant="outline" size="sm" onClick={addItem} className="w-full mt-2 h-7 text-xs">
           <Plus className="h-3 w-3 mr-1" /> Add Item
         </Button>
       </InspectorSection>
 
       <Separator />
+
+      {/* Default Icon Size - only show for icon style */}
+      {normalizedStyle === 'icon' && (
+        <InspectorSection title="Default Icon Size">
+          <p className="text-[10px] text-muted-foreground mb-1.5">Applied to items without custom size</p>
+          <VisualSlider
+            icon={<Circle className="h-3.5 w-3.5" />}
+            value={content.iconSize || 40}
+            onChange={(v) => onContentChange({ iconSize: v })}
+            min={20}
+            max={80}
+            unit="px"
+          />
+        </InspectorSection>
+      )}
+
+      {/* Icon Background toggle - only show for icon style */}
+      {normalizedStyle === 'icon' && (
+        <ToggleSwitchRow
+          label="Icon Background"
+          checked={content.showIconBackground !== false}
+          onChange={(v) => onContentChange({ showIconBackground: v })}
+        />
+      )}
 
       <InspectorSection title="Font Size">
         <VisualSlider
@@ -2002,19 +3516,34 @@ export function ListInspector({ block, onContentChange }: BlockInspectorProps) {
         />
       </InspectorSection>
 
-      <InspectorSection title="Icon Color">
-        <ColorSwatchPicker
-          value={content.iconColor || ''}
-          onChange={(v) => onContentChange({ iconColor: v })}
-        />
-      </InspectorSection>
+      {/* Icon Color - only show for icon and bullet styles */}
+      {(normalizedStyle === 'icon' || normalizedStyle === 'bullet' || normalizedStyle === 'numbered') && (
+        <InspectorSection title="Icon Color">
+          <ColorSwatchPicker
+            value={content.iconColor || '#10b981'}
+            onChange={(v) => onContentChange({ iconColor: v })}
+            presets={['#10b981', '#6366f1', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#000000']}
+          />
+        </InspectorSection>
+      )}
 
       <InspectorSection title="Text Color">
         <ColorSwatchPicker
-          value={content.textColor || ''}
+          value={content.textColor || '#000000'}
           onChange={(v) => onContentChange({ textColor: v })}
+          presets={['#000000', '#374151', '#6b7280', '#ffffff', '#ef4444', '#10b981', '#3b82f6', '#6366f1']}
         />
       </InspectorSection>
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -2110,6 +3639,16 @@ export function SliderInspector({ block, onContentChange }: BlockInspectorProps)
           />
         </InspectorSection>
       )}
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -2228,54 +3767,182 @@ export function WebinarInspector({ block, onContentChange }: BlockInspectorProps
           onGradientChange={(v) => onContentChange({ buttonGradient: v })}
         />
       </InspectorSection>
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
 
 // ========== LOADER INSPECTOR ==========
-export function LoaderInspector({ block, onContentChange }: BlockInspectorProps) {
+export function LoaderInspector({ block, onContentChange, funnel }: BlockInspectorProps & { funnel?: any }) {
   const content = block.content as any;
+  const steps = funnel?.steps || [];
+  const action = content.action || { type: 'next-step' };
+
+  const updateAction = (updates: any) => {
+    onContentChange({ action: { ...action, ...updates } });
+  };
 
   return (
     <div className="space-y-4">
-      <InspectorSection title="Progress">
-        <VisualSlider
-          value={content.progress || 0}
-          onChange={(v) => onContentChange({ progress: v })}
-          min={0}
-          max={100}
-          unit="%"
-        />
+      {/* Loader Style */}
+      <InspectorSection title="Animation Style">
+        <div className="grid grid-cols-5 gap-1">
+          {[
+            { value: 'circular', icon: '◎', label: 'Spin' },
+            { value: 'dots', icon: '•••', label: 'Dots' },
+            { value: 'bars', icon: '▮▮▮', label: 'Bars' },
+            { value: 'progress', icon: '▬', label: 'Bar' },
+            { value: 'pulse', icon: '◉', label: 'Pulse' },
+          ].map((style) => (
+            <button
+              key={style.value}
+              onClick={() => onContentChange({ loaderStyle: style.value })}
+              className={cn(
+                "flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-colors",
+                content.loaderStyle === style.value
+                  ? "border-primary bg-primary/10"
+                  : "border-transparent bg-muted hover:bg-muted/80"
+              )}
+            >
+              <span className="text-lg">{style.icon}</span>
+              <span className="text-[10px]">{style.label}</span>
+            </button>
+          ))}
+        </div>
       </InspectorSection>
 
-      <ToggleSwitchRow
-        label="Show Percentage"
-        checked={content.showPercentage !== false}
-        onChange={(v) => onContentChange({ showPercentage: v })}
-      />
-
-      <InspectorSection title="Label">
-        <Input
-          value={content.label || ''}
-          onChange={(e) => onContentChange({ label: e.target.value })}
-          className="h-9 bg-muted border-0"
-          placeholder="Loading your results..."
+      {/* Size */}
+      <InspectorSection title="Size">
+        <LabeledToggleRow
+          value={content.size || 'medium'}
+          onChange={(v) => onContentChange({ size: v })}
+          options={[
+            { value: 'small', label: 'S' },
+            { value: 'medium', label: 'M' },
+            { value: 'large', label: 'L' },
+          ]}
         />
       </InspectorSection>
 
       <Separator />
 
-      <InspectorSection title="Progress Color">
+      {/* Text */}
+      <InspectorSection title="Loading Text">
+        <Input
+          value={content.text || ''}
+          onChange={(e) => onContentChange({ text: e.target.value })}
+          className="h-9 bg-muted border-0"
+          placeholder="Processing your information..."
+        />
+      </InspectorSection>
+
+      {/* Subtext */}
+      <InspectorSection title="Subtext (optional)">
+        <Input
+          value={content.subtext || ''}
+          onChange={(e) => onContentChange({ subtext: e.target.value })}
+          className="h-9 bg-muted border-0"
+          placeholder="This only takes a few seconds"
+        />
+      </InspectorSection>
+
+      <Separator />
+
+      {/* Duration */}
+      <InspectorSection title="Duration">
+        <VisualSlider
+          icon={<Clock className="h-4 w-4" />}
+          value={content.duration || 3}
+          onChange={(v) => onContentChange({ duration: v })}
+          min={1}
+          max={10}
+          step={0.5}
+          unit="s"
+        />
+      </InspectorSection>
+
+      <Separator />
+
+      {/* After Loading Action */}
+      <InspectorSection title="After Loading">
+        <div className="space-y-2">
+          {/* Action Type Selection */}
+          <div className="space-y-1.5">
+            {[
+              { value: 'next-step', label: 'Go to next step' },
+              { value: 'specific-step', label: 'Go to specific step' },
+              { value: 'external-url', label: 'Redirect to URL' },
+            ].map((option) => (
+              <button
+                key={option.value}
+                onClick={() => updateAction({ type: option.value })}
+                className={cn(
+                  "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
+                  action.type === option.value
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted hover:bg-muted/80"
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Conditional inputs based on action type */}
+          {action.type === 'specific-step' && steps.length > 0 && (
+            <div className="pt-2">
+              <select
+                value={action.stepId || ''}
+                onChange={(e) => updateAction({ stepId: e.target.value })}
+                className="w-full h-9 px-3 rounded-lg bg-muted border-0 text-sm"
+              >
+                <option value="">Select a step...</option>
+                {steps.map((step: any) => (
+                  <option key={step.id} value={step.id}>
+                    {step.name || `Step ${steps.indexOf(step) + 1}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {action.type === 'external-url' && (
+            <div className="pt-2">
+              <Input
+                value={action.url || ''}
+                onChange={(e) => updateAction({ url: e.target.value })}
+                className="h-9 bg-muted border-0"
+                placeholder="https://example.com"
+              />
+            </div>
+          )}
+        </div>
+      </InspectorSection>
+
+      <Separator />
+
+      {/* Loader Color */}
+      <InspectorSection title="Loader Color">
         <ColorSwatchPicker
           value={content.color || '#6366f1'}
           onChange={(v) => onContentChange({ color: v })}
         />
       </InspectorSection>
 
-      <InspectorSection title="Track Color">
+      {/* Background Color */}
+      <InspectorSection title="Background Color">
         <ColorSwatchPicker
-          value={content.trackColor || ''}
-          onChange={(v) => onContentChange({ trackColor: v })}
+          value={content.backgroundColor || ''}
+          onChange={(v) => onContentChange({ backgroundColor: v })}
         />
       </InspectorSection>
     </div>
@@ -2329,6 +3996,16 @@ export function EmbedInspector({ block, onContentChange }: BlockInspectorProps) 
           unit="px"
         />
       </InspectorSection>
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -2338,16 +4015,22 @@ export function ImageQuizInspector({ block, onContentChange, funnel }: BlockInsp
   const content = block.content as any;
   const options = content.options || [];
   const steps = funnel?.steps || [];
+  const [editingOptionIndex, setEditingOptionIndex] = useState<number | null>(null);
+  const shouldShowSubmitButton = content.showSubmitButton || content.multiSelect || false;
 
   const addOption = () => {
     onContentChange({
-      options: [...options, { id: uuid(), image: 'https://placehold.co/200x200', text: 'Option' }]
+      options: [...options, { id: uuid(), image: 'https://placehold.co/200x200', text: 'Option', trackingId: generateTrackingId('option') }]
     });
   };
 
   const updateOption = (index: number, updates: any) => {
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], ...updates };
+    // Sync nextStepId with actionValue for backwards compatibility
+    if (updates.actionValue && (updates.action === 'next-step' || (!updates.action && newOptions[index].action === 'next-step'))) {
+      newOptions[index].nextStepId = updates.actionValue;
+    }
     onContentChange({ options: newOptions });
   };
 
@@ -2357,6 +4040,26 @@ export function ImageQuizInspector({ block, onContentChange, funnel }: BlockInsp
 
   return (
     <div className="space-y-4">
+      {/* Behavior Explanation */}
+      <div className="p-2 bg-muted/50 rounded-lg border border-border/50">
+        <div className="flex items-start gap-2">
+          <Info className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+          <div className="text-[10px] text-muted-foreground">
+            {shouldShowSubmitButton ? (
+              <div>
+                <p className="font-medium text-foreground mb-0.5">Submit Button Mode</p>
+                <p>Answer options mark selection. Submit button controls navigation and actions.</p>
+              </div>
+            ) : (
+              <div>
+                <p className="font-medium text-foreground mb-0.5">Direct Answer Mode</p>
+                <p>Each answer executes its own action immediately when clicked. Configure actions below.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <InspectorSection title="Question">
         <Textarea
           value={content.question || ''}
@@ -2366,59 +4069,147 @@ export function ImageQuizInspector({ block, onContentChange, funnel }: BlockInsp
         />
       </InspectorSection>
 
+      <ToggleSwitchRow
+        label="Allow Multiple Selections"
+        checked={content.multiSelect || false}
+        onChange={(v) => onContentChange({ multiSelect: v })}
+      />
+
+      <ToggleSwitchRow
+        label="Show Submit Button"
+        checked={content.showSubmitButton || content.multiSelect || false}
+        onChange={(v) => onContentChange({ showSubmitButton: v })}
+      />
+
+      {(content.showSubmitButton || content.multiSelect) && (
+        <p className="text-xs text-muted-foreground px-1">
+          Click the submit button on canvas to configure it.
+        </p>
+      )}
+
       <Separator />
 
       <InspectorSection title="Image Options">
-        <div className="space-y-3">
+        <div className="space-y-2">
           {options.map((opt: any, i: number) => (
-            <div key={opt.id} className="bg-muted rounded-lg p-2 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {opt.image && (
-                    <div className="w-10 h-10 rounded bg-background overflow-hidden">
-                      <img src={opt.image} alt={opt.text} className="w-full h-full object-cover" />
-                    </div>
+            <div key={opt.id} className="bg-muted rounded-lg p-2 space-y-1.5">
+              {/* Row 1: Thumbnail + Label + Delete */}
+              <div className="flex items-center gap-2">
+                <div 
+                  onClick={() => setEditingOptionIndex(i)}
+                  className="w-12 h-12 rounded bg-background border border-border flex items-center justify-center overflow-hidden shrink-0 cursor-pointer hover:border-primary/50 transition-colors"
+                >
+                  {opt.image ? (
+                    <img src={opt.image} alt={opt.text} className="w-full h-full object-cover" />
+                  ) : (
+                    <Image className="h-4 w-4 text-muted-foreground" />
                   )}
-                  <span className="text-xs text-muted-foreground">Option {i + 1}</span>
                 </div>
+                <Input
+                  value={opt.text}
+                  onChange={(e) => updateOption(i, { text: e.target.value })}
+                  className="h-7 text-xs bg-background border-0 flex-1"
+                  placeholder="Label"
+                />
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => removeOption(i)}
-                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
-              <MediaPicker
-                value={opt.image || ''}
-                onChange={(url) => updateOption(i, { image: url })}
-                type="image"
-                label=""
-              />
-              <Input
-                value={opt.text}
-                onChange={(e) => updateOption(i, { text: e.target.value })}
-                className="h-8 bg-background border-0"
-                placeholder="Label"
-              />
-              {steps.length > 1 && (
-                <div className="flex items-center gap-2 mt-1">
-                  <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
-                  <select
-                    value={opt.nextStepId || ''}
-                    onChange={(e) => updateOption(i, { nextStepId: e.target.value || undefined })}
-                    className="flex-1 h-7 px-2 text-xs bg-background rounded border border-border"
-                  >
-                    <option value="">Go to next step (default)</option>
-                    {steps.map((step: any) => (
-                      <option key={step.id} value={step.id}>
-                        → {step.name}
-                      </option>
-                    ))}
-                  </select>
+
+              {/* Row 2: Answer Action Configuration - Only show when NO submit button */}
+              {!shouldShowSubmitButton && (
+                <div className="space-y-1 bg-background rounded p-1.5 border border-border/50">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-wide">Action:</span>
+                    <select
+                      value={opt.action || (opt.nextStepId ? 'next-step' : 'next-step')}
+                      onChange={(e) => {
+                        const action = e.target.value;
+                        updateOption(i, { 
+                          action: action as 'next-step' | 'url' | 'submit',
+                          // Clear actionValue if switching away from next-step
+                          actionValue: action === 'next-step' ? (opt.actionValue || opt.nextStepId) : undefined
+                        });
+                      }}
+                      className="flex-1 h-5 px-1 text-[10px] bg-muted rounded border-0"
+                    >
+                      <option value="next-step">Next Step</option>
+                      <option value="url">URL</option>
+                      <option value="submit">Submit</option>
+                    </select>
+                  </div>
+                  
+                  {/* Action value input (step selector or URL input) */}
+                  {(opt.action || (opt.nextStepId ? 'next-step' : 'next-step')) === 'next-step' && steps.length > 1 && (
+                    <select
+                      value={opt.actionValue || opt.nextStepId || ''}
+                      onChange={(e) => updateOption(i, { actionValue: e.target.value, nextStepId: e.target.value })}
+                      className="w-full h-5 px-1 text-[10px] bg-background rounded border border-border/50"
+                    >
+                      <option value="">→ Sequential next</option>
+                      {steps.map((step: any) => (
+                        <option key={step.id} value={step.id}>→ {step.name}</option>
+                      ))}
+                    </select>
+                  )}
+                  
+                  {(opt.action || 'next-step') === 'url' && (
+                    <Input
+                      value={opt.actionValue || ''}
+                      onChange={(e) => updateOption(i, { actionValue: e.target.value })}
+                      placeholder="https://..."
+                      className="h-5 text-[10px] bg-background"
+                    />
+                  )}
+                  
+                  {(opt.action || 'next-step') === 'submit' && (
+                    <p className="text-[9px] text-amber-600 dark:text-amber-500">
+                      Will finalize lead and trigger webhooks
+                    </p>
+                  )}
                 </div>
               )}
+
+              {/* Row 3: Colors + Tracking ID */}
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="color"
+                  value={opt.backgroundColor || '#ffffff'}
+                  onChange={(e) => updateOption(i, { backgroundColor: e.target.value })}
+                  className="w-5 h-5 rounded cursor-pointer border-0"
+                  title="Background color"
+                />
+                <input
+                  type="color"
+                  value={opt.textColor || '#000000'}
+                  onChange={(e) => updateOption(i, { textColor: e.target.value })}
+                  className="w-5 h-5 rounded cursor-pointer border-0"
+                  title="Text color"
+                />
+                <input
+                  type="color"
+                  value={opt.borderColor || '#e5e7eb'}
+                  onChange={(e) => updateOption(i, { borderColor: e.target.value })}
+                  className="w-5 h-5 rounded cursor-pointer border-0"
+                  title="Border color"
+                />
+                <div className="h-4 w-px bg-border mx-0.5" />
+                <Input
+                  value={opt.trackingId || ''}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
+                    updateOption(i, { trackingId: value });
+                  }}
+                  placeholder="tracking_id"
+                  className="h-6 text-[10px] font-mono bg-background flex-1"
+                  title="Tracking ID"
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -2426,6 +4217,23 @@ export function ImageQuizInspector({ block, onContentChange, funnel }: BlockInsp
           <Plus className="h-3 w-3 mr-1" /> Add Option
         </Button>
       </InspectorSection>
+
+      {/* MediaPicker Modal */}
+      {editingOptionIndex !== null && (
+        <Dialog open={editingOptionIndex !== null} onOpenChange={() => setEditingOptionIndex(null)}>
+          <DialogContent className="max-w-2xl">
+            <MediaPicker
+              value={options[editingOptionIndex]?.image || ''}
+              onChange={(url) => {
+                updateOption(editingOptionIndex, { image: url });
+                setEditingOptionIndex(null);
+              }}
+              type="image"
+              label="Option Image"
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       <Separator />
 
@@ -2466,6 +4274,18 @@ export function ImageQuizInspector({ block, onContentChange, funnel }: BlockInsp
           onChange={(v) => onContentChange({ selectedOptionColor: v })}
         />
       </InspectorSection>
+
+      <PopupSettingsSection content={content} onContentChange={onContentChange} />
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -2475,16 +4295,21 @@ export function VideoQuestionInspector({ block, onContentChange, funnel }: Block
   const content = block.content as any;
   const options = content.options || [];
   const steps = funnel?.steps || [];
+  const shouldShowSubmitButton = content.showSubmitButton || content.multiSelect || false;
 
   const addOption = () => {
     onContentChange({
-      options: [...options, { id: uuid(), text: 'New option' }]
+      options: [...options, { id: uuid(), text: 'New option', trackingId: generateTrackingId('option') }]
     });
   };
 
   const updateOption = (index: number, updates: any) => {
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], ...updates };
+    // Sync nextStepId with actionValue for backwards compatibility
+    if (updates.actionValue && (updates.action === 'next-step' || (!updates.action && newOptions[index].action === 'next-step'))) {
+      newOptions[index].nextStepId = updates.actionValue;
+    }
     onContentChange({ options: newOptions });
   };
 
@@ -2516,6 +4341,26 @@ export function VideoQuestionInspector({ block, onContentChange, funnel }: Block
 
       <Separator />
 
+      {/* Behavior Explanation */}
+      <div className="p-2 bg-muted/50 rounded-lg border border-border/50">
+        <div className="flex items-start gap-2">
+          <Info className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+          <div className="text-[10px] text-muted-foreground">
+            {shouldShowSubmitButton ? (
+              <div>
+                <p className="font-medium text-foreground mb-0.5">Submit Button Mode</p>
+                <p>Answer options mark selection. Submit button controls navigation and actions.</p>
+              </div>
+            ) : (
+              <div>
+                <p className="font-medium text-foreground mb-0.5">Direct Answer Mode</p>
+                <p>Each answer executes its own action immediately when clicked. Configure actions below.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <InspectorSection title="Question">
         <Textarea
           value={content.question || ''}
@@ -2525,10 +4370,28 @@ export function VideoQuestionInspector({ block, onContentChange, funnel }: Block
         />
       </InspectorSection>
 
+      <ToggleSwitchRow
+        label="Allow Multiple Selections"
+        checked={content.multiSelect || false}
+        onChange={(v) => onContentChange({ multiSelect: v })}
+      />
+
+      <ToggleSwitchRow
+        label="Show Submit Button"
+        checked={content.showSubmitButton || content.multiSelect || false}
+        onChange={(v) => onContentChange({ showSubmitButton: v })}
+      />
+
+      {(content.showSubmitButton || content.multiSelect) && (
+        <p className="text-xs text-muted-foreground px-1">
+          Click the submit button on canvas to configure it.
+        </p>
+      )}
+
       <InspectorSection title="Options">
         <div className="space-y-2">
           {options.map((opt: any, i: number) => (
-            <div key={opt.id} className="space-y-1">
+            <div key={opt.id} className="space-y-1 p-2 bg-muted/50 rounded-lg">
               <div className="flex gap-2 items-center">
                 <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
                   {i + 1}
@@ -2536,7 +4399,7 @@ export function VideoQuestionInspector({ block, onContentChange, funnel }: Block
                 <Input
                   value={opt.text}
                   onChange={(e) => updateOption(i, { text: e.target.value })}
-                  className="h-8 flex-1 bg-muted border-0"
+                  className="h-8 flex-1 bg-background border-0"
                 />
                 <Button
                   variant="ghost"
@@ -2547,23 +4410,99 @@ export function VideoQuestionInspector({ block, onContentChange, funnel }: Block
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
-              {steps.length > 1 && (
-                <div className="flex items-center gap-2 ml-7">
-                  <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
+              {/* Answer Action Configuration - Only show when NO submit button */}
+              {!shouldShowSubmitButton && (
+                <div className="space-y-1 ml-7 bg-background rounded p-1.5 border border-border/50">
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] text-muted-foreground uppercase tracking-wide">Action:</span>
                   <select
-                    value={opt.nextStepId || ''}
-                    onChange={(e) => updateOption(i, { nextStepId: e.target.value || undefined })}
-                    className="flex-1 h-7 px-2 text-xs bg-background rounded border border-border"
+                    value={opt.action || (opt.nextStepId ? 'next-step' : 'next-step')}
+                    onChange={(e) => {
+                      const action = e.target.value;
+                      updateOption(i, { 
+                        action: action as 'next-step' | 'url' | 'submit',
+                        // Clear actionValue if switching away from next-step
+                        actionValue: action === 'next-step' ? (opt.actionValue || opt.nextStepId) : undefined
+                      });
+                    }}
+                    className="flex-1 h-5 px-1 text-[10px] bg-muted rounded border-0"
                   >
-                    <option value="">Go to next step (default)</option>
-                    {steps.map((step: any) => (
-                      <option key={step.id} value={step.id}>
-                        → {step.name}
-                      </option>
-                    ))}
+                    <option value="next-step">Next Step</option>
+                    <option value="url">URL</option>
+                    <option value="submit">Submit</option>
                   </select>
                 </div>
+                
+                {/* Action value input (step selector or URL input) */}
+                {(opt.action || (opt.nextStepId ? 'next-step' : 'next-step')) === 'next-step' && steps.length > 1 && (
+                  <select
+                    value={opt.actionValue || opt.nextStepId || ''}
+                    onChange={(e) => updateOption(i, { actionValue: e.target.value, nextStepId: e.target.value })}
+                    className="w-full h-5 px-1 text-[10px] bg-background rounded border border-border/50"
+                  >
+                    <option value="">→ Sequential next</option>
+                    {steps.map((step: any) => (
+                      <option key={step.id} value={step.id}>→ {step.name}</option>
+                    ))}
+                  </select>
+                )}
+                
+                {(opt.action || 'next-step') === 'url' && (
+                  <Input
+                    value={opt.actionValue || ''}
+                    onChange={(e) => updateOption(i, { actionValue: e.target.value })}
+                    placeholder="https://..."
+                    className="h-5 text-[10px] bg-background"
+                  />
+                )}
+                
+                {(opt.action || 'next-step') === 'submit' && (
+                  <p className="text-[9px] text-amber-600 dark:text-amber-500">
+                    Will finalize lead and trigger webhooks
+                  </p>
+                )}
+                </div>
               )}
+              {/* Per-option colors */}
+              <div className="flex items-center gap-2 ml-7">
+                <span className="text-[10px] text-muted-foreground shrink-0 w-8">BG:</span>
+                <input
+                  type="color"
+                  value={opt.backgroundColor || '#ffffff'}
+                  onChange={(e) => updateOption(i, { backgroundColor: e.target.value })}
+                  className="w-6 h-6 rounded cursor-pointer border-0"
+                />
+                <span className="text-[10px] text-muted-foreground shrink-0 w-8 ml-2">Text:</span>
+                <input
+                  type="color"
+                  value={opt.textColor || '#000000'}
+                  onChange={(e) => updateOption(i, { textColor: e.target.value })}
+                  className="w-6 h-6 rounded cursor-pointer border-0"
+                />
+                {(opt.backgroundColor || opt.textColor) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-1 text-[10px] text-muted-foreground"
+                    onClick={() => updateOption(i, { backgroundColor: undefined, textColor: undefined })}
+                  >
+                    Reset
+                  </Button>
+                )}
+              </div>
+              {/* Option tracking ID */}
+              <div className="ml-7">
+                <Input
+                  value={opt.trackingId || ''}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
+                    updateOption(i, { trackingId: value });
+                  }}
+                  placeholder="opt_abc123"
+                  className="h-7 text-xs font-mono bg-background"
+                />
+                <p className="text-[9px] text-muted-foreground mt-0.5 px-1">Tracking ID</p>
+              </div>
             </div>
           ))}
         </div>
@@ -2611,6 +4550,8 @@ export function VideoQuestionInspector({ block, onContentChange, funnel }: Block
           onChange={(v) => onContentChange({ selectedOptionColor: v })}
         />
       </InspectorSection>
+
+      <PopupSettingsSection content={content} onContentChange={onContentChange} />
     </div>
   );
 }
@@ -2621,6 +4562,8 @@ export function UploadInspector({ block, onContentChange }: BlockInspectorProps)
 
   return (
     <div className="space-y-4">
+      <PrivacyConsentSection content={content} onContentChange={onContentChange} />
+
       <InspectorSection title="Label">
         <Input
           value={content.label || ''}
@@ -2658,6 +4601,16 @@ export function UploadInspector({ block, onContentChange }: BlockInspectorProps)
           placeholder="Choose File"
         />
       </InspectorSection>
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -2668,14 +4621,27 @@ export function MessageInspector({ block, onContentChange }: BlockInspectorProps
 
   return (
     <div className="space-y-4">
-      <InspectorSection title="Label">
-        <Input
+      <PrivacyConsentSection content={content} onContentChange={onContentChange} />
+
+      <InspectorSection title="Question">
+        <Textarea
           value={content.label || ''}
           onChange={(e) => onContentChange({ label: e.target.value })}
-          className="h-9 bg-muted border-0"
-          placeholder="Your message"
+          className="min-h-[60px] bg-muted border-0 resize-none"
+          placeholder="What would you like to ask?"
         />
       </InspectorSection>
+
+      <InspectorSection title="Question Color">
+        <GradientColorPicker
+          solidColor={content.questionColor || ''}
+          gradient={content.questionStyles?.textGradient || ''}
+          onSolidChange={(v) => onContentChange({ questionColor: v, questionStyles: { ...(content.questionStyles || {}), textGradient: '' } })}
+          onGradientChange={(v) => onContentChange({ questionStyles: { ...(content.questionStyles || {}), textGradient: v } })}
+        />
+      </InspectorSection>
+
+      <Separator />
 
       <InspectorSection title="Placeholder">
         <Input
@@ -2705,6 +4671,14 @@ export function MessageInspector({ block, onContentChange }: BlockInspectorProps
           placeholder="No limit"
         />
       </InspectorSection>
+
+      <Separator />
+
+      <p className="text-xs text-muted-foreground px-1">
+        Click the submit button on canvas to configure it.
+      </p>
+
+      <PopupSettingsSection content={content} onContentChange={onContentChange} />
     </div>
   );
 }
@@ -2750,6 +4724,16 @@ export function DatePickerInspector({ block, onContentChange }: BlockInspectorPr
           className="h-9 bg-muted border-0"
         />
       </InspectorSection>
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -2833,6 +4817,8 @@ export function PaymentInspector({ block, onContentChange }: BlockInspectorProps
 
   return (
     <div className="space-y-4">
+      <PrivacyConsentSection content={content} onContentChange={onContentChange} />
+
       <InspectorSection title="Amount">
         <Input
           type="number"
@@ -2904,6 +4890,16 @@ export function PaymentInspector({ block, onContentChange }: BlockInspectorProps
           onChange={(v) => onContentChange({ amountColor: v })}
         />
       </InspectorSection>
+
+      <Separator />
+      <TrackingSection
+        trackingId={block.trackingId || ''}
+        onChange={(id) => {
+          if (onBlockChange) {
+            onBlockChange({ trackingId: id });
+          }
+        }}
+      />
     </div>
   );
 }

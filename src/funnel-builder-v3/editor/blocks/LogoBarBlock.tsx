@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { LogoBarContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { cn } from '@/lib/utils';
 import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
@@ -40,70 +40,45 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
     }
   }, [blockId, stepId, titleStyles, updateBlockContent]);
 
-  // Speed to animation class mapping
-  const speedClasses = {
-    slow: direction === 'left' ? 'animate-marquee-slow' : 'animate-marquee-slow-right',
-    medium: direction === 'left' ? 'animate-marquee-medium' : 'animate-marquee-medium-right',
-    fast: direction === 'left' ? 'animate-marquee-fast' : 'animate-marquee-fast-right',
-  };
+  // Filter out logos with empty src
+  const validLogos = useMemo(() => logos.filter(logo => logo.src), [logos]);
 
-  /**
-   * Animated marquee state - must be called unconditionally (Rules of Hooks)
-   */
-  const [segmentRepeats, setSegmentRepeats] = useState(1);
+  // Calculate repeat count to ensure viewport is always filled with logos
+  // Each logo is ~130-180px wide depending on screen, need at least 8 slots for continuous scroll on larger screens
+  const repeatCount = useMemo(() => {
+    const logoCount = validLogos.length;
+    if (logoCount === 0) return 1;
+    const minSlots = 8; // Minimum logo slots to fill viewport continuously (increased for tablet/desktop)
+    return Math.ceil(minSlots / logoCount);
+  }, [validLogos.length]);
 
-  const maskGradient = useMemo(() => {
-    // Mask uses alpha; use HSL to stay consistent with token rules.
-    const opaque = 'hsl(0 0% 0%)';
-    return `linear-gradient(to right, transparent 0%, ${opaque} 8%, ${opaque} 92%, transparent 100%)`;
-  }, []);
+  // Animation duration based on speed AND total logo count (including repeats)
+  const animationDuration = useMemo(() => {
+    const totalLogos = (validLogos.length * repeatCount) || 1;
+    const baseTimePerLogo = speed === 'slow' ? 3 : speed === 'fast' ? 1 : 2; // seconds per logo
+    const totalTime = totalLogos * baseTimePerLogo;
+    return `${totalTime}s`;
+  }, [speed, validLogos.length, repeatCount]);
 
-  useLayoutEffect(() => {
-    if (!animated) {
-      setSegmentRepeats(1); // Reset when not animated
-      return;
-    }
-    
-    // For animated marquee, we need enough logos to fill the screen + extra for seamless loop
-    // Use a fixed multiplier based on typical screen sizes
-    // Each segment will be duplicated twice (segment A + segment B) in the render
-    const repeatsNeeded = Math.max(3, Math.ceil(logos.length * 0.5));
-    setSegmentRepeats(repeatsNeeded);
-  }, [animated, logos.length]);
+  // Determine if we should animate:
+  // - If user explicitly enabled animation, always animate
+  // - If 4+ logos, auto-enable animation to prevent overflow on mobile
+  // - Otherwise stay static (3 or fewer logos fit nicely centered)
+  const shouldAnimate = useMemo(() => {
+    if (animated) return true; // User explicitly enabled
+    if (validLogos.length >= 4) return true; // Auto-enable for 4+ logos
+    return false; // Static for 3 or fewer
+  }, [animated, validLogos.length]);
 
-  const renderLogoSet = useCallback((suffix: string) => {
-    return logos.map((logo) => (
-      <img
-        key={`${logo.id}-${suffix}`}
-        src={logo.src}
-        alt={logo.alt}
-        className={cn(
-          'h-6 w-auto max-w-[48px] object-contain shrink-0 transition-all duration-300',
-          grayscale
-            ? 'opacity-50 grayscale hover:opacity-100 hover:grayscale-0'
-            : 'opacity-70 hover:opacity-100'
-        )}
-      />
-    ));
-  }, [logos, grayscale]);
-
-  const renderSegment = useCallback((segmentId: string) => {
-    return Array.from({ length: segmentRepeats }, (_, i) => (
-      <React.Fragment key={`${segmentId}-set-${i}`}>
-        {renderLogoSet(`${segmentId}-${i}`)}
-      </React.Fragment>
-    ));
-  }, [renderLogoSet, segmentRepeats]);
 
   const renderTitle = () => {
     if (!title && !canEdit) return null;
     
-    // Only apply text-muted-foreground if no gradient or custom color in titleStyles
     const hasCustomTextStyle = titleStyles?.textGradient || titleStyles?.color;
     
     return (
       <div className={cn(
-        "text-xs text-center uppercase tracking-wider",
+        "text-xs sm:text-sm lg:text-base text-center uppercase tracking-wider mb-4 sm:mb-6",
         !hasCustomTextStyle && "text-muted-foreground"
       )}>
         {canEdit ? (
@@ -125,63 +100,123 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
     );
   };
 
-  // Static (non-animated) version
-  if (!animated) {
+  // Render a complete logo set (used twice for seamless loop)
+  // Logos are repeated based on repeatCount to ensure continuous scrolling
+  const renderLogoSet = useCallback((setId: string) => {
+    // Create an array of repeated logos to fill the viewport
+    const repeatedLogos: Array<{ src: string; alt: string; key: string }> = [];
+    for (let r = 0; r < repeatCount; r++) {
+      validLogos.forEach((logo, idx) => {
+        repeatedLogos.push({ 
+          src: logo.src, 
+          alt: logo.alt || 'Company logo', 
+          key: `${setId}-${r}-${idx}` 
+        });
+      });
+    }
+
     return (
-      <div className="space-y-4 w-full overflow-hidden box-border">
-        {renderTitle()}
-        <div className="flex items-center justify-evenly gap-4 flex-wrap w-full">
-          {logos.map((logo) => (
+      <div className="flex items-center shrink-0 h-full gap-0">
+        {repeatedLogos.map((logo) => (
+          <div key={logo.key} className="flex-shrink-0 px-4 sm:px-6 lg:px-8 h-full flex items-center">
             <img
-              key={logo.id}
               src={logo.src}
               alt={logo.alt}
               className={cn(
-                "h-6 w-auto max-w-[48px] object-contain transition-all flex-shrink-0",
-                grayscale 
-                  ? "opacity-60 grayscale hover:opacity-100 hover:grayscale-0" 
-                  : "opacity-80 hover:opacity-100"
+                "h-8 sm:h-10 lg:h-12 max-h-10 sm:max-h-12 lg:max-h-14 w-auto max-w-[100px] sm:max-w-[140px] lg:max-w-[180px] object-contain",
+                grayscale
+                  ? "opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-300"
+                  : "opacity-80 hover:opacity-100 transition-opacity duration-300"
               )}
+              loading="eager"
+              referrerPolicy="no-referrer"
             />
+          </div>
+        ))}
+      </div>
+    );
+  }, [validLogos, grayscale, repeatCount]);
+
+  // Static (non-animated) version - used for 3 or fewer logos, or when animation is disabled
+  if (!shouldAnimate) {
+    // Show empty state if no valid logos
+    if (validLogos.length === 0) {
+      return (
+        <div className="w-full max-w-full overflow-x-hidden py-2">
+          {renderTitle()}
+          <div className="flex items-center justify-center h-16 sm:h-20 lg:h-24 text-muted-foreground text-sm sm:text-base">
+            {canEdit ? 'Add logos in the inspector' : 'No logos to display'}
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="w-full max-w-full overflow-x-hidden py-2">
+        {renderTitle()}
+        <div className="flex items-center justify-center gap-6 sm:gap-8 lg:gap-12 flex-wrap h-16 sm:h-20 lg:h-24">
+          {validLogos.map((logo, idx) => (
+            <div key={`static-${idx}`} className="h-full flex items-center">
+              <img
+                src={logo.src}
+                alt={logo.alt || 'Company logo'}
+                className={cn(
+                  "h-8 sm:h-10 lg:h-12 max-h-10 sm:max-h-12 lg:max-h-14 w-auto max-w-[100px] sm:max-w-[140px] lg:max-w-[180px] object-contain flex-shrink-0",
+                  grayscale
+                    ? "opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-300"
+                    : "opacity-80 hover:opacity-100 transition-opacity duration-300"
+                )}
+                loading="eager"
+                referrerPolicy="no-referrer"
+              />
+            </div>
           ))}
         </div>
       </div>
     );
   }
 
-  // Animated marquee version - segment x2 (two identical halves) for seamless loop
-  // If no logos, show empty state
-  if (!logos || logos.length === 0) {
+  // Empty state - check validLogos instead of logos
+  if (!validLogos || validLogos.length === 0) {
     return (
-      <div className="space-y-4 w-full">
+      <div className="w-full max-w-full overflow-x-hidden py-2">
         {renderTitle()}
-        <div className="flex items-center justify-center gap-4 flex-wrap w-full py-8 text-muted-foreground text-sm">
+        <div className="flex items-center justify-center h-16 sm:h-20 lg:h-24 text-muted-foreground text-sm sm:text-base">
           {canEdit ? 'Add logos in the inspector' : 'No logos to display'}
         </div>
       </div>
     );
   }
 
+  // Animated marquee version
   return (
-    <div className="space-y-4 w-full">
+    <div className="w-full max-w-full overflow-x-hidden py-2">
       {renderTitle()}
+      {/* Wrapper - clips content, fixed height, relative for absolute child, edge fade */}
       <div 
-        className="relative w-full overflow-hidden flex justify-start"
-        style={{ 
-          maskImage: maskGradient,
-          WebkitMaskImage: maskGradient,
+        className="relative w-full overflow-hidden h-16 sm:h-20 lg:h-24"
+        style={{
+          maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+          WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
         }}
       >
-        {/* Marquee track - two identical halves (segment A + segment B) for seamless loop */}
-        <div 
+        {/* Content - absolutely positioned, animates, contains two identical sets */}
+        <div
           className={cn(
-            "inline-flex items-center gap-8 will-change-transform marquee-track",
-            speedClasses[speed] || 'animate-marquee-medium',
+            "absolute inset-y-0 left-0 flex items-center h-full",
             pauseOnHover && "hover:[animation-play-state:paused]"
           )}
+          style={{
+            animation: `${direction === 'right' ? 'marquee-right' : 'marquee-left'} ${animationDuration} linear infinite`,
+            willChange: 'transform',
+            transform: 'translateZ(0)',
+            backfaceVisibility: 'hidden',
+          }}
         >
-          {renderSegment('a')}
-          {renderSegment('b')}
+          {/* Logo Set 1 */}
+          {renderLogoSet('set1')}
+          {/* Logo Set 2 - DUPLICATE for seamless loop */}
+          {renderLogoSet('set2')}
         </div>
       </div>
     </div>

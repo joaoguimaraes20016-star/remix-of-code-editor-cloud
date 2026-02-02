@@ -1,21 +1,45 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import { Funnel, FunnelStep, Block, ViewportType } from '@/funnel-builder-v3/types/funnel';
+import { Funnel, FunnelStep, Block, ViewportType, CountryCode, BlockContent } from '@/funnel-builder-v3/types/funnel';
 import { createEmptyFunnel } from '@/funnel-builder-v3/lib/templates';
 import { v4 as uuid } from 'uuid';
 import { blockDefinitions } from '@/funnel-builder-v3/lib/block-definitions';
+import { defaultCountryCodes } from '@/funnel-builder-v3/lib/block-definitions';
+import { generateTrackingId } from '@/funnel-builder-v3/lib/tracking-ids';
+
+// Media Library Types
+export interface MediaItem {
+  id: string;
+  src: string;
+  alt: string;
+  folderId?: string; // undefined = root/All Media
+  createdAt: number;
+}
+
+export interface MediaFolder {
+  id: string;
+  name: string;
+  createdAt: number;
+}
 
 interface FunnelContextType {
   funnel: Funnel;
   currentStepId: string | null;
   selectedBlockId: string | null;
+  selectedChildElement: string | null; // e.g., 'submit-button', 'option-0', 'country-codes', etc.
   isPreviewMode: boolean;
   currentViewport: ViewportType;
   canvasZoom: number;
   effectiveZoom: number;
   mediaGallery: string[];
+  // Global country codes (shared across all phone inputs)
+  countryCodes: CountryCode[];
+  defaultCountryId: string;
+  updateCountryCodes: (codes: CountryCode[]) => void;
+  setDefaultCountryId: (id: string) => void;
   setFunnel: (funnel: Funnel) => void;
   setCurrentStepId: (id: string | null) => void;
   setSelectedBlockId: (id: string | null) => void;
+  setSelectedChildElement: (element: string | null) => void;
   setPreviewMode: (mode: boolean) => void;
   setCurrentViewport: (viewport: ViewportType) => void;
   setCanvasZoom: (zoom: number) => void;
@@ -40,9 +64,18 @@ interface FunnelContextType {
   exportFunnel: () => string;
   importFunnel: (json: string) => boolean;
   
-  // Media gallery
+  // Media gallery (legacy)
   addToGallery: (url: string) => void;
   removeFromGallery: (url: string) => void;
+  
+  // Media library with folders
+  mediaItems: MediaItem[];
+  mediaFolders: MediaFolder[];
+  addMediaItem: (item: Omit<MediaItem, 'id' | 'createdAt'>) => void;
+  removeMediaItem: (id: string) => void;
+  createMediaFolder: (name: string) => void;
+  deleteMediaFolder: (id: string) => void;
+  moveMediaToFolder: (itemId: string, folderId: string | undefined) => void;
   
   // History (undo/redo)
   undo: () => void;
@@ -60,9 +93,49 @@ const FUNNEL_STORAGE_KEY = 'funnel-editor-state';
 
 // Normalize funnel to ensure steps is always an array (guards against malformed data)
 function normalizeFunnel(f: Funnel): Funnel {
+  // Migrate options in all blocks to new action format
+  const migratedSteps = (Array.isArray(f?.steps) ? f.steps : []).map(step => ({
+    ...step,
+    blocks: step.blocks.map(block => {
+      // Migrate options for quiz/image-quiz/video-question blocks
+      if (['quiz', 'image-quiz', 'video-question', 'multiple-choice', 'choice'].includes(block.type) && Array.isArray(block.content?.options)) {
+        const content = { ...block.content };
+        
+        // Ensure showSubmitButton is true when multiSelect is true
+        if (content.multiSelect && content.showSubmitButton !== true) {
+          content.showSubmitButton = true;
+        }
+        
+        return {
+          ...block,
+          content: {
+            ...content,
+            options: block.content.options.map((opt: any) => {
+              // Migrate old nextStepId to new action/actionValue format
+              if (opt.nextStepId && !opt.action) {
+                return {
+                  ...opt,
+                  action: 'next-step',
+                  actionValue: opt.nextStepId,
+                };
+              } else if (!opt.action) {
+                return {
+                  ...opt,
+                  action: 'next-step',
+                };
+              }
+              return opt;
+            }),
+          },
+        };
+      }
+      return block;
+    }),
+  }));
+
   return {
     ...f,
-    steps: Array.isArray(f?.steps) ? f.steps : [],
+    steps: migratedSteps,
     settings: f?.settings ?? {},
   };
 }
@@ -105,12 +178,21 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
     return normalizeFunnel(raw);
   });
   const [currentStepId, setCurrentStepId] = useState<string | null>(null);
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [selectedBlockId, setSelectedBlockIdState] = useState<string | null>(null);
+  const [selectedChildElement, setSelectedChildElement] = useState<string | null>(null);
   const [isPreviewMode, setPreviewMode] = useState(false);
+  
+  // Wrapper for setSelectedBlockId that clears child selection
+  const setSelectedBlockId = useCallback((id: string | null) => {
+    setSelectedBlockIdState(id);
+    setSelectedChildElement(null); // Clear child selection when block changes
+  }, []);
   const [currentViewport, setCurrentViewportState] = useState<ViewportType>('mobile');
   const [canvasZoom, setCanvasZoom] = useState<number>(1);
   const [effectiveZoom, setEffectiveZoom] = useState<number>(1);
   const [mediaGallery, setMediaGallery] = useState<string[]>([]);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const [mediaFolders, setMediaFolders] = useState<MediaFolder[]>([]);
 
   // Auto-save funnel to localStorage whenever it changes (only if no external handler)
   useEffect(() => {
@@ -148,6 +230,81 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   // Remove from gallery
   const removeFromGallery = useCallback((url: string) => {
     setMediaGallery(prev => prev.filter(u => u !== url));
+  }, []);
+
+  // Load media items from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('funnel-media-items');
+    if (saved) {
+      try {
+        setMediaItems(JSON.parse(saved));
+      } catch {
+        // Invalid JSON, ignore
+      }
+    }
+  }, []);
+
+  // Save media items to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('funnel-media-items', JSON.stringify(mediaItems));
+  }, [mediaItems]);
+
+  // Load media folders from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('funnel-media-folders');
+    if (saved) {
+      try {
+        setMediaFolders(JSON.parse(saved));
+      } catch {
+        // Invalid JSON, ignore
+      }
+    }
+  }, []);
+
+  // Save media folders to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('funnel-media-folders', JSON.stringify(mediaFolders));
+  }, [mediaFolders]);
+
+  // Add media item
+  const addMediaItem = useCallback((item: Omit<MediaItem, 'id' | 'createdAt'>) => {
+    const newItem: MediaItem = {
+      ...item,
+      id: uuid(),
+      createdAt: Date.now(),
+    };
+    setMediaItems(prev => [newItem, ...prev].slice(0, 100)); // Keep last 100 items
+  }, []);
+
+  // Remove media item
+  const removeMediaItem = useCallback((id: string) => {
+    setMediaItems(prev => prev.filter(item => item.id !== id));
+  }, []);
+
+  // Create media folder
+  const createMediaFolder = useCallback((name: string) => {
+    const newFolder: MediaFolder = {
+      id: uuid(),
+      name,
+      createdAt: Date.now(),
+    };
+    setMediaFolders(prev => [...prev, newFolder]);
+  }, []);
+
+  // Delete media folder (moves items to root)
+  const deleteMediaFolder = useCallback((id: string) => {
+    setMediaFolders(prev => prev.filter(folder => folder.id !== id));
+    // Move all items from this folder to root
+    setMediaItems(prev => prev.map(item => 
+      item.folderId === id ? { ...item, folderId: undefined } : item
+    ));
+  }, []);
+
+  // Move media item to folder
+  const moveMediaToFolder = useCallback((itemId: string, folderId: string | undefined) => {
+    setMediaItems(prev => prev.map(item =>
+      item.id === itemId ? { ...item, folderId } : item
+    ));
   }, []);
 
   // When viewport changes, reset zoom to 100% (baseline)
@@ -257,14 +414,64 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
     setFunnel({ ...funnel, steps: newSteps });
   }, [funnel, setFunnel]);
   
+  // Helper function to add tracking IDs to content
+  const addTrackingIdsToContent = useCallback((content: any, blockType: Block['type']): any => {
+    if (!content) return content;
+    
+    const processed = { ...content };
+    
+    // Add tracking ID to embedded submitButton
+    if (processed.submitButton && typeof processed.submitButton === 'object' && !Array.isArray(processed.submitButton)) {
+      processed.submitButton = {
+        ...processed.submitButton,
+        trackingId: processed.submitButton.trackingId || generateTrackingId('button'),
+      };
+    }
+    
+    // Add tracking IDs to form fields
+    if (Array.isArray(processed.fields)) {
+      processed.fields = processed.fields.map((field: any) => ({
+        ...field,
+        trackingId: field.trackingId || generateTrackingId('field'),
+      }));
+    }
+    
+    // Add tracking IDs to quiz/choice options and migrate to new action format
+    if (Array.isArray(processed.options)) {
+      processed.options = processed.options.map((option: any) => {
+        const migrated = {
+          ...option,
+          trackingId: option.trackingId || generateTrackingId('option'),
+        };
+        
+        // Migrate old nextStepId to new action/actionValue format
+        if (option.nextStepId && !option.action) {
+          migrated.action = 'next-step';
+          migrated.actionValue = option.nextStepId;
+        } else if (!option.action) {
+          // Default to next-step if no action specified
+          migrated.action = 'next-step';
+        }
+        
+        return migrated;
+      });
+    }
+    
+    return processed;
+  }, []);
+  
   // Block operations
   const addBlock = useCallback((stepId: string, blockType: Block['type'], index?: number) => {
     const definition = blockDefinitions[blockType];
+    const rawContent = JSON.parse(JSON.stringify(definition.defaultContent));
+    const processedContent = addTrackingIdsToContent(rawContent, blockType);
+    
     const newBlock: Block = {
       id: uuid(),
       type: blockType,
-      content: JSON.parse(JSON.stringify(definition.defaultContent)),
+      content: processedContent,
       styles: JSON.parse(JSON.stringify(definition.defaultStyles)),
+      trackingId: generateTrackingId('block'),
     };
     
     setFunnel({
@@ -281,17 +488,21 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
       }),
     });
     setSelectedBlockId(newBlock.id);
-  }, [funnel, setFunnel]);
+  }, [funnel, setFunnel, addTrackingIdsToContent]);
 
   // Batch add multiple blocks atomically (avoids race conditions)
   const addBlocks = useCallback((stepId: string, blockTypes: Block['type'][]) => {
     const newBlocks: Block[] = blockTypes.map(blockType => {
       const definition = blockDefinitions[blockType];
+      const rawContent = JSON.parse(JSON.stringify(definition.defaultContent));
+      const processedContent = addTrackingIdsToContent(rawContent, blockType);
+      
       return {
         id: uuid(),
         type: blockType,
-        content: JSON.parse(JSON.stringify(definition.defaultContent)),
+        content: processedContent,
         styles: JSON.parse(JSON.stringify(definition.defaultStyles)),
+        trackingId: generateTrackingId('block'),
       };
     });
     
@@ -306,7 +517,7 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
     if (newBlocks.length > 0) {
       setSelectedBlockId(newBlocks[0].id);
     }
-  }, [funnel, setFunnel]);
+  }, [funnel, setFunnel, addTrackingIdsToContent]);
   
   const deleteBlock = useCallback((stepId: string, blockId: string) => {
     setFunnel({
@@ -396,16 +607,21 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
         const blockIndex = step.blocks.findIndex(b => b.id === blockId);
         if (blockIndex === -1) return step;
         const originalBlock = step.blocks[blockIndex];
+        const duplicatedContent = JSON.parse(JSON.stringify(originalBlock.content));
+        const processedContent = addTrackingIdsToContent(duplicatedContent, originalBlock.type);
+        
         const newBlock: Block = {
           ...JSON.parse(JSON.stringify(originalBlock)),
           id: uuid(),
+          trackingId: generateTrackingId('block'),
+          content: processedContent,
         };
         const newBlocks = [...step.blocks];
         newBlocks.splice(blockIndex + 1, 0, newBlock);
         return { ...step, blocks: newBlocks };
       }),
     });
-  }, [funnel, setFunnel]);
+  }, [funnel, setFunnel, addTrackingIdsToContent]);
   
   // Import/Export
   const exportFunnel = useCallback(() => {
@@ -426,12 +642,34 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
       return false;
     }
   }, [setFunnel]);
+
+  // Global country codes management
+  const countryCodes = funnel.countryCodes && funnel.countryCodes.length > 0 
+    ? funnel.countryCodes 
+    : defaultCountryCodes;
+  
+  const defaultCountryId = funnel.defaultCountryId || defaultCountryCodes[0]?.id || '1';
+
+  const updateCountryCodes = useCallback((codes: CountryCode[]) => {
+    setFunnel({
+      ...funnel,
+      countryCodes: codes,
+    });
+  }, [funnel, setFunnel]);
+
+  const setDefaultCountryId = useCallback((id: string) => {
+    setFunnel({
+      ...funnel,
+      defaultCountryId: id,
+    });
+  }, [funnel, setFunnel]);
   
   return (
     <FunnelContext.Provider value={{
       funnel,
       currentStepId,
       selectedBlockId,
+      selectedChildElement,
       isPreviewMode,
       currentViewport,
       canvasZoom,
@@ -440,6 +678,7 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
       setFunnel,
       setCurrentStepId,
       setSelectedBlockId,
+      setSelectedChildElement,
       setPreviewMode,
       setCurrentViewport,
       setCanvasZoom,
@@ -459,10 +698,22 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
       importFunnel,
       addToGallery,
       removeFromGallery,
+      mediaItems,
+      mediaFolders,
+      addMediaItem,
+      removeMediaItem,
+      createMediaFolder,
+      deleteMediaFolder,
+      moveMediaToFolder,
       undo,
       redo,
       canUndo: historyIndex >= 0,
       canRedo: historyIndex < history.length - 1,
+      // Global country codes
+      countryCodes,
+      defaultCountryId,
+      updateCountryCodes,
+      setDefaultCountryId,
     }}>
       {children}
     </FunnelContext.Provider>

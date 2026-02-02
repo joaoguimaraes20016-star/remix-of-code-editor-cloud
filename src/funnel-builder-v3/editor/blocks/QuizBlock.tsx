@@ -1,11 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { QuizContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
+import { QuizContent, TextStyles, ButtonContent } from '@/funnel-builder-v3/types/funnel';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { useEditableStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
+import { Button } from '@/components/ui/button';
+
+// Default submit button configuration
+const defaultSubmitButton: ButtonContent = {
+  text: 'Submit',
+  variant: 'primary',
+  size: 'md',
+  action: 'next-step',
+  fullWidth: true,
+  backgroundColor: '#3b82f6',
+  color: '#ffffff',
+};
 
 interface QuizBlockProps {
   content: QuizContent;
@@ -16,11 +28,13 @@ interface QuizBlockProps {
 
 export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProps) {
   const runtime = useFunnelRuntimeOptional();
-  const { updateBlockContent } = useFunnel();
+  const { updateBlockContent, selectedChildElement, setSelectedChildElement } = useFunnel();
   const { 
     question, 
     options, 
     multiSelect,
+    showSubmitButton,
+    submitButton = defaultSubmitButton,
     optionStyle = 'outline',
     questionColor,
     optionTextColor,
@@ -28,6 +42,9 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
     questionStyles,
   } = content;
   const [selected, setSelected] = useState<string[]>([]);
+  
+  // Default to true if not specified
+  const shouldShowSubmitButton = showSubmitButton !== false;
 
   const canEdit = blockId && stepId && !isPreview;
 
@@ -61,6 +78,34 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
     }
   }, [runtime, blockId]);
 
+  // Helper function to execute answer action
+  const executeAnswerAction = (option: any) => {
+    if (!runtime) return;
+    
+    // Get action from new format or legacy nextStepId
+    const action = option.action || (option.nextStepId ? 'next-step' : 'next-step');
+    const actionValue = option.actionValue || option.nextStepId;
+    
+    switch (action) {
+      case 'url':
+        if (actionValue) {
+          window.open(actionValue, '_blank');
+        }
+        break;
+      case 'submit':
+        runtime.submitForm();
+        break;
+      case 'next-step':
+      default:
+        if (actionValue) {
+          setTimeout(() => runtime.goToStep(actionValue), 300);
+        } else {
+          setTimeout(() => runtime.goToNextStep(), 300);
+        }
+        break;
+    }
+  };
+
   const handleSelect = (optionId: string) => {
     let newSelected: string[];
     
@@ -79,18 +124,62 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
       runtime.setSelection(blockId, multiSelect ? newSelected : optionId);
     }
 
-    // Handle navigation for single-select quizzes
-    if (!multiSelect && runtime) {
+    // Only execute answer action if NO submit button
+    if (!shouldShowSubmitButton && runtime) {
       const selectedOption = options.find(o => o.id === optionId);
-      if (selectedOption?.nextStepId) {
-        // Navigate to the specific step configured for this option
-        setTimeout(() => runtime.goToStep(selectedOption.nextStepId!), 300);
-      } else {
-        // Auto-advance to next step after selection
-        setTimeout(() => runtime.goToNextStep(), 300);
+      if (selectedOption) {
+        executeAnswerAction(selectedOption);
       }
     }
   };
+
+  // Handle submit button click - when submit button exists, it OVERRIDES answer actions
+  const handleSubmit = () => {
+    if (runtime && selected.length > 0) {
+      const action = submitButton.action || 'next-step';
+      const actionValue = submitButton.actionValue;
+      
+      // When submit button exists, it OVERRIDES answer actions
+      switch (action) {
+        case 'url':
+          if (actionValue) {
+            window.open(actionValue, '_blank');
+          }
+          break;
+        case 'scroll':
+          if (actionValue) {
+            const element = document.getElementById(actionValue);
+            element?.scrollIntoView({ behavior: 'smooth' });
+          }
+          break;
+        case 'submit':
+          runtime.submitForm();
+          break;
+        case 'next-step':
+        default:
+          if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
+            runtime.goToStep(actionValue);
+          } else {
+            runtime.goToNextStep();
+          }
+          break;
+      }
+    }
+  };
+
+  // Handle submit button click in editor/preview modes
+  const handleButtonClick = (e: React.MouseEvent) => {
+    if (!isPreview) {
+      // In editor mode: select the button element
+      e.stopPropagation();
+      setSelectedChildElement('submit-button');
+    } else {
+      // In preview mode: submit action
+      handleSubmit();
+    }
+  };
+
+  const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
 
   const handleQuestionChange = useCallback((newQuestion: string) => {
     if (blockId && stepId) {
@@ -107,9 +196,18 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
     }
   };
 
-  // Build option classes based on style
-  const getOptionClasses = (isSelected: boolean) => {
+  // Build option classes based on style (without custom colors - those are inline)
+  const getOptionClasses = (isSelected: boolean, hasCustomBg: boolean) => {
     const baseClasses = 'w-full p-4 rounded-xl text-left transition-all flex items-center justify-between gap-3';
+    
+    // If option has custom background, use minimal styling
+    if (hasCustomBg) {
+      return cn(
+        baseClasses,
+        'border-2',
+        isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/30'
+      );
+    }
     
     if (optionStyle === 'filled') {
       return cn(
@@ -130,8 +228,12 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
     );
   };
 
-  // Build text color styles
-  const getTextColor = (isSelected: boolean) => {
+  // Build text color styles - prioritize per-option colors
+  const getTextColor = (isSelected: boolean, option: { textColor?: string }) => {
+    // Per-option color takes precedence
+    if (option.textColor) {
+      return option.textColor;
+    }
     if (isSelected && selectedOptionColor) {
       return selectedOptionColor;
     }
@@ -143,6 +245,15 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
       return isSelected ? undefined : undefined; // Use class defaults
     }
     return isSelected ? 'hsl(var(--primary))' : undefined;
+  };
+
+  // Build option inline styles for custom colors
+  const getOptionStyle = (option: { backgroundColor?: string }) => {
+    const style: React.CSSProperties = {};
+    if (option.backgroundColor) {
+      style.backgroundColor = option.backgroundColor;
+    }
+    return style;
   };
 
   return (
@@ -184,18 +295,21 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
       <div className="space-y-2">
         {options.map((option) => {
           const isSelected = selected.includes(option.id);
-          const textColor = getTextColor(isSelected);
+          const hasCustomBg = !!option.backgroundColor;
+          const textColor = getTextColor(isSelected, option);
+          const optionInlineStyle = getOptionStyle(option);
           
           return (
             <button
               key={option.id}
               onClick={() => handleSelect(option.id)}
-              className={getOptionClasses(isSelected)}
+              className={getOptionClasses(isSelected, hasCustomBg)}
+              style={optionInlineStyle}
             >
               <span 
                 className={cn(
                   'font-medium flex-1',
-                  optionStyle !== 'filled' && isSelected && !selectedOptionColor && 'text-primary'
+                  !option.textColor && optionStyle !== 'filled' && isSelected && !selectedOptionColor && 'text-primary'
                 )}
                 style={{ color: textColor }}
               >
@@ -214,25 +328,116 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
                   option.text
                 )}
               </span>
-              {isSelected && (
+              {/* Selection indicator: Radio for single select, Checkbox for multi select */}
+              {multiSelect ? (
+                // Checkbox style for Multiple Choice
                 <div className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center shrink-0",
-                  optionStyle === 'filled' 
-                    ? "bg-primary-foreground/20" 
-                    : "bg-primary"
+                  "w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all",
+                  isSelected 
+                    ? "bg-primary border-primary" 
+                    : "border-muted-foreground/30"
                 )}>
-                  <Check className={cn(
-                    "h-4 w-4",
-                    optionStyle === 'filled' 
-                      ? "text-primary-foreground" 
-                      : "text-primary-foreground"
-                  )} />
+                  {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                </div>
+              ) : (
+                // Radio style for Choice (single select)
+                <div className={cn(
+                  "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+                  isSelected 
+                    ? "border-primary" 
+                    : "border-muted-foreground/30"
+                )}>
+                  {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
                 </div>
               )}
             </button>
           );
         })}
       </div>
+      
+      {/* Submit Button - uses full ButtonContent for consistency with regular buttons */}
+      {shouldShowSubmitButton && (() => {
+        const { 
+          text, 
+          variant = 'primary', 
+          size = 'md', 
+          fullWidth = true, 
+          backgroundColor, 
+          backgroundGradient, 
+          color, 
+          textGradient, 
+          borderColor, 
+          borderWidth, 
+          fontSize 
+        } = submitButton;
+        
+        const sizeClasses: Record<string, string> = {
+          sm: 'h-9 px-4 text-sm',
+          md: 'h-11 px-6 text-base',
+          lg: 'h-14 px-8 text-lg',
+        };
+        
+        // Build custom styles matching ButtonBlock logic
+        const customStyle: React.CSSProperties = {};
+        
+        if (fontSize) {
+          customStyle.fontSize = `${fontSize}px`;
+        }
+        
+        const shouldApplyCustomBg = variant !== 'outline' && variant !== 'ghost';
+        
+        if (shouldApplyCustomBg) {
+          if (backgroundGradient) {
+            customStyle.background = backgroundGradient;
+          } else if (backgroundColor) {
+            customStyle.backgroundColor = backgroundColor;
+          }
+        }
+        
+        if (variant === 'outline') {
+          if (borderColor) {
+            customStyle.borderColor = borderColor;
+          }
+          if (borderWidth) {
+            customStyle.borderWidth = `${borderWidth}px`;
+          }
+        }
+        
+        if (!textGradient && color) {
+          customStyle.color = color;
+        }
+        
+        const hasCustomBg = shouldApplyCustomBg && (!!backgroundColor || !!backgroundGradient);
+        const hasTextGradient = !!textGradient;
+        
+        return (
+          <Button
+            variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
+            onClick={handleButtonClick}
+            disabled={isPreview && selected.length === 0}
+            className={cn(
+              sizeClasses[size],
+              fullWidth && 'w-full',
+              hasCustomBg && 'hover:opacity-90',
+              'mt-4 font-medium transition-all rounded-xl',
+              isPreview && selected.length === 0 && 'opacity-50 cursor-not-allowed',
+              isButtonSelected && 'ring-2 ring-primary ring-offset-2'
+            )}
+            style={customStyle}
+          >
+            {hasTextGradient ? (
+              <span
+                className="text-gradient-clip"
+                style={{ '--text-gradient': textGradient } as React.CSSProperties}
+              >
+                {text || 'Submit'}
+              </span>
+            ) : (
+              text || 'Submit'
+            )}
+          </Button>
+        );
+      })()}
     </div>
   );
 }

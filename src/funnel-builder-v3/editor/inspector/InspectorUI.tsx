@@ -9,7 +9,7 @@ import {
   Bold, Italic, Underline, Strikethrough,
   ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
   Eye, EyeOff, Lock, Unlock, Link, Unlink,
-  Plus, Minus, RotateCcw, Check
+  Plus, Minus, RotateCcw, Check, Copy
 } from 'lucide-react';
 
 // ========== SECTION WRAPPER ==========
@@ -907,14 +907,15 @@ interface ToggleSwitchRowProps {
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  disabled?: boolean;
   className?: string;
 }
 
-export function ToggleSwitchRow({ label, checked, onChange, className }: ToggleSwitchRowProps) {
+export function ToggleSwitchRow({ label, checked, onChange, disabled, className }: ToggleSwitchRowProps) {
   return (
     <div className={cn("flex items-center justify-between py-1", className)}>
       <span className="text-xs text-muted-foreground">{label}</span>
-      <Switch checked={checked} onCheckedChange={onChange} className="scale-90" />
+      <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} className="scale-90" />
     </div>
   );
 }
@@ -1199,5 +1200,57 @@ export function NichePresetPicker({ presets, currentConfig, onApply, className }
         ))}
       </div>
     </div>
+  );
+}
+
+// ========== TRACKING SECTION ==========
+interface TrackingSectionProps {
+  trackingId: string;
+  onChange: (id: string) => void;
+  label?: string;
+}
+
+export function TrackingSection({ trackingId, onChange, label = "Tracking ID" }: TrackingSectionProps) {
+  const [copied, setCopied] = React.useState(false);
+  
+  const handleCopy = () => {
+    navigator.clipboard.writeText(trackingId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Allow alphanumeric, underscore, and hyphen only
+    const value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
+    onChange(value);
+  };
+  
+  return (
+    <InspectorSection title={label}>
+      <div className="flex items-center gap-1.5">
+        <Input
+          value={trackingId || ''}
+          onChange={handleChange}
+          placeholder="blk_abc123"
+          className="h-8 bg-muted border-0 text-xs font-mono flex-1"
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 shrink-0"
+          onClick={handleCopy}
+          title="Copy tracking ID"
+        >
+          {copied ? (
+            <Check className="h-3.5 w-3.5 text-green-500" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
+        </Button>
+      </div>
+      <p className="text-[10px] text-muted-foreground px-1">
+        Use this ID for analytics and tracking
+      </p>
+    </InspectorSection>
   );
 }

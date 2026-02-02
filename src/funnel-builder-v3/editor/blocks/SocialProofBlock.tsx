@@ -73,17 +73,21 @@ export function SocialProofBlock({ content, blockId, stepId, isPreview }: Social
     <div 
       className={cn(
         "flex py-4",
-        layout === 'horizontal' ? 'flex-row justify-center' : 'flex-col items-center'
+        layout === 'horizontal' ? 'flex-row justify-center flex-wrap' : 'flex-col items-center'
       )}
       style={{ gap }}
     >
       {items.map((item) => (
-        <div key={item.id} className="text-center">
+        <div 
+          key={item.id} 
+          className="text-center flex-shrink-0"
+          style={{ minWidth: layout === 'horizontal' ? '80px' : undefined }}
+        >
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className={cn(
-              "font-bold",
+              "font-bold leading-none",
               !valueColor && !hasValueGradient && "text-foreground",
               hasValueGradient && "text-gradient-clip"
             )}
@@ -93,7 +97,7 @@ export function SocialProofBlock({ content, blockId, stepId, isPreview }: Social
           </motion.p>
           <div 
             className={cn(
-              "mt-1",
+              "mt-1 leading-tight",
               !labelColor && !hasLabelGradient && "text-muted-foreground",
               hasLabelGradient && "text-gradient-clip"
             )} 

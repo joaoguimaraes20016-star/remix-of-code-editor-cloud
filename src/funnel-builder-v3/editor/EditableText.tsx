@@ -47,6 +47,7 @@ export const EditableText = memo(function EditableText({
   const elementRef = useRef<HTMLElement>(null);
   const originalValueRef = useRef(value);
   const toolbarPopoverOpenRef = useRef(false);
+  const lastPointerDownInInspectorRef = useRef(false);
 
   const canEdit = !isPreview;
 
@@ -61,6 +62,33 @@ export const EditableText = memo(function EditableText({
   useEffect(() => {
     toolbarPopoverOpenRef.current = toolbarPopoverOpen;
   }, [toolbarPopoverOpen]);
+
+  // Track pointer events in inspector to prevent premature closing
+  useEffect(() => {
+    if (!isEditing) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('[data-right-panel]')) {
+        lastPointerDownInInspectorRef.current = true;
+      }
+    };
+
+    const handlePointerUp = () => {
+      // Reset after a short delay to allow blur event to check it
+      setTimeout(() => {
+        lastPointerDownInInspectorRef.current = false;
+      }, 100);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('pointerup', handlePointerUp);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [isEditing]);
 
   const handleSave = useCallback(() => {
     if (elementRef.current) {
@@ -150,10 +178,57 @@ export const EditableText = memo(function EditableText({
     }
   };
 
-  const handleBlur = () => {
+  const handleBlur = (e: React.FocusEvent) => {
     setTimeout(() => {
       // Don't close if toolbar popover is open
-      if (isEditing && !toolbarPopoverOpenRef.current) {
+      if (toolbarPopoverOpenRef.current) {
+        return;
+      }
+
+      // Don't close if focus moved to the right panel (inspector)
+      const relatedTarget = e.relatedTarget as HTMLElement | null;
+      if (relatedTarget) {
+        // Check if focus moved to right panel (inspector)
+        const rightPanel = relatedTarget.closest('[data-right-panel]');
+        if (rightPanel) {
+          return;
+        }
+        
+        // Check if focus moved to any Radix UI portaled content (popovers, selects, etc.)
+        if (relatedTarget.closest('[data-radix-popper-content-wrapper]') ||
+            relatedTarget.closest('[data-radix-select-content]') ||
+            relatedTarget.closest('[data-radix-popover-content]')) {
+          return;
+        }
+      }
+
+      // Check if active element is in right panel or Radix popover
+      const activeElement = document.activeElement as HTMLElement | null;
+      if (activeElement) {
+        if (activeElement.closest('[data-right-panel]') ||
+            activeElement.closest('[data-radix-popper-content-wrapper]') ||
+            activeElement.closest('[data-radix-select-content]') ||
+            activeElement.closest('[data-radix-popover-content]')) {
+          return;
+        }
+      }
+
+      // Also check if relatedTarget is null but we're still interacting with inspector
+      // This handles cases where clicking on non-focusable elements (like sliders) in inspector
+      if (!relatedTarget) {
+        // Check if we recently clicked in the inspector
+        if (lastPointerDownInInspectorRef.current) {
+          return;
+        }
+        
+        // Check if active element is in inspector
+        if (activeElement?.closest('[data-right-panel]')) {
+          return;
+        }
+      }
+
+      // Close editing mode
+      if (isEditing) {
         handleSave();
       }
     }, 250);

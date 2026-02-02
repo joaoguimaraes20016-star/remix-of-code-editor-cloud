@@ -16,17 +16,22 @@ interface ButtonBlockProps {
 export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlockProps) {
   const runtime = useFunnelRuntimeOptional();
   const { updateBlockContent } = useFunnel();
-  const { text, variant, size, fullWidth, backgroundColor, backgroundGradient, color, textGradient, action, actionValue, borderColor, borderWidth } = content;
+  const { text, variant, size, fullWidth, backgroundColor, backgroundGradient, color, textGradient, action, actionValue, borderColor, borderWidth, fontSize } = content;
 
   const sizeClasses: Record<string, string> = {
     sm: 'h-9 px-4 text-sm',
-    md: 'h-10 px-6',
-    lg: 'h-12 px-8 text-lg',
+    md: 'h-11 px-6 text-base',
+    lg: 'h-14 px-8 text-lg',
   };
 
   // Only apply custom styles if they exist
   // NOTE: borderRadius is now controlled by styles.borderRadius on the wrapper (Style tab)
   const customStyle: React.CSSProperties = {};
+  
+  // Apply custom font size if set
+  if (fontSize) {
+    customStyle.fontSize = `${fontSize}px`;
+  }
   
   // For outline and ghost variants, don't apply custom background colors
   // as they have their own styling logic

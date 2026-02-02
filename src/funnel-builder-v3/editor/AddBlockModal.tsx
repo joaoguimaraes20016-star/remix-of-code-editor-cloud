@@ -37,7 +37,7 @@ const categories = [
     icon: Type,
     iconBg: 'bg-blue-500',
     iconColor: 'text-white',
-    blocks: ['text', 'heading', 'button', 'image', 'video', 'list', 'divider', 'spacer', 'logo-bar', 'reviews', 'testimonial', 'slider', 'graphic', 'webinar', 'accordion', 'countdown', 'loader', 'embed', 'social-proof'] as BlockType[],
+    blocks: ['text', 'heading', 'button', 'image', 'video', 'list', 'divider', 'spacer', 'logo-bar', 'reviews', 'testimonial-slider', 'slider', 'graphic', 'webinar', 'accordion', 'countdown', 'loader', 'embed', 'social-proof'] as BlockType[],
   },
   { 
     id: 'interactive-blocks', 
@@ -215,14 +215,14 @@ const sectionTemplates: Record<string, SectionTemplate[]> = {
     { 
       id: 'testimonial-single', 
       name: 'Single Testimonial', 
-      blocks: ['heading', 'testimonial'], 
+      blocks: ['heading', 'testimonial-slider'], 
       description: 'Featured testimonial',
       niche: 'universal'
     },
     { 
       id: 'testimonial-multi', 
       name: 'Multiple Testimonials', 
-      blocks: ['heading', 'testimonial', 'testimonial', 'testimonial'], 
+      blocks: ['heading', 'testimonial-slider'], 
       description: 'Social proof wall',
       niche: 'universal'
     },
@@ -252,7 +252,7 @@ const sectionTemplates: Record<string, SectionTemplate[]> = {
     { 
       id: 'trust-full', 
       name: 'Full Trust Stack', 
-      blocks: ['heading', 'social-proof', 'testimonial', 'logo-bar'], 
+      blocks: ['heading', 'social-proof', 'testimonial-slider', 'logo-bar'], 
       description: 'Complete credibility',
       niche: 'universal'
     },
@@ -385,18 +385,6 @@ function BlockPreview({ type }: { type: BlockType }) {
           </div>
           <div className="h-4 bg-primary rounded flex items-center justify-center">
             <span className="text-[5px] text-primary-foreground font-medium">Book Now</span>
-          </div>
-        </div>
-      );
-    case 'testimonial':
-      return (
-        <div className="bg-muted/50 rounded-lg p-2 space-y-1">
-          <div className="text-[7px] text-muted-foreground italic text-center line-clamp-2">
-            "This product changed my life..."
-          </div>
-          <div className="flex items-center justify-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-primary/30" />
-            <span className="text-[6px] font-medium text-foreground">Sarah J.</span>
           </div>
         </div>
       );

@@ -1,5 +1,6 @@
 import { Funnel, Block, FunnelStep } from '@/funnel-builder-v3/types/funnel';
 import { v4 as uuid } from 'uuid';
+import { defaultCountryCodes } from '@/funnel-builder-v3/lib/block-definitions';
 
 const createBlock = (type: Block['type'], content: any, styles: Partial<Block['styles']> = {}): Block => ({
   id: uuid(),
@@ -124,13 +125,10 @@ export const tradingFunnel: Funnel = {
           expiredText: 'Offer Expired',
           textColor: '#ffd700',
         }),
-        createBlock('testimonial', {
-          quote: '"I went from losing money every month to consistent 5-figure gains. This strategy changed everything for me."',
-          authorName: 'Marcus T.',
-          authorTitle: 'Full-time Trader',
-          rating: 5,
-          quoteColor: '#e5e7eb',
-          authorColor: '#f8fafc',
+        createBlock('testimonial-slider', {
+          testimonials: [
+            { id: '1', quote: 'I went from losing money every month to consistent 5-figure gains. This strategy changed everything for me.', authorName: 'Marcus T.', authorTitle: 'Full-time Trader', backgroundImage: '' }
+          ],
         }),
         createBlock('button', {
           text: 'Join The Trading Academy - $997',
@@ -254,17 +252,11 @@ export const marketingFunnel: Funnel = {
           level: 1,
           styles: { fontSize: 36, fontWeight: 800, textAlign: 'center' },
         }),
-        createBlock('testimonial', {
-          quote: '"They took us from $50K to $500K monthly revenue in just 8 months. The ROI has been incredible."',
-          authorName: 'Sarah Johnson',
-          authorTitle: 'CEO, TechStartup',
-          rating: 5,
-        }),
-        createBlock('testimonial', {
-          quote: '"Finally, a marketing team that actually delivers on their promises. Our cost per acquisition dropped by 60%."',
-          authorName: 'Michael Chen',
-          authorTitle: 'Founder, E-commerce Brand',
-          rating: 5,
+        createBlock('testimonial-slider', {
+          testimonials: [
+            { id: '1', quote: 'They took us from $50K to $500K monthly revenue in just 8 months. The ROI has been incredible.', authorName: 'Sarah Johnson', authorTitle: 'CEO, TechStartup', backgroundImage: '' },
+            { id: '2', quote: 'Finally, a marketing team that actually delivers on their promises. Our cost per acquisition dropped by 60%.', authorName: 'Michael Chen', authorTitle: 'Founder, E-commerce Brand', backgroundImage: '' }
+          ],
         }),
         createBlock('button', {
           text: 'Book Your Strategy Call',
@@ -412,13 +404,10 @@ export const consultingFunnel: Funnel = {
           titleColor: '#f8fafc',
           contentColor: '#94a3b8',
         }),
-        createBlock('testimonial', {
-          quote: '"John\'s framework helped us 3X our valuation in 18 months. His strategic insights were invaluable."',
-          authorName: 'David Park',
-          authorTitle: 'Founder (Acquired by PE firm)',
-          rating: 5,
-          quoteColor: '#e2e8f0',
-          authorColor: '#f8fafc',
+        createBlock('testimonial-slider', {
+          testimonials: [
+            { id: '1', quote: 'John\'s framework helped us 3X our valuation in 18 months. His strategic insights were invaluable.', authorName: 'David Park', authorTitle: 'Founder (Acquired by PE firm)', backgroundImage: '' }
+          ],
         }),
         createBlock('button', {
           text: 'Apply for Strategy Session',
@@ -559,23 +548,12 @@ export const coachingFunnel: Funnel = {
           level: 1,
           styles: { fontSize: 36, fontWeight: 800, textAlign: 'center', color: '#1f2937' },
         }),
-        createBlock('testimonial', {
-          quote: '"A year ago, I was burnt out and lost. Today, I\'ve started my dream business and never been happier. This program changed my life."',
-          authorName: 'Emily R.',
-          authorTitle: 'Entrepreneur',
-          rating: 5,
-        }),
-        createBlock('testimonial', {
-          quote: '"The accountability and mindset shifts were exactly what I needed. I finally broke through my income ceiling."',
-          authorName: 'James M.',
-          authorTitle: 'Sales Director',
-          rating: 5,
-        }),
-        createBlock('testimonial', {
-          quote: '"I went from constant anxiety to inner peace. The techniques are simple but incredibly powerful."',
-          authorName: 'Sarah L.',
-          authorTitle: 'Designer',
-          rating: 5,
+        createBlock('testimonial-slider', {
+          testimonials: [
+            { id: '1', quote: 'A year ago, I was burnt out and lost. Today, I\'ve started my dream business and never been happier. This program changed my life.', authorName: 'Emily R.', authorTitle: 'Entrepreneur', backgroundImage: '' },
+            { id: '2', quote: 'The accountability and mindset shifts were exactly what I needed. I finally broke through my income ceiling.', authorName: 'James M.', authorTitle: 'Sales Director', backgroundImage: '' },
+            { id: '3', quote: 'I went from constant anxiety to inner peace. The techniques are simple but incredibly powerful.', authorName: 'Sarah L.', authorTitle: 'Designer', backgroundImage: '' }
+          ],
         }),
         createBlock('button', {
           text: 'Start Your Transformation',
@@ -791,11 +769,10 @@ export const bookingTemplate: Funnel = {
           text: 'Check your email for the calendar invite and preparation materials.',
           styles: { fontSize: 16, textAlign: 'center', lineHeight: 1.6 },
         }),
-        createBlock('testimonial', {
-          quote: '"The strategy call was incredibly valuable. In 30 minutes, I got more clarity than months of trying to figure it out alone."',
-          authorName: 'Michael Chen',
-          authorTitle: 'Founder, TechStartup',
-          rating: 5,
+        createBlock('testimonial-slider', {
+          testimonials: [
+            { id: '1', quote: 'The strategy call was incredibly valuable. In 30 minutes, I got more clarity than months of trying to figure it out alone.', authorName: 'Michael Chen', authorTitle: 'Founder, TechStartup', backgroundImage: '' }
+          ],
         }),
       ],
       settings: {},
@@ -862,11 +839,10 @@ export const salesPageTemplate: Funnel = {
             { id: '3', title: 'Module 3: Scale', content: 'The exact playbook to 10x your revenue.' },
           ],
         }),
-        createBlock('testimonial', {
-          quote: '"I went from $10K to $100K months in just 6 months. This system works."',
-          authorName: 'Jessica Williams',
-          authorTitle: 'Agency Owner',
-          rating: 5,
+        createBlock('testimonial-slider', {
+          testimonials: [
+            { id: '1', quote: 'I went from $10K to $100K months in just 6 months. This system works.', authorName: 'Jessica Williams', authorTitle: 'Agency Owner', backgroundImage: '' }
+          ],
         }),
         createBlock('countdown', {
           endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
@@ -1084,6 +1060,8 @@ export function createEmptyFunnel(): Funnel {
       primaryColor: 'hsl(234 89% 64%)',
       fontFamily: 'Inter',
     },
+    countryCodes: defaultCountryCodes,
+    defaultCountryId: defaultCountryCodes[0]?.id || '1',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

@@ -482,6 +482,17 @@
 }
 
 /* Marquee animations for logo bar */
+/* Infinite marquee scroll animation */
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Legacy marquee animations (kept for backwards compatibility) */
 @keyframes marquee-left {
   from {
     transform: translateX(0);
@@ -524,10 +535,4 @@
 
 .animate-marquee-fast-right {
   animation: marquee-right 15s linear infinite;
-}
-
-/* Pause animation on hover */
-.marquee-track[style*="animation-play-state: paused"],
-.marquee-track:hover {
-  animation-play-state: paused !important;
 }

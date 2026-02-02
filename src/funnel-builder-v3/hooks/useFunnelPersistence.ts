@@ -1,5 +1,6 @@
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -21,11 +22,14 @@ interface FunnelRecord {
   settings: any;
   status: string;
   updated_at: string;
+  domain_id: string | null;
+  published_at: string | null;
 }
 
 export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistenceOptions) {
   const { teamId: teamIdParam, funnelId: funnelIdParam } = useParams<{ teamId?: string; funnelId?: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, session } = useAuth();
   
   const teamId = teamIdParam ?? null;
@@ -33,6 +37,45 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
   
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef<string>('');
+
+  // Fetch funnel metadata (status, domain_id, published_at)
+  const { data: funnelMeta } = useQuery({
+    queryKey: ['funnel-meta', funnelId],
+    queryFn: async () => {
+      if (!funnelId) return null;
+      const { data, error } = await supabase
+        .from('funnels')
+        .select('status, domain_id, published_at, slug')
+        .eq('id', funnelId)
+        .single();
+      if (error) return null;
+      return data as { status: string; domain_id: string | null; published_at: string | null; slug: string };
+    },
+    enabled: !!funnelId,
+    staleTime: 10000,
+  });
+
+  // Link domain to funnel
+  const linkDomain = useCallback(async (domainId: string | null): Promise<boolean> => {
+    if (!funnelId) {
+      toast.error('No funnel ID available');
+      return false;
+    }
+    try {
+      const { error } = await supabase
+        .from('funnels')
+        .update({ domain_id: domainId })
+        .eq('id', funnelId);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['funnel-meta', funnelId] });
+      toast.success(domainId ? 'Domain linked!' : 'Domain unlinked');
+      return true;
+    } catch (e) {
+      console.error('Error linking domain:', e);
+      toast.error('Failed to link domain');
+      return false;
+    }
+  }, [funnelId, queryClient]);
 
   // NOTE: Loading is handled by FunnelEditorV3 (parent component).
   // This hook only handles save/publish to avoid duplicate loads and infinite loops.
@@ -154,7 +197,8 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
         return false;
       }
 
-      toast.success('Funnel published!');
+      // Invalidate to refresh status
+      queryClient.invalidateQueries({ queryKey: ['funnel-meta', currentFunnelId] });
       return true;
     } catch (e) {
       console.error('Error publishing funnel:', e);
@@ -178,6 +222,11 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
     saveDraft,
     debouncedSave,
     publish,
+    linkDomain,
     isAuthenticated: !!user,
+    funnelStatus: funnelMeta?.status || 'draft',
+    currentDomainId: funnelMeta?.domain_id || null,
+    lastPublishedAt: funnelMeta?.published_at || null,
+    slug: funnelMeta?.slug || funnel.name?.toLowerCase().replace(/\s+/g, '-') || 'untitled',
   };
 }

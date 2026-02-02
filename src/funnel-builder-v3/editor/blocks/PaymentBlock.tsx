@@ -1,17 +1,38 @@
-import React from 'react';
-import { PaymentContent } from '@/funnel-builder-v3/types/funnel';
+import React, { useState } from 'react';
+import { PaymentContent, ConsentSettings } from '@/funnel-builder-v3/types/funnel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { CreditCard, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+
+// Default consent settings
+const defaultConsent: ConsentSettings = {
+  enabled: false,
+  text: 'I have read and accept the',
+  linkText: 'privacy policy',
+  linkUrl: '#',
+  required: true,
+};
 
 interface PaymentBlockProps {
   content: PaymentContent;
 }
 
 export function PaymentBlock({ content }: PaymentBlockProps) {
-  const { amount, currency, buttonText, description, buttonColor, buttonGradient, amountColor } = content;
+  const { amount, currency, buttonText, description, buttonColor, buttonGradient, amountColor, consent = defaultConsent } = content;
+  const [hasConsented, setHasConsented] = useState(false);
+
+  const handlePayment = () => {
+    // Validate consent if required
+    if (consent.enabled && consent.required && !hasConsented) {
+      toast.error('Please accept the privacy policy to continue');
+      return;
+    }
+    // Payment processing would happen here
+  };
 
   const formatCurrency = (value: number, curr: string) => {
     return new Intl.NumberFormat('en-US', {
@@ -73,11 +94,40 @@ export function PaymentBlock({ content }: PaymentBlockProps) {
           </div>
         </div>
 
+        {/* Privacy Consent Checkbox */}
+        {consent.enabled && (
+          <div className="flex items-start gap-3 py-2">
+            <Checkbox
+              id="privacy-consent-payment"
+              checked={hasConsented}
+              onCheckedChange={(checked) => setHasConsented(checked === true)}
+              className="mt-0.5"
+            />
+            <label 
+              htmlFor="privacy-consent-payment" 
+              className="text-sm text-muted-foreground leading-relaxed cursor-pointer select-none"
+            >
+              {consent.text}{' '}
+              <a 
+                href={consent.linkUrl || '#'} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary underline underline-offset-2 hover:text-primary/80"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {consent.linkText}
+              </a>
+              {consent.required && <span className="text-destructive ml-0.5">*</span>}
+            </label>
+          </div>
+        )}
+
         <Button 
           className={cn("w-full", hasCustomBg && "hover:opacity-90")}
           variant={hasCustomBg ? "ghost" : "default"}
           style={buttonStyle}
           size="lg"
+          onClick={handlePayment}
         >
           <Lock className="w-4 h-4 mr-2" />
           {buttonText}

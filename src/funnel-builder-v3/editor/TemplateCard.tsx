@@ -151,29 +151,6 @@ function AbstractBlock({ block, colors, scale = 1 }: { block: Block; colors: Tem
         </div>
       );
     
-    case 'testimonial':
-      return (
-        <div 
-          className="mx-2 p-1.5 rounded"
-          style={{ backgroundColor: `${colors.text}10` }}
-        >
-          <div className="flex items-center gap-1 mb-1">
-            <div 
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: `${colors.accent}50` }}
-            />
-            <div 
-              className="w-8 h-1 rounded-full opacity-50"
-              style={{ backgroundColor: colors.text }}
-            />
-          </div>
-          <div 
-            className="h-0.5 w-full rounded-full opacity-30"
-            style={{ backgroundColor: colors.text }}
-          />
-        </div>
-      );
-    
     case 'logo-bar':
       return (
         <div className="flex justify-center gap-1.5 mx-2">

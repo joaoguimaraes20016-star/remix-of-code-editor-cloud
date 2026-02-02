@@ -18,7 +18,7 @@ export default function FunnelEditorV3() {
   const [initialFunnel, setInitialFunnel] = useState<Funnel | null>(null);
   const funnelRef = useRef<Funnel | null>(null);
 
-  // Fetch funnel from Supabase
+  // Fetch funnel from Supabase - only fetch builder_document and essential fields
   const { data: dbFunnel, isLoading, error } = useQuery({
     queryKey: ['funnel-v3', funnelId],
     queryFn: async () => {
@@ -26,7 +26,7 @@ export default function FunnelEditorV3() {
       
       const { data, error } = await supabase
         .from('funnels')
-        .select('*')
+        .select('id, name, slug, builder_document, settings, status, team_id, created_at, updated_at')
         .eq('id', funnelId)
         .single();
       

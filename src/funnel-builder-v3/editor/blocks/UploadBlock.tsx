@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
-import { UploadContent } from '@/funnel-builder-v3/types/funnel';
+import { UploadContent, ConsentSettings } from '@/funnel-builder-v3/types/funnel';
 import { cn } from '@/lib/utils';
 import { Upload, File, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
+import { toast } from 'sonner';
+
+// Default consent settings
+const defaultConsent: ConsentSettings = {
+  enabled: false,
+  text: 'I have read and accept the',
+  linkText: 'privacy policy',
+  linkUrl: '#',
+  required: true,
+};
 
 interface UploadBlockProps {
   content: UploadContent;
@@ -15,11 +26,12 @@ interface UploadBlockProps {
 }
 
 export function UploadBlock({ content, blockId, stepId, isPreview }: UploadBlockProps) {
-  const { label, acceptedTypes, maxSize, buttonText } = content;
+  const { label, acceptedTypes, maxSize, buttonText, consent = defaultConsent } = content;
   const runtime = useFunnelRuntimeOptional();
   const { updateBlockContent } = useFunnel();
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [hasConsented, setHasConsented] = useState(false);
 
   const canEdit = blockId && stepId && !isPreview;
 
@@ -158,6 +170,34 @@ export function UploadBlock({ content, blockId, stepId, isPreview }: UploadBlock
           </>
         )}
       </div>
+
+      {/* Privacy Consent Checkbox */}
+      {consent.enabled && (
+        <div className="flex items-start gap-3 py-2">
+          <Checkbox
+            id="privacy-consent-upload"
+            checked={hasConsented}
+            onCheckedChange={(checked) => setHasConsented(checked === true)}
+            className="mt-0.5"
+          />
+          <label 
+            htmlFor="privacy-consent-upload" 
+            className="text-sm text-muted-foreground leading-relaxed cursor-pointer select-none"
+          >
+            {consent.text}{' '}
+            <a 
+              href={consent.linkUrl || '#'} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary underline underline-offset-2 hover:text-primary/80"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {consent.linkText}
+            </a>
+            {consent.required && <span className="text-destructive ml-0.5">*</span>}
+          </label>
+        </div>
+      )}
 
       <Button className="w-full" disabled={!file} onClick={handleSubmit}>
         {canEdit ? (

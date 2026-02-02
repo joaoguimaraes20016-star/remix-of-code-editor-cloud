@@ -1,8 +1,9 @@
 import React, { useCallback } from 'react';
-import { ListContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
-import { Check, Circle } from 'lucide-react';
+import { ListContent, ListItem, ListItemIcon } from '@/funnel-builder-v3/types/funnel';
+import { Circle } from 'lucide-react';
 import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
+import { getIconByName } from '@/funnel-builder-v3/editor/IconPicker';
 
 interface ListBlockProps {
   content: ListContent;
@@ -13,9 +14,27 @@ interface ListBlockProps {
 
 export function ListBlock({ content, blockId, stepId, isPreview }: ListBlockProps) {
   const { updateBlockContent } = useFunnel();
-  const { items, style, iconColor, textColor, fontSize = 16 } = content;
+  const { 
+    items, 
+    style, 
+    iconColor, 
+    textColor, 
+    fontSize = 16,
+    iconSize = 40,
+    showIconBackground = true,
+    // Default icon settings
+    defaultIconMode = 'icon',
+    defaultIconName = 'check',
+    defaultEmoji = '✅',
+    defaultImageSrc = '',
+    // Legacy support
+    iconType = 'check'
+  } = content;
 
   const canEdit = blockId && stepId && !isPreview;
+
+  // Normalize style: treat legacy 'check' as 'icon'
+  const normalizedStyle = style === 'check' ? 'icon' : style;
 
   const handleItemTextChange = useCallback((itemId: string, newText: string) => {
     if (blockId && stepId) {
@@ -26,42 +45,171 @@ export function ListBlock({ content, blockId, stepId, isPreview }: ListBlockProp
     }
   }, [blockId, stepId, items, updateBlockContent]);
 
-  const iconStyle: React.CSSProperties = iconColor ? { color: iconColor } : {};
   const textStyle: React.CSSProperties = { fontSize };
   if (textColor) {
     textStyle.color = textColor;
   }
 
+  // Get icon settings for an item (use item's custom icon or fall back to defaults)
+  const getItemIconSettings = (item: ListItem): { mode: string; iconName: string; emoji: string; imageSrc: string; size: number } => {
+    if (item.icon) {
+      return {
+        mode: item.icon.mode || defaultIconMode,
+        iconName: item.icon.iconName || defaultIconName,
+        emoji: item.icon.emoji || defaultEmoji,
+        imageSrc: item.icon.imageSrc || defaultImageSrc,
+        size: item.icon.size || iconSize,
+      };
+    }
+    
+    // Fall back to defaults (or legacy iconType)
+    const legacyMap: Record<string, string> = {
+      'check': 'check',
+      'star': 'star',
+      'heart': 'heart',
+      'arrow': 'arrow-right',
+    };
+    
+    return {
+      mode: defaultIconMode,
+      iconName: defaultIconName || legacyMap[iconType] || 'check',
+      emoji: defaultEmoji,
+      imageSrc: defaultImageSrc,
+      size: iconSize,
+    };
+  };
+
+  // Render icon content for an item
+  const renderItemIcon = (item: ListItem, itemIconSize: number) => {
+    const color = iconColor || 'hsl(var(--primary))';
+    const settings = getItemIconSettings(item);
+    // Different sizing for different modes
+    const iconInnerSize = Math.max(Math.round(itemIconSize * 0.5), 14);
+    const imageInnerSize = Math.max(Math.round(itemIconSize * 0.85), 20); // Images fill more
+    const emojiInnerSize = Math.max(Math.round(itemIconSize * 0.6), 16);
+    
+    // Emoji mode
+    if (settings.mode === 'emoji') {
+      return (
+        <span 
+          className="leading-none flex items-center justify-center"
+          style={{ 
+            fontSize: emojiInnerSize,
+            width: emojiInnerSize,
+            height: emojiInnerSize,
+          }}
+        >
+          {settings.emoji}
+        </span>
+      );
+    }
+    
+    // Image mode - images should fill most of the container
+    if (settings.mode === 'image' && settings.imageSrc) {
+      return (
+        <img 
+          src={settings.imageSrc} 
+          alt="" 
+          className="object-contain rounded"
+          style={{ 
+            width: imageInnerSize, 
+            height: imageInnerSize,
+            minWidth: 20,
+            minHeight: 20,
+          }}
+        />
+      );
+    }
+    
+    // Icon mode (default)
+    const IconComponent = getIconByName(settings.iconName);
+    const fillIcons = ['star', 'heart'];
+    const shouldFill = fillIcons.includes(settings.iconName);
+    
+    return (
+      <IconComponent 
+        style={{ 
+          width: iconInnerSize,
+          height: iconInnerSize,
+          minWidth: 14,
+          minHeight: 14,
+          color,
+          ...(shouldFill && { fill: color })
+        }} 
+      />
+    );
+  };
+
+  // Get effective icon size for an item (per-item or default)
+  const getEffectiveIconSize = (item: ListItem) => {
+    const settings = getItemIconSettings(item);
+    return Math.max(settings.size, 16);
+  };
+
+  // Default effective size for bullet/numbered
+  const defaultEffectiveSize = Math.max(iconSize, 16);
+
   return (
-    <ul className={style === 'numbered' ? 'list-decimal list-inside space-y-2' : 'space-y-2'}>
-      {items.map((item, index) => (
-        <li key={item.id} className="flex items-start gap-3 text-foreground" style={textStyle}>
-          {style === 'bullet' && (
-            <Circle 
-              className="w-2 h-2 mt-2 fill-primary text-primary flex-shrink-0" 
-              style={iconColor ? { fill: iconColor, color: iconColor } : {}}
-            />
-          )}
-          {style === 'check' && (
+    <ul className={normalizedStyle === 'numbered' ? 'list-decimal list-inside space-y-2' : 'space-y-2'}>
+      {items.map((item, index) => {
+        const itemIconSize = getEffectiveIconSize(item);
+        
+        return (
+        <li key={item.id} className="flex items-start gap-2.5 text-foreground" style={textStyle}>
+          {normalizedStyle === 'bullet' && (
             <div 
-              className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-              style={{ backgroundColor: iconColor ? `${iconColor}20` : 'hsl(var(--primary) / 0.1)' }}
+              className="flex items-center justify-center flex-shrink-0"
+              style={{ 
+                width: defaultEffectiveSize,
+                height: defaultEffectiveSize,
+                marginTop: Math.max((fontSize - defaultEffectiveSize) / 2, 0),
+              }}
             >
-              <Check 
-                className="w-3 h-3" 
-                style={iconColor ? { color: iconColor } : { color: 'hsl(var(--primary))' }}
+              <Circle 
+                className="fill-primary text-primary" 
+                style={{
+                  width: Math.max(defaultEffectiveSize * 0.35, 6),
+                  height: Math.max(defaultEffectiveSize * 0.35, 6),
+                  ...(iconColor && { fill: iconColor, color: iconColor })
+                }}
               />
             </div>
           )}
-          {style === 'numbered' && (
-            <span 
-              className="font-semibold min-w-[1.5rem]"
-              style={iconColor ? { color: iconColor } : { color: 'hsl(var(--primary))' }}
+          {normalizedStyle === 'icon' && (() => {
+            const isImage = getItemIconSettings(item).mode === 'image';
+            const shouldShowBg = showIconBackground && !isImage;
+            return (
+              <div 
+                className={`flex items-center justify-center flex-shrink-0 ${shouldShowBg ? 'rounded-full' : ''} ${isImage ? 'rounded-lg' : ''}`}
+                style={{ 
+                  width: itemIconSize,
+                  height: itemIconSize,
+                  minWidth: 20,
+                  minHeight: 20,
+                  marginTop: Math.max((fontSize - itemIconSize) / 2, 0),
+                  backgroundColor: shouldShowBg 
+                    ? (iconColor ? `${iconColor}15` : 'hsl(var(--primary) / 0.08)')
+                    : 'transparent'
+                }}
+              >
+                {renderItemIcon(item, itemIconSize)}
+              </div>
+            );
+          })()}
+          {normalizedStyle === 'numbered' && (
+            <div
+              className="flex items-center justify-center flex-shrink-0 font-semibold"
+              style={{ 
+                width: defaultEffectiveSize,
+                minWidth: 20,
+                marginTop: Math.max((fontSize - defaultEffectiveSize) / 2, 0),
+                color: iconColor || 'hsl(var(--primary))'
+              }}
             >
               {index + 1}.
-            </span>
+            </div>
           )}
-          <span className="flex-1">
+          <span className="flex-1 leading-normal">
             {canEdit ? (
               <EditableText
                 value={item.text}
@@ -78,7 +226,8 @@ export function ListBlock({ content, blockId, stepId, isPreview }: ListBlockProp
             )}
           </span>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }

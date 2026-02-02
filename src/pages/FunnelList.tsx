@@ -145,40 +145,48 @@ export default function FunnelList() {
   const [renameFunnel, setRenameFunnel] = useState<Funnel | null>(null);
   const [renameValue, setRenameValue] = useState('');
 
-  // Fetch funnels with lead counts
+  // Fetch funnels with lead counts - optimized to avoid N+1 queries
   const { data: funnels, isLoading: funnelsLoading } = useQuery({
     queryKey: ['funnels', teamId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch funnels without builder_document (large field not needed for list view)
+      const { data: funnelsData, error: funnelsError } = await supabase
         .from('funnels')
-        .select('*')
+        .select('id, team_id, name, slug, status, settings, domain_id, created_at, updated_at, created_by')
         .eq('team_id', teamId)
         .order('updated_at', { ascending: false });
 
-      if (error) throw error;
+      if (funnelsError) throw funnelsError;
+      if (!funnelsData || funnelsData.length === 0) return [];
 
-      const funnelsWithCounts = await Promise.all(
-        (data || []).map(async (funnel) => {
-          const { count } = await supabase
-            .from('funnel_leads')
-            .select('*', { count: 'exact', head: true })
-            .eq('funnel_id', funnel.id);
+      // Fetch all lead counts in a single query grouped by funnel_id
+      const funnelIds = funnelsData.map(f => f.id);
+      const { data: leadCountsData, error: countsError } = await supabase
+        .from('funnel_leads')
+        .select('funnel_id')
+        .in('funnel_id', funnelIds);
 
-          return {
-            ...funnel,
-            settings: funnel.settings as unknown as Funnel['settings'],
-            lead_count: count || 0,
-          } as Funnel;
-        })
-      );
+      if (countsError) throw countsError;
 
-      return funnelsWithCounts;
+      // Aggregate counts by funnel_id
+      const countsMap = new Map<string, number>();
+      (leadCountsData || []).forEach(lead => {
+        const funnelId = lead.funnel_id;
+        countsMap.set(funnelId, (countsMap.get(funnelId) || 0) + 1);
+      });
+
+      // Combine funnels with their lead counts
+      return funnelsData.map(funnel => ({
+        ...funnel,
+        settings: funnel.settings as unknown as Funnel['settings'],
+        lead_count: countsMap.get(funnel.id) || 0,
+      })) as Funnel[];
     },
     enabled: !!teamId,
     staleTime: 5 * 60 * 1000, // 5 minutes - prevent unnecessary refetches
   });
 
-  // Fetch leads for performance and contacts
+  // Fetch leads for performance and contacts - lazy loaded only when Performance tab is active
   const {
     data: leads,
     isFetching: leadsIsFetching,
@@ -196,23 +204,13 @@ export default function FunnelList() {
       if (error) throw error;
       return data as FunnelLead[];
     },
-    enabled: !!teamId,
+    enabled: !!teamId && activeTab === 'performance', // Only load when Performance tab is active
     staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    refetchOnWindowFocus: false, // Disable auto-refetch to improve performance
+    refetchOnReconnect: false,
   });
 
-  // Refetch leads when switching into the Performance tab
-  const previousTabRef = useRef<TabType | null>(null);
-
-  useEffect(() => {
-    if (activeTab === 'performance' && previousTabRef.current && previousTabRef.current !== 'performance') {
-      refetchLeads();
-    }
-    previousTabRef.current = activeTab;
-  }, [activeTab, refetchLeads]);
-
-  // Fetch all funnel steps for drop-off analytics
+  // Fetch all funnel steps for drop-off analytics - lazy loaded only when Performance tab is active
   const { data: allSteps } = useQuery({
     queryKey: ['funnel-steps', teamId],
     queryFn: async () => {
@@ -228,10 +226,10 @@ export default function FunnelList() {
       if (error) throw error;
       return data as FunnelStep[];
     },
-    enabled: !!funnels?.length,
+    enabled: !!funnels?.length && activeTab === 'performance', // Only load when Performance tab is active
   });
 
-  // Fetch contacts
+  // Fetch contacts - lazy loaded only when Contacts tab is active
   const {
     data: contacts,
     isLoading: contactsLoading,
@@ -288,7 +286,7 @@ export default function FunnelList() {
       if (error) throw error;
       return data as Contact[];
     },
-    enabled: !!teamId,
+    enabled: !!teamId && activeTab === 'contacts', // Only load when Contacts tab is active
   });
 
  const deleteMutation = useMutation({

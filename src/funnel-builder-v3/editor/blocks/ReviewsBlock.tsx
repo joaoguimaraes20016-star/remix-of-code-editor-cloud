@@ -1,9 +1,7 @@
-import React, { useCallback } from 'react';
-import { ReviewsContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
-import { Star, StarHalf, User } from 'lucide-react';
+import React from 'react';
+import { ReviewsContent } from '@/funnel-builder-v3/types/funnel';
+import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
-import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 
 interface ReviewsBlockProps {
   content: ReviewsContent;
@@ -12,206 +10,96 @@ interface ReviewsBlockProps {
   isPreview?: boolean;
 }
 
-// Renders a star that can be full, half, or empty
-function StarRating({ 
-  rating, 
-  starColor = '#facc15' 
-}: { 
-  rating: number; 
-  starColor?: string;
-}) {
-  const stars = [];
-  
-  for (let i = 1; i <= 5; i++) {
-    if (rating >= i) {
-      // Full star
-      stars.push(
-        <Star
-          key={i}
-          className="h-4 w-4"
-          style={{ fill: starColor, color: starColor }}
-        />
-      );
-    } else if (rating >= i - 0.5) {
-      // Half star - use a custom approach with clipping
-      stars.push(
-        <div key={i} className="relative h-4 w-4">
-          {/* Empty star background */}
-          <Star
-            className="absolute h-4 w-4"
-            style={{ 
-              fill: 'transparent', 
-              color: 'hsl(var(--muted-foreground) / 0.3)' 
-            }}
-          />
-          {/* Half-filled overlay using clip-path */}
-          <div 
-            className="absolute inset-0 overflow-hidden"
-            style={{ width: '50%' }}
-          >
-            <Star
-              className="h-4 w-4"
-              style={{ fill: starColor, color: starColor }}
-            />
-          </div>
-        </div>
-      );
-    } else {
-      // Empty star
-      stars.push(
-        <Star
-          key={i}
-          className="h-4 w-4"
-          style={{ 
-            fill: 'transparent', 
-            color: 'hsl(var(--muted-foreground) / 0.3)' 
-          }}
-        />
-      );
-    }
-  }
-  
-  return <div className="flex gap-0.5">{stars}</div>;
-}
-
-// Avatar component with fallback
-function ReviewAvatar({ 
-  src, 
-  author 
-}: { 
-  src?: string; 
-  author: string;
-}) {
-  if (src) {
-    return (
-      <img
-        src={src}
-        alt={author}
-        className="h-8 w-8 rounded-full object-cover border-2 border-background shadow-sm"
-      />
-    );
-  }
-  
-  // Fallback to initials/icon
-  return (
-    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border-2 border-background shadow-sm">
-      <User className="h-4 w-4 text-muted-foreground" />
-    </div>
-  );
-}
-
-export function ReviewsBlock({ content, blockId, stepId, isPreview }: ReviewsBlockProps) {
-  const { updateBlockContent } = useFunnel();
+export function ReviewsBlock({ content }: ReviewsBlockProps) {
   const { 
-    reviews = [],
-    cardStyle = 'outline',
-    reviewTextColor,
-    authorColor,
-    starColor,
-    showAvatars = true,
+    avatars = [],
+    rating = 4.8,
+    reviewCount = '200+',
+    starColor = '#facc15',
+    textColor,
   } = content;
 
-  const canEdit = blockId && stepId && !isPreview;
-
-  const handleReviewTextChange = useCallback((reviewId: string, newText: string) => {
-    if (blockId && stepId) {
-      const updatedReviews = reviews.map(review =>
-        review.id === reviewId ? { ...review, text: newText } : review
-      );
-      updateBlockContent(stepId, blockId, { reviews: updatedReviews });
-    }
-  }, [blockId, stepId, reviews, updateBlockContent]);
-
-  const handleAuthorChange = useCallback((reviewId: string, newAuthor: string) => {
-    if (blockId && stepId) {
-      const updatedReviews = reviews.map(review =>
-        review.id === reviewId ? { ...review, author: newAuthor } : review
-      );
-      updateBlockContent(stepId, blockId, { reviews: updatedReviews });
-    }
-  }, [blockId, stepId, reviews, updateBlockContent]);
-
-  // Build card classes based on style
-  const getCardClasses = () => {
-    const baseClasses = 'rounded-lg p-4';
+  // Render star rating
+  const renderStars = () => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
     
-    if (cardStyle === 'filled') {
-      return cn(baseClasses, 'bg-muted');
+    for (let i = 0; i < 5; i++) {
+      if (i < fullStars) {
+        stars.push(
+          <Star 
+            key={i} 
+            className="h-5 w-5" 
+            style={{ fill: starColor, color: starColor }} 
+          />
+        );
+      } else if (i === fullStars && hasHalfStar) {
+        stars.push(
+          <div key={i} className="relative h-5 w-5">
+            <Star 
+              className="absolute h-5 w-5" 
+              style={{ fill: 'transparent', color: `${starColor}40` }} 
+            />
+            <div className="absolute inset-0 overflow-hidden" style={{ width: '50%' }}>
+              <Star 
+                className="h-5 w-5" 
+                style={{ fill: starColor, color: starColor }} 
+              />
+            </div>
+          </div>
+        );
+      } else {
+        stars.push(
+          <Star 
+            key={i} 
+            className="h-5 w-5" 
+            style={{ fill: 'transparent', color: `${starColor}40` }} 
+          />
+        );
+      }
     }
-    return cn(baseClasses, 'bg-card border border-border');
+    return stars;
   };
 
   return (
-    <div className="space-y-3">
-      {reviews.map((review) => (
-        <div
-          key={review.id}
-          className={getCardClasses()}
-        >
-          {/* Star Rating */}
-          <StarRating rating={review.rating} starColor={starColor} />
-          
-          {/* Review Text */}
-          <div 
-            className="text-sm text-foreground mt-2 mb-2"
-            style={{ color: reviewTextColor || undefined }}
-          >
-            {canEdit ? (
-              <>
-                "
-                <EditableText
-                  value={review.text}
-                  onChange={(newText) => handleReviewTextChange(review.id, newText)}
-                  as="span"
-                  isPreview={isPreview}
-                  showToolbar={true}
-                  richText={true}
-                  styles={{}}
-                  onStyleChange={() => {}}
-                />
-                "
-              </>
-            ) : (
-              `"${review.text}"`
-            )}
-          </div>
-          
-          {/* Author with Avatar */}
-          <div className="flex items-center gap-2">
-            {showAvatars && (
-              <ReviewAvatar src={review.avatar} author={review.author} />
-            )}
-            <div 
-              className="text-xs font-medium"
-              style={{ color: authorColor || 'hsl(var(--muted-foreground))' }}
+    <div className="flex flex-col items-center gap-2 py-4">
+      {/* Overlapping Avatars */}
+      {avatars.length > 0 && (
+        <div className="flex -space-x-3">
+          {avatars.slice(0, 5).map((avatar, index) => (
+            <div
+              key={index}
+              className="w-10 h-10 rounded-full border-2 border-background overflow-hidden bg-muted"
+              style={{ zIndex: avatars.length - index }}
             >
-              {canEdit ? (
-                <>
-                  — 
-                  <EditableText
-                    value={review.author}
-                    onChange={(newAuthor) => handleAuthorChange(review.id, newAuthor)}
-                    as="span"
-                    isPreview={isPreview}
-                    showToolbar={true}
-                    richText={true}
-                    styles={{}}
-                    onStyleChange={() => {}}
-                  />
-                </>
+              {avatar ? (
+                <img 
+                  src={avatar} 
+                  alt={`Reviewer ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                `— ${review.author}`
+                <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500" />
               )}
             </div>
-          </div>
-        </div>
-      ))}
-      
-      {reviews.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground text-sm">
-          No reviews yet
+          ))}
         </div>
       )}
+      
+      {/* Star Rating */}
+      <div className="flex gap-0.5">
+        {renderStars()}
+      </div>
+      
+      {/* Rating Text */}
+      <p 
+        className="text-sm font-medium"
+        style={{ color: textColor || undefined }}
+      >
+        <span className="font-bold">{rating}</span>
+        {' '}from {reviewCount} reviews
+      </p>
     </div>
   );
 }

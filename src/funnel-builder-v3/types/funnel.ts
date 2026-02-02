@@ -12,9 +12,9 @@ export type BlockType =
   | 'reviews'
   // Media Elements
   | 'video'
-  | 'testimonial'
   | 'slider'
   | 'graphic'
+  | 'testimonial-slider'
   // Informative Blocks
   | 'webinar'
   | 'accordion'
@@ -45,7 +45,9 @@ export type BlockType =
   | 'message'
   | 'date-picker'
   | 'dropdown'
-  | 'payment';
+  | 'payment'
+  // Popup
+  | 'popup-form';
 
 export type ViewportType = 'mobile' | 'tablet' | 'desktop';
 
@@ -53,12 +55,10 @@ export type ViewportType = 'mobile' | 'tablet' | 'desktop';
 export type AnimationType = 
   | 'none'
   | 'fade-in'
-  | 'fade-up'
   | 'fade-down'
   | 'fade-left'
   | 'fade-right'
   | 'scale-in'
-  | 'scale-up'
   | 'slide-up'
   | 'slide-down'
   | 'slide-left'
@@ -79,12 +79,16 @@ export interface BlockStyles {
   borderRadius?: number;
   borderWidth?: number;
   borderColor?: string;
-  shadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  shadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  shadowColor?: string; // Custom shadow color (e.g., '#000000', 'rgba(0,0,0,0.5)')
   animation?: AnimationType;
-  animationDuration?: AnimationDuration;
+  animationDuration?: AnimationDuration; // Legacy - kept for backwards compatibility
+  animationDurationMs?: number; // New: duration in milliseconds (100-2000)
   animationDelay?: number;
   animationEasing?: AnimationEasing;
   animationTrigger?: AnimationTrigger;
+  animationLoop?: boolean; // Legacy - kept for backwards compatibility
+  animationRepeat?: 1 | 2 | 3 | 'infinite'; // How many times to play (default: 1)
   hideOnMobile?: boolean;
   hideOnTablet?: boolean;
   hideOnDesktop?: boolean;
@@ -125,18 +129,22 @@ export interface ImageContent {
 
 export interface VideoContent {
   src: string;
-  type: 'youtube' | 'vimeo' | 'hosted';
+  type: 'youtube' | 'vimeo' | 'wistia' | 'loom' | 'hosted';
   autoplay?: boolean;
-  controls?: boolean; // Only applies to hosted videos
+  controls?: boolean;
+  aspectRatio?: '16:9' | '9:16' | '4:3' | '1:1';
+  muted?: boolean;
+  loop?: boolean;
 }
 
 export interface ButtonContent {
   text: string;
   variant: 'primary' | 'secondary' | 'ghost' | 'outline';
   size: 'sm' | 'md' | 'lg';
-  action: 'next-step' | 'url' | 'scroll' | 'submit';
-  actionValue?: string;
+  action: 'next-step' | 'url' | 'scroll' | 'submit' | 'webhook';
+  actionValue?: string; // URL for 'url' action, webhook URL for 'webhook' action
   fullWidth?: boolean;
+  fontSize?: number;
   styles?: TextStyles;
   backgroundColor?: string;
   backgroundGradient?: string;
@@ -147,6 +155,16 @@ export interface ButtonContent {
   borderWidth?: number;
   icon?: string;
   iconPosition?: 'left' | 'right';
+  trackingId?: string;
+}
+
+// Popup/Modal settings for interactive blocks
+export interface PopupSettings {
+  enabled: boolean;
+  trigger: 'on-load' | 'on-click' | 'on-delay';
+  delay?: number; // seconds for on-delay trigger
+  required?: boolean; // must complete before continuing
+  triggerElementId?: string; // for on-click trigger
 }
 
 export interface FormFieldConfig {
@@ -156,69 +174,81 @@ export interface FormFieldConfig {
   placeholder?: string;
   required?: boolean;
   options?: string[]; // For select fields
+  trackingId?: string;
+}
+
+// Privacy consent settings for forms
+export interface ConsentSettings {
+  enabled: boolean;
+  text: string; // e.g., "I have read and accept the"
+  linkText: string; // e.g., "privacy policy"
+  linkUrl: string; // URL to privacy policy page
+  required: boolean;
 }
 
 export interface FormContent {
+  title?: string; // Optional form heading (e.g., "Where can we reach you?")
+  titleStyles?: TextStyles; // Styling for the title
   fields: FormFieldConfig[];
-  submitText: string;
-  submitAction: 'next-step' | 'webhook';
-  webhookUrl?: string;
-  submitButtonColor?: string;
-  submitButtonGradient?: string;
-  // Button text styling
-  submitButtonTextColor?: string;
-  submitButtonTextGradient?: string;
+  // Submit button - uses ButtonContent for consistency (action includes webhook option)
+  submitButton?: ButtonContent;
+  // Privacy consent checkbox
+  consent?: ConsentSettings;
+  // Popup/Modal settings
+  popupSettings?: PopupSettings;
 }
 
 export interface EmailCaptureContent {
   placeholder: string;
-  buttonText: string;
   subtitle?: string;
-  buttonColor?: string;
-  buttonGradient?: string;
-  // Button text styling
-  buttonTextColor?: string;
-  buttonTextGradient?: string;
+  // Submit button - uses ButtonContent for consistency
+  submitButton?: ButtonContent;
+  // Privacy consent checkbox
+  consent?: ConsentSettings;
+  // Popup/Modal settings
+  popupSettings?: PopupSettings;
+}
+
+// Country code configuration for phone inputs
+export interface CountryCode {
+  id: string;
+  code: string; // e.g., "+1"
+  name: string; // e.g., "United States"
+  flag: string; // emoji flag, e.g., "🇺🇸"
 }
 
 export interface PhoneCaptureContent {
   placeholder: string;
-  buttonText: string;
-  defaultCountry?: string;
-  buttonColor?: string;
-  buttonGradient?: string;
-  // Button text styling
-  buttonTextColor?: string;
-  buttonTextGradient?: string;
+  // Submit button - uses ButtonContent for consistency
+  submitButton?: ButtonContent;
+  // Privacy consent checkbox
+  consent?: ConsentSettings;
+  // Popup/Modal settings
+  popupSettings?: PopupSettings;
+  // Note: countryCodes are now global (stored in Funnel.countryCodes)
 }
 
-export interface TestimonialContent {
-  quote: string;
-  authorName: string;
-  authorTitle?: string;
-  authorImage?: string;
-  rating?: number;
-  // Style properties
-  cardStyle?: 'outline' | 'filled';
-  quoteColor?: string;
-  authorColor?: string;
-  quoteStyles?: TextStyles;
-}
-
+// Compact social proof badge with overlapping avatars and rating
 export interface ReviewsContent {
-  reviews: {
-    id: string;
-    text: string;
-    author: string;
-    rating: number; // Supports half-stars (e.g., 4.5)
-    avatar?: string; // URL to avatar image
-  }[];
-  // Style properties
-  cardStyle?: 'outline' | 'filled';
-  reviewTextColor?: string;
-  authorColor?: string;
+  avatars: string[]; // Array of avatar image URLs
+  rating: number; // e.g., 4.8
+  reviewCount: string; // e.g., "200+"
+  // Style options
   starColor?: string;
-  showAvatars?: boolean;
+  textColor?: string;
+}
+
+// Image slider testimonials with quote overlay
+export interface TestimonialSliderContent {
+  testimonials: {
+    id: string;
+    quote: string;
+    authorName: string;
+    authorTitle?: string;
+    backgroundImage: string;
+  }[];
+  autoPlay?: boolean;
+  interval?: number; // seconds between slides
 }
 
 export interface LogoBarContent {
@@ -266,15 +296,31 @@ export interface QuizContent {
   options: {
     id: string;
     text: string;
-    nextStepId?: string;
+    // Button-like actions
+    action?: 'next-step' | 'url' | 'submit';
+    actionValue?: string; // URL for 'url' action, step ID for 'next-step'
+    // DEPRECATED but keep for backwards compatibility
+    nextStepId?: string; // Maps to action: 'next-step', actionValue: stepId
+    // Per-option styling
+    backgroundColor?: string;
+    textColor?: string;
+    trackingId?: string;
   }[];
   multiSelect?: boolean;
+  
+  // Submit Button - uses full ButtonContent for consistency
+  showSubmitButton?: boolean;
+  submitButton?: ButtonContent;
+  
   // Style properties
   optionStyle?: 'outline' | 'filled';
   questionColor?: string;
   optionTextColor?: string;
   selectedOptionColor?: string;
   questionStyles?: TextStyles;
+  
+  // Popup/Modal settings
+  popupSettings?: PopupSettings;
 }
 
 export interface ColumnsContent {
@@ -322,13 +368,36 @@ export interface SpacerContent {
 }
 
 // New Block Content Types
+export interface ListItemIcon {
+  mode: 'icon' | 'emoji' | 'image';
+  iconName?: string;   // e.g., 'check', 'star', 'zap'
+  emoji?: string;      // e.g., '✅', '⭐', '🚀'
+  imageSrc?: string;   // custom image URL
+  size?: number;       // per-item icon size override
+}
+
+export interface ListItem {
+  id: string;
+  text: string;
+  icon?: ListItemIcon;  // Per-item icon customization
+}
+
 export interface ListContent {
-  items: { id: string; text: string }[];
-  style: 'bullet' | 'numbered' | 'check';
+  items: ListItem[];
+  style: 'bullet' | 'numbered' | 'icon';
   // Style properties
   iconColor?: string;
   textColor?: string;
   fontSize?: number;
+  iconSize?: number;    // Icon size in pixels (default 40)
+  showIconBackground?: boolean;  // Show circle/background behind icon (default true)
+  // Default icon (used when item doesn't have its own)
+  defaultIconMode?: 'icon' | 'emoji' | 'image';
+  defaultIconName?: string;
+  defaultEmoji?: string;
+  defaultImageSrc?: string;
+  // Legacy (deprecated)
+  iconType?: 'check' | 'star' | 'heart' | 'arrow';
 }
 
 export interface SliderContent {
@@ -358,11 +427,26 @@ export interface WebinarContent {
 }
 
 export interface LoaderContent {
-  progress: number;
-  showPercentage: boolean;
+  // Display
+  text: string;
+  subtext?: string;
+  loaderStyle: 'circular' | 'dots' | 'bars' | 'progress' | 'pulse';
+  size: 'small' | 'medium' | 'large';
   color?: string;
-  trackColor?: string;
-  label?: string;
+  backgroundColor?: string;
+  
+  // Behavior
+  duration: number; // in seconds (1-10)
+  action: {
+    type: 'next-step' | 'specific-step' | 'external-url' | 'reveal-content';
+    stepId?: string;
+    url?: string;
+    blockIds?: string[];
+  };
+  
+  // Text styling
+  textStyles?: TextStyles;
+  subtextStyles?: TextStyles;
 }
 
 export type EmbedProvider = 'kununu' | 'trustpilot' | 'provenexpert' | 'googlemaps' | 'html';
@@ -381,8 +465,23 @@ export interface ImageQuizContent {
     id: string;
     image: string;
     text: string;
-    nextStepId?: string;
+    // Button-like actions
+    action?: 'next-step' | 'url' | 'submit';
+    actionValue?: string; // URL for 'url' action, step ID for 'next-step'
+    // DEPRECATED but keep for backwards compatibility
+    nextStepId?: string; // Maps to action: 'next-step', actionValue: stepId
+    // Per-option styling
+    backgroundColor?: string;
+    textColor?: string;
+    borderColor?: string;
+    trackingId?: string;
   }[];
+  multiSelect?: boolean;
+  
+  // Submit Button - uses full ButtonContent for consistency
+  showSubmitButton?: boolean;
+  submitButton?: ButtonContent;
+  
   // Style properties
   optionStyle?: 'outline' | 'filled';
   questionColor?: string;
@@ -398,8 +497,22 @@ export interface VideoQuestionContent {
   options: {
     id: string;
     text: string;
-    nextStepId?: string;
+    // Button-like actions
+    action?: 'next-step' | 'url' | 'submit';
+    actionValue?: string; // URL for 'url' action, step ID for 'next-step'
+    // DEPRECATED but keep for backwards compatibility
+    nextStepId?: string; // Maps to action: 'next-step', actionValue: stepId
+    // Per-option styling
+    backgroundColor?: string;
+    textColor?: string;
+    trackingId?: string;
   }[];
+  multiSelect?: boolean;
+  
+  // Submit Button - uses full ButtonContent for consistency
+  showSubmitButton?: boolean;
+  submitButton?: ButtonContent;
+  
   // Style properties
   optionStyle?: 'outline' | 'filled';
   questionColor?: string;
@@ -414,6 +527,8 @@ export interface UploadContent {
   acceptedTypes: string[];
   maxSize: number;
   buttonText: string;
+  // Privacy consent checkbox
+  consent?: ConsentSettings;
 }
 
 export interface MessageContent {
@@ -421,6 +536,19 @@ export interface MessageContent {
   placeholder: string;
   minRows: number;
   maxLength?: number;
+  
+  // Question styling (like Quiz block)
+  questionColor?: string;
+  questionStyles?: TextStyles;
+  
+  // Submit Button - uses full ButtonContent for consistency
+  submitButton?: ButtonContent;
+  
+  // Privacy consent checkbox
+  consent?: ConsentSettings;
+  
+  // Popup/Modal settings
+  popupSettings?: PopupSettings;
 }
 
 export interface DatePickerContent {
@@ -448,6 +576,8 @@ export interface PaymentContent {
   url?: string;
   height?: number;
   stripeUrl?: string;
+  // Privacy consent checkbox
+  consent?: ConsentSettings;
   // Style properties
   buttonColor?: string;
   buttonGradient?: string;
@@ -463,8 +593,8 @@ export type BlockContent =
   | FormContent
   | EmailCaptureContent
   | PhoneCaptureContent
-  | TestimonialContent
   | ReviewsContent
+  | TestimonialSliderContent
   | LogoBarContent
   | SocialProofContent
   | CountdownContent
@@ -494,6 +624,7 @@ export interface Block {
   type: BlockType;
   content: BlockContent;
   styles: BlockStyles;
+  trackingId?: string;
 }
 
 export interface FunnelStep {
@@ -521,6 +652,9 @@ export interface Funnel {
     favicon?: string;
     showStepIndicator?: boolean; // Toggle step dots at bottom
   };
+  // Global phone country codes (shared across all phone inputs)
+  countryCodes?: CountryCode[];
+  defaultCountryId?: string; // ID of default selected country
   createdAt: string;
   updatedAt: string;
 }

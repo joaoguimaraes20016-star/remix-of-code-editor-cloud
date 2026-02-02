@@ -1,14 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { PhoneCaptureContent } from '@/funnel-builder-v3/types/funnel';
+import { PhoneCaptureContent, ButtonContent, ConsentSettings, CountryCode } from '@/funnel-builder-v3/types/funnel';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Phone } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
-import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { useSimpleStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+// Default consent settings
+const defaultConsent: ConsentSettings = {
+  enabled: false,
+  text: 'I have read and accept the',
+  linkText: 'privacy policy',
+  linkUrl: '#',
+  required: true,
+};
+
+// Default country codes fallback
+const defaultCountryCodes: CountryCode[] = [
+  { id: '1', code: '+1', name: 'United States', flag: '🇺🇸' },
+];
+
+// Default submit button configuration
+const defaultSubmitButton: ButtonContent = {
+  text: 'Call Me',
+  variant: 'primary',
+  size: 'lg',
+  action: 'next-step',
+  fullWidth: true,
+  backgroundColor: '#3b82f6',
+  color: '#ffffff',
+};
 
 interface PhoneCaptureBlockProps {
   content: PhoneCaptureContent;
@@ -19,31 +49,28 @@ interface PhoneCaptureBlockProps {
 
 export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: PhoneCaptureBlockProps) {
   const runtime = useFunnelRuntimeOptional();
-  const { updateBlockContent } = useFunnel();
+  const { selectedChildElement, setSelectedChildElement, countryCodes: globalCountryCodes, defaultCountryId: globalDefaultCountryId } = useFunnel();
   const { 
     placeholder, 
-    buttonText, 
-    defaultCountry, 
-    buttonColor, 
-    buttonGradient,
-    buttonTextColor,
-    buttonTextGradient
+    submitButton = defaultSubmitButton,
+    consent = defaultConsent,
   } = content;
+  
+  // Use global country codes from funnel context
+  const countryCodes = globalCountryCodes && globalCountryCodes.length > 0 
+    ? globalCountryCodes 
+    : defaultCountryCodes;
+  
   const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const canEdit = blockId && stepId && !isPreview;
-
-  // Wire button text toolbar to block content
-  const { styles: buttonTextStyles, handleStyleChange: handleButtonTextStyleChange } = useSimpleStyleSync(
-    blockId,
-    stepId,
-    buttonTextColor,
-    buttonTextGradient,
-    updateBlockContent,
-    'buttonTextColor',
-    'buttonTextGradient'
+  const [hasConsented, setHasConsented] = useState(false);
+  const [selectedCountryId, setSelectedCountryId] = useState(
+    globalDefaultCountryId || countryCodes[0]?.id || '1'
   );
+
+  const selectedCountry = countryCodes.find(c => c.id === selectedCountryId) || countryCodes[0];
+  const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
+  const isPhoneInputSelected = !isPreview && selectedChildElement === 'phone-input';
 
   // Load saved phone from runtime
   useEffect(() => {
@@ -65,8 +92,10 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
       return;
     }
 
-    // Save to runtime
-    runtime.setFormField('phone', phone);
+    // Save to runtime (include country code)
+    const fullPhoneNumber = selectedCountry ? `${selectedCountry.code}${phone}` : phone;
+    runtime.setFormField('phone', fullPhoneNumber);
+    runtime.setFormField('phoneCountryCode', selectedCountry?.code || '');
     
     setIsSubmitting(true);
     
@@ -78,38 +107,114 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
     }
   };
 
-  const handleButtonTextChange = (newText: string) => {
-    if (blockId && stepId) {
-      updateBlockContent(stepId, blockId, { buttonText: newText });
+  // Handle button click - select in editor, normal behavior in preview
+  const handleButtonClick = (e: React.MouseEvent) => {
+    if (!isPreview) {
+      e.preventDefault();
+      e.stopPropagation();
+      setSelectedChildElement('submit-button');
     }
   };
 
-  // Button background styling
-  const buttonStyle: React.CSSProperties = {};
-  if (buttonGradient) {
-    buttonStyle.background = buttonGradient;
-  } else if (buttonColor) {
-    buttonStyle.backgroundColor = buttonColor;
+  // Button styling from ButtonContent
+  const { 
+    text, 
+    variant = 'primary', 
+    size = 'lg', 
+    fullWidth = true, 
+    backgroundColor, 
+    backgroundGradient, 
+    color, 
+    textGradient, 
+    borderColor, 
+    borderWidth, 
+    fontSize 
+  } = submitButton;
+  
+  const sizeClasses: Record<string, string> = {
+    sm: 'h-9 px-4 text-sm',
+    md: 'h-11 px-6 text-base',
+    lg: 'h-14 px-8 text-lg',
+  };
+  
+  const customStyle: React.CSSProperties = {};
+  
+  if (fontSize) {
+    customStyle.fontSize = `${fontSize}px`;
   }
   
-  const hasCustomBg = !!buttonColor || !!buttonGradient;
+  const shouldApplyCustomBg = variant !== 'outline' && variant !== 'ghost';
+  
+  if (shouldApplyCustomBg) {
+    if (backgroundGradient) {
+      customStyle.background = backgroundGradient;
+    } else if (backgroundColor) {
+      customStyle.backgroundColor = backgroundColor;
+    }
+  }
+  
+  if (variant === 'outline') {
+    if (borderColor) {
+      customStyle.borderColor = borderColor;
+    }
+    if (borderWidth) {
+      customStyle.borderWidth = `${borderWidth}px`;
+    }
+  }
+  
+  if (!textGradient && color) {
+    customStyle.color = color;
+  }
+  
+  const hasCustomBg = shouldApplyCustomBg && (!!backgroundColor || !!backgroundGradient);
+  const hasTextGradient = !!textGradient;
 
-  // Button text gradient styling
-  const hasTextGradient = !!buttonTextGradient;
-  const buttonTextWrapperStyle: React.CSSProperties = hasTextGradient
-    ? { '--text-gradient': buttonTextGradient } as React.CSSProperties
-    : buttonTextColor
-      ? { color: buttonTextColor }
-      : {};
+  const canEdit = blockId && stepId && !isPreview;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="flex gap-2">
-        <div className="flex items-center gap-2 px-3 bg-muted rounded-l-lg border border-r-0 border-input">
-          <Phone className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">
-            {defaultCountry || '+1'}
-          </span>
+      <div 
+        className={cn(
+          "flex gap-2 relative p-1 -m-1 rounded-lg transition-all",
+          canEdit && "cursor-pointer hover:ring-2 hover:ring-primary/50",
+          isPhoneInputSelected && "ring-2 ring-primary"
+        )}
+        onClick={(e) => {
+          if (canEdit) {
+            e.preventDefault();
+            e.stopPropagation();
+            setSelectedChildElement('phone-input');
+          }
+        }}
+      >
+        <div
+          onClick={(e) => {
+            // Prevent opening country codes inspector when clicking selector
+            e.stopPropagation();
+          }}
+        >
+          <Select
+            value={selectedCountryId}
+            onValueChange={setSelectedCountryId}
+            disabled={canEdit}
+          >
+            <SelectTrigger className="w-[80px] shrink-0 rounded-r-none border-r-0 bg-muted">
+              <span className="text-sm font-medium">
+                {selectedCountry?.flag} {selectedCountry?.code}
+              </span>
+            </SelectTrigger>
+            <SelectContent className="bg-popover max-h-[300px]">
+              {countryCodes.map((country) => (
+                <SelectItem key={country.id} value={country.id}>
+                  <div className="flex items-center gap-2">
+                    <span>{country.flag}</span>
+                    <span className="font-medium">{country.code}</span>
+                    <span className="text-muted-foreground text-xs">{country.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <Input
           type="tel"
@@ -117,35 +222,75 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
           className="flex-1 rounded-l-none"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
+          onFocus={(e) => {
+            if (canEdit) {
+              e.preventDefault();
+              e.target.blur();
+            }
+          }}
+          onClick={(e) => {
+            if (canEdit) {
+              e.preventDefault();
+              e.stopPropagation();
+              setSelectedChildElement('phone-input');
+            }
+          }}
+          readOnly={canEdit}
         />
       </div>
+
+      {/* Privacy Consent Checkbox */}
+      {consent.enabled && (
+        <div className="flex items-start gap-3 py-2">
+          <Checkbox
+            id="privacy-consent-phone"
+            checked={hasConsented}
+            onCheckedChange={(checked) => setHasConsented(checked === true)}
+            className="mt-0.5"
+          />
+          <label 
+            htmlFor="privacy-consent-phone" 
+            className="text-sm text-muted-foreground leading-relaxed cursor-pointer select-none"
+          >
+            {consent.text}{' '}
+            <a 
+              href={consent.linkUrl || '#'} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary underline underline-offset-2 hover:text-primary/80"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {consent.linkText}
+            </a>
+            {consent.required && <span className="text-destructive ml-0.5">*</span>}
+          </label>
+        </div>
+      )}
+
       <Button 
         type="submit"
-        className={cn("w-full", hasCustomBg && "hover:opacity-90")}
-        variant={hasCustomBg ? "ghost" : "default"}
-        style={buttonStyle}
-        size="lg"
+        variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
+        onClick={handleButtonClick}
+        className={cn(
+          sizeClasses[size],
+          fullWidth && 'w-full',
+          hasCustomBg && 'hover:opacity-90',
+          'font-medium transition-all rounded-xl',
+          isButtonSelected && 'ring-2 ring-primary ring-offset-2'
+        )}
+        style={customStyle}
         disabled={isSubmitting}
       >
-        <span 
-          className={cn(hasTextGradient && "text-gradient-clip")}
-          style={buttonTextWrapperStyle}
-        >
-          {canEdit ? (
-            <EditableText
-              value={buttonText || 'Get Started'}
-              onChange={handleButtonTextChange}
-              as="span"
-              isPreview={isPreview}
-              showToolbar={true}
-              richText={true}
-              styles={buttonTextStyles}
-              onStyleChange={handleButtonTextStyleChange}
-            />
-          ) : (
-            isSubmitting ? 'Submitting...' : (buttonText || 'Get Started')
-          )}
-        </span>
+        {hasTextGradient ? (
+          <span
+            className="text-gradient-clip"
+            style={{ '--text-gradient': textGradient } as React.CSSProperties}
+          >
+            {isSubmitting ? 'Submitting...' : (text || 'Call Me')}
+          </span>
+        ) : (
+          isSubmitting ? 'Submitting...' : (text || 'Call Me')
+        )}
       </Button>
     </form>
   );

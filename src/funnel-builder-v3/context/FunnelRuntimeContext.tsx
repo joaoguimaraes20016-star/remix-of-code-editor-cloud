@@ -37,6 +37,14 @@ interface FunnelRuntimeContextType {
   getCurrentStep: () => FunnelStep | undefined;
   getStepIndex: () => number;
   totalSteps: number;
+  
+  // Popup state management
+  activePopup: string | null;
+  completedPopups: string[];
+  openPopup: (blockId: string) => void;
+  closePopup: () => void;
+  markPopupCompleted: (blockId: string) => void;
+  isPopupCompleted: (blockId: string) => boolean;
 }
 
 const FunnelRuntimeContext = createContext<FunnelRuntimeContextType | null>(null);
@@ -62,6 +70,10 @@ export function FunnelRuntimeProvider({
   const [formData, setFormData] = useState<FunnelFormData>({});
   const [selections, setSelections] = useState<FunnelSelections>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Popup state
+  const [activePopup, setActivePopup] = useState<string | null>(null);
+  const [completedPopups, setCompletedPopups] = useState<string[]>([]);
 
   const getCurrentStep = useCallback(() => {
     return funnel.steps.find(s => s.id === currentStepId);
@@ -125,6 +137,27 @@ export function FunnelRuntimeProvider({
     }
   }, [formData, selections, isSubmitting, onFormSubmit]);
 
+  // Popup handlers
+  const openPopup = useCallback((blockId: string) => {
+    setActivePopup(blockId);
+  }, []);
+
+  const closePopup = useCallback(() => {
+    setActivePopup(null);
+  }, []);
+
+  const markPopupCompleted = useCallback((blockId: string) => {
+    setCompletedPopups(prev => {
+      if (prev.includes(blockId)) return prev;
+      return [...prev, blockId];
+    });
+    setActivePopup(null);
+  }, []);
+
+  const isPopupCompleted = useCallback((blockId: string) => {
+    return completedPopups.includes(blockId);
+  }, [completedPopups]);
+
   const canGoBack = stepHistory.length > 1;
   const canGoForward = getStepIndex() < funnel.steps.length - 1;
 
@@ -146,6 +179,13 @@ export function FunnelRuntimeProvider({
       getCurrentStep,
       getStepIndex,
       totalSteps: funnel.steps.length,
+      // Popup state
+      activePopup,
+      completedPopups,
+      openPopup,
+      closePopup,
+      markPopupCompleted,
+      isPopupCompleted,
     }}>
       {children}
     </FunnelRuntimeContext.Provider>

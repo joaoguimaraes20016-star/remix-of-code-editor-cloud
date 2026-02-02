@@ -1,11 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ImageQuizContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
+import { ImageQuizContent, TextStyles, ButtonContent } from '@/funnel-builder-v3/types/funnel';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { useEditableStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
+import { Button } from '@/components/ui/button';
+
+// Default submit button configuration
+const defaultSubmitButton: ButtonContent = {
+  text: 'Submit',
+  variant: 'primary',
+  size: 'md',
+  action: 'next-step',
+  fullWidth: true,
+  backgroundColor: '#3b82f6',
+  color: '#ffffff',
+};
 
 interface ImageQuizBlockProps {
   content: ImageQuizContent;
@@ -18,6 +30,9 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
   const { 
     question, 
     options,
+    multiSelect,
+    showSubmitButton,
+    submitButton = defaultSubmitButton,
     optionStyle = 'outline',
     questionColor,
     optionTextColor,
@@ -25,10 +40,12 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
     questionStyles,
   } = content;
   const runtime = useFunnelRuntimeOptional();
-  const { updateBlockContent } = useFunnel();
-  const [selected, setSelected] = useState<string | null>(null);
+  const { updateBlockContent, selectedChildElement, setSelectedChildElement } = useFunnel();
+  const [selected, setSelected] = useState<string[]>([]);
 
   const canEdit = blockId && stepId && !isPreview;
+  const shouldShowSubmitButton = showSubmitButton || multiSelect;
+  const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
 
   // Wire question text toolbar to block content
   const { styles: questionToolbarStyles, handleStyleChange: handleQuestionStyleChange } = useEditableStyleSync(
@@ -55,24 +72,106 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
     if (runtime && blockId) {
       const savedSelection = runtime.selections[blockId];
       if (savedSelection) {
-        setSelected(typeof savedSelection === 'string' ? savedSelection : savedSelection[0]);
+        setSelected(Array.isArray(savedSelection) ? savedSelection : [savedSelection]);
       }
     }
   }, [runtime, blockId]);
 
+  // Helper function to execute answer action
+  const executeAnswerAction = (option: any) => {
+    if (!runtime) return;
+    
+    // Get action from new format or legacy nextStepId
+    const action = option.action || (option.nextStepId ? 'next-step' : 'next-step');
+    const actionValue = option.actionValue || option.nextStepId;
+    
+    switch (action) {
+      case 'url':
+        if (actionValue) {
+          window.open(actionValue, '_blank');
+        }
+        break;
+      case 'submit':
+        runtime.submitForm();
+        break;
+      case 'next-step':
+      default:
+        if (actionValue) {
+          setTimeout(() => runtime.goToStep(actionValue), 300);
+        } else {
+          setTimeout(() => runtime.goToNextStep(), 300);
+        }
+        break;
+    }
+  };
+
   const handleSelect = (optionId: string) => {
-    setSelected(optionId);
+    let newSelected: string[];
+    
+    if (multiSelect) {
+      newSelected = selected.includes(optionId)
+        ? selected.filter(id => id !== optionId)
+        : [...selected, optionId];
+    } else {
+      newSelected = [optionId];
+    }
+    
+    setSelected(newSelected);
 
     if (runtime && blockId) {
-      runtime.setSelection(blockId, optionId);
+      runtime.setSelection(blockId, multiSelect ? newSelected : optionId);
 
-      // Auto-navigate after selection
-      const selectedOption = options.find(o => o.id === optionId);
-      if (selectedOption?.nextStepId) {
-        setTimeout(() => runtime.goToStep(selectedOption.nextStepId!), 300);
-      } else {
-        setTimeout(() => runtime.goToNextStep(), 300);
+      // Only execute answer action if NO submit button
+      if (!shouldShowSubmitButton) {
+        const selectedOption = options.find(o => o.id === optionId);
+        if (selectedOption) {
+          executeAnswerAction(selectedOption);
+        }
       }
+    }
+  };
+
+  // Handle submit button click - when submit button exists, it OVERRIDES answer actions
+  const handleSubmit = () => {
+    if (runtime && selected.length > 0) {
+      const action = submitButton.action || 'next-step';
+      const actionValue = submitButton.actionValue;
+      
+      // When submit button exists, it OVERRIDES answer actions
+      switch (action) {
+        case 'url':
+          if (actionValue) {
+            window.open(actionValue, '_blank');
+          }
+          break;
+        case 'scroll':
+          if (actionValue) {
+            const element = document.getElementById(actionValue);
+            element?.scrollIntoView({ behavior: 'smooth' });
+          }
+          break;
+        case 'submit':
+          runtime.submitForm();
+          break;
+        case 'next-step':
+        default:
+          if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
+            runtime.goToStep(actionValue);
+          } else {
+            runtime.goToNextStep();
+          }
+          break;
+      }
+    }
+  };
+
+  // Handle button click in editor/preview modes
+  const handleButtonClick = (e: React.MouseEvent) => {
+    if (!isPreview) {
+      e.stopPropagation();
+      setSelectedChildElement('submit-button');
+    } else {
+      handleSubmit();
     }
   };
 
@@ -92,8 +191,17 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
   };
 
   // Build option card classes based on style
-  const getCardClasses = (isSelected: boolean) => {
+  const getCardClasses = (isSelected: boolean, hasCustomBorder: boolean) => {
     const baseClasses = 'relative rounded-xl overflow-hidden transition-all focus:outline-none focus:ring-2 focus:ring-primary/50';
+    
+    // If custom border color, use simpler styling
+    if (hasCustomBorder) {
+      return cn(
+        baseClasses,
+        'border-2',
+        isSelected && 'ring-2 ring-primary/20'
+      );
+    }
     
     if (optionStyle === 'filled') {
       return cn(
@@ -115,8 +223,13 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
   };
 
   // Build text label classes
-  const getLabelClasses = (isSelected: boolean) => {
+  const getLabelClasses = (isSelected: boolean, hasCustomBg: boolean) => {
     const baseClasses = 'p-2 text-center text-sm font-medium';
+    
+    // If has custom background, skip default backgrounds
+    if (hasCustomBg) {
+      return baseClasses;
+    }
     
     if (optionStyle === 'filled') {
       return cn(
@@ -131,8 +244,11 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
     );
   };
 
-  // Get text color
-  const getTextColor = (isSelected: boolean) => {
+  // Get text color - prioritize per-option colors
+  const getTextColor = (isSelected: boolean, option: { textColor?: string }) => {
+    if (option.textColor) {
+      return option.textColor;
+    }
     if (isSelected && selectedOptionColor) {
       return selectedOptionColor;
     }
@@ -140,6 +256,23 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
       return optionTextColor;
     }
     return isSelected ? 'hsl(var(--primary))' : undefined;
+  };
+
+  // Build inline styles for custom colors
+  const getCardStyle = (option: { borderColor?: string }) => {
+    const style: React.CSSProperties = {};
+    if (option.borderColor) {
+      style.borderColor = option.borderColor;
+    }
+    return style;
+  };
+
+  const getLabelStyle = (option: { backgroundColor?: string; textColor?: string }) => {
+    const style: React.CSSProperties = {};
+    if (option.backgroundColor) {
+      style.backgroundColor = option.backgroundColor;
+    }
+    return style;
   };
 
   return (
@@ -179,14 +312,19 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
       </div>
       <div className="grid grid-cols-2 gap-3">
         {options.map((option) => {
-          const isSelected = selected === option.id;
-          const textColor = getTextColor(isSelected);
+          const isSelected = selected.includes(option.id);
+          const hasCustomBorder = !!option.borderColor;
+          const hasCustomBg = !!option.backgroundColor;
+          const textColor = getTextColor(isSelected, option);
+          const cardStyle = getCardStyle(option);
+          const labelStyle = { ...getLabelStyle(option), color: textColor };
           
           return (
             <button
               key={option.id}
               onClick={() => handleSelect(option.id)}
-              className={getCardClasses(isSelected)}
+              className={getCardClasses(isSelected, hasCustomBorder)}
+              style={cardStyle}
             >
               <div className="aspect-square bg-muted">
                 <img
@@ -196,8 +334,8 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
                 />
               </div>
               <div 
-                className={getLabelClasses(isSelected)}
-                style={{ color: textColor }}
+                className={getLabelClasses(isSelected, hasCustomBg)}
+                style={labelStyle}
               >
                 {canEdit ? (
                   <EditableText
@@ -214,15 +352,115 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
                   option.text
                 )}
               </div>
-              {isSelected && (
-                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                  <Check className="h-4 w-4 text-primary-foreground" />
-                </div>
-              )}
+              {/* Selection indicator: Radio for single select, Checkbox for multi select */}
+              <div className="absolute top-2 right-2">
+                {multiSelect ? (
+                  <div className={cn(
+                    "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                    isSelected 
+                      ? "bg-primary border-primary" 
+                      : "border-white/70 bg-black/20"
+                  )}>
+                    {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                  </div>
+                ) : (
+                  <div className={cn(
+                    "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                    isSelected 
+                      ? "border-primary bg-white" 
+                      : "border-white/70 bg-black/20"
+                  )}>
+                    {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                  </div>
+                )}
+              </div>
             </button>
           );
         })}
       </div>
+      
+      {/* Submit Button */}
+      {shouldShowSubmitButton && (() => {
+        const { 
+          text, 
+          variant = 'primary', 
+          size = 'md', 
+          fullWidth = true, 
+          backgroundColor, 
+          backgroundGradient, 
+          color, 
+          textGradient, 
+          borderColor, 
+          borderWidth, 
+          fontSize 
+        } = submitButton;
+        
+        const sizeClasses: Record<string, string> = {
+          sm: 'h-9 px-4 text-sm',
+          md: 'h-11 px-6 text-base',
+          lg: 'h-14 px-8 text-lg',
+        };
+        
+        const customStyle: React.CSSProperties = {};
+        
+        if (fontSize) {
+          customStyle.fontSize = `${fontSize}px`;
+        }
+        
+        const shouldApplyCustomBg = variant !== 'outline' && variant !== 'ghost';
+        
+        if (shouldApplyCustomBg) {
+          if (backgroundGradient) {
+            customStyle.background = backgroundGradient;
+          } else if (backgroundColor) {
+            customStyle.backgroundColor = backgroundColor;
+          }
+        }
+        
+        if (variant === 'outline') {
+          if (borderColor) {
+            customStyle.borderColor = borderColor;
+          }
+          if (borderWidth) {
+            customStyle.borderWidth = `${borderWidth}px`;
+          }
+        }
+        
+        if (!textGradient && color) {
+          customStyle.color = color;
+        }
+        
+        const hasCustomBg = shouldApplyCustomBg && (!!backgroundColor || !!backgroundGradient);
+        const hasTextGradient = !!textGradient;
+        
+        return (
+          <Button
+            variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
+            onClick={handleButtonClick}
+            disabled={isPreview && selected.length === 0}
+            className={cn(
+              sizeClasses[size],
+              fullWidth && 'w-full',
+              hasCustomBg && 'hover:opacity-90',
+              'mt-4 font-medium transition-all rounded-xl',
+              isPreview && selected.length === 0 && 'opacity-50 cursor-not-allowed',
+              isButtonSelected && 'ring-2 ring-primary ring-offset-2'
+            )}
+            style={customStyle}
+          >
+            {hasTextGradient ? (
+              <span
+                className="text-gradient-clip"
+                style={{ '--text-gradient': textGradient } as React.CSSProperties}
+              >
+                {text || 'Submit'}
+              </span>
+            ) : (
+              text || 'Submit'
+            )}
+          </Button>
+        );
+      })()}
     </div>
   );
 }

@@ -60,8 +60,8 @@ const blockIcons: Record<string, React.ComponentType<{ className?: string }>> = 
   'email-capture': Mail,
   'phone-capture': Phone,
   calendar: Calendar,
-  testimonial: Quote,
   reviews: Star,
+  'testimonial-slider': Quote,
   'logo-bar': Layers,
   'social-proof': Users,
   columns: LayoutGrid,
@@ -88,8 +88,6 @@ function getBlockPreviewText(block: Block): string {
       return content?.type || 'Video';
     case 'quiz':
       return content?.question?.substring(0, 20) || 'Quiz';
-    case 'testimonial':
-      return content?.authorName || 'Testimonial';
     case 'email-capture':
       return 'Email capture';
     case 'phone-capture':
