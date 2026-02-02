@@ -1,18 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Settings, 
   Palette,
-  Webhook
+  Webhook,
+  Globe,
+  Loader2,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  X
 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
   Select,
@@ -22,6 +33,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { DomainSetupPanel } from './components/DomainSetupPanel';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface FunnelSettingsModalProps {
@@ -30,16 +43,28 @@ interface FunnelSettingsModalProps {
   funnelId?: string | null;
   teamId?: string | null;
   currentDomainId?: string | null;
-  onDomainChange?: (domainId: string | null) => void;
+  onDomainChange?: (domainId: string | null) => Promise<boolean>;
+  defaultSection?: SettingsSection;
 }
 
-type SettingsSection = 'general' | 'appearance' | 'advanced';
+type SettingsSection = 'general' | 'domain' | 'appearance' | 'advanced';
 
 const sidebarItems: { id: SettingsSection; label: string; icon: React.ElementType }[] = [
   { id: 'general', label: 'General', icon: Settings },
+  { id: 'domain', label: 'Custom Domain', icon: Globe },
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'advanced', label: 'Advanced', icon: Webhook },
 ];
+
+interface DomainRecord {
+  id: string;
+  domain: string;
+  status: string;
+  verified_at: string | null;
+  ssl_provisioned: boolean | null;
+  dns_a_record_valid?: boolean | null;
+  dns_www_valid?: boolean | null;
+}
 
 const fontOptions = [
   { value: 'Inter', label: 'Inter' },
@@ -70,16 +95,175 @@ export function FunnelSettingsModal({
   teamId,
   currentDomainId,
   onDomainChange,
+  defaultSection = 'general',
 }: FunnelSettingsModalProps) {
+  const queryClient = useQueryClient();
   const { funnel, setFunnel } = useFunnel();
-  const [activeSection, setActiveSection] = useState<SettingsSection>('general');
+  const [activeSection, setActiveSection] = useState<SettingsSection>(defaultSection);
+  const [newDomainInput, setNewDomainInput] = useState('');
+  const [showDNSSetupDialog, setShowDNSSetupDialog] = useState(false);
+  const [domainForSetup, setDomainForSetup] = useState<DomainRecord | null>(null);
+  const dnsPanelRef = React.useRef<HTMLDivElement>(null);
+  const contentAreaRef = React.useRef<HTMLDivElement>(null);
 
-  // Reset to general section when modal closes
+  // Update section when defaultSection changes (e.g., when opened from publish modal)
+  React.useEffect(() => {
+    if (isOpen && defaultSection) {
+      setActiveSection(defaultSection);
+    }
+  }, [isOpen, defaultSection]);
+
+  // Reset to default section when modal closes
   React.useEffect(() => {
     if (!isOpen) {
-      setActiveSection('general');
+      setActiveSection(defaultSection);
+      setNewDomainInput('');
+      setShowDNSSetupDialog(false);
+      setDomainForSetup(null);
     }
-  }, [isOpen]);
+  }, [isOpen, defaultSection]);
+
+  // Fetch team's domains
+  const { data: domains = [], isLoading: domainsLoading } = useQuery({
+    queryKey: ['funnel-domains', teamId],
+    queryFn: async () => {
+      if (!teamId) return [];
+      const { data, error } = await supabase
+        .from('funnel_domains')
+        .select('*')
+        .eq('team_id', teamId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as DomainRecord[];
+    },
+    enabled: !!teamId && activeSection === 'domain' && isOpen,
+  });
+
+  // Get currently linked domain
+  const linkedDomain = useMemo(() => 
+    domains.find(d => d.id === currentDomainId), 
+    [domains, currentDomainId]
+  );
+
+  // Available domains (not linked to this funnel)
+  const availableDomains = useMemo(() => 
+    domains.filter(d => d.id !== currentDomainId),
+    [domains, currentDomainId]
+  );
+
+  // Link domain mutation
+  const linkDomainMutation = useMutation({
+    mutationFn: async (domainId: string) => {
+      // Remove database update - let parent handle it via onDomainChange
+      if (!onDomainChange) throw new Error('No domain change handler');
+      const success = await onDomainChange(domainId);
+      if (!success) throw new Error('Failed to link domain');
+    },
+    onSuccess: (_, domainId) => {
+      // Parent already invalidates funnel-meta
+      // We just need to invalidate our own queries
+      queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0] === 'publish-modal-domain'
+      });
+      
+      // Show DNS setup dialog if we just added this domain
+      if (domainForSetup?.id === domainId) {
+        setShowDNSSetupDialog(true);
+        // Don't show toast - parent already does
+      } else {
+        // Scroll to DNS panel after linking existing domain
+        setTimeout(() => {
+          if (dnsPanelRef.current && contentAreaRef.current) {
+            const panelTop = dnsPanelRef.current.offsetTop;
+            contentAreaRef.current.scrollTo({
+              top: panelTop - 20,
+              behavior: 'smooth',
+            });
+          }
+        }, 100);
+      }
+    },
+    onError: () => {
+      toast.error('Failed to link domain');
+    },
+  });
+
+  // Unlink domain mutation
+  const unlinkDomainMutation = useMutation({
+    mutationFn: async () => {
+      // Remove database update - let parent handle it via onDomainChange
+      if (!onDomainChange) throw new Error('No domain change handler');
+      const success = await onDomainChange(null);
+      if (!success) throw new Error('Failed to unlink domain');
+    },
+    onSuccess: () => {
+      // Parent already invalidates funnel-meta
+      // We just need to invalidate our own queries
+      queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0] === 'publish-modal-domain'
+      });
+      // Don't show toast - parent already does
+    },
+    onError: () => {
+      toast.error('Failed to unlink domain');
+    },
+  });
+
+  // Add new domain mutation
+  const addDomainMutation = useMutation({
+    mutationFn: async (domain: string) => {
+      if (!teamId) throw new Error('No team ID');
+      const cleanDomain = domain.toLowerCase().trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+      const { data, error } = await supabase
+        .from('funnel_domains')
+        .insert({
+          team_id: teamId,
+          domain: cleanDomain,
+          status: 'pending',
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as DomainRecord;
+    },
+    onSuccess: async (data) => {
+      setNewDomainInput('');
+      queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
+      // Auto-link to current funnel
+      if (funnelId) {
+        // Store domain for setup dialog
+        setDomainForSetup(data);
+        // Ensure we're on domain tab
+        setActiveSection('domain');
+        // Link will trigger showing the dialog
+        linkDomainMutation.mutate(data.id);
+      } else {
+        toast.success('Domain added! Link it to a funnel to use it.');
+      }
+    },
+    onError: (error: any) => {
+      if (error.message?.includes('duplicate')) {
+        toast.error('This domain is already registered');
+      } else {
+        toast.error('Failed to add domain');
+      }
+    },
+  });
+
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'verified':
+      case 'active':
+        return { label: 'Active', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: CheckCircle2 };
+      case 'partial':
+        return { label: 'Partial', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: AlertCircle };
+      case 'pending':
+      default:
+        return { label: 'Pending DNS', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', icon: Clock };
+    }
+  };
 
   // Update funnel settings
   const handleUpdateSetting = (key: string, value: any) => {
@@ -131,6 +315,155 @@ export function FunnelSettingsModal({
                 </div>
               </div>
             </div>
+          </div>
+        );
+
+      case 'domain':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Custom Domain</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Connect a custom domain to serve your funnel on your own URL
+              </p>
+            </div>
+
+            {domainsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : linkedDomain ? (
+              <div className="space-y-4">
+                {/* Linked Domain Display */}
+                <div className="p-4 bg-muted rounded-lg border border-border">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-primary" />
+                      <span className="font-medium">{linkedDomain.domain}</span>
+                      <Badge variant="outline" className={cn('text-xs', getStatusConfig(linkedDomain.status).color)}>
+                        {React.createElement(getStatusConfig(linkedDomain.status).icon, { className: 'h-3 w-3 mr-1' })}
+                        {getStatusConfig(linkedDomain.status).label}
+                      </Badge>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => unlinkDomainMutation.mutate()}
+                      disabled={unlinkDomainMutation.isPending}
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Unlink
+                    </Button>
+                  </div>
+
+                  {/* DNS Setup Panel */}
+                  {teamId && (
+                    <DomainSetupPanel
+                      domain={linkedDomain}
+                      teamId={teamId}
+                      defaultExpanded={linkedDomain.status === 'pending' || linkedDomain.status === 'partial'}
+                      onVerifyComplete={() => {
+                        queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
+                        queryClient.invalidateQueries({ queryKey: ['funnel-meta', funnelId] });
+                      }}
+                    />
+                  )}
+                </div>
+
+                {/* Change Domain Option */}
+                {availableDomains.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Change to another domain</Label>
+                    <Select
+                      onValueChange={(domainId) => linkDomainMutation.mutate(domainId)}
+                    >
+                      <SelectTrigger className="bg-muted border-0">
+                        <SelectValue placeholder="Select a different domain" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableDomains.map((domain) => (
+                          <SelectItem key={domain.id} value={domain.id}>
+                            <div className="flex items-center gap-2">
+                              <Globe className="h-3 w-3" />
+                              {domain.domain}
+                              <Badge variant="outline" className={cn('ml-2 text-[10px]', getStatusConfig(domain.status).color)}>
+                                {getStatusConfig(domain.status).label}
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Link Existing Domain */}
+                {availableDomains.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Link Existing Domain</Label>
+                    <Select
+                      onValueChange={(domainId) => linkDomainMutation.mutate(domainId)}
+                    >
+                      <SelectTrigger className="bg-muted border-0">
+                        <SelectValue placeholder="Select a domain" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableDomains.map((domain) => (
+                          <SelectItem key={domain.id} value={domain.id}>
+                            <div className="flex items-center gap-2">
+                              <Globe className="h-3 w-3" />
+                              {domain.domain}
+                              <Badge variant="outline" className={cn('ml-2 text-[10px]', getStatusConfig(domain.status).color)}>
+                                {getStatusConfig(domain.status).label}
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {availableDomains.length > 0 && <Separator />}
+
+                {/* Add New Domain */}
+                <div className="space-y-2">
+                  <Label>Add New Domain</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newDomainInput}
+                      onChange={(e) => setNewDomainInput(e.target.value)}
+                      placeholder="yourdomain.com"
+                      className="bg-muted border-0"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newDomainInput.trim()) {
+                          addDomainMutation.mutate(newDomainInput.trim());
+                        }
+                      }}
+                    />
+                    <Button
+                      onClick={() => {
+                        if (newDomainInput.trim()) {
+                          addDomainMutation.mutate(newDomainInput.trim());
+                        }
+                      }}
+                      disabled={!newDomainInput.trim() || addDomainMutation.isPending}
+                    >
+                      {addDomainMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Add'
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Enter your domain without http:// or https://
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         );
 
@@ -303,11 +636,44 @@ export function FunnelSettingsModal({
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div ref={contentAreaRef} className="flex-1 overflow-y-auto p-6">
             {renderSectionContent()}
           </div>
         </div>
       </DialogContent>
+
+      {/* DNS Setup Dialog */}
+      <Dialog open={showDNSSetupDialog} onOpenChange={setShowDNSSetupDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>DNS Setup for {domainForSetup?.domain}</DialogTitle>
+            <DialogDescription>
+              Configure these DNS records to activate your custom domain
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {domainForSetup && teamId && (
+              <DomainSetupPanel
+                domain={domainForSetup}
+                teamId={teamId}
+                defaultExpanded={true}
+                onVerifyComplete={() => {
+                  queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
+                  queryClient.invalidateQueries({ queryKey: ['funnel-meta', funnelId] });
+                  setShowDNSSetupDialog(false);
+                }}
+              />
+            )}
+          </div>
+          
+          <div className="flex justify-end pt-4 border-t">
+            <Button onClick={() => setShowDNSSetupDialog(false)}>
+              Done
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

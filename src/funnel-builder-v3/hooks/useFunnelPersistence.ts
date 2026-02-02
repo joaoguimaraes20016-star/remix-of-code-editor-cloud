@@ -52,7 +52,7 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
       return data as { status: string; domain_id: string | null; published_at: string | null; slug: string };
     },
     enabled: !!funnelId,
-    staleTime: 10000,
+    staleTime: 0, // Always refetch for real-time updates
   });
 
   // Link domain to funnel
@@ -198,7 +198,10 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
       }
 
       // Invalidate to refresh status
-      queryClient.invalidateQueries({ queryKey: ['funnel-meta', currentFunnelId] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['funnel-meta', currentFunnelId],
+        refetchType: 'active' // Force immediate refetch
+      });
       return true;
     } catch (e) {
       console.error('Error publishing funnel:', e);

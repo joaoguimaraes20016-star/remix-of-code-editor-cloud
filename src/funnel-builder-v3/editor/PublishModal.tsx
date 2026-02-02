@@ -1,20 +1,17 @@
-import React, { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   Globe, 
   Copy, 
   Check, 
   ExternalLink, 
-  AlertCircle, 
   CheckCircle2,
   Info,
   Loader2,
   Clock,
   Sparkles,
-  RefreshCw,
-  X,
-  ChevronDown,
-  ChevronUp
+  AlertCircle,
+  Settings
 } from 'lucide-react';
 import {
   Dialog,
@@ -42,7 +39,7 @@ interface PublishModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPublish: () => Promise<boolean>;
-  onDomainChange?: (domainId: string | null) => void;
+  onOpenSettings?: () => void;
   pageSlug: string;
   pageTitle: string;
   funnelId?: string | null;
@@ -52,13 +49,11 @@ interface PublishModalProps {
   funnelStatus?: string;
 }
 
-const VPS_IP = '143.198.103.189';
-
 export function PublishModal({
   isOpen,
   onClose,
   onPublish,
-  onDomainChange,
+  onOpenSettings,
   pageSlug,
   pageTitle,
   funnelId,
@@ -69,13 +64,8 @@ export function PublishModal({
 }: PublishModalProps) {
   const queryClient = useQueryClient();
   const [copiedSlug, setCopiedSlug] = useState(false);
-  const [copiedDNS, setCopiedDNS] = useState(false);
   const [justPublished, setJustPublished] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [showAddDomain, setShowAddDomain] = useState(false);
-  const [newDomainInput, setNewDomainInput] = useState('');
-  const [showDNSInstructions, setShowDNSInstructions] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
   
   // Get the base URL from window origin
   const baseUrl = typeof window !== 'undefined' 
@@ -84,136 +74,61 @@ export function PublishModal({
   
   const slugUrl = `${baseUrl}/f/${pageSlug}`;
   
-  // Fetch connected domain
-  const { data: linkedDomain, isLoading: domainLoading } = useQuery({
-    queryKey: ['publish-modal-domain', currentDomainId],
+  // Fetch funnel-meta directly when modal opens to ensure fresh domain_id
+  const { data: funnelMeta } = useQuery({
+    queryKey: ['funnel-meta', funnelId],
     queryFn: async () => {
-      if (!currentDomainId) return null;
+      if (!funnelId) return null;
+      const { data, error } = await supabase
+        .from('funnels')
+        .select('domain_id')
+        .eq('id', funnelId)
+        .single();
+      if (error) return null;
+      return data as { domain_id: string | null };
+    },
+    enabled: !!funnelId && isOpen,
+    staleTime: 0, // Always fetch fresh when modal opens
+  });
+
+  // Use query result or fallback to prop for effective domain ID
+  const effectiveDomainId = funnelMeta?.domain_id ?? currentDomainId;
+  
+  // Refetch funnel-meta when modal opens to ensure fresh data
+  useEffect(() => {
+    if (isOpen && funnelId) {
+      queryClient.invalidateQueries({ 
+        queryKey: ['funnel-meta', funnelId],
+        refetchType: 'active'
+      });
+    }
+  }, [isOpen, funnelId, queryClient]);
+  
+  // Fetch connected domain using effectiveDomainId
+  const { data: linkedDomain, isLoading: domainLoading } = useQuery({
+    queryKey: ['publish-modal-domain', effectiveDomainId],
+    queryFn: async () => {
+      if (!effectiveDomainId) return null;
       const { data, error } = await supabase
         .from('funnel_domains')
         .select('id, domain, status, verified_at, ssl_provisioned')
-        .eq('id', currentDomainId)
+        .eq('id', effectiveDomainId)
         .single();
       if (error) return null;
       return data as DomainRecord;
     },
-    enabled: !!currentDomainId && isOpen,
+    enabled: !!effectiveDomainId && isOpen,
   });
 
   const isPublished = funnelStatus === 'published';
   const domainUrl = linkedDomain ? `https://${linkedDomain.domain}` : null;
   const isDomainActive = linkedDomain?.status === 'verified' && linkedDomain?.ssl_provisioned;
 
-  // Add domain mutation
-  const addDomainMutation = useMutation({
-    mutationFn: async (domain: string) => {
-      if (!teamId) throw new Error('No team ID');
-      const cleanDomain = domain.toLowerCase().trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
-      const { data, error } = await supabase
-        .from('funnel_domains')
-        .insert({
-          team_id: teamId,
-          domain: cleanDomain,
-          status: 'pending',
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data as DomainRecord;
-    },
-    onSuccess: async (data) => {
-      setNewDomainInput('');
-      setShowAddDomain(false);
-      queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
-      queryClient.invalidateQueries({ queryKey: ['publish-modal-domain', currentDomainId] });
-      
-      // Auto-link to current funnel
-      if (funnelId) {
-        const { error } = await supabase
-          .from('funnels')
-          .update({ domain_id: data.id })
-          .eq('id', funnelId);
-        if (!error) {
-          onDomainChange?.(data.id);
-          queryClient.invalidateQueries({ queryKey: ['funnel-meta', funnelId] });
-        }
-      }
-      
-      setShowDNSInstructions(true);
-      toast.success('Domain added! Configure your DNS settings below.');
-    },
-    onError: (error: any) => {
-      if (error.message?.includes('duplicate')) {
-        toast.error('This domain is already registered');
-      } else {
-        toast.error('Failed to add domain');
-      }
-    },
-  });
-
-  // Unlink domain mutation
-  const unlinkDomainMutation = useMutation({
-    mutationFn: async () => {
-      if (!funnelId) throw new Error('No funnel ID');
-      const { error } = await supabase
-        .from('funnels')
-        .update({ domain_id: null })
-        .eq('id', funnelId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
-      queryClient.invalidateQueries({ queryKey: ['publish-modal-domain', currentDomainId] });
-      queryClient.invalidateQueries({ queryKey: ['funnel-meta', funnelId] });
-      onDomainChange?.(null);
-      toast.success('Domain removed');
-    },
-    onError: () => {
-      toast.error('Failed to remove domain');
-    },
-  });
-
-  // Verify domain
-  const handleVerifyDomain = async () => {
-    if (!linkedDomain) return;
-    setIsVerifying(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('verify-domain', {
-        body: { domainId: linkedDomain.id, domain: linkedDomain.domain }
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
-      queryClient.invalidateQueries({ queryKey: ['publish-modal-domain', currentDomainId] });
-      
-      if (error) throw error;
-      
-      if (data?.status === 'verified') {
-        toast.success('Domain verified! Your funnel is now live.');
-      } else if (data?.status === 'partial') {
-        toast.info('Partial DNS configuration detected. Please check all records.');
-      } else {
-        toast.info('DNS not yet configured. Please check your DNS settings.');
-      }
-    } catch (err) {
-      toast.error('Verification failed');
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
   const handleCopySlug = () => {
     navigator.clipboard.writeText(slugUrl);
     setCopiedSlug(true);
     toast.success('URL copied!');
     setTimeout(() => setCopiedSlug(false), 2000);
-  };
-
-  const handleCopyDNS = () => {
-    const dnsText = `Type: A | Name: @ | Value: ${VPS_IP}\nType: A | Name: www | Value: ${VPS_IP}`;
-    navigator.clipboard.writeText(dnsText);
-    setCopiedDNS(true);
-    toast.success('DNS records copied to clipboard');
-    setTimeout(() => setCopiedDNS(false), 2000);
   };
 
   const handlePublish = async () => {
@@ -233,10 +148,16 @@ export function PublishModal({
     window.open(url, '_blank');
   };
 
+  const handleOpenSettings = () => {
+    onClose();
+    onOpenSettings?.();
+  };
+
   // Get status badge config
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'verified':
+      case 'active':
         return { label: 'Active', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: CheckCircle2 };
       case 'partial':
         return { label: 'Partial', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: AlertCircle };
@@ -273,12 +194,9 @@ export function PublishModal({
               <span className="text-sm text-muted-foreground font-mono shrink-0">
                 {baseUrl}/f/
               </span>
-              <Input
-                id="published-url"
-                readOnly
-                value={pageSlug}
-                className="flex-1 border-0 bg-transparent font-mono text-sm px-0"
-              />
+              <span className="flex-1 text-sm text-foreground font-mono px-2">
+                {pageSlug}
+              </span>
               <Button
                 onClick={handleCopySlug}
                 size="icon"
@@ -303,170 +221,66 @@ export function PublishModal({
             )}
           </div>
 
-          {/* Domain Section */}
+          {/* Domain Status Section */}
           <div className="space-y-3">
-            {!linkedDomain && !domainLoading && (
-              <>
-                {!showAddDomain ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAddDomain(true)}
-                    className="w-full justify-start"
-                  >
-                    <Globe className="h-4 w-4 mr-2" />
-                    Add custom domain
-                  </Button>
-                ) : (
-                  <div className="space-y-3 p-4 bg-muted/50 rounded-lg border border-border">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Custom Domain</Label>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setShowAddDomain(false);
-                          setNewDomainInput('');
-                        }}
-                        className="h-6 w-6"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        value={newDomainInput}
-                        onChange={(e) => setNewDomainInput(e.target.value)}
-                        placeholder="yourdomain.com"
-                        className="flex-1"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && newDomainInput.trim()) {
-                            addDomainMutation.mutate(newDomainInput.trim());
-                          }
-                        }}
-                      />
-                      <Button
-                        onClick={() => {
-                          if (newDomainInput.trim()) {
-                            addDomainMutation.mutate(newDomainInput.trim());
-                          }
-                        }}
-                        disabled={!newDomainInput.trim() || addDomainMutation.isPending}
-                      >
-                        {addDomainMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          'Add'
-                        )}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Enter your domain without http:// or https://
-                    </p>
-                  </div>
-                )}
-              </>
-            )}
+            <div className="flex items-center gap-2">
+              <Label className="text-sm font-medium">Custom Domain</Label>
+            </div>
 
-            {/* Domain Pending */}
-            {linkedDomain && !isDomainActive && (
-              <div className="p-4 bg-muted/50 rounded-lg border border-border space-y-3">
+            {domainLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            ) : !linkedDomain ? (
+              <div className="p-4 bg-muted/50 rounded-lg border border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">No custom domain</span>
+                  </div>
+                  {onOpenSettings && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleOpenSettings}
+                    >
+                      <Settings className="h-3 w-3 mr-1" />
+                      Add domain
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ) : !isDomainActive ? (
+              <div className="p-4 bg-muted/50 rounded-lg border border-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Globe className="h-4 w-4 text-primary" />
-                    <span className="font-medium">{linkedDomain.domain}</span>
+                    <span className="font-medium text-sm">{linkedDomain.domain}</span>
                     <Badge variant="outline" className={cn('text-xs', getStatusConfig(linkedDomain.status).color)}>
                       {React.createElement(getStatusConfig(linkedDomain.status).icon, { className: 'h-3 w-3 mr-1' })}
                       {getStatusConfig(linkedDomain.status).label}
                     </Badge>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => unlinkDomainMutation.mutate()}
-                    disabled={unlinkDomainMutation.isPending}
-                    className="text-xs"
-                  >
-                    Remove
-                  </Button>
-                </div>
-
-                {/* DNS Instructions */}
-                <div className="space-y-2">
-                  <button
-                    onClick={() => setShowDNSInstructions(!showDNSInstructions)}
-                    className="flex items-center justify-between w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <span>DNS Configuration</span>
-                    {showDNSInstructions ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
-                  </button>
-                  
-                  {showDNSInstructions && (
-                    <div className="space-y-2 pt-2 border-t border-border">
-                      <p className="text-xs text-muted-foreground">
-                        Add these A records to your DNS provider:
-                      </p>
-                      <div className="bg-background rounded-md p-3 space-y-2 font-mono text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Type: A | Name: @</span>
-                          <span>{VPS_IP}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Type: A | Name: www</span>
-                          <span>{VPS_IP}</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleCopyDNS}
-                          className="flex-1"
-                        >
-                          {copiedDNS ? (
-                            <>
-                              <Check className="h-3 w-3 mr-1" />
-                              Copied!
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-3 w-3 mr-1" />
-                              Copy DNS Records
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleVerifyDomain}
-                          disabled={isVerifying}
-                        >
-                          {isVerifying ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <>
-                              <RefreshCw className="h-3 w-3 mr-1" />
-                              Verify
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
+                  {onOpenSettings && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleOpenSettings}
+                    >
+                      Configure
+                    </Button>
                   )}
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  DNS configuration required. Click Configure to set up your domain.
+                </p>
               </div>
-            )}
-
-            {/* Domain Active */}
-            {isDomainActive && (
+            ) : (
               <div className="p-4 bg-muted/50 rounded-lg border border-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Globe className="h-4 w-4 text-primary" />
-                    <span className="font-medium">{linkedDomain.domain}</span>
+                    <span className="font-medium text-sm">{linkedDomain.domain}</span>
                     <Badge variant="outline" className={cn('text-xs', getStatusConfig(linkedDomain.status).color)}>
                       {React.createElement(getStatusConfig(linkedDomain.status).icon, { className: 'h-3 w-3 mr-1' })}
                       {getStatusConfig(linkedDomain.status).label}
@@ -476,15 +290,16 @@ export function PublishModal({
                       SSL active
                     </span>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => unlinkDomainMutation.mutate()}
-                    disabled={unlinkDomainMutation.isPending}
-                    className="text-xs"
-                  >
-                    Remove
-                  </Button>
+                  {onOpenSettings && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleOpenSettings}
+                      className="text-xs"
+                    >
+                      Change
+                    </Button>
+                  )}
                 </div>
                 {isPublished && (
                   <button
@@ -500,15 +315,18 @@ export function PublishModal({
           </div>
 
           {/* Publishing Info */}
-          {isDomainActive && (
-            <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
-              <p className="text-xs text-muted-foreground">
-                <strong className="text-foreground">Note:</strong> Publishing will make your funnel available at both{' '}
-                <span className="font-mono text-xs">{slugUrl}</span> and{' '}
-                <span className="font-mono text-xs">{domainUrl}</span>
-              </p>
-            </div>
-          )}
+          <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+            <p className="text-xs text-muted-foreground">
+              <strong className="text-foreground">Note:</strong> Publishing will make your funnel live at{' '}
+              <span className="font-mono text-xs">{slugUrl}</span>
+              {isDomainActive && (
+                <>
+                  {' '}and{' '}
+                  <span className="font-mono text-xs">{domainUrl}</span>
+                </>
+              )}
+            </p>
+          </div>
         </div>
 
         {/* Footer with actions */}

@@ -54,6 +54,7 @@ export function EditorHeader() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<'general' | 'domain' | 'appearance' | 'advanced'>('general');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Main app URL for dashboard link
@@ -296,7 +297,11 @@ export function EditorHeader() {
         isOpen={publishModalOpen}
         onClose={() => setPublishModalOpen(false)}
         onPublish={handlePublish}
-        onDomainChange={linkDomain}
+        onOpenSettings={() => {
+          setPublishModalOpen(false);
+          setSettingsSection('domain');
+          setSettingsModalOpen(true);
+        }}
         pageSlug={slug}
         pageTitle={funnel.name}
         funnelId={funnelId}
@@ -309,11 +314,15 @@ export function EditorHeader() {
       {/* Settings Modal */}
       <FunnelSettingsModal
         isOpen={settingsModalOpen}
-        onClose={() => setSettingsModalOpen(false)}
+        onClose={() => {
+          setSettingsModalOpen(false);
+          setSettingsSection('general');
+        }}
         funnelId={funnelId}
         teamId={teamId}
         currentDomainId={currentDomainId}
         onDomainChange={linkDomain}
+        defaultSection={settingsSection}
       />
     </header>
   );
