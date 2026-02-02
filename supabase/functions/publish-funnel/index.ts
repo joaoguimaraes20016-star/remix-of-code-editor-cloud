@@ -180,7 +180,6 @@ serve(async (req: Request): Promise<Response> => {
     const updatePayload: Record<string, unknown> = {
       name: name.trim(),
       status: "published",
-      published_at: new Date().toISOString(), // Set published timestamp
       updated_at: new Date().toISOString(),
     };
 
