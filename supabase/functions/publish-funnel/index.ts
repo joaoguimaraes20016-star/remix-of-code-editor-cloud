@@ -109,6 +109,14 @@ serve(async (req: Request): Promise<Response> => {
     const builder_document = rawBody?.builder_document ?? null;
     const settings = rawBody?.settings ?? null;
 
+    // Detect V3 format: builder_document has steps array with blocks property
+    const isV3Format = builder_document && 
+      typeof builder_document === 'object' && 
+      'steps' in builder_document &&
+      Array.isArray((builder_document as any).steps) &&
+      (builder_document as any).steps.length > 0 &&
+      (builder_document as any).steps[0]?.blocks !== undefined;
+
     if (!funnel_id || typeof funnel_id !== "string" || !isUuid(funnel_id)) {
       return new Response(
         JSON.stringify({ error: "Missing or invalid funnel_id" }),
@@ -129,6 +137,7 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
+    // Allow empty steps array for V3 format (V3 doesn't use funnel_steps table)
     if (!Array.isArray(steps)) {
       return new Response(
         JSON.stringify({ error: "steps must be an array" }),
@@ -213,66 +222,76 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    // Normalize steps and publish: delete existing, then insert new set.
-    const { error: deleteError } = await supabase
-      .from("funnel_steps")
-      .delete()
-      .eq("funnel_id", funnel_id);
-
-    if (deleteError) {
-      console.error("[publish-funnel] Error deleting existing funnel_steps:", deleteError);
-      return new Response(
-        JSON.stringify({ error: "Failed to reset funnel steps" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    const stepRows = steps.map((step, index) => {
-      const step_type =
-        typeof step?.step_type === "string" && step.step_type.trim().length > 0
-          ? step.step_type
-          : "welcome";
-
-      const rawContent = step?.content;
-      const content =
-        rawContent && typeof rawContent === "object" && !Array.isArray(rawContent)
-          ? rawContent
-          : {};
-
-      return {
-        funnel_id,
-        order_index: index,
-        step_type,
-        content,
-      };
-    });
-
-    if (stepRows.length > 0) {
-      const { error: insertError } = await supabase
+    // For V3 format, skip funnel_steps table (data stored in published_document_snapshot)
+    // For legacy format, normalize steps and publish: delete existing, then insert new set.
+    if (!isV3Format) {
+      const { error: deleteError } = await supabase
         .from("funnel_steps")
-        .insert(stepRows);
+        .delete()
+        .eq("funnel_id", funnel_id);
 
-      if (insertError) {
-        console.error("[publish-funnel] Error inserting funnel_steps:", insertError);
+      if (deleteError) {
+        console.error("[publish-funnel] Error deleting existing funnel_steps:", deleteError);
         return new Response(
-          JSON.stringify({ 
-            error: "Failed to persist funnel steps",
-            details: insertError.message || String(insertError),
-            code: insertError.code,
-          }),
+          JSON.stringify({ error: "Failed to reset funnel steps" }),
           {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           },
         );
       }
+
+      const stepRows = steps.map((step, index) => {
+        const step_type =
+          typeof step?.step_type === "string" && step.step_type.trim().length > 0
+            ? step.step_type
+            : "welcome";
+
+        const rawContent = step?.content;
+        const content =
+          rawContent && typeof rawContent === "object" && !Array.isArray(rawContent)
+            ? rawContent
+            : {};
+
+        return {
+          funnel_id,
+          order_index: index,
+          step_type,
+          content,
+        };
+      });
+
+      if (stepRows.length > 0) {
+        const { error: insertError } = await supabase
+          .from("funnel_steps")
+          .insert(stepRows);
+
+        if (insertError) {
+          console.error("[publish-funnel] Error inserting funnel_steps:", insertError);
+          return new Response(
+            JSON.stringify({ 
+              error: "Failed to persist funnel steps",
+              details: insertError.message || String(insertError),
+              code: insertError.code,
+            }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+          );
+        }
+      }
+    } else {
+      console.log("[publish-funnel] V3 format detected - skipping funnel_steps table");
     }
 
     return new Response(
-      JSON.stringify({ ok: true, funnel_id, updated_step_count: stepRows.length }),
+      JSON.stringify({ 
+        ok: true, 
+        funnel_id, 
+        format: isV3Format ? 'v3' : 'legacy',
+        updated_step_count: isV3Format ? 0 : (steps.length || 0)
+      }),
       {
       status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

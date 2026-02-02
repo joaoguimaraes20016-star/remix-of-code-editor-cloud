@@ -206,22 +206,12 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
       };
 
       // Prepare request body
-      // Optimize: Send minimal step data for funnel_steps table, full data in runtimeDocument
+      // V3 format: Send empty steps array since funnel_steps table is not used
+      // All data is stored in published_document_snapshot (via settings/runtimeDocument)
       const requestBody = {
         funnel_id: currentFunnelId,
         name: funnelName,
-        // Minimal step data for funnel_steps table (just metadata, not full content)
-        steps: funnel.steps.map((step, index) => ({
-          order_index: index,
-          step_type: step.type || 'capture',
-          // Only include essential step metadata, not full blocks/content
-          content: {
-            id: step.id,
-            name: step.name,
-            slug: step.slug,
-            type: step.type,
-          },
-        })),
+        steps: [], // Empty for V3 - funnel_steps table not used
         builder_document: funnel, // Keep original for editing (used for builder_document field)
         settings: runtimeDocument, // Use runtime format for published_document_snapshot
       };
