@@ -148,7 +148,7 @@ export async function getFanbasisIntegration(
       return null;
     }
 
-    return data as FanbasisIntegration | null;
+    return data as unknown as FanbasisIntegration | null;
   } catch (error) {
     console.error('Error fetching Fanbasis integration:', error);
     return null;

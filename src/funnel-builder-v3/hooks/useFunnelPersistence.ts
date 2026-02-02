@@ -38,18 +38,18 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef<string>('');
 
-  // Fetch funnel metadata (status, domain_id, published_at)
+  // Fetch funnel metadata (status, domain_id)
   const { data: funnelMeta } = useQuery({
     queryKey: ['funnel-meta', funnelId],
     queryFn: async () => {
       if (!funnelId) return null;
       const { data, error } = await supabase
         .from('funnels')
-        .select('status, domain_id, published_at, slug')
+        .select('status, domain_id, slug')
         .eq('id', funnelId)
         .single();
       if (error) return null;
-      return data as { status: string; domain_id: string | null; published_at: string | null; slug: string };
+      return data as { status: string; domain_id: string | null; slug: string };
     },
     enabled: !!funnelId,
     staleTime: 0, // Always refetch for real-time updates
@@ -252,7 +252,6 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
       if (response.error) {
         console.error('Publish error details:', {
           error: response.error,
-          status: response.status,
           data: response.data,
           funnelId: currentFunnelId,
           funnelName: funnelName,
@@ -339,7 +338,7 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
     isAuthenticated: !!user,
     funnelStatus: funnelMeta?.status || 'draft',
     currentDomainId: funnelMeta?.domain_id || null,
-    lastPublishedAt: funnelMeta?.published_at || null,
+    lastPublishedAt: null, // Column doesn't exist in DB schema
     slug: funnelMeta?.slug || funnel.name?.toLowerCase().replace(/\s+/g, '-') || 'untitled',
   };
 }

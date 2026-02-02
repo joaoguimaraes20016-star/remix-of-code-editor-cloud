@@ -241,7 +241,7 @@ const headingLevelSizes: Record<number, number> = {
 };
 
 // ========== HEADING INSPECTOR ==========
-export function HeadingInspector({ block, onContentChange }: BlockInspectorProps) {
+export function HeadingInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const styles = content.styles || {};
 
@@ -375,7 +375,7 @@ const textPresets = [
 ];
 
 // ========== TEXT INSPECTOR ==========
-export function TextInspector({ block, onContentChange }: BlockInspectorProps) {
+export function TextInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const styles = content.styles || {};
 
@@ -520,7 +520,7 @@ const buttonPresets = [
 ];
 
 // ========== BUTTON INSPECTOR ==========
-export function ButtonInspector({ block, onContentChange }: BlockInspectorProps) {
+export function ButtonInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
 
   const buttonColors = [
@@ -782,7 +782,7 @@ const imagePresets = [
 ];
 
 // ========== IMAGE INSPECTOR ==========
-export function ImageInspector({ block, onContentChange }: BlockInspectorProps) {
+export function ImageInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const currentRadius = content.borderRadius || 0;
 
@@ -921,20 +921,12 @@ function VideoPreviewWithControls({ src, onRemove }: { src: string; onRemove: ()
         <Trash2 className="h-3 w-3 mr-1.5" />
         Remove Video
       </Button>
-
-      <Separator />
-      {onBlockChange && (
-        <TrackingSection
-          trackingId={block.trackingId || ''}
-          onChange={(id) => onBlockChange({ trackingId: id })}
-        />
-      )}
     </div>
   );
 }
 
 // ========== VIDEO INSPECTOR ==========
-export function VideoInspector({ block, onContentChange }: BlockInspectorProps) {
+export function VideoInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const isUploadedVideo = content.src?.startsWith('data:') || content.src?.startsWith('blob:');
   const [inputMode, setInputMode] = React.useState<'url' | 'upload'>(
@@ -1133,7 +1125,7 @@ export function VideoInspector({ block, onContentChange }: BlockInspectorProps) 
 }
 
 // ========== COUNTDOWN INSPECTOR ==========
-export function CountdownInspector({ block, onContentChange }: BlockInspectorProps) {
+export function CountdownInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
 
   const textColors = [
@@ -1198,7 +1190,7 @@ export function CountdownInspector({ block, onContentChange }: BlockInspectorPro
 }
 
 // ========== DIVIDER INSPECTOR ==========
-export function DividerInspector({ block, onContentChange }: BlockInspectorProps) {
+export function DividerInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
 
   return (
@@ -1246,7 +1238,7 @@ export function DividerInspector({ block, onContentChange }: BlockInspectorProps
 }
 
 // ========== SPACER INSPECTOR ==========
-export function SpacerInspector({ block, onContentChange }: BlockInspectorProps) {
+export function SpacerInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
 
   return (
@@ -1272,7 +1264,7 @@ export function SpacerInspector({ block, onContentChange }: BlockInspectorProps)
 }
 
 // ========== EMAIL CAPTURE INSPECTOR ==========
-export function EmailCaptureInspector({ block, onContentChange }: BlockInspectorProps) {
+export function EmailCaptureInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
 
   return (
@@ -1319,7 +1311,7 @@ export function EmailCaptureInspector({ block, onContentChange }: BlockInspector
 }
 
 // ========== PHONE CAPTURE INSPECTOR ==========
-export function PhoneCaptureInspector({ block, onContentChange }: BlockInspectorProps) {
+export function PhoneCaptureInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const countryCodes = content.countryCodes || [];
   const [showModal, setShowModal] = React.useState(false);
@@ -1450,7 +1442,7 @@ export function PhoneCaptureInspector({ block, onContentChange }: BlockInspector
 }
 
 // ========== CALENDAR INSPECTOR ==========
-export function CalendarInspector({ block, onContentChange }: BlockInspectorProps) {
+export function CalendarInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
 
   return (
@@ -1530,7 +1522,7 @@ export function CalendarInspector({ block, onContentChange }: BlockInspectorProp
 }
 
 // ========== QUIZ INSPECTOR ==========
-export function QuizInspector({ block, onContentChange, funnel }: BlockInspectorProps & { funnel?: any }) {
+export function QuizInspector({ block, onContentChange, onBlockChange, funnel }: BlockInspectorProps & { funnel?: any }) {
   const content = block.content as any;
   const options = content.options || [];
   const steps = funnel?.steps || [];
@@ -1809,7 +1801,7 @@ const defaultSubmitButton = {
   color: '#ffffff',
 };
 
-export function SubmitButtonInspector({ block, onContentChange }: BlockInspectorProps) {
+export function SubmitButtonInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const submitButton = content.submitButton || defaultSubmitButton;
   
@@ -2097,7 +2089,7 @@ export function PhoneInputInspector({ block, onContentChange, setSelectedChildEl
 }
 
 // ========== ACCORDION INSPECTOR ==========
-export function AccordionInspector({ block, onContentChange }: BlockInspectorProps) {
+export function AccordionInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const items = content.items || [];
 
@@ -2205,7 +2197,7 @@ export function AccordionInspector({ block, onContentChange }: BlockInspectorPro
 }
 
 // ========== SOCIAL PROOF INSPECTOR ==========
-export function SocialProofInspector({ block, onContentChange }: BlockInspectorProps) {
+export function SocialProofInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const items = content.items || [];
 
@@ -2349,7 +2341,7 @@ export function SocialProofInspector({ block, onContentChange }: BlockInspectorP
 }
 
 // ========== LOGO BAR INSPECTOR ==========
-export function LogoBarInspector({ block, onContentChange }: BlockInspectorProps) {
+export function LogoBarInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const logos = content.logos || [];
   const [showBrandfetchPicker, setShowBrandfetchPicker] = useState(false);
@@ -2564,7 +2556,7 @@ export function LogoBarInspector({ block, onContentChange }: BlockInspectorProps
 }
 
 // ========== FORM INSPECTOR ==========
-export function FormInspector({ block, onContentChange }: BlockInspectorProps) {
+export function FormInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const fields = content.fields || [];
   const consent = content.consent || { enabled: false, text: 'I have read and accept the', linkText: 'privacy policy', linkUrl: '#', required: true };
@@ -2888,7 +2880,7 @@ function AvatarPicker({ value, onChange }: { value: string; onChange: (url: stri
 }
 
 // ========== REVIEWS INSPECTOR (Social Proof Badge) ==========
-export function ReviewsInspector({ block, onContentChange }: BlockInspectorProps) {
+export function ReviewsInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const avatars = content.avatars || [];
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -3005,7 +2997,7 @@ export function ReviewsInspector({ block, onContentChange }: BlockInspectorProps
 }
 
 // ========== TESTIMONIAL SLIDER INSPECTOR ==========
-export function TestimonialSliderInspector({ block, onContentChange }: BlockInspectorProps) {
+export function TestimonialSliderInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const testimonials = content.testimonials || [];
   const fileInputRefs = React.useRef<{ [key: number]: HTMLInputElement | null }>({});
@@ -3164,7 +3156,7 @@ export function TestimonialSliderInspector({ block, onContentChange }: BlockInsp
 }
 
 // ========== COLUMNS INSPECTOR ==========
-export function ColumnsInspector({ block, onContentChange }: BlockInspectorProps) {
+export function ColumnsInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
 
   return (
@@ -3208,7 +3200,7 @@ export function ColumnsInspector({ block, onContentChange }: BlockInspectorProps
 }
 
 // ========== CARD INSPECTOR ==========
-export function CardInspector({ block, onContentChange, onStyleChange }: BlockInspectorProps) {
+export function CardInspector({ block, onContentChange, onStyleChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const blockCount = (content.blocks || []).length;
 
@@ -3273,7 +3265,7 @@ export function CardInspector({ block, onContentChange, onStyleChange }: BlockIn
 }
 
 // ========== LIST INSPECTOR ==========
-export function ListInspector({ block, onContentChange }: BlockInspectorProps) {
+export function ListInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const items = content.items || [];
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
@@ -3549,7 +3541,7 @@ export function ListInspector({ block, onContentChange }: BlockInspectorProps) {
 }
 
 // ========== SLIDER INSPECTOR ==========
-export function SliderInspector({ block, onContentChange }: BlockInspectorProps) {
+export function SliderInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const images = content.images || [];
 
@@ -3654,7 +3646,7 @@ export function SliderInspector({ block, onContentChange }: BlockInspectorProps)
 }
 
 // ========== GRAPHIC INSPECTOR ==========
-export function GraphicInspector({ block, onContentChange }: BlockInspectorProps) {
+export function GraphicInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
 
   return (
@@ -3703,7 +3695,7 @@ export function GraphicInspector({ block, onContentChange }: BlockInspectorProps
 }
 
 // ========== WEBINAR INSPECTOR ==========
-export function WebinarInspector({ block, onContentChange }: BlockInspectorProps) {
+export function WebinarInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
 
   return (
@@ -3950,7 +3942,7 @@ export function LoaderInspector({ block, onContentChange, funnel }: BlockInspect
 }
 
 // ========== EMBED INSPECTOR ==========
-export function EmbedInspector({ block, onContentChange }: BlockInspectorProps) {
+export function EmbedInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
 
   return (
@@ -4011,7 +4003,7 @@ export function EmbedInspector({ block, onContentChange }: BlockInspectorProps) 
 }
 
 // ========== IMAGE QUIZ INSPECTOR ==========
-export function ImageQuizInspector({ block, onContentChange, funnel }: BlockInspectorProps & { funnel?: any }) {
+export function ImageQuizInspector({ block, onContentChange, onBlockChange, funnel }: BlockInspectorProps & { funnel?: any }) {
   const content = block.content as any;
   const options = content.options || [];
   const steps = funnel?.steps || [];
@@ -4291,7 +4283,7 @@ export function ImageQuizInspector({ block, onContentChange, funnel }: BlockInsp
 }
 
 // ========== VIDEO QUESTION INSPECTOR ==========
-export function VideoQuestionInspector({ block, onContentChange, funnel }: BlockInspectorProps & { funnel?: any }) {
+export function VideoQuestionInspector({ block, onContentChange, onBlockChange, funnel }: BlockInspectorProps & { funnel?: any }) {
   const content = block.content as any;
   const options = content.options || [];
   const steps = funnel?.steps || [];
@@ -4557,7 +4549,7 @@ export function VideoQuestionInspector({ block, onContentChange, funnel }: Block
 }
 
 // ========== UPLOAD INSPECTOR ==========
-export function UploadInspector({ block, onContentChange }: BlockInspectorProps) {
+export function UploadInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
 
   return (
@@ -4616,7 +4608,7 @@ export function UploadInspector({ block, onContentChange }: BlockInspectorProps)
 }
 
 // ========== MESSAGE INSPECTOR ==========
-export function MessageInspector({ block, onContentChange }: BlockInspectorProps) {
+export function MessageInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
 
   return (
@@ -4684,7 +4676,7 @@ export function MessageInspector({ block, onContentChange }: BlockInspectorProps
 }
 
 // ========== DATE PICKER INSPECTOR ==========
-export function DatePickerInspector({ block, onContentChange }: BlockInspectorProps) {
+export function DatePickerInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
 
   return (
@@ -4739,7 +4731,7 @@ export function DatePickerInspector({ block, onContentChange }: BlockInspectorPr
 }
 
 // ========== DROPDOWN INSPECTOR ==========
-export function DropdownInspector({ block, onContentChange }: BlockInspectorProps) {
+export function DropdownInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
   const options = content.options || [];
 
@@ -4812,7 +4804,7 @@ export function DropdownInspector({ block, onContentChange }: BlockInspectorProp
 }
 
 // ========== PAYMENT INSPECTOR ==========
-export function PaymentInspector({ block, onContentChange }: BlockInspectorProps) {
+export function PaymentInspector({ block, onContentChange, onBlockChange }: BlockInspectorProps) {
   const content = block.content as any;
 
   return (

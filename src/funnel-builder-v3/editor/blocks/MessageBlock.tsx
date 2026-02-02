@@ -118,7 +118,7 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
     } else if (action === 'scroll' && actionValue) {
       const element = document.getElementById(actionValue);
       element?.scrollIntoView({ behavior: 'smooth' });
-    } else if (action === 'specific-step' && actionValue) {
+    } else if ((action as string) === 'specific-step' && actionValue) {
       runtime.goToStep(actionValue);
     } else {
       runtime.goToNextStep();

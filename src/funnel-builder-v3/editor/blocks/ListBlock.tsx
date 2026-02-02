@@ -34,7 +34,7 @@ export function ListBlock({ content, blockId, stepId, isPreview }: ListBlockProp
   const canEdit = blockId && stepId && !isPreview;
 
   // Normalize style: treat legacy 'check' as 'icon'
-  const normalizedStyle = style === 'check' ? 'icon' : style;
+  const normalizedStyle = (style as string) === 'check' ? 'icon' : style;
 
   const handleItemTextChange = useCallback((itemId: string, newText: string) => {
     if (blockId && stepId) {
