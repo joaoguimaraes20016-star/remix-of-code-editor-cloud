@@ -95,6 +95,15 @@ export function EditorHeader() {
     return success;
   };
 
+  const handleNavigateToPublish = () => {
+    setSettingsModalOpen(false);
+    setSettingsSection('general');
+    // Longer delay ensures Settings closes smoothly and queries have time to refetch
+    setTimeout(() => {
+      setPublishModalOpen(true);
+    }, 200); // Increased from 100ms for smoother transition
+  };
+
   const handleExport = () => {
     const json = exportFunnel();
     const blob = new Blob([json], { type: 'application/json' });
@@ -309,6 +318,7 @@ export function EditorHeader() {
         currentDomainId={currentDomainId}
         isPublishing={isPublishing}
         funnelStatus={funnelStatus}
+        lastPublishedAt={lastPublishedAt}
       />
 
       {/* Settings Modal */}
@@ -323,6 +333,7 @@ export function EditorHeader() {
         currentDomainId={currentDomainId}
         onDomainChange={linkDomain}
         defaultSection={settingsSection}
+        onNavigateToPublish={handleNavigateToPublish}
       />
     </header>
   );

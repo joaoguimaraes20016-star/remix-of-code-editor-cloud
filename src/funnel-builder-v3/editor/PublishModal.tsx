@@ -47,6 +47,7 @@ interface PublishModalProps {
   currentDomainId?: string | null;
   isPublishing?: boolean;
   funnelStatus?: string;
+  lastPublishedAt?: string | null;
 }
 
 export function PublishModal({
@@ -61,11 +62,17 @@ export function PublishModal({
   currentDomainId,
   isPublishing = false,
   funnelStatus = 'draft',
+  lastPublishedAt,
 }: PublishModalProps) {
   const queryClient = useQueryClient();
   const [copiedSlug, setCopiedSlug] = useState(false);
   const [justPublished, setJustPublished] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [localPublishedState, setLocalPublishedState] = useState<{
+    isPublished: boolean;
+    lastPublishedAt: string | null;
+    domainId: string | null;
+  } | null>(null);
   
   // Get the base URL from window origin
   const baseUrl = typeof window !== 'undefined' 
@@ -74,37 +81,54 @@ export function PublishModal({
   
   const slugUrl = `${baseUrl}/f/${pageSlug}`;
   
-  // Fetch funnel-meta directly when modal opens to ensure fresh domain_id
-  const { data: funnelMeta } = useQuery({
-    queryKey: ['funnel-meta', funnelId],
-    queryFn: async () => {
-      if (!funnelId) return null;
-      const { data, error } = await supabase
-        .from('funnels')
-        .select('domain_id')
-        .eq('id', funnelId)
-        .single();
-      if (error) return null;
-      return data as { domain_id: string | null };
-    },
-    enabled: !!funnelId && isOpen,
-    staleTime: 0, // Always fetch fresh when modal opens
-  });
-
-  // Use query result or fallback to prop for effective domain ID
-  const effectiveDomainId = funnelMeta?.domain_id ?? currentDomainId;
+  // Use props directly - parent query (useFunnelPersistence) is the source of truth
+  // But also track local state to persist published status and domain ID even if query refetches with stale data
+  const effectiveDomainId = localPublishedState?.domainId ?? currentDomainId;
+  const isPublished = localPublishedState?.isPublished ?? (funnelStatus === 'published');
+  const lastPublished = localPublishedState?.lastPublishedAt ?? lastPublishedAt;
   
-  // Refetch funnel-meta when modal opens to ensure fresh data
+  // Update local state when props change (but only if they indicate published status or have a domain)
+  // This ensures we persist published status and domain ID even if query refetches with stale data
   useEffect(() => {
-    if (isOpen && funnelId) {
-      queryClient.invalidateQueries({ 
-        queryKey: ['funnel-meta', funnelId],
-        refetchType: 'active'
-      });
+    if (funnelStatus === 'published' && lastPublishedAt) {
+      setLocalPublishedState((prev) => ({
+        isPublished: true,
+        lastPublishedAt: lastPublishedAt,
+        domainId: currentDomainId ?? prev?.domainId ?? null,
+      }));
+    } else if (currentDomainId) {
+      // Also update domain ID if it's provided, even if not published
+      setLocalPublishedState((prev) => ({
+        isPublished: prev?.isPublished ?? (funnelStatus === 'published'),
+        lastPublishedAt: prev?.lastPublishedAt ?? lastPublishedAt,
+        domainId: currentDomainId,
+      }));
     }
-  }, [isOpen, funnelId, queryClient]);
+  }, [funnelStatus, lastPublishedAt, currentDomainId]);
+
+  // Reset/update local state when modal opens to ensure fresh data
+  // This handles the case where domain was linked while modal was closed
+  useEffect(() => {
+    if (isOpen) {
+      // When modal opens, sync local state with current props
+      // This ensures we always show the latest domain and published status
+      setLocalPublishedState({
+        isPublished: funnelStatus === 'published',
+        lastPublishedAt: lastPublishedAt,
+        domainId: currentDomainId,
+      });
+      
+      // Invalidate domain query to ensure fresh data when modal opens
+      if (currentDomainId) {
+        queryClient.invalidateQueries({
+          queryKey: ['publish-modal-domain', currentDomainId],
+          refetchType: 'active'
+        });
+      }
+    }
+  }, [isOpen, currentDomainId, funnelStatus, lastPublishedAt, queryClient]);
   
-  // Fetch connected domain using effectiveDomainId
+  // Fetch connected domain using effectiveDomainId with placeholderData to prevent flicker
   const { data: linkedDomain, isLoading: domainLoading } = useQuery({
     queryKey: ['publish-modal-domain', effectiveDomainId],
     queryFn: async () => {
@@ -118,11 +142,22 @@ export function PublishModal({
       return data as DomainRecord;
     },
     enabled: !!effectiveDomainId && isOpen,
+    placeholderData: (previousData) => previousData, // Keep previous data during refetch to prevent flicker
   });
 
-  const isPublished = funnelStatus === 'published';
   const domainUrl = linkedDomain ? `https://${linkedDomain.domain}` : null;
   const isDomainActive = linkedDomain?.status === 'verified' && linkedDomain?.ssl_provisioned;
+  
+  // Format timestamp for display
+  const formattedPublishDate = lastPublished 
+    ? new Date(lastPublished).toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    : null;
 
   const handleCopySlug = () => {
     navigator.clipboard.writeText(slugUrl);
@@ -136,11 +171,21 @@ export function PublishModal({
     const success = await onPublish();
     setPublishing(false);
     if (success) {
+      const now = new Date().toISOString();
+      // Set local published state to persist even if query refetches with stale data
+      // Preserve domain ID so domain query stays enabled
+      setLocalPublishedState((prev) => ({
+        isPublished: true,
+        lastPublishedAt: now,
+        domainId: currentDomainId ?? prev?.domainId ?? null,
+      }));
       setJustPublished(true);
+      // Optimistic update is handled by useFunnelPersistence.publish
+      // Show success state for 3 seconds, then switch to "Update" button
+      // Don't auto-close - let user see the updated state
       setTimeout(() => {
         setJustPublished(false);
-        onClose();
-      }, 2000);
+      }, 3000);
     }
   };
 
@@ -175,9 +220,22 @@ export function PublishModal({
         {/* Header */}
         <div className="p-6 pb-4">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-foreground">
-              Publish your app
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl font-semibold text-foreground">
+                {isPublished ? 'Update your app' : 'Publish your app'}
+              </DialogTitle>
+              {isPublished && (
+                <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Live
+                </Badge>
+              )}
+            </div>
+            {isPublished && formattedPublishDate && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Last published {formattedPublishDate}
+              </p>
+            )}
           </DialogHeader>
         </div>
 
@@ -210,16 +268,43 @@ export function PublishModal({
                 )}
               </Button>
             </div>
-            {isPublished && (
-              <button
-                onClick={() => handleOpenInNewTab(slugUrl)}
-                className="text-xs text-primary hover:underline flex items-center gap-1"
-              >
-                View live
-                <ExternalLink className="w-3 h-3" />
-              </button>
-            )}
           </div>
+
+          {/* Published Status Section - Show when live */}
+          {isPublished && (
+            <div className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                    Your funnel is live!
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleOpenInNewTab(slugUrl)}
+                    className="text-xs"
+                  >
+                    View live
+                    <ExternalLink className="w-3 h-3 ml-1" />
+                  </Button>
+                  {isDomainActive && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleOpenInNewTab(domainUrl!)}
+                      className="text-xs"
+                    >
+                      View on custom domain
+                      <ExternalLink className="w-3 h-3 ml-1" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Domain Status Section */}
           <div className="space-y-3">
@@ -228,8 +313,11 @@ export function PublishModal({
             </div>
 
             {domainLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <div className="p-4 bg-muted/50 rounded-lg border border-border animate-pulse">
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 bg-muted-foreground/20 rounded" />
+                  <div className="h-4 w-32 bg-muted-foreground/20 rounded" />
+                </div>
               </div>
             ) : !linkedDomain ? (
               <div className="p-4 bg-muted/50 rounded-lg border border-border">
@@ -301,15 +389,6 @@ export function PublishModal({
                     </Button>
                   )}
                 </div>
-                {isPublished && (
-                  <button
-                    onClick={() => handleOpenInNewTab(domainUrl!)}
-                    className="text-xs text-primary hover:underline flex items-center gap-1 mt-2"
-                  >
-                    View live on custom domain
-                    <ExternalLink className="w-3 h-3" />
-                  </button>
-                )}
               </div>
             )}
           </div>
@@ -317,7 +396,10 @@ export function PublishModal({
           {/* Publishing Info */}
           <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
             <p className="text-xs text-muted-foreground">
-              <strong className="text-foreground">Note:</strong> Publishing will make your funnel live at{' '}
+              <strong className="text-foreground">Note:</strong>{' '}
+              {isPublished 
+                ? 'Updating will push your changes live at' 
+                : 'Publishing will make your funnel live at'}{' '}
               <span className="font-mono text-xs">{slugUrl}</span>
               {isDomainActive && (
                 <>
@@ -346,15 +428,15 @@ export function PublishModal({
             {isCurrentlyPublishing ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Publishing...
+                {isPublished ? 'Updating...' : 'Publishing...'}
               </>
             ) : justPublished ? (
               <>
                 <Sparkles className="w-4 h-4 mr-2" />
-                Published!
+                {isPublished ? 'Updated!' : 'Published!'}
               </>
             ) : (
-              'Publish'
+              isPublished ? 'Update' : 'Publish'
             )}
           </Button>
         </div>

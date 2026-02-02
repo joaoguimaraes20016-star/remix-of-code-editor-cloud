@@ -45,6 +45,7 @@ interface FunnelSettingsModalProps {
   currentDomainId?: string | null;
   onDomainChange?: (domainId: string | null) => Promise<boolean>;
   defaultSection?: SettingsSection;
+  onNavigateToPublish?: () => void;
 }
 
 type SettingsSection = 'general' | 'domain' | 'appearance' | 'advanced';
@@ -96,6 +97,7 @@ export function FunnelSettingsModal({
   currentDomainId,
   onDomainChange,
   defaultSection = 'general',
+  onNavigateToPublish,
 }: FunnelSettingsModalProps) {
   const queryClient = useQueryClient();
   const { funnel, setFunnel } = useFunnel();
@@ -160,8 +162,18 @@ export function FunnelSettingsModal({
       if (!success) throw new Error('Failed to link domain');
     },
     onSuccess: (_, domainId) => {
-      // Parent already invalidates funnel-meta
-      // We just need to invalidate our own queries
+      // Optimistically update funnel-meta cache immediately so modal has domainId
+      // This ensures the domain displays even if query hasn't refetched yet
+      if (funnelId) {
+        queryClient.setQueryData(['funnel-meta', funnelId], (old: any) => {
+          if (old) {
+            return { ...old, domain_id: domainId };
+          }
+          return { domain_id: domainId, status: 'draft', published_at: null, slug: '' };
+        });
+      }
+      
+      // Parent already invalidates funnel-meta, but we also invalidate our own queries
       queryClient.invalidateQueries({ queryKey: ['funnel-domains', teamId] });
       queryClient.invalidateQueries({ 
         predicate: (query) => query.queryKey[0] === 'publish-modal-domain'
@@ -171,17 +183,22 @@ export function FunnelSettingsModal({
       if (domainForSetup?.id === domainId) {
         setShowDNSSetupDialog(true);
         // Don't show toast - parent already does
-      } else {
-        // Scroll to DNS panel after linking existing domain
+        
+        // After showing DNS dialog, navigate to Publish modal
         setTimeout(() => {
-          if (dnsPanelRef.current && contentAreaRef.current) {
-            const panelTop = dnsPanelRef.current.offsetTop;
-            contentAreaRef.current.scrollTo({
-              top: panelTop - 20,
-              behavior: 'smooth',
-            });
+          setShowDNSSetupDialog(false);
+          if (onNavigateToPublish) {
+            onNavigateToPublish();
           }
-        }, 100);
+        }, 2000); // Give user time to see the DNS dialog
+      } else {
+        // For existing domains, navigate after ensuring query has refetched
+        // Longer delay ensures smooth transition and query completion
+        setTimeout(() => {
+          if (onNavigateToPublish) {
+            onNavigateToPublish();
+          }
+        }, 800); // Increased from 300ms for smoother UX and query refetch
       }
     },
     onError: () => {

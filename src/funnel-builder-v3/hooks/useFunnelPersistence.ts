@@ -38,18 +38,23 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef<string>('');
 
-  // Fetch funnel metadata (status, domain_id)
+  // Fetch funnel metadata (status, domain_id, published_at)
   const { data: funnelMeta } = useQuery({
     queryKey: ['funnel-meta', funnelId],
     queryFn: async () => {
       if (!funnelId) return null;
       const { data, error } = await supabase
         .from('funnels')
-        .select('status, domain_id, slug')
+        .select('status, domain_id, published_at, slug')
         .eq('id', funnelId)
         .single();
       if (error) return null;
-      return data as { status: string; domain_id: string | null; slug: string };
+      return data as { 
+        status: string; 
+        domain_id: string | null; 
+        published_at: string | null;
+        slug: string;
+      };
     },
     enabled: !!funnelId,
     staleTime: 0, // Always refetch for real-time updates
@@ -67,7 +72,13 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
         .update({ domain_id: domainId })
         .eq('id', funnelId);
       if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['funnel-meta', funnelId] });
+      
+      // Invalidate and immediately refetch to ensure fresh data
+      await queryClient.invalidateQueries({ 
+        queryKey: ['funnel-meta', funnelId],
+        refetchType: 'active' // Force immediate refetch for active queries
+      });
+      
       toast.success(domainId ? 'Domain linked!' : 'Domain unlinked');
       return true;
     } catch (e) {
@@ -306,11 +317,28 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
         console.warn('Unexpected response format:', response);
       }
 
-      // Invalidate to refresh status
-      queryClient.invalidateQueries({ 
-        queryKey: ['funnel-meta', currentFunnelId],
-        refetchType: 'active' // Force immediate refetch
+      // Optimistically update the cache immediately with published status
+      // This ensures the UI updates instantly and persists
+      const now = new Date().toISOString();
+      queryClient.setQueryData(['funnel-meta', currentFunnelId], (old: any) => {
+        // Preserve existing data and update status/published_at
+        return old ? {
+          ...old,
+          status: 'published',
+          published_at: now,
+        } : {
+          domain_id: funnelMeta?.domain_id || null,
+          status: 'published',
+          published_at: now,
+          slug: funnelMeta?.slug || '',
+        };
       });
+
+      // Don't invalidate immediately - let the optimistic update persist
+      // The query will naturally refetch when needed (on remount, window focus, etc.)
+      // This prevents race conditions where a refetch might get stale data and overwrite the optimistic update
+      // If we need to force a refetch later, we can do it when the modal closes/reopens
+      
       return true;
     } catch (e) {
       console.error('Error publishing funnel:', e);
@@ -338,7 +366,7 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
     isAuthenticated: !!user,
     funnelStatus: funnelMeta?.status || 'draft',
     currentDomainId: funnelMeta?.domain_id || null,
-    lastPublishedAt: null, // Column doesn't exist in DB schema
+    lastPublishedAt: funnelMeta?.published_at || null,
     slug: funnelMeta?.slug || funnel.name?.toLowerCase().replace(/\s+/g, '-') || 'untitled',
   };
 }
