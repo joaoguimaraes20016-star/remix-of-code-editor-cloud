@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { FunnelRuntimeProvider, FunnelFormData, FunnelSelections } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
+import { FunnelRuntimeProvider, FunnelFormData, FunnelSelections, useFunnelRuntime } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { BlockRenderer } from '@/funnel-builder-v3/editor/blocks/BlockRenderer';
 import { Funnel, FunnelStep } from '@/funnel-builder-v3/types/funnel';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -119,18 +119,23 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         }
       }
 
-      // Store submission in database
-      const { error: dbError } = await supabase
-        .from('funnel_submissions')
-        .insert({
-          funnel_id: funnelId,
-          team_id: teamId,
-          data: submissionData,
-          created_at: new Date().toISOString(),
-        });
+      // Note: funnel_submissions table may not exist in all deployments
+      // Store submission in database if table exists
+      try {
+        const { error: dbError } = await (supabase as any)
+          .from('funnel_submissions')
+          .insert({
+            funnel_id: funnelId,
+            team_id: teamId,
+            data: submissionData,
+            created_at: new Date().toISOString(),
+          });
 
-      if (dbError) {
-        console.error('Database error:', dbError);
+        if (dbError) {
+          console.error('Database error:', dbError);
+        }
+      } catch (e) {
+        console.warn('Submission storage skipped - table may not exist');
       }
 
       toast.success('Form submitted successfully!');

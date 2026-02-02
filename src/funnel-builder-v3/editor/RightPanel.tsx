@@ -8,7 +8,7 @@ import { X } from 'lucide-react';
 import { StepSettings } from './StepSettings';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { AnimationType } from '@/funnel-builder-v3/types/funnel';
+import { AnimationType, Block, FormContent } from '@/funnel-builder-v3/types/funnel';
 import {
   InspectorSection,
   VisualSlider,

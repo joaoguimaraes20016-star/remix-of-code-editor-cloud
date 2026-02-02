@@ -651,6 +651,12 @@ export interface Funnel {
     fontFamily: string;
     favicon?: string;
     showStepIndicator?: boolean; // Toggle step dots at bottom
+    // Additional optional settings
+    webhookUrl?: string;
+    privacyPolicyUrl?: string;
+    metaTitle?: string;
+    metaDescription?: string;
+    [key: string]: unknown; // Allow additional properties
   };
   // Global phone country codes (shared across all phone inputs)
   countryCodes?: CountryCode[];

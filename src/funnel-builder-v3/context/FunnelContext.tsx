@@ -98,19 +98,20 @@ function normalizeFunnel(f: Funnel): Funnel {
     ...step,
     blocks: step.blocks.map(block => {
       // Migrate options for quiz/image-quiz/video-question blocks
-      if (['quiz', 'image-quiz', 'video-question', 'multiple-choice', 'choice'].includes(block.type) && Array.isArray(block.content?.options)) {
-        const content = { ...block.content };
+      const content = block.content as any;
+      if (['quiz', 'image-quiz', 'video-question', 'multiple-choice', 'choice'].includes(block.type) && Array.isArray(content?.options)) {
+        const newContent = { ...content };
         
         // Ensure showSubmitButton is true when multiSelect is true
-        if (content.multiSelect && content.showSubmitButton !== true) {
-          content.showSubmitButton = true;
+        if (newContent.multiSelect && newContent.showSubmitButton !== true) {
+          newContent.showSubmitButton = true;
         }
         
         return {
           ...block,
           content: {
-            ...content,
-            options: block.content.options.map((opt: any) => {
+            ...newContent,
+            options: content.options.map((opt: any) => {
               // Migrate old nextStepId to new action/actionValue format
               if (opt.nextStepId && !opt.action) {
                 return {
@@ -133,10 +134,16 @@ function normalizeFunnel(f: Funnel): Funnel {
     }),
   }));
 
+  // Ensure settings has required properties with defaults
+  const defaultSettings = {
+    primaryColor: '#3b82f6',
+    fontFamily: 'Inter',
+  };
+
   return {
     ...f,
     steps: migratedSteps,
-    settings: f?.settings ?? {},
+    settings: { ...defaultSettings, ...(f?.settings ?? {}) },
   };
 }
 
