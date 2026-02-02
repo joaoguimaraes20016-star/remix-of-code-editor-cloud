@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { FunnelRenderer } from '@/components/funnel-public/FunnelRenderer';
 import { FlowCanvasRenderer } from '@/flow-canvas/components/FlowCanvasRenderer';
 import { EditorDocumentRenderer } from '@/flow-canvas/components/runtime/EditorDocumentRenderer';
+import { FunnelV3Renderer } from '@/funnel-builder-v3/runtime/FunnelV3Renderer';
 
 interface FunnelStep {
   id: string;
@@ -153,12 +154,18 @@ export default function PublicFunnel() {
   const isLoading = !injectedData && (customDomainLoading || funnelLoading || stepsLoading);
   const hasError = customDomainError || funnelError;
 
-  // Detect format: FlowCanvas (has steps) OR EditorDocument (has pages)
+  // Detect format: FlowCanvas (has steps) OR EditorDocument (has pages) OR V3 (version 3 with pages)
   // NOTE: Must compute these before any early returns to keep hook order stable
   const snapshot = activeFunnel?.published_document_snapshot;
   const isFlowCanvasFormat = Array.isArray((snapshot as any)?.steps) && (snapshot as any).steps.length > 0;
+  const isV3Format = 
+    typeof (snapshot as any)?.version === 'number' &&
+    (snapshot as any).version === 3 &&
+    Array.isArray((snapshot as any)?.pages) &&
+    (snapshot as any).pages.length > 0;
   const isEditorDocumentFormat =
     typeof (snapshot as any)?.version === 'number' &&
+    (snapshot as any).version !== 3 &&
     Array.isArray((snapshot as any)?.pages) &&
     (snapshot as any).pages.length > 0;
   
@@ -190,6 +197,7 @@ export default function PublicFunnel() {
       snapshotVersion: (snapshot as any)?.version,
       pages: Array.isArray((snapshot as any)?.pages) ? (snapshot as any).pages.length : 0,
       steps: Array.isArray((snapshot as any)?.steps) ? (snapshot as any).steps.length : 0,
+      isV3Format,
       useV2Runtime,
       renderer,
       shell: (window as any).__INFOSTACK_SHELL__,
@@ -230,6 +238,19 @@ export default function PublicFunnel() {
         funnelId={activeFunnel.id}
         page={snapshot}
         settings={activeFunnel.settings}
+      />
+    );
+  }
+
+  // V3 Format: Funnel Builder V3 runtime renderer
+  // Uses same blocks as editor/preview for consistency
+  if (isV3Format) {
+    return (
+      <FunnelV3Renderer
+        document={snapshot as any}
+        settings={activeFunnel.settings}
+        funnelId={activeFunnel.id}
+        teamId={activeFunnel.team_id}
       />
     );
   }

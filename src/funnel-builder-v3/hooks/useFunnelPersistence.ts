@@ -177,24 +177,144 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
     }
 
     try {
-      const response = await supabase.functions.invoke('publish-funnel', {
-        body: {
-          funnel_id: currentFunnelId,
-          name: funnel.name,
-          steps: funnel.steps.map((step, index) => ({
-            order_index: index,
-            step_type: step.type,
-            content: step,
-          })),
-          builder_document: funnel,
-          settings: funnel.settings || {},
-        },
+      // Ensure name is not empty
+      const funnelName = funnel.name?.trim() || 'Untitled Funnel';
+      
+      // Validate funnel has steps
+      if (!funnel.steps || funnel.steps.length === 0) {
+        toast.error('Cannot publish: Funnel has no steps');
+        return false;
+      }
+
+      // Transform funnel into runtime-compatible format
+      // V3 format uses 'pages' array (similar to EditorDocument) but with version 3
+      const runtimeDocument = {
+        version: 3, // Mark as v3 format
+        pages: funnel.steps.map((step, index) => ({
+          id: step.id,
+          name: step.name || `Step ${index + 1}`,
+          type: step.type || 'capture',
+          slug: step.slug || `step-${index + 1}`,
+          order_index: index,
+          blocks: step.blocks || [],
+          settings: step.settings || {},
+        })),
+        settings: funnel.settings || {},
+        name: funnelName,
+        countryCodes: funnel.countryCodes || [],
+        defaultCountryId: funnel.defaultCountryId,
+      };
+
+      // Prepare request body
+      // Optimize: Send minimal step data for funnel_steps table, full data in runtimeDocument
+      const requestBody = {
+        funnel_id: currentFunnelId,
+        name: funnelName,
+        // Minimal step data for funnel_steps table (just metadata, not full content)
+        steps: funnel.steps.map((step, index) => ({
+          order_index: index,
+          step_type: step.type || 'capture',
+          // Only include essential step metadata, not full blocks/content
+          content: {
+            id: step.id,
+            name: step.name,
+            slug: step.slug,
+            type: step.type,
+          },
+        })),
+        builder_document: funnel, // Keep original for editing (used for builder_document field)
+        settings: runtimeDocument, // Use runtime format for published_document_snapshot
+      };
+
+      // Validate request body can be serialized (catch circular references)
+      let serializedBody: string;
+      try {
+        serializedBody = JSON.stringify(requestBody);
+      } catch (serializationError) {
+        console.error('Failed to serialize request body:', serializationError);
+        toast.error('Failed to publish: Invalid funnel data structure');
+        return false;
+      }
+
+      // Check payload size (Supabase edge functions have ~6MB limit)
+      const payloadSizeMB = new Blob([serializedBody]).size / (1024 * 1024);
+      console.log('Publishing funnel:', {
+        funnelId: currentFunnelId,
+        name: funnelName,
+        stepsCount: funnel.steps.length,
+        runtimeDocumentVersion: runtimeDocument.version,
+        runtimeDocumentPagesCount: runtimeDocument.pages.length,
+        payloadSizeMB: payloadSizeMB.toFixed(2),
       });
 
-      if (response.error) {
-        console.error('Publish error:', response.error);
-        toast.error('Failed to publish funnel');
+      if (payloadSizeMB > 5) {
+        console.warn('Large payload detected:', payloadSizeMB.toFixed(2), 'MB');
+        toast.error(`Payload too large (${payloadSizeMB.toFixed(2)}MB). Please reduce funnel size.`);
         return false;
+      }
+
+      const response = await supabase.functions.invoke('publish-funnel', {
+        body: requestBody,
+      });
+
+      // Check for errors - Supabase edge functions can return errors in different ways
+      // First check if there's an error object
+      if (response.error) {
+        console.error('Publish error details:', {
+          error: response.error,
+          status: response.status,
+          data: response.data,
+          funnelId: currentFunnelId,
+          funnelName: funnelName,
+          stepsCount: funnel.steps.length,
+        });
+        
+        // Try to extract error message from response
+        let errorMessage = 'Unknown error';
+        if (response.data?.error) {
+          errorMessage = typeof response.data.error === 'string' 
+            ? response.data.error 
+            : response.data.error.message || JSON.stringify(response.data.error);
+          // Include details if available
+          if (response.data.details) {
+            errorMessage += ` (${response.data.details})`;
+          }
+        } else if (response.error?.message) {
+          errorMessage = response.error.message;
+        } else if (typeof response.error === 'string') {
+          errorMessage = response.error;
+        }
+        
+        // Check for specific error codes
+        if (response.error?.code === 220 || response.data?.code === 220) {
+          errorMessage = 'Payload too large. Please reduce the funnel size or remove large images/media.';
+        }
+        
+        console.error('Extracted error message:', errorMessage);
+        toast.error(`Failed to publish: ${errorMessage}`);
+        return false;
+      }
+
+      // Check response data for errors (edge function might return error in data field)
+      if (response.data && typeof response.data === 'object') {
+        if ('error' in response.data) {
+          console.error('Publish error in response data:', response.data);
+          const errorMsg = typeof response.data.error === 'string' 
+            ? response.data.error 
+            : JSON.stringify(response.data.error);
+          toast.error(`Failed to publish: ${errorMsg}`);
+          return false;
+        }
+        
+        // Check if response is successful
+        if ('ok' in response.data && response.data.ok === true) {
+          console.log('Publish successful:', response.data);
+        }
+      }
+
+      // If we get here and there's no success indicator, something might be wrong
+      if (!response.data || (typeof response.data === 'object' && !('ok' in response.data))) {
+        console.warn('Unexpected response format:', response);
       }
 
       // Invalidate to refresh status

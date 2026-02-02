@@ -171,16 +171,30 @@ serve(async (req: Request): Promise<Response> => {
     const updatePayload: Record<string, unknown> = {
       name: name.trim(),
       status: "published",
+      published_at: new Date().toISOString(), // Set published timestamp
       updated_at: new Date().toISOString(),
     };
 
     if (builder_document !== null) {
-      updatePayload.published_document_snapshot = builder_document;
+      // If settings contains a runtime document (has version and pages), use it for published_document_snapshot
+      // Otherwise use builder_document
+      if (settings && typeof settings === 'object' && 'version' in settings && 'pages' in settings) {
+        updatePayload.published_document_snapshot = settings;
+      } else {
+        updatePayload.published_document_snapshot = builder_document;
+      }
       updatePayload.builder_document = builder_document;
     }
 
+    // Extract actual settings from runtime document if it's a runtime format
     if (settings !== null) {
-      updatePayload.settings = settings;
+      if (settings && typeof settings === 'object' && 'version' in settings && 'pages' in settings) {
+        // This is a runtime document, extract settings from it
+        updatePayload.settings = (settings as any).settings || {};
+      } else {
+        // Regular settings object
+        updatePayload.settings = settings;
+      }
     }
 
     const { error: updateFunnelError } = await supabase
@@ -244,7 +258,11 @@ serve(async (req: Request): Promise<Response> => {
       if (insertError) {
         console.error("[publish-funnel] Error inserting funnel_steps:", insertError);
         return new Response(
-          JSON.stringify({ error: "Failed to persist funnel steps" }),
+          JSON.stringify({ 
+            error: "Failed to persist funnel steps",
+            details: insertError.message || String(insertError),
+            code: insertError.code,
+          }),
           {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
