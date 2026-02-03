@@ -453,6 +453,32 @@ ${userInstructions}`;
                 content.labelColor = plan.branding.textColor;
               }
               
+              // Apply colors to accordion blocks (FAQ)
+              if (block.type === 'accordion') {
+                content.titleColor = plan.branding.headingColor || plan.branding.textColor;
+                content.contentColor = plan.branding.textColor;
+              }
+              
+              // Apply colors to reviews
+              if (block.type === 'reviews') {
+                content.textColor = plan.branding.textColor;
+              }
+              
+              // Apply colors to countdown
+              if (block.type === 'countdown') {
+                content.textColor = plan.branding.headingColor || plan.branding.textColor;
+              }
+              
+              // Apply colors to webinar
+              if (block.type === 'webinar') {
+                content.titleColor = plan.branding.headingColor || plan.branding.textColor;
+              }
+              
+              // Apply colors to list blocks (ensure textColor is set)
+              if (block.type === 'list') {
+                content.textColor = plan.branding.textColor;
+              }
+              
               newBlock.content = content;
               return newBlock;
             }),
@@ -605,6 +631,36 @@ ${userInstructions}`;
                   if (!content.labelColor) {
                     content.labelColor = plan.branding.textColor;
                   }
+                }
+                
+                // Apply colors to accordion blocks (FAQ)
+                if (block.type === 'accordion') {
+                  if (!content.titleColor) {
+                    content.titleColor = plan.branding.headingColor || plan.branding.textColor;
+                  }
+                  if (!content.contentColor) {
+                    content.contentColor = plan.branding.textColor;
+                  }
+                }
+                
+                // Apply colors to reviews
+                if (block.type === 'reviews' && !content.textColor) {
+                  content.textColor = plan.branding.textColor;
+                }
+                
+                // Apply colors to countdown
+                if (block.type === 'countdown' && !content.textColor) {
+                  content.textColor = plan.branding.headingColor || plan.branding.textColor;
+                }
+                
+                // Apply colors to webinar
+                if (block.type === 'webinar' && !content.titleColor) {
+                  content.titleColor = plan.branding.headingColor || plan.branding.textColor;
+                }
+                
+                // Apply colors to list blocks (ensure textColor is set)
+                if (block.type === 'list' && !content.textColor) {
+                  content.textColor = plan.branding.textColor;
                 }
                 
                 newBlock.content = content;

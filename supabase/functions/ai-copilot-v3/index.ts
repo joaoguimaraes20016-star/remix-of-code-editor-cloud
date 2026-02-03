@@ -249,50 +249,94 @@ async function fetchWebsiteContent(url: string): Promise<string> {
     
     // Extract video URLs
     const videoUrls: Array<{ url: string; type: 'youtube' | 'vimeo' | 'loom' | 'wistia' | 'hosted' }> = [];
+    const seenUrls = new Set<string>(); // For exact deduplication
+    
+    // Helper function to add video URL if not already seen
+    const addVideoUrl = (url: string, type: 'youtube' | 'vimeo' | 'loom' | 'wistia' | 'hosted') => {
+      if (!seenUrls.has(url)) {
+        seenUrls.add(url);
+        videoUrls.push({ url, type });
+      }
+    };
+    
+    // Extract iframe src and data-src attributes (for lazy-loaded videos)
+    const iframeMatches = html.match(/<iframe[^>]+(?:src|data-src)=["']([^"']+)["']/gi) || [];
+    const iframeUrls: string[] = [];
+    iframeMatches.forEach(match => {
+      const srcMatch = match.match(/(?:src|data-src)=["']([^"']+)["']/i);
+      if (srcMatch && srcMatch[1]) {
+        iframeUrls.push(srcMatch[1]);
+      }
+    });
+    
+    // Extract video URLs from data attributes
+    const dataVideoMatches = html.match(/data-(?:video-url|video-src|src)=["']([^"']+)["']/gi) || [];
+    dataVideoMatches.forEach(match => {
+      const urlMatch = match.match(/data-(?:video-url|video-src|src)=["']([^"']+)["']/i);
+      if (urlMatch && urlMatch[1]) {
+        iframeUrls.push(urlMatch[1]);
+      }
+    });
+    
+    // Combine HTML with extracted iframe URLs for processing
+    const searchText = html + ' ' + iframeUrls.join(' ');
     
     // Extract YouTube embeds (multiple formats)
-    const youtubeEmbedMatches = html.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/gi) || [];
-    const youtubeWatchMatches = html.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/gi) || [];
-    const youtubeShortMatches = html.match(/youtu\.be\/([a-zA-Z0-9_-]+)/gi) || [];
-    [...youtubeEmbedMatches, ...youtubeWatchMatches, ...youtubeShortMatches].forEach(match => {
-      const videoId = match.match(/([a-zA-Z0-9_-]+)$/)?.[1];
-      if (videoId && !videoUrls.find(v => v.url.includes(videoId))) {
-        videoUrls.push({ url: `https://www.youtube.com/watch?v=${videoId}`, type: 'youtube' });
+    // Handle youtube.com/embed/VIDEO_ID
+    const youtubeEmbedMatches = searchText.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/gi) || [];
+    // Handle youtube.com/watch?v=VIDEO_ID (with flexible query params)
+    const youtubeWatchMatches = searchText.match(/youtube\.com\/watch[^"'\s]*[?&]v=([a-zA-Z0-9_-]+)/gi) || [];
+    // Handle youtube-nocookie.com (privacy-enhanced)
+    const youtubeNoCookieMatches = searchText.match(/youtube-nocookie\.com\/embed\/([a-zA-Z0-9_-]+)/gi) || [];
+    // Handle youtu.be/VIDEO_ID
+    const youtubeShortMatches = searchText.match(/youtu\.be\/([a-zA-Z0-9_-]+)/gi) || [];
+    
+    [...youtubeEmbedMatches, ...youtubeWatchMatches, ...youtubeNoCookieMatches, ...youtubeShortMatches].forEach(match => {
+      const videoIdMatch = match.match(/([a-zA-Z0-9_-]+)$/);
+      if (videoIdMatch && videoIdMatch[1]) {
+        const videoId = videoIdMatch[1];
+        addVideoUrl(`https://www.youtube.com/watch?v=${videoId}`, 'youtube');
       }
     });
     
-    // Extract Vimeo embeds
-    const vimeoMatches = html.match(/(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/gi) || [];
+    // Extract Vimeo embeds (handle various formats)
+    const vimeoMatches = html.match(/vimeo\.com\/(\d+)/gi) || [];
     vimeoMatches.forEach(match => {
-      const videoId = match.match(/(\d+)$/)?.[1];
-      if (videoId && !videoUrls.find(v => v.url.includes(videoId))) {
-        videoUrls.push({ url: `https://vimeo.com/${videoId}`, type: 'vimeo' });
+      const videoIdMatch = match.match(/(\d+)$/);
+      if (videoIdMatch && videoIdMatch[1]) {
+        const videoId = videoIdMatch[1];
+        addVideoUrl(`https://vimeo.com/${videoId}`, 'vimeo');
       }
     });
     
-    // Extract Loom embeds
-    const loomMatches = html.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/gi) || [];
+    // Extract Loom embeds (expanded to include /video/ and other paths)
+    const loomMatches = searchText.match(/loom\.com\/(?:share|embed|video)\/([a-zA-Z0-9]+)/gi) || [];
     loomMatches.forEach(match => {
-      const videoId = match.match(/([a-zA-Z0-9]+)$/)?.[1];
-      if (videoId && !videoUrls.find(v => v.url.includes(videoId))) {
-        videoUrls.push({ url: `https://www.loom.com/share/${videoId}`, type: 'loom' });
+      const videoIdMatch = match.match(/([a-zA-Z0-9]+)$/);
+      if (videoIdMatch && videoIdMatch[1]) {
+        const videoId = videoIdMatch[1];
+        addVideoUrl(`https://www.loom.com/share/${videoId}`, 'loom');
       }
     });
     
     // Extract Wistia embeds
     const wistiaMatches = html.match(/wistia\.(?:net|com)\/(?:medias|embed)\/([a-zA-Z0-9]+)/gi) || [];
     wistiaMatches.forEach(match => {
-      const videoId = match.match(/([a-zA-Z0-9]+)$/)?.[1];
-      if (videoId && !videoUrls.find(v => v.url.includes(videoId))) {
-        videoUrls.push({ url: `https://fast.wistia.net/embed/iframe/${videoId}`, type: 'wistia' });
+      const videoIdMatch = match.match(/([a-zA-Z0-9]+)$/);
+      if (videoIdMatch && videoIdMatch[1]) {
+        const videoId = videoIdMatch[1];
+        addVideoUrl(`https://fast.wistia.net/embed/iframe/${videoId}`, 'wistia');
       }
     });
     
-    // Extract direct video file URLs
-    const videoFileMatches = html.match(/https?:\/\/[^\s"']+\.(?:mp4|webm|ogg|mov|avi)(?:\?[^\s"']*)?/gi) || [];
+    // Extract direct video file URLs from various contexts
+    // Match URLs in quotes, attributes, or standalone
+    const videoFileMatches = searchText.match(/https?:\/\/[^\s"'<>]+\.(?:mp4|webm|ogg|mov|avi)(?:\?[^\s"']*)?/gi) || [];
     videoFileMatches.forEach(url => {
-      if (!videoUrls.find(v => v.url === url)) {
-        videoUrls.push({ url, type: 'hosted' });
+      // Clean up URL (remove trailing quotes/punctuation)
+      const cleanUrl = url.replace(/["']+$/, '').trim();
+      if (cleanUrl) {
+        addVideoUrl(cleanUrl, 'hosted');
       }
     });
     
@@ -382,6 +426,14 @@ BRANDING RULES - CRITICAL:
   * For light backgrounds (#eee-#fff): use dark text (#000000, #1a1a1a)
 - headingColor: Heading text color (can be same as textColor or accent)
 - primaryColor: Button/accent color that stands out from background
+
+COLOR APPLICATION RULES - MUST BE APPLIED TO ALL BLOCKS:
+- Accordion blocks: MUST include titleColor (use headingColor) and contentColor (use textColor)
+- List blocks: MUST include textColor property
+- Reviews blocks: MUST include textColor property
+- Countdown blocks: MUST include textColor property (use headingColor for emphasis)
+- Webinar blocks: MUST include titleColor property (use headingColor)
+- These colors prevent black/gray text on dark backgrounds and ensure proper contrast
 
 INTELLIGENT BLOCK SELECTION - CRITICAL RULES:
 - If the page has testimonials with quotes and author names -> use "testimonial-slider" block
@@ -599,7 +651,13 @@ EVERY BLOCK MUST HAVE APPROPRIATE COLORS - STRUCTURE IS CRITICAL:
 - heading: Color goes in content.styles.color (NOT content.color)
 - text: Color goes in content.styles.color (NOT content.color)
 - button: backgroundColor AND color go directly in content (buttons are different)
-- list: Color goes in content.styles.color for readability
+- list: textColor property in content (NOT styles.color)
+- accordion: titleColor (use headingColor) and contentColor (use textColor) in content
+- reviews: textColor property in content
+- countdown: textColor property in content (use headingColor for emphasis)
+- webinar: titleColor property in content (use headingColor)
+- social-proof: valueColor (use headingColor) and labelColor (use textColor) in content
+- These color properties prevent black/gray text on dark backgrounds and ensure proper contrast
 
 Return ONLY valid JSON:
 {
@@ -787,6 +845,69 @@ Example button with correct color structure:
     "textAlign": "center"
   }
 }
+
+Example accordion (FAQ) with correct color structure:
+{
+  "type": "accordion",
+  "content": {
+    "items": [
+      {
+        "id": "1",
+        "title": "Question text here",
+        "content": "Answer text here"
+      }
+    ],
+    "titleColor": "${headingColor}",
+    "contentColor": "${textColor}"
+  }
+}
+
+Example list with correct color structure:
+{
+  "type": "list",
+  "content": {
+    "items": [
+      { "id": "1", "text": "List item 1" },
+      { "id": "2", "text": "List item 2" }
+    ],
+    "textColor": "${textColor}"
+  }
+}
+
+Example reviews with correct color structure:
+{
+  "type": "reviews",
+  "content": {
+    "rating": 4.8,
+    "reviewCount": "200+",
+    "textColor": "${textColor}"
+  }
+}
+
+Example countdown with correct color structure:
+{
+  "type": "countdown",
+  "content": {
+    "endDate": "2024-12-31T23:59:59",
+    "textColor": "${headingColor}"
+  }
+}
+
+Example webinar with correct color structure:
+{
+  "type": "webinar",
+  "content": {
+    "title": "Webinar Title",
+    "titleColor": "${headingColor}"
+  }
+}
+
+CRITICAL COLOR RULES:
+- ALWAYS include titleColor and contentColor for accordion blocks
+- ALWAYS include textColor for list, reviews, and countdown blocks
+- ALWAYS include titleColor for webinar blocks
+- These colors MUST match the extracted branding colors (${headingColor} for titles/headings, ${textColor} for body text)
+- Never leave these color properties undefined or missing - they prevent black/gray text on dark backgrounds
 ` : '';
 
   return `You are a funnel architect for Funnel Builder V3.
@@ -978,7 +1099,9 @@ Return JSON with V3 funnel structure:
                   "question": "What is this product?",
                   "answer": "This product helps you..."
                 }
-              ]
+              ],
+              "titleColor": "${headingColor}",
+              "contentColor": "${textColor}"
             }
           }
         ],

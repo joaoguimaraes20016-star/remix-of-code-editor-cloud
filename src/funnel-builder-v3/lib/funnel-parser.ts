@@ -179,6 +179,8 @@ export function parseGeneratedFunnel(json: string): ParsedFunnel {
               id: uuid(),
               text: item.text || item.title || item.content || `Item ${idx + 1}`,
             })),
+            // Preserve textColor if provided
+            ...(content.textColor && { textColor: content.textColor }),
           };
           break;
           
@@ -190,6 +192,9 @@ export function parseGeneratedFunnel(json: string): ParsedFunnel {
               content: item.content || item.answer || 'Answer',
               defaultOpen: item.defaultOpen || false,
             })),
+            // Preserve titleColor and contentColor if provided
+            ...(content.titleColor && { titleColor: content.titleColor }),
+            ...(content.contentColor && { contentColor: content.contentColor }),
           };
           break;
           
@@ -201,6 +206,16 @@ export function parseGeneratedFunnel(json: string): ParsedFunnel {
               label: item.label || item.text || 'Stat',
               suffix: item.suffix || '+',
             })),
+          };
+          break;
+          
+        case 'reviews':
+          v3Content = {
+            rating: content.rating || 5,
+            reviewCount: content.reviewCount || '100+',
+            avatars: content.avatars || [],
+            // Preserve textColor if provided
+            ...(content.textColor && { textColor: content.textColor }),
           };
           break;
           
