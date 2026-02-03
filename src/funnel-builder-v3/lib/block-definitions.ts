@@ -43,7 +43,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
         textAlign: 'center',
       },
     },
-    defaultStyles: { ...defaultStyles, padding: { top: 24, right: 16, bottom: 8, left: 16 } },
+    defaultStyles: { ...defaultStyles, padding: { top: 24, right: 16, bottom: 8, left: 16 }, textAlign: 'center' },
   },
   text: {
     type: 'text',
@@ -59,7 +59,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
         lineHeight: 1.6,
       },
     },
-    defaultStyles: { ...defaultStyles, padding: { top: 8, right: 16, bottom: 16, left: 16 } },
+    defaultStyles: { ...defaultStyles, padding: { top: 8, right: 16, bottom: 16, left: 16 }, textAlign: 'center' },
   },
   image: {
     type: 'image',
@@ -71,7 +71,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
       alt: 'Image description',
       aspectRatio: '16:9',
     },
-    defaultStyles: { ...defaultStyles, borderRadius: 12 },
+    defaultStyles: { ...defaultStyles, borderRadius: 12, textAlign: 'center' },
   },
   video: {
     type: 'video',
@@ -93,7 +93,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
     defaultContent: {
       style: 'solid',
     },
-    defaultStyles: { ...defaultStyles, padding: { top: 16, right: 0, bottom: 16, left: 0 } },
+    defaultStyles: { ...defaultStyles, padding: { top: 16, right: 0, bottom: 16, left: 0 }, textAlign: 'center' },
   },
   spacer: {
     type: 'spacer',
@@ -152,7 +152,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
         required: true,
       },
     },
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
   'popup-form': {
     type: 'popup-form',
@@ -216,7 +216,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
         required: true,
       },
     },
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
   'phone-capture': {
     type: 'phone-capture',
@@ -253,7 +253,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
       placeholder: 'Select a date',
       buttonText: 'Book Now',
     } as any,
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
 
   // Trust Blocks
@@ -268,7 +268,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
       reviewCount: '200+',
       starColor: '#facc15',
     },
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
   'testimonial-slider': {
     type: 'testimonial-slider',
@@ -288,7 +288,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
       autoPlay: false,
       interval: 5,
     },
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
   'logo-bar': {
     type: 'logo-bar',
@@ -323,7 +323,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
         { id: '3', value: 99, label: 'Satisfaction', suffix: '%' },
       ],
     },
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
 
   // Layout Blocks
@@ -337,7 +337,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
       gap: 16,
       blocks: [[], []],
     },
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
   card: {
     type: 'card',
@@ -361,7 +361,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
         { id: '3', title: 'Is there a free trial?', content: 'Yes! We offer a 14-day free trial with no credit card required.' },
       ],
     },
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
 
   // Advanced Blocks
@@ -375,7 +375,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
       showDays: true,
       expiredText: 'Offer Expired',
     },
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
   quiz: {
     type: 'quiz',
@@ -418,7 +418,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
       ],
       style: 'bullet',
     },
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
   slider: {
     type: 'slider',
@@ -436,7 +436,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
       showDots: true,
       showArrows: true,
     },
-    defaultStyles: { ...defaultStyles, borderRadius: 12 },
+    defaultStyles: { ...defaultStyles, borderRadius: 12, textAlign: 'center' },
   },
   graphic: {
     type: 'graphic',
@@ -476,7 +476,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
       duration: 3,
       action: { type: 'next-step' },
     },
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
   embed: {
     type: 'embed',
@@ -515,7 +515,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
         color: '#ffffff',
       },
     },
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
   choice: {
     type: 'choice',
@@ -566,7 +566,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
         color: '#ffffff',
       },
     },
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
   'video-question': {
     type: 'video-question',
@@ -643,7 +643,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
         required: true,
       },
     },
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
   'date-picker': {
     type: 'date-picker',
@@ -690,7 +690,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
         required: true,
       },
     },
-    defaultStyles,
+    defaultStyles: { ...defaultStyles, textAlign: 'center' },
   },
 };
 

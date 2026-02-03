@@ -115,17 +115,17 @@ export function LeftPanel({ onOpenAICopilot }: LeftPanelProps) {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <div className="px-2 pt-2 border-b border-border">
           <TabsList className="w-full h-9 bg-muted/50">
-            <TabsTrigger value="pages" className="flex-1 text-xs gap-1.5">
-              <FileText className="h-3.5 w-3.5" />
-              Pages
+            <TabsTrigger value="pages" className="flex-1 text-xs gap-1.5 min-w-0 px-1.5">
+              <FileText className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">Pages</span>
             </TabsTrigger>
-            <TabsTrigger value="layers" className="flex-1 text-xs gap-1.5">
-              <Layers className="h-3.5 w-3.5" />
-              Layers
+            <TabsTrigger value="layers" className="flex-1 text-xs gap-1.5 min-w-0 px-1.5">
+              <Layers className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">Layers</span>
             </TabsTrigger>
-            <TabsTrigger value="assets" className="flex-1 text-xs gap-1.5">
-              <FolderOpen className="h-3.5 w-3.5" />
-              Assets
+            <TabsTrigger value="assets" className="flex-1 text-xs gap-1.5 min-w-0 px-1.5">
+              <FolderOpen className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">Assets</span>
             </TabsTrigger>
           </TabsList>
         </div>
@@ -161,7 +161,7 @@ export function LeftPanel({ onOpenAICopilot }: LeftPanelProps) {
           </TabsContent>
 
           {/* Layers Tab */}
-          <TabsContent value="layers" className="m-0 p-2">
+          <TabsContent value="layers" className="m-0 p-3">
             <div className="px-1 mb-2">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Block Layers

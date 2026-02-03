@@ -150,8 +150,16 @@ export function ListBlock({ content, blockId, stepId, isPreview }: ListBlockProp
   // Default effective size for bullet/numbered
   const defaultEffectiveSize = Math.max(iconSize, 16);
 
+  // Get textAlign from content, defaulting to center
+  // Note: content.style is a string ('icon', 'bullet', 'numbered'), not an object
+  // We'll default to center alignment for lists
+  const textAlign = 'center';
+  
   return (
-    <ul className={normalizedStyle === 'numbered' ? 'list-decimal list-inside space-y-2' : 'space-y-2'}>
+    <ul 
+      className={normalizedStyle === 'numbered' ? 'list-decimal list-inside space-y-2' : 'space-y-2'}
+      style={{ textAlign, width: '100%', maxWidth: '100%' }}
+    >
       {items.map((item, index) => {
         const itemIconSize = getEffectiveIconSize(item);
         

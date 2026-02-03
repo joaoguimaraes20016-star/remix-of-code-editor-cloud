@@ -55,7 +55,18 @@ function SortableBlock({ block, stepId }: { block: Block; stepId: string }) {
   // Render hidden blocks as faded (for editor visibility)
   if (isHidden) {
     return (
-      <div ref={setNodeRef} style={style} className="opacity-30 pointer-events-none">
+      <div 
+        ref={setNodeRef} 
+        style={{
+          ...style,
+          width: '100%',
+          maxWidth: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }} 
+        className="opacity-30 pointer-events-none"
+      >
         <BlockRenderer block={block} stepId={stepId} />
       </div>
     );
@@ -64,7 +75,15 @@ function SortableBlock({ block, stepId }: { block: Block; stepId: string }) {
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'stretch',
+      }}
       onClick={(e) => {
         e.stopPropagation();
         setSelectedBlockId(block.id);
@@ -358,17 +377,20 @@ export function Canvas() {
               
               <ScrollArea className="h-full w-full" key={currentViewport}>
                   <div 
-                    className="canvas-content flex flex-col p-4 w-full max-w-full overflow-x-hidden"
+                    className="canvas-content flex flex-col items-center p-4"
                     style={{ 
                       backgroundColor: currentStep.settings?.backgroundColor,
                       minHeight: viewport.height,
                       paddingTop: isPhone ? 40 : 16,
                       paddingBottom: funnel.steps.length > 1 ? 64 : 24,
+                      width: '100%',
+                      maxWidth: '100%',
+                      overflow: 'hidden',
                     }}
                   >
                     <AnimatePresence mode="sync">
                     {currentStep.blocks.length === 0 ? (
-                      <div className="flex-1 flex items-center justify-center">
+                      <div className="flex-1 flex items-center justify-center w-full">
                         <EmptyState onAddClick={() => setIsAddModalOpen(true)} viewport={currentViewport} />
                       </div>
                     ) : (
@@ -376,7 +398,15 @@ export function Canvas() {
                         items={currentStep.blocks.map(b => b.id)}
                         strategy={verticalListSortingStrategy}
                       >
-                        <div className="space-y-4 w-full max-w-full">
+                        <div 
+                          className="space-y-4 flex flex-col items-center"
+                          style={{
+                            width: '100%',
+                            maxWidth: '100%',
+                            minWidth: 0,
+                            boxSizing: 'border-box',
+                          }}
+                        >
                           {currentStep.blocks.map(block => (
                             <SortableBlock
                               key={block.id}

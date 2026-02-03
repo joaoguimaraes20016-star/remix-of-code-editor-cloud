@@ -47,11 +47,19 @@ function createBlockFromContent(
     ...content,
   } as BlockContent;
   
+  // Ensure textAlign is set for ALL block types - default to center
+  const finalStyles = styles ? { ...styles } : { ...definition.defaultStyles };
+  
+  // Always default to center alignment if not explicitly set
+  if (!finalStyles.textAlign) {
+    finalStyles.textAlign = 'center' as const;
+  }
+  
   return {
     id: uuid(),
     type,
     content: mergedContent,
-    styles: styles || { ...definition.defaultStyles },
+    styles: finalStyles,
     trackingId: `block-${uuid()}`,
   };
 }

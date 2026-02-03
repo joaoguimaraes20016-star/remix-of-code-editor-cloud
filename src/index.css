@@ -536,3 +536,71 @@
 .animate-marquee-fast-right {
   animation: marquee-right 15s linear infinite;
 }
+
+/* Funnel Builder V3 Canvas - Ensure all blocks fit within canvas */
+.canvas-content,
+.canvas-content * {
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0; /* Critical for flex children */
+}
+
+.canvas-content img,
+.canvas-content video,
+.canvas-content iframe {
+  max-width: 100%;
+  width: 100%;
+  height: auto;
+}
+
+/* Ensure all text wraps properly */
+.canvas-content p,
+.canvas-content h1,
+.canvas-content h2,
+.canvas-content h3,
+.canvas-content h4,
+.canvas-content h5,
+.canvas-content h6,
+.canvas-content span {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Block wrapper - ensure blocks are centered and constrained */
+.block-wrapper {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Panel Content - Ensure proper overflow handling */
+.w-64,
+.w-\[480px\] {
+  min-width: 0;
+}
+
+/* Left Panel and AI Copilot - Prevent content overflow */
+[class*="border-r"][class*="bg-card"],
+[class*="border-r"][class*="bg-background"] {
+  overflow-x: hidden;
+}
+
+/* Ensure tabs don't overflow */
+[role="tablist"] {
+  min-width: 0;
+}
+
+[role="tab"] {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Textarea and inputs in panels */
+textarea,
+input[type="text"],
+input[type="url"] {
+  max-width: 100%;
+  box-sizing: border-box;
+}

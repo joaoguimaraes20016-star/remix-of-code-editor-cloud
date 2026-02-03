@@ -473,11 +473,24 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
     const rawContent = JSON.parse(JSON.stringify(definition.defaultContent));
     const processedContent = addTrackingIdsToContent(rawContent, blockType);
     
+    // Ensure textAlign is set for text-based blocks - always default to center
+    const defaultStylesCopy = JSON.parse(JSON.stringify(definition.defaultStyles));
+    const textBasedBlocks = ['heading', 'text', 'list', 'button', 'accordion', 'social-proof', 'reviews', 'testimonial-slider'];
+    if (textBasedBlocks.includes(blockType) && !defaultStylesCopy.textAlign) {
+      // Check if content.styles has textAlign, otherwise default to center
+      const contentStyles = processedContent?.styles as any;
+      if (contentStyles?.textAlign && ['left', 'center', 'right'].includes(contentStyles.textAlign)) {
+        defaultStylesCopy.textAlign = contentStyles.textAlign;
+      } else {
+        defaultStylesCopy.textAlign = 'center'; // Always default to center
+      }
+    }
+    
     const newBlock: Block = {
       id: uuid(),
       type: blockType,
       content: processedContent,
-      styles: JSON.parse(JSON.stringify(definition.defaultStyles)),
+      styles: defaultStylesCopy,
       trackingId: generateTrackingId('block'),
     };
     

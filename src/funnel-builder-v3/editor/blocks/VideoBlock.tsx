@@ -94,7 +94,7 @@ export function VideoBlock({ content }: VideoBlockProps) {
 
   if (!src) {
     return (
-      <div className={cn(aspectClass, "bg-muted rounded-lg flex items-center justify-center")}>
+      <div className={cn(aspectClass, "bg-muted rounded-lg flex items-center justify-center w-full max-w-full")}>
         <div className="text-center text-muted-foreground">
           <Play className="h-10 w-10 mx-auto mb-2 opacity-50" />
           <p className="text-sm">Paste a video URL</p>
@@ -124,7 +124,7 @@ export function VideoBlock({ content }: VideoBlockProps) {
     }
     
     return (
-      <div className={cn(aspectClass, "rounded-lg overflow-hidden")}>
+      <div className={cn(aspectClass, "rounded-lg overflow-hidden w-full max-w-full")}>
         <iframe
           className="w-full h-full"
           src={`https://www.youtube.com/embed/${videoId}${params.toString() ? '?' + params.toString() : ''}`}
@@ -141,7 +141,7 @@ export function VideoBlock({ content }: VideoBlockProps) {
     const videoId = getVimeoId(src);
     if (!videoId) {
       return (
-        <div className={cn(aspectClass, "bg-muted rounded-lg flex items-center justify-center")}>
+        <div className={cn(aspectClass, "bg-muted rounded-lg flex items-center justify-center w-full max-w-full")}>
           <p className="text-sm text-muted-foreground">Invalid Vimeo URL</p>
         </div>
       );
@@ -153,7 +153,7 @@ export function VideoBlock({ content }: VideoBlockProps) {
     if (loop) params.set('loop', '1');
     
     return (
-      <div className={cn(aspectClass, "rounded-lg overflow-hidden")}>
+      <div className={cn(aspectClass, "rounded-lg overflow-hidden w-full max-w-full")}>
         <iframe
           className="w-full h-full"
           src={`https://player.vimeo.com/video/${videoId}${params.toString() ? '?' + params.toString() : ''}`}
@@ -170,7 +170,7 @@ export function VideoBlock({ content }: VideoBlockProps) {
     const videoId = getWistiaId(src);
     if (!videoId) {
       return (
-        <div className={cn(aspectClass, "bg-muted rounded-lg flex items-center justify-center")}>
+        <div className={cn(aspectClass, "bg-muted rounded-lg flex items-center justify-center w-full max-w-full")}>
           <p className="text-sm text-muted-foreground">Invalid Wistia URL</p>
         </div>
       );
@@ -183,7 +183,7 @@ export function VideoBlock({ content }: VideoBlockProps) {
     else params.set('endVideoBehavior', 'default');
     
     return (
-      <div className={cn(aspectClass, "rounded-lg overflow-hidden")}>
+      <div className={cn(aspectClass, "rounded-lg overflow-hidden w-full max-w-full")}>
         <iframe
           className="w-full h-full"
           src={`https://fast.wistia.net/embed/iframe/${videoId}?${params.toString()}`}
@@ -200,14 +200,14 @@ export function VideoBlock({ content }: VideoBlockProps) {
     const videoId = getLoomId(src);
     if (!videoId) {
       return (
-        <div className={cn(aspectClass, "bg-muted rounded-lg flex items-center justify-center")}>
+        <div className={cn(aspectClass, "bg-muted rounded-lg flex items-center justify-center w-full max-w-full")}>
           <p className="text-sm text-muted-foreground">Invalid Loom URL</p>
         </div>
       );
     }
     
     return (
-      <div className={cn(aspectClass, "rounded-lg overflow-hidden")}>
+      <div className={cn(aspectClass, "rounded-lg overflow-hidden w-full max-w-full")}>
         <iframe
           className="w-full h-full"
           src={`https://www.loom.com/embed/${videoId}${autoplay ? '?autoplay=1' : ''}`}
@@ -224,7 +224,7 @@ export function VideoBlock({ content }: VideoBlockProps) {
   const showControls = controls !== false;
   
   return (
-    <div className={cn(aspectClass, "rounded-lg overflow-hidden bg-black relative")}>
+    <div className={cn(aspectClass, "rounded-lg overflow-hidden bg-black relative w-full max-w-full")}>
       <video
         ref={videoRef}
         key={src.slice(0, 50)}

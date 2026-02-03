@@ -767,15 +767,27 @@ ${userInstructions}`;
                 return null;
               }
               
+              // Merge content, preserving styles.textAlign from defaultContent if b.content.styles doesn't have it
+              const defaultContent = definition.defaultContent as any;
+              const bContent = b.content || {};
               const mergedContent = {
-                ...definition.defaultContent,
-                ...b.content,
+                ...defaultContent,
+                ...bContent,
+                // Merge styles objects properly to preserve textAlign from defaults
+                styles: {
+                  ...(defaultContent.styles || {}),
+                  ...(bContent.styles || {}),
+                },
               };
               
               const mergedStyles = {
                 ...definition.defaultStyles,
                 ...b.styles,
-                ...(blockType === 'button' && !b.styles?.textAlign && { textAlign: 'center' }),
+                // Ensure ALL blocks default to center alignment if not explicitly set
+                ...((!b.styles?.textAlign && 
+                    !mergedContent.styles?.textAlign) 
+                      ? { textAlign: 'center' as const }
+                      : {}),
               };
               
               // Apply branding colors to buttons
@@ -1066,8 +1078,8 @@ ${userInstructions}`;
       </div>
       
       {/* Content Area */}
-      <ScrollArea className="flex-1">
-        <div className="px-6 py-6 space-y-6">
+      <ScrollArea className="flex-1" style={{ minWidth: 0, overflowX: 'hidden' }}>
+        <div className="px-6 py-6 space-y-6" style={{ minWidth: 0, maxWidth: '100%' }}>
           {/* Context-Aware Headers */}
           {mode === 'copy' && selectedBlock && (
             <div className="text-xs text-muted-foreground pb-2 border-b border-border/50">
@@ -1077,7 +1089,7 @@ ${userInstructions}`;
           
           {mode === 'clone' && cloneUrl && !showCloneConfirm && !clonePlan && (
             <div className="text-xs text-muted-foreground pb-2 border-b border-border/50">
-              Cloning from <span className="font-medium text-foreground truncate">{(() => {
+              Cloning from <span className="font-medium text-foreground break-all" style={{ wordBreak: 'break-all' }}>{(() => {
                 try {
                   return new URL(cloneUrl).hostname;
                 } catch {
@@ -1399,7 +1411,8 @@ ${userInstructions}`;
                     value={cloneInstructions}
                     onChange={(e) => setCloneInstructions(e.target.value)}
                     placeholder="E.g., 'Focus on the benefits section', 'Remove testimonials', 'Add more CTAs', 'Make it more concise'..."
-                    className="min-h-[80px] text-sm resize-none"
+                    className="min-h-[80px] text-sm resize-none min-w-0"
+                    style={{ maxWidth: '100%', boxSizing: 'border-box' }}
                     disabled={isProcessing}
                   />
                   <div className="text-xs text-muted-foreground mt-1">
@@ -1560,12 +1573,13 @@ ${userInstructions}`;
         </div>
         
         {/* Single Chat Input */}
-        <div className="flex items-end gap-2">
+        <div className="flex items-end gap-2" style={{ minWidth: 0, maxWidth: '100%' }}>
           <Textarea
             value={getInputValue()}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder={getPlaceholder()}
-            className="resize-none flex-1 text-sm min-h-[44px] max-h-[120px] py-2.5"
+            className="resize-none flex-1 text-sm min-h-[44px] max-h-[120px] py-2.5 min-w-0"
+            style={{ maxWidth: '100%', boxSizing: 'border-box' }}
             disabled={isProcessing || (mode === 'copy' && !selectedBlockId)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey && canSubmit()) {

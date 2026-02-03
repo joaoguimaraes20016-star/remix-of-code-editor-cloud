@@ -74,7 +74,7 @@ export function AccordionBlock({ content, blockId, stepId, isPreview }: Accordio
   };
 
   return (
-    <Accordion type="multiple" defaultValue={defaultOpen} className="w-full">
+    <Accordion type="multiple" defaultValue={defaultOpen} className="w-full max-w-full" style={{ boxSizing: 'border-box' }}>
       {items.map((item) => (
         <AccordionItem 
           key={item.id} 

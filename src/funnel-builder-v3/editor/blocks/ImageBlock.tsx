@@ -26,14 +26,16 @@ export function ImageBlock({ content }: ImageBlockProps) {
 
   if (aspectRatio && aspectRatio !== 'auto') {
     return (
-      <AspectRatio ratio={aspectRatioMap[aspectRatio] || 16 / 9}>
-        <img
-          src={src}
-          alt={alt}
-          className={imgClassName}
-          style={imageStyle}
-        />
-      </AspectRatio>
+      <div className="w-full max-w-full">
+        <AspectRatio ratio={aspectRatioMap[aspectRatio] || 16 / 9}>
+          <img
+            src={src}
+            alt={alt}
+            className={imgClassName}
+            style={imageStyle}
+          />
+        </AspectRatio>
+      </div>
     );
   }
 
@@ -41,7 +43,7 @@ export function ImageBlock({ content }: ImageBlockProps) {
     <img
       src={src}
       alt={alt}
-      className={cn('w-full h-auto', borderRadius === undefined && 'rounded-lg')}
+      className={cn('w-full max-w-full h-auto', borderRadius === undefined && 'rounded-lg')}
       style={imageStyle}
     />
   );

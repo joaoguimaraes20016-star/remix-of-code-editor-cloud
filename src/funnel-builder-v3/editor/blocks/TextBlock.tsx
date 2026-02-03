@@ -167,7 +167,7 @@ export function TextBlock({ content, blockId, stepId, isPreview }: TextBlockProp
     fontWeight: styles?.fontWeight,
     fontStyle: styles?.fontStyle,
     textDecoration: styles?.textDecoration,
-    textAlign: styles?.textAlign,
+    textAlign: styles?.textAlign || 'center', // Default to center if not set
     lineHeight: styles?.lineHeight,
     letterSpacing: styles?.letterSpacing ? `${styles.letterSpacing}px` : undefined,
     // Apply gradient via CSS variable (class handles clip) or solid color

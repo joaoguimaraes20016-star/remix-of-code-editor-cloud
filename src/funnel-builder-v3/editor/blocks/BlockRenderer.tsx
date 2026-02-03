@@ -170,6 +170,15 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
   const buttonContent = block.content as any;
   const shouldCenterButton = isButton && !buttonContent?.fullWidth;
 
+  // Get textAlign from block.styles or content.styles, defaulting to center for text-based blocks
+  const content = block.content as any;
+  const contentTextAlign = content?.styles?.textAlign as 'left' | 'center' | 'right' | undefined;
+  // Always default to center for text-based blocks to ensure consistent centering
+  const textAlign: 'left' | 'center' | 'right' = 
+    styles.textAlign || 
+    contentTextAlign || 
+    'center'; // Always default to center for all blocks
+
   const wrapperStyle: React.CSSProperties = {
     paddingTop: styles.padding?.top,
     paddingRight: styles.padding?.right,
@@ -187,12 +196,26 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
     boxShadow: getShadowStyle(styles.shadow || 'none', styles.shadowColor),
     // Apply background gradient if set
     ...(styles.backgroundGradient && { background: styles.backgroundGradient }),
-    // Apply textAlign if set
-    ...(styles.textAlign && { textAlign: styles.textAlign }),
+    // Ensure textAlign is always set to center by default
+    textAlign: textAlign || 'center',
+    // Ensure full width and prevent overflow
+    width: '100%',
+    maxWidth: '100%',
+    minWidth: 0,
+    boxSizing: 'border-box',
+    // Always use flexbox - stretch to fill parent width
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
     // Center non-fullWidth buttons
     ...(shouldCenterButton && {
-      display: 'flex',
       justifyContent: 'center',
+    }),
+    // Center media blocks (image, video)
+    ...((block.type === 'image' || block.type === 'video') && {
+      justifyContent: 'center',
+      alignItems: 'center',
     }),
     // Apply animation timing styles
     ...getAnimationStyles(),
@@ -280,7 +303,6 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
   };
 
   // Check if this block has popup settings enabled
-  const content = block.content as any;
   const popupSettings: PopupSettings | undefined = content?.popupSettings;
   const hasPopupEnabled = popupSettings?.enabled;
 
