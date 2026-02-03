@@ -257,23 +257,39 @@ ${text.slice(0, 8000)}
 function getClonePlanPrompt(pageAnalysis: string, action: string): string {
   const isFunnel = action === 'replace-funnel';
   
-  return `You are a funnel planner. Analyze this website and create a PLAN for rebuilding it.
+  return `You are a funnel planner. Analyze this website and create a DETAILED PLAN for rebuilding it.
 
 PAGE ANALYSIS:
 ${pageAnalysis.slice(0, 15000)}
 
-Create a plan showing:
-1. A 1-2 sentence summary of what you'll build
-2. The branding you'll use (colors, theme)
-3. ${isFunnel ? 'Each step you will create, with block types' : 'The blocks you will add to this step'}
+Create a comprehensive plan that clearly explains:
+1. What you DETECTED on the page (topic, style, key elements)
+2. What you will BUILD (steps, blocks, purpose of each)
+3. How the BRANDING will look (colors with proper contrast, theme, mood)
+
+BRANDING RULES - CRITICAL:
+- backgroundColor: The page/step background color
+- textColor: Main text color that CONTRASTS with backgroundColor
+  * For dark backgrounds (#000-#333): use white/light text (#ffffff, #f0f0f0)
+  * For light backgrounds (#eee-#fff): use dark text (#000000, #1a1a1a)
+- headingColor: Heading text color (can be same as textColor or accent)
+- primaryColor: Button/accent color that stands out from background
 
 Return ONLY valid JSON:
 {
-  "summary": "I'll create a ${isFunnel ? '3-step' : 'single step'} funnel that captures the page's essence with ${isFunnel ? 'lead capture, benefits, and thank you steps' : 'headline, features, and CTA'}.",
+  "summary": "Based on this [topic] landing page, I'll create a ${isFunnel ? '[N]-step' : 'single step'} [theme]-themed funnel: ${isFunnel ? '(1) [Step 1 purpose], (2) [Step 2 purpose], (3) [Step 3 purpose]' : '[describe what blocks and their purpose]'}. Using [background color description] with [accent color description] for a [mood] feel. Text will be [light/dark] for proper contrast.",
   "action": "${action}",
+  "detected": {
+    "topic": "What the page is about (e.g., Trading course, SaaS product, etc.)",
+    "style": "Visual style (e.g., Dark, premium, minimal, bold, playful)",
+    "keyElements": ["Key element 1", "Key element 2", "Key element 3"]
+  },
   "branding": {
     "primaryColor": "#HEX",
+    "accentColor": "#HEX",
     "backgroundColor": "#HEX",
+    "textColor": "#HEX",
+    "headingColor": "#HEX",
     "theme": "dark|light"
   },
   ${isFunnel ? `"steps": [
@@ -281,16 +297,18 @@ Return ONLY valid JSON:
       "name": "Step Name",
       "type": "capture|sell|result",
       "blockCount": 5,
-      "blockTypes": ["heading", "text", "button", "email-capture", "social-proof"]
+      "blockTypes": ["heading", "text", "button", "email-capture", "social-proof"],
+      "description": "Brief description of what this step does"
     }
   ]` : `"step": {
     "name": "Step Name",
     "blockCount": 6,
-    "blockTypes": ["heading", "text", "list", "button", "image", "spacer"]
+    "blockTypes": ["heading", "text", "list", "button", "image", "spacer"],
+    "description": "Brief description of what this step does"
   }`}
 }
 
-Keep the plan concise but informative. Focus on the structure and key blocks you'll use.`;
+Make the summary detailed and specific - explain exactly what you'll build and why. Be specific about colors and contrast.`;
 }
 
 /**
@@ -350,13 +368,22 @@ Create a single step that captures the page's:
 Use 5-10 blocks to recreate the page's vibe and messaging.
 `}
 
-BRANDING: Extract colors that match the original's vibe:
-- primaryColor: Main action color (buttons, highlights) - choose from the colors found
-- accentColor: Secondary color - choose from the colors found
-- backgroundColor: Page background - choose from the colors found
-- headingFont: Choose from: Inter, Space Grotesk, DM Sans, Outfit, Poppins
-- bodyFont: Choose from: Inter, DM Sans
-- theme: "dark" if dark background detected, "light" otherwise
+BRANDING & COLORS - CRITICAL FOR READABILITY:
+Extract colors that match the original AND ensure proper contrast:
+
+1. backgroundColor: The page/step background color
+2. textColor: Main text color that CONTRASTS with backgroundColor
+   - For dark backgrounds (#000-#333): use white/light text (#ffffff, #f0f0f0)
+   - For light backgrounds (#eee-#fff): use dark text (#000000, #1a1a1a)
+3. headingColor: Heading text color (can be same as textColor or a highlight color that still contrasts)
+4. primaryColor: Button/accent color - should stand out from background
+5. accentColor: Secondary color for highlights
+
+EVERY BLOCK MUST HAVE APPROPRIATE COLORS:
+- heading: MUST include "color": "#HEX" in content (use headingColor)
+- text: MUST include "color": "#HEX" in content (use textColor)
+- button: MUST include "backgroundColor" AND "color" in content
+- list: Items should use textColor for readability
 
 Return ONLY valid JSON:
 {
@@ -364,6 +391,8 @@ Return ONLY valid JSON:
     "primaryColor": "#HEX",
     "accentColor": "#HEX",
     "backgroundColor": "#HEX",
+    "textColor": "#HEX",
+    "headingColor": "#HEX",
     "headingFont": "Font Name",
     "bodyFont": "Font Name",
     "theme": "light|dark"
@@ -380,7 +409,18 @@ Return ONLY valid JSON:
             "type": "heading",
             "content": {
               "text": "Headline text",
-              "level": 1
+              "level": 1,
+              "color": "#ffffff"
+            },
+            "styles": {
+              "textAlign": "center"
+            }
+          },
+          {
+            "type": "text",
+            "content": {
+              "text": "Description text",
+              "color": "#f0f0f0"
             },
             "styles": {
               "textAlign": "center"
@@ -392,7 +432,9 @@ Return ONLY valid JSON:
               "text": "CTA text",
               "variant": "primary",
               "size": "lg",
-              "action": "next-step"
+              "action": "next-step",
+              "backgroundColor": "#D97757",
+              "color": "#ffffff"
             },
             "styles": {
               "textAlign": "center"
@@ -400,7 +442,7 @@ Return ONLY valid JSON:
           }
         ],
         "settings": {
-          "backgroundColor": "#HEX"
+          "backgroundColor": "#0f0f1a"
         }
       }
     ]
@@ -413,7 +455,32 @@ Return ONLY valid JSON:
         "type": "heading",
         "content": {
           "text": "Headline text",
-          "level": 1
+          "level": 1,
+          "color": "#ffffff"
+        },
+        "styles": {
+          "textAlign": "center"
+        }
+      },
+      {
+        "type": "text",
+        "content": {
+          "text": "Description text",
+          "color": "#f0f0f0"
+        },
+        "styles": {
+          "textAlign": "center"
+        }
+      },
+      {
+        "type": "button",
+        "content": {
+          "text": "CTA text",
+          "variant": "primary",
+          "size": "lg",
+          "action": "next-step",
+          "backgroundColor": "#D97757",
+          "color": "#ffffff"
         },
         "styles": {
           "textAlign": "center"
@@ -421,7 +488,7 @@ Return ONLY valid JSON:
       }
     ],
     "settings": {
-      "backgroundColor": "#HEX"
+      "backgroundColor": "#0f0f1a"
     }
   }`}
 }

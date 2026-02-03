@@ -36,9 +36,17 @@ interface AICopilotProps {
 interface ClonePlan {
   summary: string;
   action: 'replace-funnel' | 'replace-step';
+  detected?: {
+    topic: string;
+    style: string;
+    keyElements?: string[];
+  };
   branding: {
     primaryColor: string;
+    accentColor?: string;
     backgroundColor: string;
+    textColor: string;
+    headingColor?: string;
     theme: string;
   };
   steps?: Array<{
@@ -46,13 +54,26 @@ interface ClonePlan {
     type: string;
     blockCount: number;
     blockTypes: string[];
+    description?: string;
   }>;
   step?: {
     name: string;
     blockCount: number;
     blockTypes: string[];
+    description?: string;
   };
 }
+
+// Helper: Calculate contrast color for text on a background
+const getContrastColor = (hexColor: string): string => {
+  if (!hexColor || !hexColor.startsWith('#')) return '#ffffff';
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? '#000000' : '#ffffff';
+};
 
 export function AICopilot({ isOpen, onClose }: AICopilotProps) {
   const { 
@@ -232,10 +253,14 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
             setClonePlan({
               summary: parsed.summary || 'Plan generated',
               action: parsed.action || action,
-              branding: parsed.branding || {
-                primaryColor: '#3b82f6',
-                backgroundColor: '#ffffff',
-                theme: 'light',
+              detected: parsed.detected,
+              branding: {
+                primaryColor: parsed.branding?.primaryColor || '#3b82f6',
+                accentColor: parsed.branding?.accentColor,
+                backgroundColor: parsed.branding?.backgroundColor || '#ffffff',
+                textColor: parsed.branding?.textColor || getContrastColor(parsed.branding?.backgroundColor || '#ffffff'),
+                headingColor: parsed.branding?.headingColor,
+                theme: parsed.branding?.theme || 'light',
               },
               steps: parsed.steps,
               step: parsed.step,
@@ -313,8 +338,46 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
               ...(blockType === 'button' && !b.styles?.textAlign && { textAlign: 'center' }),
             };
             
-            if (blockType === 'button' && parsed.branding?.primaryColor && !b.content?.backgroundColor) {
-              (mergedContent as any).backgroundColor = parsed.branding.primaryColor;
+            // Apply text colors from branding for proper contrast
+            if (parsed.branding) {
+              const { textColor, headingColor, primaryColor } = parsed.branding;
+              
+              // Headings get heading color or text color
+              if (blockType === 'heading' && !b.content?.color) {
+                (mergedContent as any).color = headingColor || textColor || '#ffffff';
+              }
+              
+              // Text blocks get text color
+              if (blockType === 'text' && !b.content?.color) {
+                (mergedContent as any).color = textColor || '#ffffff';
+              }
+              
+              // List blocks get text color
+              if (blockType === 'list' && !b.content?.color) {
+                (mergedContent as any).color = textColor || '#ffffff';
+              }
+              
+              // Buttons get proper background and contrast text color
+              if (blockType === 'button') {
+                if (!b.content?.backgroundColor && primaryColor) {
+                  (mergedContent as any).backgroundColor = primaryColor;
+                }
+                // Set button text color for contrast if not already set
+                if (!b.content?.color) {
+                  const bgColor = mergedContent.backgroundColor || primaryColor || '#3b82f6';
+                  (mergedContent as any).color = getContrastColor(bgColor);
+                }
+              }
+              
+              // Email capture and form blocks - apply text colors
+              if ((blockType === 'email-capture' || blockType === 'form') && !b.content?.textColor) {
+                (mergedContent as any).textColor = textColor || '#ffffff';
+              }
+              
+              // Social proof blocks
+              if (blockType === 'social-proof' && !b.content?.color) {
+                (mergedContent as any).color = textColor || '#ffffff';
+              }
             }
             
             return {
@@ -836,16 +899,65 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
           {/* Plan Preview */}
           {clonePlan && mode === 'clone' && (
             <div className="p-4 rounded-lg bg-muted/30 border border-border/50 space-y-4">
+              {/* What was detected */}
+              {clonePlan.detected && (
+                <div className="pb-3 border-b border-border/50">
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Detected:</div>
+                  <div className="text-sm font-medium">{clonePlan.detected.topic}</div>
+                  <div className="text-xs text-muted-foreground">{clonePlan.detected.style}</div>
+                  {clonePlan.detected.keyElements && clonePlan.detected.keyElements.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {clonePlan.detected.keyElements.slice(0, 4).map((el, i) => (
+                        <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground">
+                          {el}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              
               {/* Summary */}
               <div>
                 <div className="text-sm font-medium mb-1">Here's what I'll build:</div>
-                <div className="text-sm text-muted-foreground">{clonePlan.summary}</div>
+                <div className="text-sm text-muted-foreground leading-relaxed">{clonePlan.summary}</div>
               </div>
               
-              {/* Branding Preview */}
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full border border-border/50" style={{ backgroundColor: clonePlan.branding.primaryColor }} />
-                <span className="text-xs text-muted-foreground capitalize">{clonePlan.branding.theme} theme</span>
+              {/* Branding Preview - Visual with all colors */}
+              <div className="p-3 rounded-lg border border-border/50" style={{ backgroundColor: clonePlan.branding.backgroundColor }}>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1.5">
+                    <div 
+                      className="w-6 h-6 rounded-full border border-white/20 shadow-sm" 
+                      style={{ backgroundColor: clonePlan.branding.backgroundColor }}
+                      title="Background"
+                    />
+                    <div 
+                      className="w-6 h-6 rounded-full border border-white/20 shadow-sm" 
+                      style={{ backgroundColor: clonePlan.branding.primaryColor }}
+                      title="Primary/Accent"
+                    />
+                    <div 
+                      className="w-6 h-6 rounded-full border border-white/20 shadow-sm" 
+                      style={{ backgroundColor: clonePlan.branding.textColor }}
+                      title="Text Color"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <span 
+                      className="text-xs font-medium capitalize"
+                      style={{ color: clonePlan.branding.textColor }}
+                    >
+                      {clonePlan.branding.theme} theme
+                    </span>
+                    <div 
+                      className="text-xs opacity-70"
+                      style={{ color: clonePlan.branding.textColor }}
+                    >
+                      Text will be readable
+                    </div>
+                  </div>
+                </div>
               </div>
               
               {/* Expandable Details */}
@@ -853,13 +965,23 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="details" className="border-none">
                     <AccordionTrigger className="text-xs py-2 hover:no-underline">
-                      View details
+                      View step details
                     </AccordionTrigger>
                     <AccordionContent className="pt-2">
                       {clonePlan.steps?.map((step, i) => (
                         <div key={i} className="py-2 border-b border-border/50 last:border-0">
-                          <div className="font-medium text-sm">{step.name}</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                              {i + 1}
+                            </span>
+                            <div className="font-medium text-sm">{step.name}</div>
+                          </div>
+                          {step.description && (
+                            <div className="text-xs text-muted-foreground mt-1 ml-7">
+                              {step.description}
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-1 ml-7">
                             {step.blockCount} blocks: {step.blockTypes.slice(0, 5).join(', ')}
                             {step.blockTypes.length > 5 && ` +${step.blockTypes.length - 5} more`}
                           </div>
@@ -868,7 +990,12 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
                       {clonePlan.step && (
                         <div className="py-2">
                           <div className="font-medium text-sm">{clonePlan.step.name}</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">
+                          {clonePlan.step.description && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {clonePlan.step.description}
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-1">
                             {clonePlan.step.blockCount} blocks: {clonePlan.step.blockTypes.slice(0, 5).join(', ')}
                             {clonePlan.step.blockTypes.length > 5 && ` +${clonePlan.step.blockTypes.length - 5} more`}
                           </div>
