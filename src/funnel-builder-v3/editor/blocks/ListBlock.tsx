@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { ListContent, ListItem, ListItemIcon } from '@/funnel-builder-v3/types/funnel';
 import { Circle } from 'lucide-react';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { getIconByName } from '@/funnel-builder-v3/editor/IconPicker';
 
@@ -13,7 +13,8 @@ interface ListBlockProps {
 }
 
 export function ListBlock({ content, blockId, stepId, isPreview }: ListBlockProps) {
-  const { updateBlockContent } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const { 
     items, 
     style, 

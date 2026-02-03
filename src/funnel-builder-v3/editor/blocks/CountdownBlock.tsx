@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CountdownContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { cn } from '@/lib/utils';
 
@@ -71,7 +71,8 @@ function TimeUnit({ value, label, textColor, textGradient }: TimeUnitProps) {
 }
 
 export function CountdownBlock({ content, blockId, stepId, isPreview }: CountdownBlockProps) {
-  const { updateBlockContent } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const { endDate, showDays, expiredText, backgroundColor, backgroundGradient, textColor, textGradient } = content;
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(() => calculateTimeLeft(endDate));
 

@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { LogoBarContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { cn } from '@/lib/utils';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 
 interface LogoBarBlockProps {
@@ -12,7 +12,8 @@ interface LogoBarBlockProps {
 }
 
 export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlockProps) {
-  const { updateBlockContent } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const { 
     title, 
     titleStyles,

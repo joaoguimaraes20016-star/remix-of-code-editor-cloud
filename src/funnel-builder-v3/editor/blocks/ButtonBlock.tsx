@@ -3,7 +3,7 @@ import { ButtonContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 
 interface ButtonBlockProps {
@@ -15,7 +15,8 @@ interface ButtonBlockProps {
 
 export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlockProps) {
   const runtime = useFunnelRuntimeOptional();
-  const { updateBlockContent } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const { text, variant, size, fullWidth, backgroundColor, backgroundGradient, color, textGradient, action, actionValue, borderColor, borderWidth, fontSize } = content;
 
   const sizeClasses: Record<string, string> = {

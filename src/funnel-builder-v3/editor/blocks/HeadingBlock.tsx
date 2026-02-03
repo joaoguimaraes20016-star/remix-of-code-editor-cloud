@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { HeadingContent } from '@/funnel-builder-v3/types/funnel';
 import { cn } from '@/lib/utils';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { InlineTextToolbar } from '@/funnel-builder-v3/editor/InlineTextToolbar';
 import { sanitizeHtml, containsHtml, applyInlineStyle } from '@/funnel-builder-v3/lib/selection-utils';
 
@@ -14,7 +14,8 @@ interface HeadingBlockProps {
 
 export function HeadingBlock({ content, blockId, stepId, isPreview }: HeadingBlockProps) {
   const { text, level, styles } = content;
-  const { updateBlockContent } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const [isEditing, setIsEditing] = useState(false);
   const [toolbarPopoverOpen, setToolbarPopoverOpen] = useState(false);
   const elementRef = useRef<HTMLHeadingElement>(null);

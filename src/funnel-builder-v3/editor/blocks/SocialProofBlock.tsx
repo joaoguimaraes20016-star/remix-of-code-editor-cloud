@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { SocialProofContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { motion } from 'framer-motion';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { cn } from '@/lib/utils';
 import { useSimpleStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
@@ -14,7 +14,8 @@ interface SocialProofBlockProps {
 }
 
 export function SocialProofBlock({ content, blockId, stepId, isPreview }: SocialProofBlockProps) {
-  const { updateBlockContent } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const { 
     items, 
     valueColor, 

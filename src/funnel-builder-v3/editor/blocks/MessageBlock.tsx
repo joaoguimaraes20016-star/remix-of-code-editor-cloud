@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { useEditableStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
 import { toast } from 'sonner';
@@ -49,7 +49,10 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
     consent = defaultConsent,
   } = content;
   const runtime = useFunnelRuntimeOptional();
-  const { updateBlockContent, selectedChildElement, setSelectedChildElement } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
+  const selectedChildElement = funnelContext?.selectedChildElement ?? null;
+  const setSelectedChildElement = funnelContext?.setSelectedChildElement ?? (() => {});
   const [text, setText] = useState('');
   const [hasConsented, setHasConsented] = useState(false);
 

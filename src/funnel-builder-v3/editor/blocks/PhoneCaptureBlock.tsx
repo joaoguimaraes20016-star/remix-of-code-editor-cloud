@@ -4,9 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { defaultCountryCodes } from '@/funnel-builder-v3/lib/block-definitions';
 import {
   Select,
   SelectContent,
@@ -49,7 +50,11 @@ interface PhoneCaptureBlockProps {
 
 export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: PhoneCaptureBlockProps) {
   const runtime = useFunnelRuntimeOptional();
-  const { selectedChildElement, setSelectedChildElement, countryCodes: globalCountryCodes, defaultCountryId: globalDefaultCountryId } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const selectedChildElement = funnelContext?.selectedChildElement ?? null;
+  const setSelectedChildElement = funnelContext?.setSelectedChildElement ?? (() => {});
+  const globalCountryCodes = funnelContext?.countryCodes ?? defaultCountryCodes;
+  const globalDefaultCountryId = funnelContext?.defaultCountryId ?? 'us';
   const { 
     placeholder, 
     submitButton = defaultSubmitButton,

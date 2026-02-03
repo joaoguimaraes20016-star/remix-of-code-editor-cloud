@@ -3,7 +3,7 @@ import { VideoQuestionContent, TextStyles, ButtonContent } from '@/funnel-builde
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { useEditableStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
 import { Button } from '@/components/ui/button';
@@ -54,7 +54,10 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
     questionStyles,
   } = content;
   const runtime = useFunnelRuntimeOptional();
-  const { updateBlockContent, selectedChildElement, setSelectedChildElement } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
+  const selectedChildElement = funnelContext?.selectedChildElement ?? null;
+  const setSelectedChildElement = funnelContext?.setSelectedChildElement ?? (() => {});
   const [selected, setSelected] = useState<string[]>([]);
   const embedUrl = getEmbedUrl(videoSrc, videoType);
 

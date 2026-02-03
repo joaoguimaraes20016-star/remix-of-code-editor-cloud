@@ -4,7 +4,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 
 interface CalendarBlockProps {
@@ -15,7 +15,8 @@ interface CalendarBlockProps {
 }
 
 export function CalendarBlock({ content, blockId, stepId, isPreview }: CalendarBlockProps) {
-  const { updateBlockContent } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const [date, setDate] = useState<Date | undefined>(undefined);
   const accentColor = content.accentColor || '#6366f1';
 

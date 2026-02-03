@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { WebinarContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { Play } from 'lucide-react';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { cn } from '@/lib/utils';
 
@@ -28,7 +28,8 @@ function getEmbedUrl(src: string, type: 'youtube' | 'vimeo' | 'hosted'): string 
 }
 
 export function WebinarBlock({ content, blockId, stepId, isPreview }: WebinarBlockProps) {
-  const { updateBlockContent } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const { videoSrc, videoType, title, buttonText, buttonColor, buttonGradient, titleColor, titleGradient } = content;
 
   const canEdit = blockId && stepId && !isPreview;

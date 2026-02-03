@@ -5,7 +5,7 @@ import { Upload, File, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { toast } from 'sonner';
 
@@ -28,7 +28,8 @@ interface UploadBlockProps {
 export function UploadBlock({ content, blockId, stepId, isPreview }: UploadBlockProps) {
   const { label, acceptedTypes, maxSize, buttonText, consent = defaultConsent } = content;
   const runtime = useFunnelRuntimeOptional();
-  const { updateBlockContent } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);

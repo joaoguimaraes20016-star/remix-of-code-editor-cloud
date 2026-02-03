@@ -734,3 +734,8 @@ export function useFunnel() {
   }
   return context;
 }
+
+// Optional hook that returns null if outside provider (for runtime use)
+export function useFunnelOptional() {
+  return useContext(FunnelContext);
+}

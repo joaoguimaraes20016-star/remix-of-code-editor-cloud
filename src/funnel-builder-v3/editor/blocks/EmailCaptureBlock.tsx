@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { toast } from 'sonner';
 
@@ -38,7 +38,11 @@ interface EmailCaptureBlockProps {
 
 export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: EmailCaptureBlockProps) {
   const runtime = useFunnelRuntimeOptional();
-  const { updateBlockContent, currentViewport, selectedChildElement, setSelectedChildElement } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
+  const currentViewport = funnelContext?.currentViewport ?? 'mobile';
+  const selectedChildElement = funnelContext?.selectedChildElement ?? null;
+  const setSelectedChildElement = funnelContext?.setSelectedChildElement ?? (() => {});
   const { 
     placeholder, 
     subtitle,

@@ -7,7 +7,7 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 
 interface DatePickerBlockProps {
@@ -20,7 +20,8 @@ interface DatePickerBlockProps {
 export function DatePickerBlock({ content, blockId, stepId, isPreview }: DatePickerBlockProps) {
   const { label, placeholder, minDate, maxDate } = content;
   const runtime = useFunnelRuntimeOptional();
-  const { updateBlockContent } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const [date, setDate] = useState<Date | undefined>();
 
   const canEdit = blockId && stepId && !isPreview;

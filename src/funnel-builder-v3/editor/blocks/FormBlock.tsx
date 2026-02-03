@@ -15,9 +15,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { toast } from 'sonner';
+import { defaultCountryCodes } from '@/funnel-builder-v3/lib/block-definitions';
 
 // Default consent settings
 const defaultConsent: ConsentSettings = {
@@ -48,7 +49,12 @@ interface FormBlockProps {
 
 export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProps) {
   const runtime = useFunnelRuntimeOptional();
-  const { updateBlockContent, selectedChildElement, setSelectedChildElement, countryCodes, defaultCountryId } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
+  const selectedChildElement = funnelContext?.selectedChildElement ?? null;
+  const setSelectedChildElement = funnelContext?.setSelectedChildElement ?? (() => {});
+  const countryCodes = funnelContext?.countryCodes ?? defaultCountryCodes;
+  const defaultCountryId = funnelContext?.defaultCountryId ?? 'us';
   const { 
     title,
     titleStyles,

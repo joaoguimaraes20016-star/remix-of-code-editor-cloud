@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 
 interface DropdownBlockProps {
@@ -21,7 +21,8 @@ interface DropdownBlockProps {
 export function DropdownBlock({ content, blockId, stepId, isPreview }: DropdownBlockProps) {
   const { label, placeholder, options } = content;
   const runtime = useFunnelRuntimeOptional();
-  const { updateBlockContent } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const [value, setValue] = useState<string>('');
 
   const canEdit = blockId && stepId && !isPreview;

@@ -7,7 +7,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
-import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { useEditableStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
 
@@ -19,7 +19,8 @@ interface AccordionBlockProps {
 }
 
 export function AccordionBlock({ content, blockId, stepId, isPreview }: AccordionBlockProps) {
-  const { updateBlockContent } = useFunnel();
+  const funnelContext = useFunnelOptional();
+  const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const { 
     items, 
     itemStyle = 'outline',
