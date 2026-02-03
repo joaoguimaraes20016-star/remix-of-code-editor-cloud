@@ -262,10 +262,17 @@ function getClonePlanPrompt(pageAnalysis: string, action: string): string {
 PAGE ANALYSIS:
 ${pageAnalysis.slice(0, 15000)}
 
-Create a comprehensive plan that clearly explains:
-1. What you DETECTED on the page (topic, style, key elements)
-2. What you will BUILD (steps, blocks, purpose of each)
-3. How the BRANDING will look (colors with proper contrast, theme, mood)
+CRITICAL: The "summary" field is REQUIRED and MUST be a detailed 3-5 sentence explanation. DO NOT just say "Light Theme" or "Dark Theme". 
+
+The summary MUST include:
+1. What you DETECTED: "Based on this [specific topic/type] landing page..."
+2. What you will BUILD: "I'll create a ${isFunnel ? '[N]-step' : 'single step'} funnel with [specific step purposes]..."
+3. BRANDING DETAILS: "Using [specific background color] backgrounds with [specific accent color] for buttons/accents, creating a [mood/style] feel..."
+4. CONTENT STRUCTURE: "Each step will include [specific block types] to [specific purpose]..."
+5. CONTRAST ASSURANCE: "Text will be [light/dark] (#HEX) for proper readability against the [dark/light] background..."
+
+EXAMPLE OF A GOOD SUMMARY:
+"Based on this trading course landing page, I'll create a 3-step dark-themed funnel: (1) Lead Capture step with a bold headline about the 3-chart setup, value proposition text, and email capture form to collect leads, (2) Benefits page with feature list blocks highlighting the strategy's advantages, social proof stats showing trader success numbers, and a CTA button, (3) Thank you page with confirmation message and next steps. Using dark backgrounds (#0f0f1a) with gold/yellow accents (#FFD700) for buttons and highlights, creating a premium, professional trading feel. Text will be white (#ffffff) for proper readability against the dark background. Each step will include heading blocks for headlines, text blocks for descriptions, button blocks for CTAs, and social-proof blocks for trust indicators."
 
 BRANDING RULES - CRITICAL:
 - backgroundColor: The page/step background color
@@ -277,7 +284,7 @@ BRANDING RULES - CRITICAL:
 
 Return ONLY valid JSON:
 {
-  "summary": "Based on this [topic] landing page, I'll create a ${isFunnel ? '[N]-step' : 'single step'} [theme]-themed funnel: ${isFunnel ? '(1) [Step 1 purpose], (2) [Step 2 purpose], (3) [Step 3 purpose]' : '[describe what blocks and their purpose]'}. Using [background color description] with [accent color description] for a [mood] feel. Text will be [light/dark] for proper contrast.",
+  "summary": "YOUR DETAILED 3-5 SENTENCE SUMMARY HERE - MUST EXPLAIN WHAT YOU DETECTED, WHAT YOU'LL BUILD, BRANDING, AND STRUCTURE",
   "action": "${action}",
   "detected": {
     "topic": "What the page is about (e.g., Trading course, SaaS product, etc.)",
@@ -308,7 +315,7 @@ Return ONLY valid JSON:
   }`}
 }
 
-Make the summary detailed and specific - explain exactly what you'll build and why. Be specific about colors and contrast.`;
+REMEMBER: The summary field is the MOST IMPORTANT part. It must be a complete, detailed explanation of everything you'll do. Minimum 3 sentences, ideally 4-5 sentences.`;
 }
 
 /**
@@ -674,7 +681,21 @@ serve(async (req) => {
     let userPrompt = prompt;
     let systemPrompt: string;
     
-    if (task === 'clone') {
+    if (task === 'clone-plan') {
+      try {
+        console.log(`[ai-copilot-v3] Fetching URL content for plan: ${prompt}`);
+        const pageAnalysis = await fetchWebsiteContent(prompt);
+        const cloneAction = context.cloneAction || 'replace-step';
+        systemPrompt = getClonePlanPrompt(pageAnalysis, cloneAction);
+        userPrompt = `Create a detailed plan for rebuilding ${cloneAction === 'replace-funnel' ? 'a complete funnel' : 'a single step'} based on this website.`;
+      } catch (fetchError) {
+        console.error(`[ai-copilot-v3] Failed to fetch URL: ${fetchError}`);
+        return new Response(
+          JSON.stringify({ error: `Failed to fetch website: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else if (task === 'clone') {
       try {
         console.log(`[ai-copilot-v3] Fetching URL content: ${prompt}`);
         const pageAnalysis = await fetchWebsiteContent(prompt);

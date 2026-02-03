@@ -250,8 +250,42 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
           const jsonMatch = responseText.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
+            
+            // Validate and enhance summary if it's too short or generic
+            let summary = parsed.summary || '';
+            const isSummaryTooShort = !summary || summary.length < 50 || 
+              summary.toLowerCase().includes('plan generated') ||
+              (summary.toLowerCase().includes('theme') && summary.split(' ').length < 10);
+            
+            if (isSummaryTooShort) {
+              // Construct a detailed summary from the parsed data
+              const detected = parsed.detected;
+              const branding = parsed.branding;
+              const steps = parsed.steps || (parsed.step ? [parsed.step] : []);
+              
+              const topic = detected?.topic || 'this landing page';
+              const style = detected?.style || branding?.theme || 'professional';
+              const bgColor = branding?.backgroundColor || '#ffffff';
+              const primaryColor = branding?.primaryColor || '#3b82f6';
+              const theme = branding?.theme || 'light';
+              const textColor = branding?.textColor || getContrastColor(bgColor);
+              
+              if (action === 'replace-funnel' && steps.length > 0) {
+                const stepDescriptions = steps.map((s: any, i: number) => 
+                  `(${i + 1}) ${s.name} with ${s.blockCount} blocks including ${s.blockTypes?.slice(0, 3).join(', ')}${s.blockTypes?.length > 3 ? ' and more' : ''}`
+                ).join(', ');
+                
+                summary = `Based on this ${topic} landing page, I'll create a ${steps.length}-step ${theme}-themed funnel: ${stepDescriptions}. Using ${bgColor} backgrounds with ${primaryColor} accents for buttons and highlights, creating a ${style} feel. Text will be ${textColor} for proper readability against the ${theme} background. Each step will include the necessary blocks to achieve its purpose.`;
+              } else if (parsed.step) {
+                const step = parsed.step;
+                summary = `Based on this ${topic} landing page, I'll create a single step: ${step.name} with ${step.blockCount} blocks including ${step.blockTypes?.slice(0, 4).join(', ')}${step.blockTypes?.length > 4 ? ' and more' : ''}. Using ${bgColor} backgrounds with ${primaryColor} accents, creating a ${style} feel. Text will be ${textColor} for proper readability.`;
+              } else {
+                summary = `Based on this ${topic} landing page, I'll create a ${theme}-themed funnel with ${style} styling. Using ${bgColor} backgrounds with ${primaryColor} accents. Text will be ${textColor} for proper contrast.`;
+              }
+            }
+            
             setClonePlan({
-              summary: parsed.summary || 'Plan generated',
+              summary: summary,
               action: parsed.action || action,
               detected: parsed.detected,
               branding: {
@@ -303,22 +337,63 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
           const responseText = fullResponse || streamedResponse;
           if (!responseText.trim()) {
             setError('No response received from AI');
+            toast.error('No response received from AI');
             return;
           }
           
-          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+          // Try to extract JSON from response
+          let jsonMatch = responseText.match(/\{[\s\S]*\}/);
           if (!jsonMatch) {
-            toast.error('Could not parse JSON from clone response');
+            // Try to find JSON in markdown code blocks
+            const codeBlockMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+            if (codeBlockMatch) {
+              jsonMatch = codeBlockMatch;
+            }
+          }
+          
+          if (!jsonMatch) {
+            console.error('[AICopilot] No JSON found in response:', responseText.slice(0, 500));
+            toast.error('Could not parse JSON from clone response. Check console for details.');
+            setError('Invalid response format from AI');
             return;
           }
           
-          const parsed = JSON.parse(jsonMatch[0]);
+          let parsed: any;
+          try {
+            parsed = JSON.parse(jsonMatch[0]);
+          } catch (parseErr) {
+            console.error('[AICopilot] JSON parse error:', parseErr);
+            console.error('[AICopilot] Response text:', responseText.slice(0, 1000));
+            toast.error('Failed to parse JSON response');
+            setError('Invalid JSON format');
+            return;
+          }
+          
+          // Validate response structure
+          if (plan.action === 'replace-funnel' && !parsed.funnel) {
+            console.error('[AICopilot] Missing funnel in response:', parsed);
+            toast.error('Response missing funnel data');
+            setError('Invalid response: missing funnel');
+            return;
+          }
+          
+          if (plan.action === 'replace-step' && !parsed.step) {
+            console.error('[AICopilot] Missing step in response:', parsed);
+            toast.error('Response missing step data');
+            setError('Invalid response: missing step');
+            return;
+          }
           
           if (parsed.branding) {
             setClonedBranding(parsed.branding);
           }
           
           const createBlock = (b: any): Block | null => {
+            if (!b || !b.type) {
+              console.warn('[AICopilot] Invalid block data:', b);
+              return null;
+            }
+            
             const blockType = b.type as BlockType;
             const definition = blockDefinitions[blockType];
             
@@ -327,85 +402,108 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
               return null;
             }
             
-            const mergedContent = {
-              ...definition.defaultContent,
-              ...b.content,
-            };
-            
-            const mergedStyles = {
-              ...definition.defaultStyles,
-              ...b.styles,
-              ...(blockType === 'button' && !b.styles?.textAlign && { textAlign: 'center' }),
-            };
-            
-            // Apply text colors from branding for proper contrast
-            if (parsed.branding) {
-              const { textColor, headingColor, primaryColor } = parsed.branding;
+            try {
+              const mergedContent = {
+                ...definition.defaultContent,
+                ...b.content,
+              };
               
-              // Headings get heading color or text color
-              if (blockType === 'heading' && !b.content?.color) {
-                (mergedContent as any).color = headingColor || textColor || '#ffffff';
-              }
+              const mergedStyles = {
+                ...definition.defaultStyles,
+                ...b.styles,
+                ...(blockType === 'button' && !b.styles?.textAlign && { textAlign: 'center' }),
+              };
               
-              // Text blocks get text color
-              if (blockType === 'text' && !b.content?.color) {
-                (mergedContent as any).color = textColor || '#ffffff';
-              }
-              
-              // List blocks get text color
-              if (blockType === 'list' && !b.content?.color) {
-                (mergedContent as any).color = textColor || '#ffffff';
-              }
-              
-              // Buttons get proper background and contrast text color
-              if (blockType === 'button') {
-                if (!b.content?.backgroundColor && primaryColor) {
-                  (mergedContent as any).backgroundColor = primaryColor;
+              // Apply text colors from branding for proper contrast
+              if (parsed.branding) {
+                const { textColor, headingColor, primaryColor } = parsed.branding;
+                
+                // Headings get heading color or text color
+                if (blockType === 'heading' && !b.content?.color) {
+                  (mergedContent as any).color = headingColor || textColor || '#ffffff';
                 }
-                // Set button text color for contrast if not already set
-                if (!b.content?.color) {
-                  const bgColor = mergedContent.backgroundColor || primaryColor || '#3b82f6';
-                  (mergedContent as any).color = getContrastColor(bgColor);
+                
+                // Text blocks get text color
+                if (blockType === 'text' && !b.content?.color) {
+                  (mergedContent as any).color = textColor || '#ffffff';
+                }
+                
+                // List blocks get text color
+                if (blockType === 'list' && !b.content?.color) {
+                  (mergedContent as any).color = textColor || '#ffffff';
+                }
+                
+                // Buttons get proper background and contrast text color
+                if (blockType === 'button') {
+                  if (!b.content?.backgroundColor && primaryColor) {
+                    (mergedContent as any).backgroundColor = primaryColor;
+                  }
+                  // Set button text color for contrast if not already set
+                  if (!b.content?.color) {
+                    const bgColor = mergedContent.backgroundColor || primaryColor || '#3b82f6';
+                    (mergedContent as any).color = getContrastColor(bgColor);
+                  }
+                }
+                
+                // Email capture and form blocks - apply text colors
+                if ((blockType === 'email-capture' || blockType === 'form') && !b.content?.textColor) {
+                  (mergedContent as any).textColor = textColor || '#ffffff';
+                }
+                
+                // Social proof blocks
+                if (blockType === 'social-proof' && !b.content?.color) {
+                  (mergedContent as any).color = textColor || '#ffffff';
                 }
               }
-              
-              // Email capture and form blocks - apply text colors
-              if ((blockType === 'email-capture' || blockType === 'form') && !b.content?.textColor) {
-                (mergedContent as any).textColor = textColor || '#ffffff';
-              }
-              
-              // Social proof blocks
-              if (blockType === 'social-proof' && !b.content?.color) {
-                (mergedContent as any).color = textColor || '#ffffff';
-              }
-            }
-            
-            return {
-              id: uuid(),
-              type: blockType,
-              content: mergedContent,
-              styles: mergedStyles,
-              trackingId: `block-${uuid()}`,
-            };
-          };
-          
-          if (plan.action === 'replace-funnel' && parsed.funnel && parsed.funnel.steps) {
-            const newSteps: FunnelStep[] = parsed.funnel.steps.map((stepData: any) => {
-              const blocks = (stepData.blocks || [])
-                .map(createBlock)
-                .filter((b: Block | null): b is Block => b !== null);
               
               return {
                 id: uuid(),
-                name: stepData.name || 'Step',
-                type: stepData.type || 'capture',
-                slug: stepData.slug || stepData.name?.toLowerCase().replace(/\s+/g, '-') || 'step',
-                blocks,
-                settings: {
-                  backgroundColor: stepData.settings?.backgroundColor || parsed.branding?.backgroundColor || '#ffffff',
-                },
+                type: blockType,
+                content: mergedContent,
+                styles: mergedStyles,
+                trackingId: `block-${uuid()}`,
               };
-            });
+            } catch (blockErr) {
+              console.error(`[AICopilot] Error creating block ${blockType}:`, blockErr);
+              return null;
+            }
+          };
+          
+          if (plan.action === 'replace-funnel' && parsed.funnel && parsed.funnel.steps) {
+            const newSteps: FunnelStep[] = parsed.funnel.steps
+              .map((stepData: any) => {
+                if (!stepData || !Array.isArray(stepData.blocks)) {
+                  console.warn('[AICopilot] Invalid step data:', stepData);
+                  return null;
+                }
+                
+                const blocks = stepData.blocks
+                  .map(createBlock)
+                  .filter((b: Block | null): b is Block => b !== null);
+                
+                if (blocks.length === 0) {
+                  console.warn('[AICopilot] Step has no valid blocks:', stepData.name);
+                  return null;
+                }
+                
+                return {
+                  id: uuid(),
+                  name: stepData.name || 'Step',
+                  type: stepData.type || 'capture',
+                  slug: stepData.slug || stepData.name?.toLowerCase().replace(/\s+/g, '-') || 'step',
+                  blocks,
+                  settings: {
+                    backgroundColor: stepData.settings?.backgroundColor || parsed.branding?.backgroundColor || '#ffffff',
+                  },
+                };
+              })
+              .filter((s: FunnelStep | null): s is FunnelStep => s !== null);
+            
+            if (newSteps.length === 0) {
+              toast.error('No valid steps found in clone response');
+              setError('No valid steps to apply');
+              return;
+            }
             
             setFunnel({
               ...funnel,
@@ -420,38 +518,63 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
           }
           
           if (plan.action === 'replace-step' && parsed.step) {
-            const blocks = (parsed.step.blocks || [])
+            if (!Array.isArray(parsed.step.blocks)) {
+              toast.error('Invalid step blocks format');
+              setError('Step blocks must be an array');
+              return;
+            }
+            
+            const blocks = parsed.step.blocks
               .map(createBlock)
               .filter((b: Block | null): b is Block => b !== null);
             
             if (blocks.length === 0) {
               toast.error('No valid blocks found in clone response');
+              setError('No valid blocks to apply');
               return;
             }
             
             if (!currentStepId) {
               toast.error('No current step selected');
+              setError('Please select a step first');
               return;
             }
             
-            updateStep(currentStepId, {
-              name: parsed.step.name || currentStep?.name || 'Step',
-              blocks,
-              settings: {
-                backgroundColor: parsed.step.settings?.backgroundColor || parsed.branding?.backgroundColor || currentStep?.settings?.backgroundColor || '#ffffff',
-              },
-            });
+            if (!currentStep) {
+              toast.error('Current step not found');
+              setError('Step not found');
+              return;
+            }
             
-            toast.success(`Built step with ${blocks.length} blocks successfully!`);
-            setCloneUrl('');
-            setStreamedResponse('');
-            return;
+            try {
+              updateStep(currentStepId, {
+                name: parsed.step.name || currentStep.name || 'Step',
+                blocks,
+                settings: {
+                  backgroundColor: parsed.step.settings?.backgroundColor || parsed.branding?.backgroundColor || currentStep.settings?.backgroundColor || '#ffffff',
+                },
+              });
+              
+              toast.success(`Built step with ${blocks.length} blocks successfully!`);
+              setCloneUrl('');
+              setStreamedResponse('');
+              return;
+            } catch (updateErr) {
+              console.error('[AICopilot] Error updating step:', updateErr);
+              toast.error('Failed to update step');
+              setError(updateErr instanceof Error ? updateErr.message : 'Failed to update step');
+              return;
+            }
           }
           
+          console.error('[AICopilot] Unexpected response format:', parsed);
           toast.error('Unexpected response format');
+          setError('Response format does not match expected structure');
         } catch (err) {
           console.error('[AICopilot] Execute plan error:', err);
-          setError(err instanceof Error ? err.message : 'Failed to execute plan');
+          const errorMessage = err instanceof Error ? err.message : 'Failed to execute plan';
+          setError(errorMessage);
+          toast.error(errorMessage);
         }
       },
       onError: (err) => {
