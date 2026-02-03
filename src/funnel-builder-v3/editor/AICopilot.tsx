@@ -17,8 +17,9 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { toast } from 'sonner';
-import { streamCopyGeneration, streamHelpResponse, streamCloneFromURL, streamGenerateFunnel, V3Context } from '@/funnel-builder-v3/lib/ai-service';
+import { streamCopyGeneration, streamHelpResponse, streamCloneFromURL, streamGenerateFunnel, streamClonePlan, V3Context } from '@/funnel-builder-v3/lib/ai-service';
 import { parseCopyResponse } from '@/funnel-builder-v3/lib/ai-parser';
 import { parseGeneratedFunnel } from '@/funnel-builder-v3/lib/funnel-parser';
 import { ClonedStyle } from '@/funnel-builder-v3/lib/clone-converter';
@@ -30,6 +31,27 @@ import { v4 as uuid } from 'uuid';
 interface AICopilotProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+interface ClonePlan {
+  summary: string;
+  action: 'replace-funnel' | 'replace-step';
+  branding: {
+    primaryColor: string;
+    backgroundColor: string;
+    theme: string;
+  };
+  steps?: Array<{
+    name: string;
+    type: string;
+    blockCount: number;
+    blockTypes: string[];
+  }>;
+  step?: {
+    name: string;
+    blockCount: number;
+    blockTypes: string[];
+  };
 }
 
 export function AICopilot({ isOpen, onClose }: AICopilotProps) {
@@ -54,6 +76,8 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
   const [clonedBranding, setClonedBranding] = useState<ClonedStyle | null>(null);
   const [showCloneConfirm, setShowCloneConfirm] = useState(false);
   const [cloneAction, setCloneAction] = useState<'replace-funnel' | 'replace-step' | null>(null);
+  const [clonePlan, setClonePlan] = useState<ClonePlan | null>(null);
+  const [isPlanningClone, setIsPlanningClone] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   
   const currentStep = funnel.steps.find(s => s.id === currentStepId);
@@ -175,6 +199,204 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
     
     // Show confirmation dialog first
     setShowCloneConfirm(true);
+  };
+
+  const generateClonePlan = async (action: 'replace-funnel' | 'replace-step') => {
+    setShowCloneConfirm(false);
+    setIsPlanningClone(true);
+    setClonePlan(null);
+    setError(null);
+    setStreamedResponse('');
+    
+    const context = buildContext();
+    let fullResponse = '';
+    
+    await streamClonePlan(cloneUrl, { ...context, cloneAction: action }, {
+      onDelta: (chunk) => {
+        fullResponse += chunk;
+        setStreamedResponse(fullResponse);
+      },
+      onDone: () => {
+        setIsPlanningClone(false);
+        
+        try {
+          const responseText = fullResponse || streamedResponse;
+          if (!responseText.trim()) {
+            setError('No response received from AI');
+            return;
+          }
+          
+          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            setClonePlan({
+              summary: parsed.summary || 'Plan generated',
+              action: parsed.action || action,
+              branding: parsed.branding || {
+                primaryColor: '#3b82f6',
+                backgroundColor: '#ffffff',
+                theme: 'light',
+              },
+              steps: parsed.steps,
+              step: parsed.step,
+            });
+            setStreamedResponse('');
+          } else {
+            setError('Could not parse plan from response');
+          }
+        } catch (parseErr) {
+          console.error('Parse plan error:', parseErr);
+          setError(`Failed to parse plan: ${parseErr instanceof Error ? parseErr.message : 'Unknown error'}`);
+        }
+      },
+      onError: (err) => {
+        setIsPlanningClone(false);
+        setError(err.message);
+        toast.error(err.message);
+      },
+    });
+  };
+
+  const executeApprovedPlan = async (plan: ClonePlan) => {
+    setClonePlan(null);
+    setIsProcessing(true);
+    setStreamedResponse('');
+    setError(null);
+    
+    const context = buildContext();
+    let fullResponse = '';
+    
+    await streamCloneFromURL(cloneUrl, { ...context, cloneAction: plan.action, approvedPlan: plan }, {
+      onDelta: (chunk) => {
+        fullResponse += chunk;
+        setStreamedResponse(fullResponse);
+      },
+      onDone: async () => {
+        setIsProcessing(false);
+        
+        try {
+          const responseText = fullResponse || streamedResponse;
+          if (!responseText.trim()) {
+            setError('No response received from AI');
+            return;
+          }
+          
+          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+          if (!jsonMatch) {
+            toast.error('Could not parse JSON from clone response');
+            return;
+          }
+          
+          const parsed = JSON.parse(jsonMatch[0]);
+          
+          if (parsed.branding) {
+            setClonedBranding(parsed.branding);
+          }
+          
+          const createBlock = (b: any): Block | null => {
+            const blockType = b.type as BlockType;
+            const definition = blockDefinitions[blockType];
+            
+            if (!definition) {
+              console.warn(`[AICopilot] Unknown block type: ${blockType}, skipping`);
+              return null;
+            }
+            
+            const mergedContent = {
+              ...definition.defaultContent,
+              ...b.content,
+            };
+            
+            const mergedStyles = {
+              ...definition.defaultStyles,
+              ...b.styles,
+              ...(blockType === 'button' && !b.styles?.textAlign && { textAlign: 'center' }),
+            };
+            
+            if (blockType === 'button' && parsed.branding?.primaryColor && !b.content?.backgroundColor) {
+              (mergedContent as any).backgroundColor = parsed.branding.primaryColor;
+            }
+            
+            return {
+              id: uuid(),
+              type: blockType,
+              content: mergedContent,
+              styles: mergedStyles,
+              trackingId: `block-${uuid()}`,
+            };
+          };
+          
+          if (plan.action === 'replace-funnel' && parsed.funnel && parsed.funnel.steps) {
+            const newSteps: FunnelStep[] = parsed.funnel.steps.map((stepData: any) => {
+              const blocks = (stepData.blocks || [])
+                .map(createBlock)
+                .filter((b: Block | null): b is Block => b !== null);
+              
+              return {
+                id: uuid(),
+                name: stepData.name || 'Step',
+                type: stepData.type || 'capture',
+                slug: stepData.slug || stepData.name?.toLowerCase().replace(/\s+/g, '-') || 'step',
+                blocks,
+                settings: {
+                  backgroundColor: stepData.settings?.backgroundColor || parsed.branding?.backgroundColor || '#ffffff',
+                },
+              };
+            });
+            
+            setFunnel({
+              ...funnel,
+              name: parsed.funnel.name || funnel.name,
+              steps: newSteps,
+            });
+            
+            toast.success(`Built funnel with ${newSteps.length} steps successfully!`);
+            setCloneUrl('');
+            setStreamedResponse('');
+            return;
+          }
+          
+          if (plan.action === 'replace-step' && parsed.step) {
+            const blocks = (parsed.step.blocks || [])
+              .map(createBlock)
+              .filter((b: Block | null): b is Block => b !== null);
+            
+            if (blocks.length === 0) {
+              toast.error('No valid blocks found in clone response');
+              return;
+            }
+            
+            if (!currentStepId) {
+              toast.error('No current step selected');
+              return;
+            }
+            
+            updateStep(currentStepId, {
+              name: parsed.step.name || currentStep?.name || 'Step',
+              blocks,
+              settings: {
+                backgroundColor: parsed.step.settings?.backgroundColor || parsed.branding?.backgroundColor || currentStep?.settings?.backgroundColor || '#ffffff',
+              },
+            });
+            
+            toast.success(`Built step with ${blocks.length} blocks successfully!`);
+            setCloneUrl('');
+            setStreamedResponse('');
+            return;
+          }
+          
+          toast.error('Unexpected response format');
+        } catch (err) {
+          console.error('[AICopilot] Execute plan error:', err);
+          setError(err instanceof Error ? err.message : 'Failed to execute plan');
+        }
+      },
+      onError: (err) => {
+        setIsProcessing(false);
+        setError(err.message);
+        toast.error(err.message);
+      },
+    });
   };
 
   const executeClone = async (action: 'replace-funnel' | 'replace-step') => {
@@ -528,6 +750,31 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
       {/* Content Area */}
       <ScrollArea className="flex-1">
         <div className="px-6 py-6 space-y-6">
+          {/* Context-Aware Headers */}
+          {mode === 'copy' && selectedBlock && (
+            <div className="text-xs text-muted-foreground pb-2 border-b border-border/50">
+              Editing <span className="font-medium text-foreground capitalize">{selectedBlock.type}</span> block
+            </div>
+          )}
+          
+          {mode === 'clone' && cloneUrl && !showCloneConfirm && !clonePlan && (
+            <div className="text-xs text-muted-foreground pb-2 border-b border-border/50">
+              Cloning from <span className="font-medium text-foreground truncate">{(() => {
+                try {
+                  return new URL(cloneUrl).hostname;
+                } catch {
+                  return cloneUrl;
+                }
+              })()}</span>
+            </div>
+          )}
+          
+          {mode === 'generate' && (
+            <div className="text-xs text-muted-foreground pb-2 border-b border-border/50">
+              Will {generateLocation === 'replace' ? 'replace funnel' : 'add steps'}
+            </div>
+          )}
+          
           {mode === 'copy' && !selectedBlockId && (
             <div className="text-sm text-muted-foreground py-2">
               Select a block to generate copy for it
@@ -549,7 +796,7 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
               <div className="text-sm font-medium text-foreground">What would you like to do?</div>
               <div className="space-y-2">
                 <button
-                  onClick={() => executeClone('replace-funnel')}
+                  onClick={() => generateClonePlan('replace-funnel')}
                   className="w-full px-4 py-2.5 text-left text-sm rounded-md bg-background border border-border hover:bg-muted/50 transition-colors"
                 >
                   <div className="font-medium">Replace entire funnel</div>
@@ -558,7 +805,7 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
                   </div>
                 </button>
                 <button
-                  onClick={() => executeClone('replace-step')}
+                  onClick={() => generateClonePlan('replace-step')}
                   className="w-full px-4 py-2.5 text-left text-sm rounded-md bg-background border border-border hover:bg-muted/50 transition-colors"
                 >
                   <div className="font-medium">Replace current step only</div>
@@ -572,6 +819,92 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
                 >
                   Cancel
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Planning Indicator */}
+          {isPlanningClone && mode === 'clone' && (
+            <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                <div className="text-sm text-muted-foreground">Analyzing page and creating plan...</div>
+              </div>
+            </div>
+          )}
+
+          {/* Plan Preview */}
+          {clonePlan && mode === 'clone' && (
+            <div className="p-4 rounded-lg bg-muted/30 border border-border/50 space-y-4">
+              {/* Summary */}
+              <div>
+                <div className="text-sm font-medium mb-1">Here's what I'll build:</div>
+                <div className="text-sm text-muted-foreground">{clonePlan.summary}</div>
+              </div>
+              
+              {/* Branding Preview */}
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full border border-border/50" style={{ backgroundColor: clonePlan.branding.primaryColor }} />
+                <span className="text-xs text-muted-foreground capitalize">{clonePlan.branding.theme} theme</span>
+              </div>
+              
+              {/* Expandable Details */}
+              {(clonePlan.steps || clonePlan.step) && (
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="details" className="border-none">
+                    <AccordionTrigger className="text-xs py-2 hover:no-underline">
+                      View details
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-2">
+                      {clonePlan.steps?.map((step, i) => (
+                        <div key={i} className="py-2 border-b border-border/50 last:border-0">
+                          <div className="font-medium text-sm">{step.name}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {step.blockCount} blocks: {step.blockTypes.slice(0, 5).join(', ')}
+                            {step.blockTypes.length > 5 && ` +${step.blockTypes.length - 5} more`}
+                          </div>
+                        </div>
+                      ))}
+                      {clonePlan.step && (
+                        <div className="py-2">
+                          <div className="font-medium text-sm">{clonePlan.step.name}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {clonePlan.step.blockCount} blocks: {clonePlan.step.blockTypes.slice(0, 5).join(', ')}
+                            {clonePlan.step.blockTypes.length > 5 && ` +${clonePlan.step.blockTypes.length - 5} more`}
+                          </div>
+                        </div>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              )}
+              
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+                <Button 
+                  onClick={() => executeApprovedPlan(clonePlan)} 
+                  className="flex-1"
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                      Building...
+                    </>
+                  ) : (
+                    'Build This'
+                  )}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setClonePlan(null);
+                    setStreamedResponse('');
+                  }}
+                  disabled={isProcessing}
+                >
+                  Cancel
+                </Button>
               </div>
             </div>
           )}
@@ -605,54 +938,31 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
           </div>
         )}
         
-        {/* Options for Clone and Generate - Close to toggles */}
-        {(mode === 'clone' || mode === 'generate') && (
+        {/* Options for Generate - Close to toggles (Clone mode uses plan flow instead) */}
+        {mode === 'generate' && (
           <div className="mb-3">
             <div className="text-xs font-medium text-foreground/70 mb-2">
-              {mode === 'clone' ? 'Add to:' : 'Action:'}
+              Action:
             </div>
             <RadioGroup 
-              value={mode === 'clone' ? cloneLocation : generateLocation} 
+              value={generateLocation} 
               onValueChange={(v) => {
-                if (mode === 'clone') {
-                  setCloneLocation(v as 'current' | 'new');
-                } else {
-                  setGenerateLocation(v as 'replace' | 'add');
-                }
+                setGenerateLocation(v as 'replace' | 'add');
               }} 
               className="space-y-1.5"
             >
-              {mode === 'clone' ? (
-                <>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="current" id="clone-current" className="h-3.5 w-3.5" />
-                    <Label htmlFor="clone-current" className="text-xs font-normal cursor-pointer text-foreground/70">
-                      Current step
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="new" id="clone-new" className="h-3.5 w-3.5" />
-                    <Label htmlFor="clone-new" className="text-xs font-normal cursor-pointer text-foreground/70">
-                      New step
-                    </Label>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="replace" id="gen-replace" className="h-3.5 w-3.5" />
-                    <Label htmlFor="gen-replace" className="text-xs font-normal cursor-pointer text-foreground/70">
-                      Replace funnel
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="add" id="gen-add" className="h-3.5 w-3.5" />
-                    <Label htmlFor="gen-add" className="text-xs font-normal cursor-pointer text-foreground/70">
-                      Add steps
-                    </Label>
-                  </div>
-                </>
-              )}
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="replace" id="gen-replace" className="h-3.5 w-3.5" />
+                <Label htmlFor="gen-replace" className="text-xs font-normal cursor-pointer text-foreground/70">
+                  Replace funnel
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="add" id="gen-add" className="h-3.5 w-3.5" />
+                <Label htmlFor="gen-add" className="text-xs font-normal cursor-pointer text-foreground/70">
+                  Add steps
+                </Label>
+              </div>
             </RadioGroup>
           </div>
         )}

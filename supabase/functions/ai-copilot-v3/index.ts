@@ -252,6 +252,48 @@ ${text.slice(0, 8000)}
 }
 
 /**
+ * Get system prompt for clone-plan task (lightweight plan only)
+ */
+function getClonePlanPrompt(pageAnalysis: string, action: string): string {
+  const isFunnel = action === 'replace-funnel';
+  
+  return `You are a funnel planner. Analyze this website and create a PLAN for rebuilding it.
+
+PAGE ANALYSIS:
+${pageAnalysis.slice(0, 15000)}
+
+Create a plan showing:
+1. A 1-2 sentence summary of what you'll build
+2. The branding you'll use (colors, theme)
+3. ${isFunnel ? 'Each step you will create, with block types' : 'The blocks you will add to this step'}
+
+Return ONLY valid JSON:
+{
+  "summary": "I'll create a ${isFunnel ? '3-step' : 'single step'} funnel that captures the page's essence with ${isFunnel ? 'lead capture, benefits, and thank you steps' : 'headline, features, and CTA'}.",
+  "action": "${action}",
+  "branding": {
+    "primaryColor": "#HEX",
+    "backgroundColor": "#HEX",
+    "theme": "dark|light"
+  },
+  ${isFunnel ? `"steps": [
+    {
+      "name": "Step Name",
+      "type": "capture|sell|result",
+      "blockCount": 5,
+      "blockTypes": ["heading", "text", "button", "email-capture", "social-proof"]
+    }
+  ]` : `"step": {
+    "name": "Step Name",
+    "blockCount": 6,
+    "blockTypes": ["heading", "text", "list", "button", "image", "spacer"]
+  }`}
+}
+
+Keep the plan concise but informative. Focus on the structure and key blocks you'll use.`;
+}
+
+/**
  * Get system prompt for clone task
  */
 function getClonePrompt(pageAnalysis: string, action: 'replace-funnel' | 'replace-step', context: any): string {
@@ -604,7 +646,7 @@ serve(async (req) => {
           { role: "user", content: userPrompt },
         ],
         stream,
-        max_tokens: (task === 'generate' || task === 'plan' || task === 'clone') ? 4096 : 2048,
+        max_tokens: (task === 'generate' || task === 'plan' || task === 'clone' || task === 'clone-plan') ? 4096 : 2048,
         temperature: 0.7,
       }),
     });

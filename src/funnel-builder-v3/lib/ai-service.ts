@@ -133,11 +133,90 @@ export async function streamCopyGeneration(
 }
 
 /**
+ * Stream clone plan from URL (lightweight plan, not full build)
+ */
+export async function streamClonePlan(
+  url: string,
+  context: V3Context & { cloneAction?: 'replace-funnel' | 'replace-step' },
+  options: StreamOptions
+): Promise<void> {
+  const { onDelta, onDone, onError } = options;
+
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+
+    const response = await fetch(COPILOT_V3_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({ 
+        task: 'clone-plan',
+        prompt: url,
+        context,
+        stream: true 
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Request failed: ${response.status}`);
+    }
+
+    if (!response.body) {
+      throw new Error('No response body');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      let newlineIndex: number;
+      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+        let line = buffer.slice(0, newlineIndex);
+        buffer = buffer.slice(newlineIndex + 1);
+
+        if (line.endsWith('\r')) line = line.slice(0, -1);
+        if (line.startsWith(':') || line.trim() === '') continue;
+        if (!line.startsWith('data: ')) continue;
+
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === '[DONE]') break;
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) onDelta(content);
+        } catch {
+          buffer = line + '\n' + buffer;
+          break;
+        }
+      }
+    }
+
+    onDone();
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('[ai-service-v3] Clone plan stream error:', err);
+    onError?.(err);
+  }
+}
+
+/**
  * Stream clone from URL response
  */
 export async function streamCloneFromURL(
   url: string,
-  context: V3Context,
+  context: V3Context & { cloneAction?: 'replace-funnel' | 'replace-step'; approvedPlan?: any },
   options: StreamOptions
 ): Promise<void> {
   const { onDelta, onDone, onError } = options;
