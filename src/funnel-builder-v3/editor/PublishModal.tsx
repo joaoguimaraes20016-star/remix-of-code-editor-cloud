@@ -47,7 +47,6 @@ interface PublishModalProps {
   currentDomainId?: string | null;
   isPublishing?: boolean;
   funnelStatus?: string;
-  lastPublishedAt?: string | null;
 }
 
 export function PublishModal({
@@ -62,7 +61,6 @@ export function PublishModal({
   currentDomainId,
   isPublishing = false,
   funnelStatus = 'draft',
-  lastPublishedAt,
 }: PublishModalProps) {
   const queryClient = useQueryClient();
   const [copiedSlug, setCopiedSlug] = useState(false);
@@ -70,7 +68,7 @@ export function PublishModal({
   const [publishing, setPublishing] = useState(false);
   const [localPublishedState, setLocalPublishedState] = useState<{
     isPublished: boolean;
-    lastPublishedAt: string | null;
+    publishedAt: string | null;
     domainId: string | null;
   } | null>(null);
   
@@ -85,26 +83,25 @@ export function PublishModal({
   // But also track local state to persist published status and domain ID even if query refetches with stale data
   const effectiveDomainId = localPublishedState?.domainId ?? currentDomainId;
   const isPublished = localPublishedState?.isPublished ?? (funnelStatus === 'published');
-  const lastPublished = localPublishedState?.lastPublishedAt ?? lastPublishedAt;
   
   // Update local state when props change (but only if they indicate published status or have a domain)
   // This ensures we persist published status and domain ID even if query refetches with stale data
   useEffect(() => {
-    if (funnelStatus === 'published' && lastPublishedAt) {
+    if (funnelStatus === 'published') {
       setLocalPublishedState((prev) => ({
         isPublished: true,
-        lastPublishedAt: lastPublishedAt,
+        publishedAt: prev?.publishedAt ?? new Date().toISOString(),
         domainId: currentDomainId ?? prev?.domainId ?? null,
       }));
     } else if (currentDomainId) {
       // Also update domain ID if it's provided, even if not published
       setLocalPublishedState((prev) => ({
         isPublished: prev?.isPublished ?? (funnelStatus === 'published'),
-        lastPublishedAt: prev?.lastPublishedAt ?? lastPublishedAt,
+        publishedAt: prev?.publishedAt ?? null,
         domainId: currentDomainId,
       }));
     }
-  }, [funnelStatus, lastPublishedAt, currentDomainId]);
+  }, [funnelStatus, currentDomainId]);
 
   // Reset/update local state when modal opens to ensure fresh data
   // This handles the case where domain was linked while modal was closed
@@ -114,7 +111,7 @@ export function PublishModal({
       // This ensures we always show the latest domain and published status
       setLocalPublishedState({
         isPublished: funnelStatus === 'published',
-        lastPublishedAt: lastPublishedAt,
+        publishedAt: funnelStatus === 'published' ? new Date().toISOString() : null,
         domainId: currentDomainId,
       });
       
@@ -126,7 +123,7 @@ export function PublishModal({
         });
       }
     }
-  }, [isOpen, currentDomainId, funnelStatus, lastPublishedAt, queryClient]);
+  }, [isOpen, currentDomainId, funnelStatus, queryClient]);
   
   // Fetch connected domain using effectiveDomainId with placeholderData to prevent flicker
   const { data: linkedDomain, isLoading: domainLoading } = useQuery({
@@ -149,8 +146,8 @@ export function PublishModal({
   const isDomainActive = linkedDomain?.status === 'verified' && linkedDomain?.ssl_provisioned;
   
   // Format timestamp for display
-  const formattedPublishDate = lastPublished 
-    ? new Date(lastPublished).toLocaleString(undefined, {
+  const formattedPublishDate = localPublishedState?.publishedAt 
+    ? new Date(localPublishedState.publishedAt).toLocaleString(undefined, {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -176,7 +173,7 @@ export function PublishModal({
       // Preserve domain ID so domain query stays enabled
       setLocalPublishedState((prev) => ({
         isPublished: true,
-        lastPublishedAt: now,
+        publishedAt: now,
         domainId: currentDomainId ?? prev?.domainId ?? null,
       }));
       setJustPublished(true);
