@@ -82,6 +82,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
       src: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       type: 'youtube',
       autoplay: false,
+      aspectRatio: '16:9',
     },
     defaultStyles: { ...defaultStyles, borderRadius: 12 },
   },

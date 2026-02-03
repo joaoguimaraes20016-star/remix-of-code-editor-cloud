@@ -162,23 +162,74 @@ export async function streamClonePlan(
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Request failed: ${response.status}`);
+      // Try to get error message from response
+      let errorMessage = `Request failed: ${response.status}`;
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } else {
+          const errorText = await response.text();
+          if (errorText) {
+            try {
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.error || errorMessage;
+            } catch {
+              errorMessage = errorText || errorMessage;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('[ai-service-v3] Error parsing error response:', e);
+      }
+      throw new Error(errorMessage);
+    }
+
+    // Check content type - if it's JSON, it's likely an error
+    const contentType = response.headers.get('content-type');
+    if (contentType?.includes('application/json')) {
+      try {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Unexpected JSON response');
+      } catch (e) {
+        if (e instanceof Error && e.message.includes('Unexpected JSON')) {
+          throw e;
+        }
+        // If JSON parsing fails, continue with streaming
+      }
     }
 
     if (!response.body) {
-      throw new Error('No response body');
+      throw new Error('No response body received from server');
     }
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let hasReceivedContent = false;
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
+
+      // Check if buffer starts with JSON (error response)
+      const trimmedBuffer = buffer.trim();
+      if (trimmedBuffer.startsWith('{') && !hasReceivedContent) {
+        try {
+          const errorData = JSON.parse(trimmedBuffer);
+          if (errorData.error) {
+            throw new Error(errorData.error);
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message !== 'Unexpected token') {
+            throw e;
+          }
+          // Not JSON error, continue parsing as stream
+        }
+      }
 
       let newlineIndex: number;
       while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
@@ -195,11 +246,27 @@ export async function streamClonePlan(
         try {
           const parsed = JSON.parse(jsonStr);
           const content = parsed.choices?.[0]?.delta?.content;
-          if (content) onDelta(content);
+          if (content) {
+            hasReceivedContent = true;
+            onDelta(content);
+          }
         } catch {
           buffer = line + '\n' + buffer;
           break;
         }
+      }
+    }
+
+    // If we never received any content, it might be an error
+    if (!hasReceivedContent && buffer.trim()) {
+      // Check if buffer contains an error message
+      try {
+        const errorData = JSON.parse(buffer.trim());
+        if (errorData.error) {
+          throw new Error(errorData.error);
+        }
+      } catch (e) {
+        // Not a JSON error, continue
       }
     }
 

@@ -115,7 +115,7 @@ export function parseGeneratedFunnel(json: string): ParsedFunnel {
       
       // Extract content based on block type
       const content = blockData.content || blockData.elements?.[0]?.content || {};
-      const styles = blockData.styles || {};
+      let styles = blockData.styles || {};
       
       // Convert content to V3 format
       let v3Content: Partial<BlockContent> = {};
@@ -126,12 +126,20 @@ export function parseGeneratedFunnel(json: string): ParsedFunnel {
             text: content.text || content.content || '',
             level: content.level || 1,
           };
+          // Preserve color from AI response if present
+          if (content.styles?.color) {
+            styles = { ...styles, color: content.styles.color };
+          }
           break;
           
         case 'text':
           v3Content = {
             text: content.text || content.content || '',
           };
+          // Preserve color from AI response if present
+          if (content.styles?.color) {
+            styles = { ...styles, color: content.styles.color };
+          }
           break;
           
         case 'button':
@@ -230,6 +238,18 @@ export function parseGeneratedFunnel(json: string): ParsedFunnel {
               action: content.submitButton.action || 'next-step',
               fullWidth: content.submitButton.fullWidth || false,
             } : undefined,
+          };
+          break;
+          
+        case 'video':
+          v3Content = {
+            src: content.src || content.url || '',
+            type: content.type || 'youtube',
+            autoplay: content.autoplay ?? false,
+            controls: content.controls ?? true,
+            muted: content.muted ?? false,
+            loop: content.loop ?? false,
+            aspectRatio: content.aspectRatio || '16:9',  // Ensure aspect ratio is set
           };
           break;
           

@@ -312,6 +312,7 @@ ${userInstructions}`;
     
     const context = buildContext();
     let fullResponse = '';
+    let hasError = false;
     
     await streamClonePlan(cloneUrl, { ...context, cloneAction: action }, {
       onDelta: (chunk) => {
@@ -319,12 +320,18 @@ ${userInstructions}`;
         setStreamedResponse(fullResponse);
       },
       onDone: () => {
+        // Don't process if an error already occurred
+        if (hasError) {
+          return;
+        }
+        
         try {
           const responseText = fullResponse || streamedResponse;
           if (!responseText.trim()) {
-            setError('No response received from AI');
+            setError('No response received from AI. Please check your connection and try again.');
             setStreamedResponse(''); // Clear before setting flag
             setIsPlanningClone(false);
+            toast.error('No response received from AI');
             return;
           }
           
@@ -396,10 +403,13 @@ ${userInstructions}`;
         }
       },
       onError: (err) => {
+        hasError = true; // Mark that an error occurred
         setStreamedResponse(''); // Clear on error to prevent HTML leakage
         setIsPlanningClone(false);
-        setError(err.message);
-        toast.error(err.message);
+        const errorMessage = err.message || 'Failed to connect to AI service. Please try again.';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        console.error('[AICopilot] Clone plan error:', err);
       },
     });
   };
@@ -594,72 +604,59 @@ ${userInstructions}`;
                 const newBlock = { ...block };
                 const content = { ...block.content } as any;
                 
-                // Apply text colors to heading/text blocks
+                // Apply text colors to heading/text blocks - ALWAYS apply branding color to ensure consistency
                 if (block.type === 'heading' || block.type === 'text' || block.type === 'list') {
                   const colorToUse = block.type === 'heading' 
                     ? (plan.branding.headingColor || plan.branding.textColor)
                     : plan.branding.textColor;
                   
-                  if (!content.styles?.color) {
-                    content.styles = {
-                      ...content.styles,
-                      color: colorToUse,
-                    };
-                  }
+                  // ALWAYS apply branding color to ensure consistency
+                  content.styles = {
+                    ...content.styles,
+                    color: colorToUse,
+                  };
                 }
                 
-                // Apply button colors
+                // Apply button colors - ALWAYS apply branding
                 if (block.type === 'button') {
-                  if (!content.backgroundColor) {
-                    content.backgroundColor = plan.branding.primaryColor;
-                  }
-                  if (!content.color) {
-                    content.color = getContrastColor(content.backgroundColor || plan.branding.primaryColor);
-                  }
+                  content.backgroundColor = plan.branding.primaryColor;
+                  content.color = getContrastColor(plan.branding.primaryColor);
                 }
                 
-                // Apply text colors to forms and email captures
-                if ((block.type === 'email-capture' || block.type === 'form') && !content.textColor) {
+                // Apply text colors to forms and email captures - ALWAYS apply branding
+                if (block.type === 'email-capture' || block.type === 'form') {
                   content.textColor = plan.branding.textColor;
                 }
                 
-                // Apply colors to social proof
+                // Apply colors to social proof - ALWAYS apply branding
                 if (block.type === 'social-proof') {
-                  if (!content.valueColor) {
-                    content.valueColor = plan.branding.headingColor || plan.branding.textColor;
-                  }
-                  if (!content.labelColor) {
-                    content.labelColor = plan.branding.textColor;
-                  }
+                  content.valueColor = plan.branding.headingColor || plan.branding.textColor;
+                  content.labelColor = plan.branding.textColor;
                 }
                 
-                // Apply colors to accordion blocks (FAQ)
+                // Apply colors to accordion blocks (FAQ) - ALWAYS apply branding
                 if (block.type === 'accordion') {
-                  if (!content.titleColor) {
-                    content.titleColor = plan.branding.headingColor || plan.branding.textColor;
-                  }
-                  if (!content.contentColor) {
-                    content.contentColor = plan.branding.textColor;
-                  }
+                  content.titleColor = plan.branding.headingColor || plan.branding.textColor;
+                  content.contentColor = plan.branding.textColor;
                 }
                 
-                // Apply colors to reviews
-                if (block.type === 'reviews' && !content.textColor) {
+                // Apply colors to reviews - ALWAYS apply branding
+                if (block.type === 'reviews') {
                   content.textColor = plan.branding.textColor;
                 }
                 
-                // Apply colors to countdown
-                if (block.type === 'countdown' && !content.textColor) {
+                // Apply colors to countdown - ALWAYS apply branding
+                if (block.type === 'countdown') {
                   content.textColor = plan.branding.headingColor || plan.branding.textColor;
                 }
                 
-                // Apply colors to webinar
-                if (block.type === 'webinar' && !content.titleColor) {
+                // Apply colors to webinar - ALWAYS apply branding
+                if (block.type === 'webinar') {
                   content.titleColor = plan.branding.headingColor || plan.branding.textColor;
                 }
                 
-                // Apply colors to list blocks (ensure textColor is set)
-                if (block.type === 'list' && !content.textColor) {
+                // Apply colors to list blocks - ALWAYS apply branding
+                if (block.type === 'list') {
                   content.textColor = plan.branding.textColor;
                 }
                 
@@ -1290,7 +1287,7 @@ ${userInstructions}`;
 
           {/* Plan Preview */}
           {clonePlan && mode === 'clone' && (
-            <div className="relative p-4 rounded-lg bg-muted/30 border border-border/50 space-y-4" style={{ minWidth: 0, maxWidth: '100%' }}>
+            <div className="relative p-5 rounded-lg bg-muted/30 border border-border/50 space-y-5" style={{ minWidth: 0, maxWidth: '100%' }}>
               {/* Generation Progress Overlay */}
               {isProcessing && isGeneratingFromReference && (
                 <div className="absolute inset-0 bg-background/95 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center z-10 p-6">
@@ -1342,9 +1339,9 @@ ${userInstructions}`;
               )}
               
               {/* Summary */}
-              <div className="space-y-2">
-                <div className="text-sm font-medium">Here's what I'll build:</div>
-                <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words" style={{ wordBreak: 'break-word' }}>
+              <div className="space-y-3">
+                <div className="text-base font-medium">Here's what I'll build:</div>
+                <div className="text-base text-muted-foreground leading-relaxed whitespace-pre-wrap break-words" style={{ wordBreak: 'break-word' }}>
                   {clonePlan.summary}
                 </div>
               </div>
@@ -1393,9 +1390,9 @@ ${userInstructions}`;
                     <AccordionTrigger className="text-xs py-2 hover:no-underline font-medium">
                       Detailed Content Breakdown
                     </AccordionTrigger>
-                    <AccordionContent className="pt-2 space-y-3">
+                    <AccordionContent className="pt-2 space-y-4">
                       {clonePlan.steps?.map((step, i) => (
-                        <div key={i} className="p-3 rounded-lg bg-background/50 border border-border/30">
+                        <div key={i} className="p-4 rounded-lg bg-background/50 border border-border/30">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
                               {i + 1}
@@ -1403,16 +1400,16 @@ ${userInstructions}`;
                             <div className="font-medium text-sm">{step.name}</div>
                           </div>
                           {step.description && (
-                            <div className="text-xs text-muted-foreground mb-2 ml-7">
+                            <div className="text-sm text-muted-foreground mb-3">
                               {step.description}
                             </div>
                           )}
                           {/* Block previews with actual content - FULL descriptions */}
                           {step.blocks && step.blocks.length > 0 ? (
-                            <div className="space-y-2 ml-7">
+                            <div className="space-y-3">
                               {step.blocks.map((block, j) => (
-                                <div key={j} className="flex items-start gap-2 text-xs bg-muted/30 p-2 rounded border border-border/20">
-                                  <span className="text-muted-foreground font-mono bg-muted/70 px-1.5 py-0.5 rounded text-[10px] shrink-0">
+                                <div key={j} className="flex items-start gap-3 text-sm bg-muted/30 p-3 rounded border border-border/20">
+                                  <span className="text-muted-foreground font-mono bg-muted/70 px-2 py-1 rounded text-xs shrink-0">
                                     {block.type}
                                   </span>
                                   <span className="text-foreground/90 break-words leading-relaxed">
@@ -1422,26 +1419,26 @@ ${userInstructions}`;
                               ))}
                             </div>
                           ) : step.blockTypes && step.blockTypes.length > 0 ? (
-                            <div className="text-xs text-muted-foreground ml-7">
+                            <div className="text-sm text-muted-foreground">
                               {step.blockCount || step.blockTypes.length} blocks: {step.blockTypes.join(', ')}
                             </div>
                           ) : null}
                         </div>
                       ))}
                       {clonePlan.step && (
-                        <div className="p-3 rounded-lg bg-background/50 border border-border/30" style={{ minWidth: 0, maxWidth: '100%' }}>
+                        <div className="p-4 rounded-lg bg-background/50 border border-border/30" style={{ minWidth: 0, maxWidth: '100%' }}>
                           <div className="font-medium text-sm mb-2">{clonePlan.step.name}</div>
                           {clonePlan.step.description && (
-                            <div className="text-xs text-muted-foreground mb-2">
+                            <div className="text-sm text-muted-foreground mb-3">
                               {clonePlan.step.description}
                             </div>
                           )}
                           {/* Block previews with actual content - FULL descriptions */}
                           {clonePlan.step.blocks && clonePlan.step.blocks.length > 0 ? (
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               {clonePlan.step.blocks.map((block, j) => (
-                                <div key={j} className="flex items-start gap-2 text-xs bg-muted/30 p-2.5 rounded border border-border/20" style={{ minWidth: 0, maxWidth: '100%' }}>
-                                  <span className="text-muted-foreground font-mono bg-muted/70 px-1.5 py-0.5 rounded text-[10px] shrink-0">
+                                <div key={j} className="flex items-start gap-3 text-sm bg-muted/30 p-3 rounded border border-border/20" style={{ minWidth: 0, maxWidth: '100%' }}>
+                                  <span className="text-muted-foreground font-mono bg-muted/70 px-2 py-1 rounded text-xs shrink-0">
                                     {block.type}
                                   </span>
                                   <span className="text-foreground/90 break-words leading-relaxed flex-1" style={{ wordBreak: 'break-word', minWidth: 0 }}>
@@ -1451,7 +1448,7 @@ ${userInstructions}`;
                               ))}
                             </div>
                           ) : clonePlan.step.blockTypes && clonePlan.step.blockTypes.length > 0 ? (
-                            <div className="text-xs text-muted-foreground break-words" style={{ wordBreak: 'break-word' }}>
+                            <div className="text-sm text-muted-foreground break-words" style={{ wordBreak: 'break-word' }}>
                               {clonePlan.step.blockCount || clonePlan.step.blockTypes.length} blocks: {clonePlan.step.blockTypes.join(', ')}
                             </div>
                           ) : null}
