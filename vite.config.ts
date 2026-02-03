@@ -79,6 +79,10 @@ const baseBuild = {
         "@": path.resolve(__dirname, "./src"),
       },
     },
+    optimizeDeps: {
+      // Exclude Stripe from pre-bundling to prevent it from loading on custom domains
+      exclude: ["@stripe/stripe-js", "@stripe/react-stripe-js"],
+    },
     build: isLowMemory ? lowMemoryBuild : baseBuild,
   };
 });

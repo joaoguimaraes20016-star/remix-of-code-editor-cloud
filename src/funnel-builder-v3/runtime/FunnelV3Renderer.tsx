@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { FunnelRuntimeProvider, FunnelFormData, FunnelSelections, useFunnelRuntime } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
+import { FunnelProvider } from '@/funnel-builder-v3/context/FunnelContext';
 import { BlockRenderer } from '@/funnel-builder-v3/editor/blocks/BlockRenderer';
 import { Funnel, FunnelStep } from '@/funnel-builder-v3/types/funnel';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -150,7 +151,9 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       funnel={funnel}
       onFormSubmit={handleFormSubmit}
     >
-      <FunnelV3Content funnel={funnel} />
+      <FunnelProvider initialFunnel={funnel}>
+        <FunnelV3Content funnel={funnel} />
+      </FunnelProvider>
     </FunnelRuntimeProvider>
   );
 }

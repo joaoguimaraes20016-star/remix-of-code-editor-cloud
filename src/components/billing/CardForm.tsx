@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -57,9 +56,14 @@ interface CardFormProps {
   onCancel: () => void;
 }
 
-export function CardForm({ teamId, onSuccess, onCancel }: CardFormProps) {
-  const stripe = useStripe();
-  const elements = useElements();
+// Inner component that uses Stripe hooks - only rendered when Stripe is loaded
+function CardFormWithStripe({ teamId, onSuccess, onCancel, stripeModule }: CardFormProps & { stripeModule: any }) {
+  // These hooks can be called unconditionally because this component
+  // only renders when Stripe module is loaded
+  const stripe = stripeModule.useStripe();
+  const elements = stripeModule.useElements();
+  const CardElement = stripeModule.CardElement;
+
   const [isLoading, setIsLoading] = useState(false);
   const [cardComplete, setCardComplete] = useState(false);
   const [cardholderName, setCardholderName] = useState("");
@@ -317,4 +321,45 @@ export function CardForm({ teamId, onSuccess, onCancel }: CardFormProps) {
       </div>
     </form>
   );
+}
+
+// Main component that dynamically loads Stripe module
+export function CardForm({ teamId, onSuccess, onCancel }: CardFormProps) {
+  const [stripeModule, setStripeModule] = useState<any>(null);
+
+  useEffect(() => {
+    // Dynamically import Stripe React components only when component mounts
+    // Skip on custom domain funnel views
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const isCustomDomain = !hostname.includes('localhost') && 
+                             !hostname.includes('.app') && 
+                             !hostname.includes('.lovable.') &&
+                             !hostname.includes('lovableproject.com') &&
+                             !hostname.includes('127.0.0.1');
+      const hasFunnelData = !!(window as any).__INFOSTACK_FUNNEL__;
+      
+      if (isCustomDomain && hasFunnelData) {
+        console.warn("Stripe not available on custom domain funnel views");
+        return;
+      }
+    }
+    
+    import("@stripe/react-stripe-js").then((module) => {
+      setStripeModule(module);
+    }).catch((error) => {
+      console.error("Failed to load Stripe:", error);
+      toast.error("Failed to load payment form");
+    });
+  }, []);
+
+  if (!stripeModule) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return <CardFormWithStripe teamId={teamId} onSuccess={onSuccess} onCancel={onCancel} stripeModule={stripeModule} />;
 }
