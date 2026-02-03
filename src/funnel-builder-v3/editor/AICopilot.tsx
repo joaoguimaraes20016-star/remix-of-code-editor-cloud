@@ -1124,6 +1124,47 @@ ${userInstructions}`;
             </div>
           )}
 
+          {/* Generation Complete - Accept Confirmation (in Generate tab) */}
+          {mode === 'generate' && generationComplete && generatedPreview && (
+            <div className="space-y-4">
+              {/* Show clone plan summary if available */}
+              {clonePlan && (
+                <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">Reference Summary:</div>
+                  <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                    {clonePlan.summary}
+                  </div>
+                </div>
+              )}
+              
+              {/* Generation Complete Card */}
+              <div className="p-4 rounded-lg bg-primary/10 border border-primary/30">
+                <div className="flex items-center gap-2 mb-3">
+                  <Check className="w-5 h-5 text-primary" />
+                  <span className="font-medium text-sm">Generation Complete!</span>
+                </div>
+                <div className="text-sm text-muted-foreground mb-4">
+                  Created <span className="font-medium text-foreground">{generatedPreview.stepCount}</span> {generatedPreview.stepCount === 1 ? 'step' : 'steps'} with <span className="font-medium text-foreground">{generatedPreview.blockCount}</span> {generatedPreview.blockCount === 1 ? 'block' : 'blocks'}
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={acceptGeneration}
+                    className="flex-1 bg-primary hover:bg-primary/90"
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    Accept & Save
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={discardGeneration}
+                  >
+                    Discard
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Clone Confirmation Dialog */}
           {showCloneConfirm && mode === 'clone' && (
             <div className="p-4 rounded-lg bg-muted/30 border border-border/50 space-y-3">
@@ -1348,37 +1389,7 @@ ${userInstructions}`;
                 </Accordion>
               )}
               
-              {/* Generation Complete - Accept Confirmation */}
-              {generationComplete && generatedPreview && (
-                <div className="pt-3 border-t border-border/50">
-                  <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Check className="w-5 h-5 text-primary" />
-                      <span className="font-medium text-sm">Generation Complete!</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground mb-4">
-                      Created <span className="font-medium text-foreground">{generatedPreview.stepCount}</span> {generatedPreview.stepCount === 1 ? 'step' : 'steps'} with <span className="font-medium text-foreground">{generatedPreview.blockCount}</span> {generatedPreview.blockCount === 1 ? 'block' : 'blocks'}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        onClick={acceptGeneration}
-                        className="flex-1 bg-primary hover:bg-primary/90"
-                      >
-                        <Check className="w-4 h-4 mr-2" />
-                        Accept & Save
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={discardGeneration}
-                      >
-                        Discard
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* User Instructions Input - Hide when generation complete */}
+              {/* User Instructions Input */}
               {!generationComplete && (
                 <div className="pt-3 border-t border-border/50">
                   <div className="text-xs font-medium text-foreground/70 mb-2">
