@@ -107,6 +107,12 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
   const [clonePlan, setClonePlan] = useState<ClonePlan | null>(null);
   const [isPlanningClone, setIsPlanningClone] = useState(false);
   const [cloneInstructions, setCloneInstructions] = useState('');
+  const [isGeneratingFromReference, setIsGeneratingFromReference] = useState(false);
+  const [referenceContext, setReferenceContext] = useState<{
+    sourceUrl: string;
+    instructions: string;
+    action: 'replace-funnel' | 'replace-step';
+  } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   
   const currentStep = funnel.steps.find(s => s.id === currentStepId);
@@ -367,6 +373,7 @@ ${userInstructions}`;
               steps: parsed.steps,
               step: parsed.step,
             });
+            // Clear raw response to prevent HTML from showing - plan UI is cleaner
             setStreamedResponse('');
           } else {
             setError('Could not parse plan from response');
@@ -390,20 +397,26 @@ ${userInstructions}`;
     // Store the plan's branding - this will be used by Generate via buildContext
     setClonedBranding(plan.branding);
     
-    // SWITCH TO GENERATE MODE - so UI shows generate tab
-    setMode('generate');
-    
     // Build a detailed prompt from the plan's content + user instructions
     const generatePrompt = buildPromptFromPlan(plan, cloneInstructions);
     
     // Set the generate location based on plan action
     setGenerateLocation(plan.action === 'replace-funnel' ? 'replace' : 'current');
     
-    // Clear clone UI state
-    setClonePlan(null);
-    setCloneUrl('');
-    setStreamedResponse('');
+    // Store reference context for UI display during generation
+    setReferenceContext({
+      sourceUrl: cloneUrl,
+      instructions: cloneInstructions,
+      action: plan.action,
+    });
+    setIsGeneratingFromReference(true);
+    
+    // Clear error but KEEP the plan visible during generation
     setError(null);
+    setStreamedResponse('');
+    
+    // DO NOT switch modes - stay on Clone tab for seamless flow
+    // DO NOT clear clonePlan - keep it visible with generation overlay
     
     // Now trigger the generate flow with the extracted content
     setIsProcessing(true);
@@ -526,9 +539,13 @@ ${userInstructions}`;
             toast.success(`Generated funnel with ${brandedSteps.length} steps from reference!`);
             
             // Clear all clone state after successful generation
+            setClonePlan(null);
+            setCloneUrl('');
             setCloneInstructions('');
             setStreamedResponse('');
             setPrompt('');
+            setIsGeneratingFromReference(false);
+            setReferenceContext(null);
           } else {
             // Replace current step only (use first generated step)
             if (brandedSteps.length > 0 && currentStepId) {
@@ -542,12 +559,18 @@ ${userInstructions}`;
               toast.success(`Generated step with ${brandedSteps[0].blocks.length} blocks from reference!`);
               
               // Clear all clone state after successful generation
+              setClonePlan(null);
+              setCloneUrl('');
               setCloneInstructions('');
               setStreamedResponse('');
               setPrompt('');
+              setIsGeneratingFromReference(false);
+              setReferenceContext(null);
             } else {
               setError('No step to replace - select a step first');
               toast.error('No step selected');
+              setIsGeneratingFromReference(false);
+              setReferenceContext(null);
             }
           }
         } catch (err) {
@@ -555,12 +578,16 @@ ${userInstructions}`;
           const errorMessage = err instanceof Error ? err.message : 'Failed to generate from reference';
           setError(errorMessage);
           toast.error('Generation failed');
+          setIsGeneratingFromReference(false);
+          setReferenceContext(null);
         }
       },
       onError: (err) => {
         setIsProcessing(false);
         setError(err.message);
         toast.error(err.message);
+        setIsGeneratingFromReference(false);
+        setReferenceContext(null);
       },
     });
   };
@@ -1001,7 +1028,33 @@ ${userInstructions}`;
 
           {/* Plan Preview */}
           {clonePlan && mode === 'clone' && (
-            <div className="p-4 rounded-lg bg-muted/30 border border-border/50 space-y-4">
+            <div className="relative p-4 rounded-lg bg-muted/30 border border-border/50 space-y-4">
+              {/* Generation Progress Overlay */}
+              {isProcessing && isGeneratingFromReference && (
+                <div className="absolute inset-0 bg-background/95 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center z-10 p-6">
+                  <div className="flex flex-col items-center gap-4 max-w-sm">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <div className="text-center space-y-2">
+                      <div className="font-medium text-sm">Generating from reference...</div>
+                      {referenceContext && (
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div className="truncate max-w-full">
+                            <span className="font-medium">Source:</span> {referenceContext.sourceUrl}
+                          </div>
+                          {referenceContext.instructions && (
+                            <div className="text-muted-foreground/80">
+                              <span className="font-medium">Instructions:</span> {referenceContext.instructions}
+                            </div>
+                          )}
+                          <div className="text-muted-foreground/80">
+                            <span className="font-medium">Action:</span> {referenceContext.action === 'replace-funnel' ? 'Replace entire funnel' : 'Replace current step'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
               {/* What was detected */}
               {clonePlan.detected && (
                 <div className="pb-3 border-b border-border/50">
@@ -1176,8 +1229,11 @@ ${userInstructions}`;
                   variant="outline" 
                   onClick={() => {
                     setClonePlan(null);
+                    setCloneUrl('');
                     setCloneInstructions('');
                     setStreamedResponse('');
+                    setIsGeneratingFromReference(false);
+                    setReferenceContext(null);
                   }}
                   disabled={isProcessing}
                 >
@@ -1187,12 +1243,14 @@ ${userInstructions}`;
             </div>
           )}
           
-          {/* Response Display */}
-          {streamedResponse && !isProcessing && (
+          {/* Response Display - Hide during planning and when we have a clone plan (plan UI is cleaner) */}
+          {streamedResponse && !isProcessing && !isPlanningClone && !clonePlan && (
             <div className="p-4 rounded-md bg-muted/30 border border-border/50">
               <div className="text-xs text-muted-foreground mb-3 font-medium uppercase tracking-wide">Response:</div>
               <ScrollArea className="max-h-[200px]">
-                <div className="text-sm whitespace-pre-wrap break-words leading-relaxed pr-4">{streamedResponse}</div>
+                <div className="text-sm whitespace-pre-wrap break-words leading-relaxed pr-4">
+                  {streamedResponse.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}
+                </div>
               </ScrollArea>
             </div>
           )}
