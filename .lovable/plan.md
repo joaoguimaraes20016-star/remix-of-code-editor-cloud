@@ -1,177 +1,216 @@
 
-# Use the Fresh Funnel Builder from apps/funnel-flow-studio
 
-## What You Want
-You want the main app to use the **complete, working funnel builder** from `apps/funnel-flow-studio` - not the placeholder v3 page, not the flow-canvas builder, and not any legacy builders. Just the fresh, working editor with all its 34+ block types, canvas, panels, and rich editing capabilities.
+# Fix Stripe Loading Error on Custom Domains
 
-## Current Problem
-Right now when you open `/team/:teamId/funnels/:funnelId/edit`, you see a placeholder page that says "Funnel Builder v3 - The full editor UI is being migrated." The actual working editor exists in `apps/funnel-flow-studio` but is not connected.
+## Problem
 
-## Solution Overview
-Copy all the builder components from `apps/funnel-flow-studio/src/` into `src/funnel-builder-v3/`, then wire them into the existing `FunnelEditorV3.tsx` page that already has Supabase persistence working.
+When users visit a funnel on a custom domain (e.g., `goldeneramastery.us`), they see:
 
----
+```
+INFOSTACK RUNTIME
+Unhandled promise rejection
+Error: Failed to load Stripe.js
+```
 
-## Implementation Steps
+**Root Cause:** The Vite configuration uses `inlineDynamicImports: true`, which bundles ALL code into a single JavaScript file. This means even "dynamic" imports of `@stripe/stripe-js` get bundled together. When the bundle loads, Stripe's internal initialization code tries to inject a script tag and fails on custom domains.
 
-### Step 1: Copy Editor Components
-Copy the full editor structure from `apps/funnel-flow-studio/src/components/editor/` to `src/funnel-builder-v3/editor/`:
+## Current State
 
-| Source | Target |
-|--------|--------|
-| `components/editor/FunnelEditor.tsx` | `editor/FunnelEditor.tsx` |
-| `components/editor/Canvas.tsx` | `editor/Canvas.tsx` |
-| `components/editor/LeftPanel.tsx` | `editor/LeftPanel.tsx` |
-| `components/editor/RightPanel.tsx` | `editor/RightPanel.tsx` |
-| `components/editor/EditorHeader.tsx` | `editor/EditorHeader.tsx` |
-| `components/editor/PreviewMode.tsx` | `editor/PreviewMode.tsx` |
-| `components/editor/AddBlockModal.tsx` | `editor/AddBlockModal.tsx` |
-| `components/editor/blocks/*` (34 files) | `editor/blocks/*` |
-| `components/editor/inspector/*` | `editor/inspector/*` |
-| All other editor files | `editor/` |
+1. **Vite config** (`vite.config.ts` line 48): Forces single bundle
+2. **Stripe lib** (`src/lib/stripe.ts`): Uses lazy loading pattern, but it doesn't help with single bundle
+3. **Error handlers** (`main.tsx`): Try to suppress Stripe errors, but they fire too late
+4. **Build errors**: Missing `Button` import in `AddCardModal.tsx` and `published_at` column issue
 
-### Step 2: Copy Supporting Files
-Copy context, hooks, lib, and types:
+## Solution
 
-| Source | Target |
-|--------|--------|
-| `context/FunnelContext.tsx` | Replace `context/FunnelContext.tsx` |
-| `types/funnel.ts` | Replace `types/funnel.ts` |
-| `lib/block-definitions.ts` | Replace `lib/block-definitions.ts` |
-| `lib/templates.ts` | `lib/templates.ts` |
-| `lib/color-presets.ts` | `lib/color-presets.ts` |
-| `lib/niche-presets.ts` | `lib/niche-presets.ts` |
-| `lib/selection-utils.ts` | `lib/selection-utils.ts` |
-| `hooks/useKeyboardShortcuts.ts` | `hooks/useKeyboardShortcuts.ts` |
-| `hooks/useEditableStyleSync.ts` | `hooks/useEditableStyleSync.ts` |
+Since we cannot change the bundling strategy (needed for custom domain serving), we need to **completely prevent Stripe code from executing** on custom domains.
 
-### Step 3: Update Import Paths
-All imports need to change from the builder app pattern to main app pattern:
-- `@/context/FunnelContext` becomes `@/funnel-builder-v3/context/FunnelContext`
-- `@/types/funnel` becomes `@/funnel-builder-v3/types/funnel`
-- `@/lib/block-definitions` becomes `@/funnel-builder-v3/lib/block-definitions`
-- `@/components/ui/*` stays the same (use main app UI components)
-- `@/hooks/*` becomes `@/funnel-builder-v3/hooks/*` for builder-specific hooks
+### Part 1: Fix Build Errors
 
-### Step 4: Modify FunnelContext for Supabase Persistence
-Update the FunnelContext to accept props for database persistence instead of localStorage:
+**File: `src/components/billing/AddCardModal.tsx`**
+- Add missing `Button` import from `@/components/ui/button`
+
+**File: `src/funnel-builder-v3/hooks/useFunnelPersistence.ts`**
+- Remove all references to `published_at` column (doesn't exist in database)
+  - Line 26: Remove from `FunnelRecord` interface
+  - Line 48: Remove from select query
+  - Lines 52-55: Remove from type assertion
+  - Lines 328, 332: Remove from cache updates
+  - Line 369: Remove from return value
+
+### Part 2: Block Stripe Import at Build Time
+
+**File: `vite.config.ts`**
+
+Add a custom Vite plugin that replaces Stripe imports with empty stubs on custom domains. This prevents the Stripe bundle from executing entirely:
 
 ```typescript
-interface FunnelProviderProps {
-  children: ReactNode;
-  initialFunnel?: Funnel;
-  onFunnelChange?: (funnel: Funnel) => void;
+const stripeBloackPlugin = () => ({
+  name: 'stripe-block',
+  resolveId(source: string) {
+    // On custom domains, replace Stripe with empty module
+    if (source === '@stripe/stripe-js' || source === '@stripe/react-stripe-js') {
+      return '\0virtual:stripe-stub';
+    }
+    return null;
+  },
+  load(id: string) {
+    if (id === '\0virtual:stripe-stub') {
+      return `
+        export const loadStripe = () => Promise.reject(new Error('Stripe not available'));
+        export const Elements = () => null;
+        export const CardElement = () => null;
+        export const useStripe = () => null;
+        export const useElements = () => null;
+      `;
+    }
+    return null;
+  }
+});
+```
+
+**Problem:** This would break Stripe in the main app too.
+
+### Part 3: Better Approach - Early Domain Check
+
+**File: `src/main.tsx`**
+
+Add an early check BEFORE React renders. If we're on a custom domain with funnel data, skip loading the full app and render just the funnel runtime:
+
+```typescript
+// At the very top of main.tsx, before any imports that might trigger Stripe
+const isCustomDomainFunnel = typeof window !== 'undefined' && 
+  (() => {
+    const hostname = window.location.hostname;
+    const isCustomDomain = !hostname.includes('localhost') && 
+                           !hostname.includes('.app') && 
+                           !hostname.includes('.lovable.') &&
+                           !hostname.includes('lovableproject.com') &&
+                           !hostname.includes('127.0.0.1');
+    const hasFunnelData = !!(window as any).__INFOSTACK_FUNNEL__;
+    return isCustomDomain && hasFunnelData;
+  })();
+
+if (isCustomDomainFunnel) {
+  // Load minimal funnel runtime only
+  import('./funnel-runtime-entry').then(({ bootstrap }) => bootstrap());
+} else {
+  // Load full app
+  bootstrap();
 }
 ```
 
-This allows `FunnelEditorV3.tsx` to pass the funnel from Supabase and receive updates for saving.
+**Problem:** With `inlineDynamicImports: true`, this won't work either because all imports are already bundled.
 
-### Step 5: Update FunnelEditorV3.tsx
-Replace the placeholder editor with the real FunnelEditor:
+### Part 4: Recommended Solution - Suppress at Stripe Library Level
+
+**File: `src/lib/stripe.ts`**
+
+The `@stripe/stripe-js` package loads Stripe via a script tag. The error occurs because the script fails to load on custom domains (CSP, network issues, etc.).
+
+The real fix is to **not call loadStripe at all** on custom domains, and ensure the dynamic import is wrapped in a try-catch that returns early:
 
 ```typescript
-import { FunnelEditor } from '@/funnel-builder-v3/editor/FunnelEditor';
-import { FunnelProvider } from '@/funnel-builder-v3/context/FunnelContext';
+// src/lib/stripe.ts - Complete rewrite
 
-// In the render:
-<FunnelProvider 
-  initialFunnel={initialFunnel} 
-  onFunnelChange={handleFunnelChange}
->
-  <FunnelEditor />
-</FunnelProvider>
+const STRIPE_PUBLISHABLE_KEY = "pk_test_...";
+
+function isCustomDomainFunnel(): boolean {
+  if (typeof window === 'undefined') return false;
+  const hostname = window.location.hostname;
+  const isCustomDomain = !hostname.includes('localhost') && 
+                         !hostname.includes('.app') && 
+                         !hostname.includes('.lovable.') &&
+                         !hostname.includes('lovableproject.com') &&
+                         !hostname.includes('127.0.0.1');
+  const hasFunnelData = !!(window as any).__INFOSTACK_FUNNEL__;
+  return isCustomDomain && hasFunnelData;
+}
+
+let stripePromiseInstance: Promise<any> | null = null;
+
+export async function getStripePromise(): Promise<any> {
+  // CRITICAL: Check BEFORE any Stripe code runs
+  if (isCustomDomainFunnel()) {
+    return null; // Return null instead of throwing
+  }
+
+  if (!stripePromiseInstance) {
+    try {
+      const { loadStripe } = await import("@stripe/stripe-js");
+      stripePromiseInstance = loadStripe(STRIPE_PUBLISHABLE_KEY);
+    } catch (error) {
+      console.warn("Failed to load Stripe:", error);
+      return null;
+    }
+  }
+  return stripePromiseInstance;
+}
 ```
 
-### Step 6: Update EditorHeader for Navigation
-Modify `EditorHeader.tsx` to use React Router navigation instead of href links:
-- "Dashboard" button uses `navigate(`/team/${teamId}/funnels`)`
-- Get teamId from URL params instead of calculating from window.location
+**File: `src/components/billing/AddCardModal.tsx`**
 
----
+Update to handle null Stripe gracefully and add missing Button import:
 
-## File Structure After Migration
+```typescript
+import { Button } from "@/components/ui/button";
 
-```text
-src/funnel-builder-v3/
-├── context/
-│   ├── FunnelContext.tsx          ← State management (modified for props)
-│   └── FunnelRuntimeContext.tsx   ← Runtime navigation
-├── editor/
-│   ├── FunnelEditor.tsx           ← Main shell with DnD
-│   ├── Canvas.tsx                 ← Device frame + blocks
-│   ├── LeftPanel.tsx              ← Steps + Add blocks
-│   ├── RightPanel.tsx             ← Inspector panel
-│   ├── EditorHeader.tsx           ← Header with actions
-│   ├── PreviewMode.tsx            ← Full preview overlay
-│   ├── AddBlockModal.tsx          ← Block picker dialog
-│   ├── ZoomControl.tsx            ← Zoom slider
-│   ├── ThemeToggle.tsx            ← Dark/light toggle
-│   ├── blocks/                    ← 34 block components
-│   │   ├── BlockRenderer.tsx
-│   │   ├── HeadingBlock.tsx
-│   │   ├── TextBlock.tsx
-│   │   ├── ButtonBlock.tsx
-│   │   └── ... (31 more)
-│   └── inspector/
-│       ├── BlockInspector.tsx
-│       └── InspectorUI.tsx
-├── hooks/
-│   ├── useKeyboardShortcuts.ts
-│   └── useEditableStyleSync.ts
-├── lib/
-│   ├── block-definitions.ts       ← Full 34-block library
-│   ├── templates.ts               ← Pre-built funnels
-│   ├── color-presets.ts
-│   ├── niche-presets.ts
-│   └── selection-utils.ts
-├── types/
-│   └── funnel.ts                  ← Complete type definitions
-└── index.ts                       ← Public exports
+// In useEffect:
+Promise.all([
+  getStripePromise().catch(() => null),
+  import("@stripe/react-stripe-js").catch(() => null)
+]).then(([promise, module]) => {
+  if (promise && module) {
+    setStripePromise(promise);
+    setStripeElements(() => module.Elements);
+  } else {
+    // Stripe not available - show fallback UI
+    setStripeError(true);
+  }
+});
 ```
 
+### Part 5: Alternative - Remove Stripe from Bundle
+
+The cleanest solution would be to change Vite config to allow code splitting:
+
+**File: `vite.config.ts`**
+
+```typescript
+// Change from:
+inlineDynamicImports: true,
+
+// To:
+inlineDynamicImports: false,
+manualChunks: {
+  stripe: ['@stripe/stripe-js', '@stripe/react-stripe-js'],
+}
+```
+
+**However**, the comment says this is needed "to avoid React initialization / chunk order issues" and for "custom domain serving". This would require testing to ensure custom domain serving still works.
+
 ---
 
-## What You'll Get
+## Recommended Implementation Order
 
-After this migration:
+1. **Fix build errors first** (missing Button import, published_at references)
+2. **Update `getStripePromise` to return null instead of throwing**
+3. **Update `AddCardModal` to handle null Stripe gracefully**
+4. **Test on custom domain**
 
-1. **Full editor UI** - Canvas with device frames, left panel with steps, right panel with inspector
-2. **34+ block types** - Heading, Text, Button, Form, Quiz, Video, Testimonial, Countdown, etc.
-3. **Drag & drop reordering** - Blocks can be dragged within steps
-4. **Live preview mode** - Full-screen preview with navigation
-5. **Viewport switching** - Mobile, Tablet, Desktop views
-6. **Zoom controls** - Scale the canvas up/down
-7. **Keyboard shortcuts** - Delete, duplicate, undo/redo
-8. **Auto-save to Supabase** - Uses existing persistence from FunnelEditorV3
-9. **Publish to Supabase** - Uses existing publish flow
+## Files to Modify
 
----
+| File | Changes |
+|------|---------|
+| `src/components/billing/AddCardModal.tsx` | Add `Button` import, handle null Stripe |
+| `src/funnel-builder-v3/hooks/useFunnelPersistence.ts` | Remove all `published_at` references |
+| `src/lib/stripe.ts` | Return null instead of rejecting on custom domains |
 
 ## Technical Notes
 
-### Dependencies Already Available
-All required dependencies are already in the main app:
-- `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
-- `framer-motion`
-- `uuid` (or use `crypto.randomUUID()`)
-- All Radix UI components
+- The `inlineDynamicImports: true` setting is required for custom domain serving
+- With single bundle, we can't truly lazy-load Stripe separately
+- The Stripe library attempts to load even when imported dynamically due to module side effects
+- Returning `null` from `getStripePromise` instead of throwing prevents unhandled rejections
+- The UI should show "Payment form not available on this domain" when Stripe is null
 
-### UUID Usage
-The builder uses `uuid` package but the main app might prefer `crypto.randomUUID()`. We can either:
-1. Add `uuid` to dependencies
-2. Create a helper that uses `crypto.randomUUID()`
-
-### CSS Animations
-The builder has custom animation classes. These will need to be added to the main app's `index.css` or Tailwind config.
-
----
-
-## Lock File Warning
-
-The project is missing a lock file (`package-lock.json` or `bun.lockb`). Please run:
-```bash
-npm install
-# or
-bun install
-```
-This generates the lock file to ensure consistent dependency versions.
