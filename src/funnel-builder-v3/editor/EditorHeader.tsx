@@ -44,7 +44,6 @@ export function EditorHeader() {
     isAuthenticated,
     funnelStatus,
     currentDomainId,
-    lastPublishedAt,
     slug,
   } = useFunnelPersistence({ funnel, setFunnel });
   const [searchParams] = useSearchParams();
@@ -318,7 +317,6 @@ export function EditorHeader() {
         currentDomainId={currentDomainId}
         isPublishing={isPublishing}
         funnelStatus={funnelStatus}
-        lastPublishedAt={lastPublishedAt}
       />
 
       {/* Settings Modal */}

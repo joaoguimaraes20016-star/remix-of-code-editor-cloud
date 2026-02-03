@@ -1,7 +1,6 @@
 import { isCustomDomainHost } from './runtimeEnv';
 
 // Stripe publishable key - safe for frontend use
-// TODO: Replace with your actual publishable key (pk_test_... or pk_live_...)
 const STRIPE_PUBLISHABLE_KEY = "pk_test_51SrqRH3DXhRyTdVsFQLNCW2E4i4Y2lQsIHD2YEhqMQ3srsJaKEHZ3CXlxYjbsqzEI7XTbEAx8aQgp0BsTUtYkDWU0064TmFm9a";
 
 // Lazy initialization with dynamic import - only loads Stripe when actually needed
@@ -17,13 +16,11 @@ export const getStripePromise = async (): Promise<any> => {
 
   if (!stripePromiseInstance) {
     try {
-      // Dynamically import loadStripe only when needed
       const { loadStripe } = await import("@stripe/stripe-js");
       stripePromiseInstance = loadStripe(STRIPE_PUBLISHABLE_KEY);
     } catch (error) {
-      // If Stripe fails to load, don't retry
       console.warn("Failed to load Stripe:", error);
-      throw error;
+      return null;
     }
   }
   return stripePromiseInstance;

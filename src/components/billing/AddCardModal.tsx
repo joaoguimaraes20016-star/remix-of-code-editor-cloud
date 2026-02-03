@@ -8,8 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { getStripePromise } from "@/lib/stripe";
-import { CreditCard } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { CreditCard, Loader2 } from "lucide-react";
 
 // Lazy load CardForm to prevent Stripe from loading until needed
 const CardForm = lazy(() => import("./CardForm").then(module => ({ default: module.CardForm })));

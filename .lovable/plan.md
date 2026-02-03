@@ -1,177 +1,142 @@
 
-# Use the Fresh Funnel Builder from apps/funnel-flow-studio
+## What the screenshot is telling us (step-by-step diagnosis)
 
-## What You Want
-You want the main app to use the **complete, working funnel builder** from `apps/funnel-flow-studio` - not the placeholder v3 page, not the flow-canvas builder, and not any legacy builders. Just the fresh, working editor with all its 34+ block types, canvas, panels, and rich editing capabilities.
+1. The browser is blocking Stripe’s script injection due to **Content Security Policy (CSP)** on the custom domain:
+   - Console shows a CSP error like: loading `https://js.stripe.com/v3/...` violates `script-src ...`
+2. That CSP block causes Stripe’s loader to fail, which triggers:
+   - `Error: Failed to load Stripe.js`
+   - then an **Unhandled promise rejection**
+3. Your app’s global boot error handler (`src/main.tsx`) converts that into the “INFOSTACK RUNTIME / Unhandled promise rejection” crash screen.
 
-## Current Problem
-Right now when you open `/team/:teamId/funnels/:funnelId/edit`, you see a placeholder page that says "Funnel Builder v3 - The full editor UI is being migrated." The actual working editor exists in `apps/funnel-flow-studio` but is not connected.
+So the problem is not “Stripe lazy loading” in principle; the problem is: **Stripe is still being attempted on the custom domain**, and CSP forbids it.
 
-## Solution Overview
-Copy all the builder components from `apps/funnel-flow-studio/src/` into `src/funnel-builder-v3/`, then wire them into the existing `FunnelEditorV3.tsx` page that already has Supabase persistence working.
+## Why the current “custom domain” detection isn’t working reliably
 
----
+Right now, multiple places (notably `src/lib/stripe.ts`, `src/main.tsx`, and `src/components/billing/CardForm.tsx`) decide “this is a funnel on a custom domain” using:
 
-## Implementation Steps
+- `isCustomDomain` AND
+- `hasFunnelData = !!window.__INFOSTACK_FUNNEL__`
 
-### Step 1: Copy Editor Components
-Copy the full editor structure from `apps/funnel-flow-studio/src/components/editor/` to `src/funnel-builder-v3/editor/`:
+But your `PublicFunnel.tsx` explicitly supports a fallback mode where **injected funnel data may be absent** (it calls the `resolve-domain` edge function). In that scenario:
+- you are still on a custom domain
+- but `__INFOSTACK_FUNNEL__` can be undefined at boot time
+- therefore your “custom domain funnel” checks return false
+- therefore Stripe loading is allowed
+- therefore CSP blocks Stripe and the app crashes
 
-| Source | Target |
-|--------|--------|
-| `components/editor/FunnelEditor.tsx` | `editor/FunnelEditor.tsx` |
-| `components/editor/Canvas.tsx` | `editor/Canvas.tsx` |
-| `components/editor/LeftPanel.tsx` | `editor/LeftPanel.tsx` |
-| `components/editor/RightPanel.tsx` | `editor/RightPanel.tsx` |
-| `components/editor/EditorHeader.tsx` | `editor/EditorHeader.tsx` |
-| `components/editor/PreviewMode.tsx` | `editor/PreviewMode.tsx` |
-| `components/editor/AddBlockModal.tsx` | `editor/AddBlockModal.tsx` |
-| `components/editor/blocks/*` (34 files) | `editor/blocks/*` |
-| `components/editor/inspector/*` | `editor/inspector/*` |
-| All other editor files | `editor/` |
+## Fix strategy (keep everything predictable and explicit)
 
-### Step 2: Copy Supporting Files
-Copy context, hooks, lib, and types:
+Given CSP blocks Stripe on the custom domain, the safest and most deterministic approach is:
 
-| Source | Target |
-|--------|--------|
-| `context/FunnelContext.tsx` | Replace `context/FunnelContext.tsx` |
-| `types/funnel.ts` | Replace `types/funnel.ts` |
-| `lib/block-definitions.ts` | Replace `lib/block-definitions.ts` |
-| `lib/templates.ts` | `lib/templates.ts` |
-| `lib/color-presets.ts` | `lib/color-presets.ts` |
-| `lib/niche-presets.ts` | `lib/niche-presets.ts` |
-| `lib/selection-utils.ts` | `lib/selection-utils.ts` |
-| `hooks/useKeyboardShortcuts.ts` | `hooks/useKeyboardShortcuts.ts` |
-| `hooks/useEditableStyleSync.ts` | `hooks/useEditableStyleSync.ts` |
+- Treat **any custom domain host** as “Stripe disabled”
+- Do not rely on `__INFOSTACK_FUNNEL__` being present
+- Ensure any Stripe load attempt returns a clean “unavailable” result (no thrown errors, no unhandled rejections)
+- Add a final safety net in `main.tsx` to suppress Stripe-related boot errors on custom domains (so even if something slips through, it won’t blank-screen)
 
-### Step 3: Update Import Paths
-All imports need to change from the builder app pattern to main app pattern:
-- `@/context/FunnelContext` becomes `@/funnel-builder-v3/context/FunnelContext`
-- `@/types/funnel` becomes `@/funnel-builder-v3/types/funnel`
-- `@/lib/block-definitions` becomes `@/funnel-builder-v3/lib/block-definitions`
-- `@/components/ui/*` stays the same (use main app UI components)
-- `@/hooks/*` becomes `@/funnel-builder-v3/hooks/*` for builder-specific hooks
-
-### Step 4: Modify FunnelContext for Supabase Persistence
-Update the FunnelContext to accept props for database persistence instead of localStorage:
-
-```typescript
-interface FunnelProviderProps {
-  children: ReactNode;
-  initialFunnel?: Funnel;
-  onFunnelChange?: (funnel: Funnel) => void;
-}
-```
-
-This allows `FunnelEditorV3.tsx` to pass the funnel from Supabase and receive updates for saving.
-
-### Step 5: Update FunnelEditorV3.tsx
-Replace the placeholder editor with the real FunnelEditor:
-
-```typescript
-import { FunnelEditor } from '@/funnel-builder-v3/editor/FunnelEditor';
-import { FunnelProvider } from '@/funnel-builder-v3/context/FunnelContext';
-
-// In the render:
-<FunnelProvider 
-  initialFunnel={initialFunnel} 
-  onFunnelChange={handleFunnelChange}
->
-  <FunnelEditor />
-</FunnelProvider>
-```
-
-### Step 6: Update EditorHeader for Navigation
-Modify `EditorHeader.tsx` to use React Router navigation instead of href links:
-- "Dashboard" button uses `navigate(`/team/${teamId}/funnels`)`
-- Get teamId from URL params instead of calculating from window.location
+This matches your product principles: predictable behavior, no hidden magic, clear cause→effect.
 
 ---
 
-## File Structure After Migration
+## Implementation plan (exact changes)
 
-```text
-src/funnel-builder-v3/
-├── context/
-│   ├── FunnelContext.tsx          ← State management (modified for props)
-│   └── FunnelRuntimeContext.tsx   ← Runtime navigation
-├── editor/
-│   ├── FunnelEditor.tsx           ← Main shell with DnD
-│   ├── Canvas.tsx                 ← Device frame + blocks
-│   ├── LeftPanel.tsx              ← Steps + Add blocks
-│   ├── RightPanel.tsx             ← Inspector panel
-│   ├── EditorHeader.tsx           ← Header with actions
-│   ├── PreviewMode.tsx            ← Full preview overlay
-│   ├── AddBlockModal.tsx          ← Block picker dialog
-│   ├── ZoomControl.tsx            ← Zoom slider
-│   ├── ThemeToggle.tsx            ← Dark/light toggle
-│   ├── blocks/                    ← 34 block components
-│   │   ├── BlockRenderer.tsx
-│   │   ├── HeadingBlock.tsx
-│   │   ├── TextBlock.tsx
-│   │   ├── ButtonBlock.tsx
-│   │   └── ... (31 more)
-│   └── inspector/
-│       ├── BlockInspector.tsx
-│       └── InspectorUI.tsx
-├── hooks/
-│   ├── useKeyboardShortcuts.ts
-│   └── useEditableStyleSync.ts
-├── lib/
-│   ├── block-definitions.ts       ← Full 34-block library
-│   ├── templates.ts               ← Pre-built funnels
-│   ├── color-presets.ts
-│   ├── niche-presets.ts
-│   └── selection-utils.ts
-├── types/
-│   └── funnel.ts                  ← Complete type definitions
-└── index.ts                       ← Public exports
-```
+### 1) Create a single shared “custom domain host” detector
+**Goal:** stop duplicating slightly-different hostname logic across files.
+
+- Add a small utility (new file) like:
+  - `src/lib/runtimeEnv.ts` (or `src/lib/domain.ts`)
+  - export `isLovableHost(hostname)` and `isCustomDomainHost()`
+
+Logic should match what you already do in `App.tsx`:
+- Not custom if hostname contains: `localhost`, `127.0.0.1`, `.app`, `.lovable.`, `lovableproject.com`
+- Everything else is “custom domain host”
+
+### 2) Update Stripe gating to use “custom host” only (no funnel-data requirement)
+**File:** `src/lib/stripe.ts`
+
+- Replace `isCustomDomainFunnel()` with something like `isStripeDisabledHost()` which:
+  - returns true if `isCustomDomainHost()` is true
+  - does NOT check `window.__INFOSTACK_FUNNEL__`
+
+- Ensure `getStripePromise()`:
+  - returns `null` immediately on custom domain hosts
+  - never calls `loadStripe()` on custom domain hosts
+  - never throws (always resolves `null` on failure)
+
+This prevents the CSP violation entirely because the Stripe script injection never happens.
+
+### 3) Fix AddCardModal’s UI state so “null Stripe” is not an infinite spinner
+**File:** `src/components/billing/AddCardModal.tsx`
+
+Right now:
+- `stripePromise` starts as `null`
+- `StripeElements` starts as `null`
+- your render treats `(null, null)` as “loading spinner”
+- if `getStripePromise()` returns `null`, you never transition to a “Stripe unavailable” UI state
+
+Change to an explicit state machine, e.g.:
+- `status: 'idle' | 'loading' | 'ready' | 'unavailable'`
+- On open:
+  - set `loading`
+  - call `getStripePromise()` and import `@stripe/react-stripe-js`
+  - if either returns null/fails => set `unavailable`
+  - else => set `ready`
+
+Render:
+- `ready` => render Elements + CardForm
+- `loading` => spinner
+- `unavailable` => show “Payment form isn’t available on this domain” (the UI you already have)
+
+### 4) Apply the same host-based gating in CardForm
+**File:** `src/components/billing/CardForm.tsx`
+
+It currently does:
+- custom domain AND `__INFOSTACK_FUNNEL__`
+
+Update it to:
+- custom domain host only
+
+Also consider matching the AddCardModal state behavior:
+- if Stripe module import is skipped/unavailable, show a small inline message instead of only a toast.
+
+### 5) Make boot error suppression work even when `__INFOSTACK_FUNNEL__` is absent
+**File:** `src/main.tsx`
+
+Update both handlers (`window.error` and `unhandledrejection`) to suppress Stripe-related failures on custom domain hosts **without requiring `__INFOSTACK_FUNNEL__`**.
+
+This is a safety net. With step (2) it should stop triggering, but this prevents future regressions from blank-screening funnels on custom domains.
+
+### 6) Verification checklist (how we’ll know it’s fixed)
+On the custom domain (e.g. `https://goldeneramastery.us`):
+
+- DevTools Console should show:
+  - No CSP error referencing `js.stripe.com`
+  - No “Failed to load Stripe.js”
+  - No “Unhandled promise rejection” boot screen
+
+Optional:
+- Add `?debug=1` to confirm `PublicFunnel` runtime selection logs are printed and the correct renderer is chosen.
+
+### 7) Note: Stripe inside funnels on custom domains (future capability)
+If you eventually want Stripe checkout/Elements inside the published funnel experience on the custom domain, you will need to change the custom domain CSP to allow:
+- `https://js.stripe.com`
+- and possibly related Stripe assets
+
+Right now your CSP explicitly blocks it, so the correct behavior is to **not attempt Stripe at all** on those hosts.
 
 ---
 
-## What You'll Get
+## Lock file (important for consistency)
+Your project is missing a lock file. Please generate and commit one:
+- run `npm install` (creates `package-lock.json`) or
+- run `bun install` (creates `bun.lockb`)
 
-After this migration:
-
-1. **Full editor UI** - Canvas with device frames, left panel with steps, right panel with inspector
-2. **34+ block types** - Heading, Text, Button, Form, Quiz, Video, Testimonial, Countdown, etc.
-3. **Drag & drop reordering** - Blocks can be dragged within steps
-4. **Live preview mode** - Full-screen preview with navigation
-5. **Viewport switching** - Mobile, Tablet, Desktop views
-6. **Zoom controls** - Scale the canvas up/down
-7. **Keyboard shortcuts** - Delete, duplicate, undo/redo
-8. **Auto-save to Supabase** - Uses existing persistence from FunnelEditorV3
-9. **Publish to Supabase** - Uses existing publish flow
+This prevents “works on my machine” dependency drift.
 
 ---
 
-## Technical Notes
-
-### Dependencies Already Available
-All required dependencies are already in the main app:
-- `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
-- `framer-motion`
-- `uuid` (or use `crypto.randomUUID()`)
-- All Radix UI components
-
-### UUID Usage
-The builder uses `uuid` package but the main app might prefer `crypto.randomUUID()`. We can either:
-1. Add `uuid` to dependencies
-2. Create a helper that uses `crypto.randomUUID()`
-
-### CSS Animations
-The builder has custom animation classes. These will need to be added to the main app's `index.css` or Tailwind config.
-
----
-
-## Lock File Warning
-
-The project is missing a lock file (`package-lock.json` or `bun.lockb`). Please run:
-```bash
-npm install
-# or
-bun install
-```
-This generates the lock file to ensure consistent dependency versions.
+## Files we will touch
+- Add: `src/lib/runtimeEnv.ts` (or similar shared helper)
+- Update: `src/lib/stripe.ts`
+- Update: `src/components/billing/AddCardModal.tsx`
+- Update: `src/components/billing/CardForm.tsx`
+- Update: `src/main.tsx`
