@@ -73,12 +73,12 @@ function FunnelV3Content({ funnel }: { funnel: Funnel }) {
     >
       <ScrollArea className="h-screen">
         <div 
-          className="min-h-screen py-8 px-4 max-w-md mx-auto"
+          className="min-h-screen py-8 px-4 max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto"
           style={{ backgroundColor: stepBgColor || undefined }}
         >
           {currentStep.blocks.map((block) => (
             <div key={block.id} className="mb-4">
-              <BlockRenderer block={block} stepId={currentStep.id} isPreview={false} />
+              <BlockRenderer block={block} stepId={currentStep.id} isPreview={true} />
             </div>
           ))}
         </div>
