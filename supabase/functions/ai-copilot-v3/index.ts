@@ -529,18 +529,76 @@ CRITICAL RULES:
  */
 function getGeneratePrompt(context: any): string {
   const branding = context.branding || {};
+  const hasBranding = !!branding.primaryColor;
   
+  // Determine text colors based on theme
+  const textColor = branding.textColor || (branding.theme === 'dark' ? '#ffffff' : '#000000');
+  const headingColor = branding.headingColor || textColor;
+  const bgColor = branding.backgroundColor || (branding.theme === 'dark' ? '#0f0f1a' : '#ffffff');
+  
+  // Build branding instructions if branding is provided
+  const brandingInstructions = hasBranding ? `
+BRANDING - YOU MUST APPLY THESE COLORS TO EVERY BLOCK:
+- Step background color: ${bgColor}
+- Heading text color: ${headingColor}
+- Body text color: ${textColor}
+- Button background: ${branding.primaryColor}
+- Button text: Use white (#ffffff) for dark buttons, black (#000000) for light buttons
+- Theme: ${branding.theme || 'light'}
+
+COLOR PLACEMENT IS CRITICAL:
+- For heading/text/list blocks: Put color in content.styles.color
+- For buttons: Put backgroundColor and color directly in content
+- All steps must have settings.backgroundColor set to ${bgColor}
+
+Example heading with correct color structure:
+{
+  "type": "heading",
+  "content": {
+    "text": "Your Headline Here",
+    "level": 1,
+    "styles": {
+      "color": "${headingColor}",
+      "textAlign": "center"
+    }
+  }
+}
+
+Example text with correct color structure:
+{
+  "type": "text",
+  "content": {
+    "text": "Description text here",
+    "styles": {
+      "color": "${textColor}",
+      "textAlign": "center"
+    }
+  }
+}
+
+Example button with correct color structure:
+{
+  "type": "button",
+  "content": {
+    "text": "Get Started",
+    "action": "next-step",
+    "variant": "primary",
+    "size": "lg",
+    "backgroundColor": "${branding.primaryColor}",
+    "color": "#ffffff"
+  },
+  "styles": {
+    "textAlign": "center"
+  }
+}
+` : '';
+
   return `You are a funnel architect for Funnel Builder V3.
 
 Generate a complete funnel matching the user's prompt. Use ONLY V3 block types.
 
 Available V3 Block Types: ${V3_BLOCK_TYPES.join(', ')}
-
-${branding.primaryColor ? `Branding to match:
-- Primary Color: ${branding.primaryColor}
-- Accent Color: ${branding.accentColor || branding.primaryColor}
-- Background: ${branding.backgroundColor || '#ffffff'}
-- Theme: ${branding.theme || 'light'}` : ''}
+${brandingInstructions}
 
 Return JSON with V3 funnel structure:
 {
@@ -556,7 +614,21 @@ Return JSON with V3 funnel structure:
             "type": "heading",
             "content": {
               "text": "Headline",
-              "level": 1
+              "level": 1${hasBranding ? `,
+              "styles": {
+                "color": "${headingColor}",
+                "textAlign": "center"
+              }` : ''}
+            }
+          },
+          {
+            "type": "text",
+            "content": {
+              "text": "Description text",
+              "styles": {
+                "color": "${hasBranding ? textColor : '#000000'}",
+                "textAlign": "center"
+              }
             }
           },
           {
@@ -565,12 +637,17 @@ Return JSON with V3 funnel structure:
               "text": "Get Started",
               "action": "next-step",
               "variant": "primary",
-              "size": "lg"
+              "size": "lg"${hasBranding ? `,
+              "backgroundColor": "${branding.primaryColor}",
+              "color": "#ffffff"` : ''}
+            },
+            "styles": {
+              "textAlign": "center"
             }
           }
         ],
         "settings": {
-          "backgroundColor": "${branding.backgroundColor || '#ffffff'}"
+          "backgroundColor": "${bgColor}"
         }
       }
     ]
@@ -584,6 +661,9 @@ CRITICAL RULES:
 - Headlines max 80 chars
 - Descriptions max 200 chars
 - Button text max 30 chars
+${hasBranding ? `- EVERY heading/text block MUST have styles.color set
+- EVERY button MUST have backgroundColor and color set
+- EVERY step MUST have settings.backgroundColor set to ${bgColor}` : ''}
 - Return ONLY valid JSON, no markdown`;
 }
 

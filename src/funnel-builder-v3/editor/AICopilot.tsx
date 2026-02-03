@@ -106,13 +106,14 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
   const [cloneAction, setCloneAction] = useState<'replace-funnel' | 'replace-step' | null>(null);
   const [clonePlan, setClonePlan] = useState<ClonePlan | null>(null);
   const [isPlanningClone, setIsPlanningClone] = useState(false);
+  const [cloneInstructions, setCloneInstructions] = useState('');
   const panelRef = useRef<HTMLDivElement>(null);
   
   const currentStep = funnel.steps.find(s => s.id === currentStepId);
   const selectedBlock = currentStep?.blocks.find(b => b.id === selectedBlockId);
   
-  // Build context for AI
-  const buildContext = useCallback((): V3Context => {
+  // Build context for AI - includes branding when available
+  const buildContext = useCallback((): V3Context & { branding?: typeof clonedBranding } => {
     return {
       currentStepId,
       selectedBlockId,
@@ -121,8 +122,68 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
       stepName: currentStep?.name,
       funnelName: funnel.name,
       availableBlockTypes: Object.keys(blockDefinitions) as BlockType[],
+      // Include branding from clone if available - this ensures generate uses the extracted colors
+      branding: clonedBranding ? {
+        primaryColor: clonedBranding.primaryColor,
+        accentColor: clonedBranding.accentColor,
+        backgroundColor: clonedBranding.backgroundColor,
+        textColor: clonedBranding.textColor,
+        headingColor: clonedBranding.headingColor,
+        theme: clonedBranding.theme,
+      } : undefined,
     };
-  }, [currentStepId, selectedBlockId, selectedBlock?.type, selectedBlock?.content, currentStep?.name, funnel.name]);
+  }, [currentStepId, selectedBlockId, selectedBlock?.type, selectedBlock?.content, currentStep?.name, funnel.name, clonedBranding]);
+  
+  // Helper to build a generate prompt from clone plan content
+  const buildPromptFromPlan = (plan: ClonePlan, userInstructions?: string): string => {
+    const steps = plan.steps || (plan.step ? [plan.step] : []);
+    const stepDescriptions = steps.map((s, i) => {
+      const blocks = s.blocks?.map(b => `  - ${b.type}: "${b.preview}"`).join('\n') || '';
+      const blockTypes = s.blockTypes?.join(', ') || '';
+      const description = s.description || '';
+      
+      let stepContent = `Step ${i + 1} - ${s.name}`;
+      if (description) {
+        stepContent += `\n  Description: ${description}`;
+      }
+      if (blocks) {
+        stepContent += `\n  Blocks to create:\n${blocks}`;
+      } else if (blockTypes) {
+        stepContent += `\n  Block types: ${blockTypes}`;
+      }
+      return stepContent;
+    }).join('\n\n');
+    
+    const topic = plan.detected?.topic || 'Landing page';
+    const style = plan.detected?.style || 'Professional';
+    const keyElements = plan.detected?.keyElements?.join(', ') || '';
+    
+    let prompt = `Create a ${plan.action === 'replace-funnel' ? 'multi-step funnel' : 'single step'} based on this reference:
+
+REFERENCE DETAILS:
+Topic: ${topic}
+Style: ${style}
+${keyElements ? `Key Elements: ${keyElements}` : ''}
+
+BRANDING TO APPLY:
+- Background: ${plan.branding.backgroundColor}
+- Primary Color: ${plan.branding.primaryColor}
+- Text Color: ${plan.branding.textColor}
+- Heading Color: ${plan.branding.headingColor || plan.branding.textColor}
+- Theme: ${plan.branding.theme}
+
+CONTENT STRUCTURE:
+${stepDescriptions}`;
+
+    if (userInstructions && userInstructions.trim()) {
+      prompt += `\n\nUSER INSTRUCTIONS (IMPORTANT - Follow these preferences):
+${userInstructions}`;
+    }
+
+    prompt += `\n\nIMPORTANT: Use the branding colors provided above. Make sure all text is readable against the background (${plan.branding.textColor} text on ${plan.branding.backgroundColor} background).`;
+
+    return prompt;
+  };
   
   // Escape key to close
   useEffect(() => {
@@ -323,16 +384,36 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
     });
   };
 
+  // UNIFIED: Execute approved clone plan by using Generate flow
+  // This stores the branding and content, then calls Generate to build the funnel
   const executeApprovedPlan = async (plan: ClonePlan) => {
+    // Store the plan's branding - this will be used by Generate via buildContext
+    setClonedBranding(plan.branding);
+    
+    // Build a detailed prompt from the plan's content + user instructions
+    const generatePrompt = buildPromptFromPlan(plan, cloneInstructions);
+    
+    // Set the generate location based on plan action
+    setGenerateLocation(plan.action === 'replace-funnel' ? 'replace' : 'current');
+    
+    // Clear clone UI state
     setClonePlan(null);
-    setIsProcessing(true);
+    setCloneUrl('');
     setStreamedResponse('');
     setError(null);
     
-    const context = buildContext();
+    // Now trigger the generate flow with the extracted content
+    setIsProcessing(true);
+    
+    // Build context with the newly set branding
+    const context = {
+      ...buildContext(),
+      branding: plan.branding, // Explicitly include plan branding
+    };
+    
     let fullResponse = '';
     
-    await streamCloneFromURL(cloneUrl, { ...context, cloneAction: plan.action, approvedPlan: plan }, {
+    await streamGenerateFunnel(generatePrompt, context, {
       onDelta: (chunk) => {
         fullResponse += chunk;
         setStreamedResponse(fullResponse);
@@ -344,281 +425,98 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
           const responseText = fullResponse || streamedResponse;
           if (!responseText.trim()) {
             setError('No response received from AI');
-            toast.error('No response received from AI');
             return;
           }
           
-          // Try to extract JSON from response
-          let jsonMatch = responseText.match(/\{[\s\S]*\}/);
-          if (!jsonMatch) {
-            // Try to find JSON in markdown code blocks
-            const codeBlockMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-            if (codeBlockMatch) {
-              jsonMatch = codeBlockMatch;
-            }
-          }
+          const parsed = parseGeneratedFunnel(responseText);
           
-          if (!jsonMatch) {
-            console.error('[AICopilot] No JSON found in response:', responseText.slice(0, 500));
-            toast.error('Could not parse JSON from clone response. Check console for details.');
-            setError('Invalid response format from AI');
+          if (!parsed.steps || parsed.steps.length === 0) {
+            setError('No steps generated');
             return;
           }
           
-          let parsed: any;
-          try {
-            parsed = JSON.parse(jsonMatch[0]);
-          } catch (parseErr) {
-            console.error('[AICopilot] JSON parse error:', parseErr);
-            console.error('[AICopilot] Response text:', responseText.slice(0, 1000));
-            toast.error('Failed to parse JSON response');
-            setError('Invalid JSON format');
-            return;
-          }
-          
-          // Validate response structure
-          if (plan.action === 'replace-funnel' && !parsed.funnel) {
-            console.error('[AICopilot] Missing funnel in response:', parsed);
-            toast.error('Response missing funnel data');
-            setError('Invalid response: missing funnel');
-            return;
-          }
-          
-          if (plan.action === 'replace-step' && !parsed.step) {
-            console.error('[AICopilot] Missing step in response:', parsed);
-            toast.error('Response missing step data');
-            setError('Invalid response: missing step');
-            return;
-          }
-          
-          if (parsed.branding) {
-            setClonedBranding(parsed.branding);
-          }
-          
-          const createBlock = (b: any): Block | null => {
-            if (!b || !b.type) {
-              console.warn('[AICopilot] Invalid block data:', b);
-              return null;
-            }
-            
-            const blockType = b.type as BlockType;
-            const definition = blockDefinitions[blockType];
-            
-            if (!definition) {
-              console.warn(`[AICopilot] Unknown block type: ${blockType}, skipping`);
-              return null;
-            }
-            
-            try {
-              const mergedContent = {
-                ...definition.defaultContent,
-                ...b.content,
-              };
-              
-              const mergedStyles = {
-                ...definition.defaultStyles,
-                ...b.styles,
-                ...(blockType === 'button' && !b.styles?.textAlign && { textAlign: 'center' }),
-              };
-              
-              // MIGRATION: Move color from wrong location (content.color) to correct location (content.styles.color)
-              // This handles AI responses that put color in the wrong place
-              if (blockType === 'heading' || blockType === 'text' || blockType === 'list') {
-                // Check if color is in wrong place (content.color) and not in right place (content.styles.color)
-                if (b.content?.color && !b.content?.styles?.color) {
-                  mergedContent.styles = {
-                    ...mergedContent.styles,
-                    color: b.content.color
-                  };
-                  delete (mergedContent as any).color; // Remove from wrong location
-                }
-              }
-              
-              // Apply text colors from branding for proper contrast
-              // Colors go in content.styles.color for heading/text/list blocks
-              if (parsed.branding) {
-                const { textColor, headingColor, primaryColor } = parsed.branding;
+          // Apply the plan branding to all generated steps
+          const applyBrandingToGeneratedSteps = (steps: FunnelStep[]): FunnelStep[] => {
+            return steps.map(step => ({
+              ...step,
+              settings: {
+                ...step.settings,
+                backgroundColor: plan.branding.backgroundColor,
+              },
+              blocks: step.blocks.map(block => {
+                const newBlock = { ...block };
+                const content = { ...block.content } as any;
                 
-                // Headings get heading color or text color - in content.styles.color
-                if (blockType === 'heading') {
-                  const colorToUse = headingColor || textColor || '#ffffff';
-                  if (!mergedContent.styles?.color) {
-                    mergedContent.styles = {
-                      ...mergedContent.styles,
-                      color: colorToUse
+                // Apply text colors to heading/text blocks
+                if (block.type === 'heading' || block.type === 'text' || block.type === 'list') {
+                  const colorToUse = block.type === 'heading' 
+                    ? (plan.branding.headingColor || plan.branding.textColor)
+                    : plan.branding.textColor;
+                  
+                  if (!content.styles?.color) {
+                    content.styles = {
+                      ...content.styles,
+                      color: colorToUse,
                     };
                   }
                 }
                 
-                // Text blocks get text color - in content.styles.color
-                if (blockType === 'text') {
-                  const colorToUse = textColor || '#ffffff';
-                  if (!mergedContent.styles?.color) {
-                    mergedContent.styles = {
-                      ...mergedContent.styles,
-                      color: colorToUse
-                    };
+                // Apply button colors
+                if (block.type === 'button') {
+                  if (!content.backgroundColor) {
+                    content.backgroundColor = plan.branding.primaryColor;
+                  }
+                  if (!content.color) {
+                    content.color = getContrastColor(content.backgroundColor || plan.branding.primaryColor);
                   }
                 }
                 
-                // List blocks get text color - in content.styles.color
-                if (blockType === 'list') {
-                  const colorToUse = textColor || '#ffffff';
-                  if (!mergedContent.styles?.color) {
-                    mergedContent.styles = {
-                      ...mergedContent.styles,
-                      color: colorToUse
-                    };
+                // Apply text colors to forms and email captures
+                if ((block.type === 'email-capture' || block.type === 'form') && !content.textColor) {
+                  content.textColor = plan.branding.textColor;
+                }
+                
+                // Apply colors to social proof
+                if (block.type === 'social-proof') {
+                  if (!content.valueColor) {
+                    content.valueColor = plan.branding.headingColor || plan.branding.textColor;
+                  }
+                  if (!content.labelColor) {
+                    content.labelColor = plan.branding.textColor;
                   }
                 }
                 
-                // Buttons keep colors in content directly (different structure)
-                if (blockType === 'button') {
-                  if (!b.content?.backgroundColor && primaryColor) {
-                    (mergedContent as any).backgroundColor = primaryColor;
-                  }
-                  // Set button text color for contrast if not already set
-                  if (!b.content?.color) {
-                    const bgColor = mergedContent.backgroundColor || primaryColor || '#3b82f6';
-                    (mergedContent as any).color = getContrastColor(bgColor);
-                  }
-                }
-                
-                // Email capture and form blocks - apply text colors
-                if ((blockType === 'email-capture' || blockType === 'form') && !b.content?.textColor) {
-                  (mergedContent as any).textColor = textColor || '#ffffff';
-                }
-                
-                // Social proof blocks - use valueColor and labelColor
-                if (blockType === 'social-proof') {
-                  if (!b.content?.valueColor) {
-                    (mergedContent as any).valueColor = headingColor || textColor || '#ffffff';
-                  }
-                  if (!b.content?.labelColor) {
-                    (mergedContent as any).labelColor = textColor || '#ffffff';
-                  }
-                }
-              }
-              
-              return {
-                id: uuid(),
-                type: blockType,
-                content: mergedContent,
-                styles: mergedStyles,
-                trackingId: `block-${uuid()}`,
-              };
-            } catch (blockErr) {
-              console.error(`[AICopilot] Error creating block ${blockType}:`, blockErr);
-              return null;
-            }
+                newBlock.content = content;
+                return newBlock;
+              }),
+            }));
           };
           
-          if (plan.action === 'replace-funnel' && parsed.funnel && parsed.funnel.steps) {
-            const newSteps: FunnelStep[] = parsed.funnel.steps
-              .map((stepData: any) => {
-                if (!stepData || !Array.isArray(stepData.blocks)) {
-                  console.warn('[AICopilot] Invalid step data:', stepData);
-                  return null;
-                }
-                
-                const blocks = stepData.blocks
-                  .map(createBlock)
-                  .filter((b: Block | null): b is Block => b !== null);
-                
-                if (blocks.length === 0) {
-                  console.warn('[AICopilot] Step has no valid blocks:', stepData.name);
-                  return null;
-                }
-                
-                return {
-                  id: uuid(),
-                  name: stepData.name || 'Step',
-                  type: stepData.type || 'capture',
-                  slug: stepData.slug || stepData.name?.toLowerCase().replace(/\s+/g, '-') || 'step',
-                  blocks,
-                  settings: {
-                    backgroundColor: stepData.settings?.backgroundColor || parsed.branding?.backgroundColor || '#ffffff',
-                  },
-                };
-              })
-              .filter((s: FunnelStep | null): s is FunnelStep => s !== null);
-            
-            if (newSteps.length === 0) {
-              toast.error('No valid steps found in clone response');
-              setError('No valid steps to apply');
-              return;
-            }
-            
+          const brandedSteps = applyBrandingToGeneratedSteps(parsed.steps);
+          
+          if (plan.action === 'replace-funnel') {
+            // Replace entire funnel
             setFunnel({
               ...funnel,
-              name: parsed.funnel.name || funnel.name,
-              steps: newSteps,
+              steps: brandedSteps,
             });
-            
-            toast.success(`Built funnel with ${newSteps.length} steps successfully!`);
-            setCloneUrl('');
-            setStreamedResponse('');
-            return;
-          }
-          
-          if (plan.action === 'replace-step' && parsed.step) {
-            if (!Array.isArray(parsed.step.blocks)) {
-              toast.error('Invalid step blocks format');
-              setError('Step blocks must be an array');
-              return;
-            }
-            
-            const blocks = parsed.step.blocks
-              .map(createBlock)
-              .filter((b: Block | null): b is Block => b !== null);
-            
-            if (blocks.length === 0) {
-              toast.error('No valid blocks found in clone response');
-              setError('No valid blocks to apply');
-              return;
-            }
-            
-            if (!currentStepId) {
-              toast.error('No current step selected');
-              setError('Please select a step first');
-              return;
-            }
-            
-            if (!currentStep) {
-              toast.error('Current step not found');
-              setError('Step not found');
-              return;
-            }
-            
-            try {
+            toast.success(`Generated funnel with ${brandedSteps.length} steps from reference!`);
+          } else {
+            // Replace current step only (use first generated step)
+            if (brandedSteps.length > 0 && currentStepId) {
               updateStep(currentStepId, {
-                name: parsed.step.name || currentStep.name || 'Step',
-                blocks,
-                settings: {
-                  backgroundColor: parsed.step.settings?.backgroundColor || parsed.branding?.backgroundColor || currentStep.settings?.backgroundColor || '#ffffff',
-                },
+                ...brandedSteps[0],
+                id: currentStepId, // Keep the original step ID
               });
-              
-              toast.success(`Built step with ${blocks.length} blocks successfully!`);
-              setCloneUrl('');
-              setStreamedResponse('');
-              return;
-            } catch (updateErr) {
-              console.error('[AICopilot] Error updating step:', updateErr);
-              toast.error('Failed to update step');
-              setError(updateErr instanceof Error ? updateErr.message : 'Failed to update step');
-              return;
+              toast.success(`Generated step with ${brandedSteps[0].blocks.length} blocks from reference!`);
             }
           }
           
-          console.error('[AICopilot] Unexpected response format:', parsed);
-          toast.error('Unexpected response format');
-          setError('Response format does not match expected structure');
+          setStreamedResponse('');
+          setPrompt('');
         } catch (err) {
-          console.error('[AICopilot] Execute plan error:', err);
-          const errorMessage = err instanceof Error ? err.message : 'Failed to execute plan';
-          setError(errorMessage);
-          toast.error(errorMessage);
+          console.error('[AICopilot] Generate from plan error:', err);
+          setError(err instanceof Error ? err.message : 'Failed to generate from reference');
         }
       },
       onError: (err) => {
@@ -1127,12 +1025,12 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
                 </div>
               </div>
               
-              {/* Expandable Details - Shows actual block content */}
+              {/* Expandable Details - Shows actual block content - OPEN BY DEFAULT */}
               {(clonePlan.steps || clonePlan.step) && (
                 <Accordion type="single" collapsible defaultValue="details" className="w-full">
                   <AccordionItem value="details" className="border-none">
-                    <AccordionTrigger className="text-xs py-2 hover:no-underline">
-                      View content preview
+                    <AccordionTrigger className="text-xs py-2 hover:no-underline font-medium">
+                      Detailed Content Breakdown
                     </AccordionTrigger>
                     <AccordionContent className="pt-2 space-y-3">
                       {clonePlan.steps?.map((step, i) => (
@@ -1148,15 +1046,15 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
                               {step.description}
                             </div>
                           )}
-                          {/* Block previews with actual content */}
+                          {/* Block previews with actual content - FULL descriptions */}
                           {step.blocks && step.blocks.length > 0 ? (
-                            <div className="space-y-1 ml-7">
+                            <div className="space-y-2 ml-7">
                               {step.blocks.map((block, j) => (
-                                <div key={j} className="flex items-start gap-2 text-xs">
-                                  <span className="text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded text-[10px]">
+                                <div key={j} className="flex items-start gap-2 text-xs bg-muted/30 p-2 rounded border border-border/20">
+                                  <span className="text-muted-foreground font-mono bg-muted/70 px-1.5 py-0.5 rounded text-[10px] shrink-0">
                                     {block.type}
                                   </span>
-                                  <span className="text-foreground/80 line-clamp-1">
+                                  <span className="text-foreground/90 break-words leading-relaxed">
                                     "{block.preview}"
                                   </span>
                                 </div>
@@ -1164,8 +1062,7 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
                             </div>
                           ) : step.blockTypes && step.blockTypes.length > 0 ? (
                             <div className="text-xs text-muted-foreground ml-7">
-                              {step.blockCount || step.blockTypes.length} blocks: {step.blockTypes.slice(0, 5).join(', ')}
-                              {step.blockTypes.length > 5 && ` +${step.blockTypes.length - 5} more`}
+                              {step.blockCount || step.blockTypes.length} blocks: {step.blockTypes.join(', ')}
                             </div>
                           ) : null}
                         </div>
@@ -1178,15 +1075,15 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
                               {clonePlan.step.description}
                             </div>
                           )}
-                          {/* Block previews with actual content */}
+                          {/* Block previews with actual content - FULL descriptions */}
                           {clonePlan.step.blocks && clonePlan.step.blocks.length > 0 ? (
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                               {clonePlan.step.blocks.map((block, j) => (
-                                <div key={j} className="flex items-start gap-2 text-xs">
-                                  <span className="text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded text-[10px]">
+                                <div key={j} className="flex items-start gap-2 text-xs bg-muted/30 p-2 rounded border border-border/20">
+                                  <span className="text-muted-foreground font-mono bg-muted/70 px-1.5 py-0.5 rounded text-[10px] shrink-0">
                                     {block.type}
                                   </span>
-                                  <span className="text-foreground/80 line-clamp-1">
+                                  <span className="text-foreground/90 break-words leading-relaxed">
                                     "{block.preview}"
                                   </span>
                                 </div>
@@ -1194,8 +1091,7 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
                             </div>
                           ) : clonePlan.step.blockTypes && clonePlan.step.blockTypes.length > 0 ? (
                             <div className="text-xs text-muted-foreground">
-                              {clonePlan.step.blockCount || clonePlan.step.blockTypes.length} blocks: {clonePlan.step.blockTypes.slice(0, 5).join(', ')}
-                              {clonePlan.step.blockTypes.length > 5 && ` +${clonePlan.step.blockTypes.length - 5} more`}
+                              {clonePlan.step.blockCount || clonePlan.step.blockTypes.length} blocks: {clonePlan.step.blockTypes.join(', ')}
                             </div>
                           ) : null}
                         </div>
@@ -1205,8 +1101,25 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
                 </Accordion>
               )}
               
+              {/* User Instructions Input */}
+              <div className="pt-3 border-t border-border/50">
+                <div className="text-xs font-medium text-foreground/70 mb-2">
+                  Add instructions (optional):
+                </div>
+                <Textarea
+                  value={cloneInstructions}
+                  onChange={(e) => setCloneInstructions(e.target.value)}
+                  placeholder="E.g., 'Focus on the benefits section', 'Remove testimonials', 'Add more CTAs', 'Make it more concise'..."
+                  className="min-h-[80px] text-sm resize-none"
+                  disabled={isProcessing}
+                />
+                <div className="text-xs text-muted-foreground mt-1">
+                  Tell the AI what to include, exclude, or modify from the reference
+                </div>
+              </div>
+              
               {/* Action Buttons */}
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-2 pt-3">
                 <Button 
                   onClick={() => executeApprovedPlan(clonePlan)} 
                   className="flex-1"
@@ -1215,16 +1128,17 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
                   {isProcessing ? (
                     <>
                       <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                      Building...
+                      Generating...
                     </>
                   ) : (
-                    'Build This'
+                    'Generate from Reference'
                   )}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => {
                     setClonePlan(null);
+                    setCloneInstructions('');
                     setStreamedResponse('');
                   }}
                   disabled={isProcessing}
