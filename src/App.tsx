@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "next-themes";
 import { AppThemeProvider } from "./components/AppThemeProvider";
+import { isCustomDomainHost } from "./lib/runtimeEnv";
 
 import SalesDashboard from "./pages/SalesDashboard";
 import Auth from "./pages/Auth";
@@ -47,18 +48,6 @@ function LegacyWorkflowRedirect() {
 let DevFunnelTest: React.LazyExoticComponent<any> | null = null;
 if (import.meta.env.DEV) {
   DevFunnelTest = React.lazy(() => import("./pages/__dev/FunnelTest"));
-}
-
-// Check if we're on a custom domain (for serving funnels at root)
-function isCustomDomain(): boolean {
-  if (typeof window === 'undefined') return false;
-  const hostname = window.location.hostname;
-  // Not a custom domain if it's localhost, preview, or Lovable domains
-  return !hostname.includes('localhost') && 
-         !hostname.includes('.app') && 
-         !hostname.includes('.lovable.') &&
-         !hostname.includes('lovableproject.com') &&
-         !hostname.includes('127.0.0.1');
 }
 
 // Check if funnel data was injected by serve-funnel edge function
@@ -125,7 +114,7 @@ const App = () => (
 
             {/* Auth routes - but check if we're on custom domain first */}
             <Route path="/" element={
-              (isCustomDomain() || hasInjectedFunnelData()) 
+              (isCustomDomainHost() || hasInjectedFunnelData()) 
                 ? <PublicFunnel /> 
                 : <Auth />
             } />

@@ -11,6 +11,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, CreditCard } from "lucide-react";
+import { isCustomDomainHost } from "@/lib/runtimeEnv";
 
 const US_STATES = [
   { value: "AL", label: "Alabama" }, { value: "AK", label: "Alaska" },
@@ -326,32 +327,38 @@ function CardFormWithStripe({ teamId, onSuccess, onCancel, stripeModule }: CardF
 // Main component that dynamically loads Stripe module
 export function CardForm({ teamId, onSuccess, onCancel }: CardFormProps) {
   const [stripeModule, setStripeModule] = useState<any>(null);
+  const [isUnavailable, setIsUnavailable] = useState(false);
 
   useEffect(() => {
-    // Dynamically import Stripe React components only when component mounts
-    // Skip on custom domain funnel views
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const isCustomDomain = !hostname.includes('localhost') && 
-                             !hostname.includes('.app') && 
-                             !hostname.includes('.lovable.') &&
-                             !hostname.includes('lovableproject.com') &&
-                             !hostname.includes('127.0.0.1');
-      const hasFunnelData = !!(window as any).__INFOSTACK_FUNNEL__;
-      
-      if (isCustomDomain && hasFunnelData) {
-        console.warn("Stripe not available on custom domain funnel views");
-        return;
-      }
+    // Never load Stripe on custom domain hosts - CSP blocks it
+    if (isCustomDomainHost()) {
+      console.warn("Stripe not available on custom domain hosts");
+      setIsUnavailable(true);
+      return;
     }
     
+    // Dynamically import Stripe React components only when component mounts
     import("@stripe/react-stripe-js").then((module) => {
       setStripeModule(module);
     }).catch((error) => {
       console.error("Failed to load Stripe:", error);
+      setIsUnavailable(true);
       toast.error("Failed to load payment form");
     });
   }, []);
+
+  if (isUnavailable) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 space-y-2">
+        <p className="text-sm text-muted-foreground text-center">
+          Payment form is not available on this domain.
+        </p>
+        <Button variant="outline" onClick={onCancel}>
+          Close
+        </Button>
+      </div>
+    );
+  }
 
   if (!stripeModule) {
     return (

@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { getStripePromise } from "@/lib/stripe";
 import { CreditCard } from "lucide-react";
 import { Loader2 } from "lucide-react";
@@ -21,6 +22,8 @@ interface AddCardModalProps {
 }
 
 export function AddCardModal({ open, onOpenChange, teamId, onSuccess }: AddCardModalProps) {
+  type StripeStatus = 'idle' | 'loading' | 'ready' | 'unavailable';
+  const [status, setStatus] = useState<StripeStatus>('idle');
   const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null);
   const [StripeElements, setStripeElements] = useState<React.ComponentType<any> | null>(null);
 
@@ -32,7 +35,9 @@ export function AddCardModal({ open, onOpenChange, teamId, onSuccess }: AddCardM
   // Only load Stripe when modal is actually opened
   // This prevents Stripe from loading on custom domain funnel views
   useEffect(() => {
-    if (open && !stripePromise) {
+    if (open && status === 'idle') {
+      setStatus('loading');
+      
       // Load both Stripe promise and Elements component dynamically
       Promise.all([
         getStripePromise().catch((error) => {
@@ -47,10 +52,18 @@ export function AddCardModal({ open, onOpenChange, teamId, onSuccess }: AddCardM
         if (promise && Elements) {
           setStripePromise(promise);
           setStripeElements(() => Elements);
+          setStatus('ready');
+        } else {
+          setStatus('unavailable');
         }
       });
+    } else if (!open) {
+      // Reset state when modal closes
+      setStatus('idle');
+      setStripePromise(null);
+      setStripeElements(null);
     }
-  }, [open, stripePromise]);
+  }, [open, status]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -69,7 +82,7 @@ export function AddCardModal({ open, onOpenChange, teamId, onSuccess }: AddCardM
           </div>
         </DialogHeader>
 
-        {stripePromise && StripeElements ? (
+        {status === 'ready' && stripePromise && StripeElements ? (
           <StripeElements stripe={stripePromise}>
             <Suspense fallback={
               <div className="flex items-center justify-center py-8">
@@ -83,11 +96,11 @@ export function AddCardModal({ open, onOpenChange, teamId, onSuccess }: AddCardM
               />
             </Suspense>
           </StripeElements>
-        ) : stripePromise === null && StripeElements === null ? (
+        ) : status === 'loading' ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ) : (
+        ) : status === 'unavailable' ? (
           <div className="flex flex-col items-center justify-center py-8 space-y-2">
             <p className="text-sm text-muted-foreground text-center">
               Payment form is not available on this domain.
@@ -96,7 +109,7 @@ export function AddCardModal({ open, onOpenChange, teamId, onSuccess }: AddCardM
               Close
             </Button>
           </div>
-        )}
+        ) : null}
       </DialogContent>
     </Dialog>
   );

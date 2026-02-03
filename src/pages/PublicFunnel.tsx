@@ -6,6 +6,7 @@ import { FunnelRenderer } from '@/components/funnel-public/FunnelRenderer';
 import { FlowCanvasRenderer } from '@/flow-canvas/components/FlowCanvasRenderer';
 import { EditorDocumentRenderer } from '@/flow-canvas/components/runtime/EditorDocumentRenderer';
 import { FunnelV3Renderer } from '@/funnel-builder-v3/runtime/FunnelV3Renderer';
+import { isCustomDomainHost } from '@/lib/runtimeEnv';
 
 interface FunnelStep {
   id: string;
@@ -41,15 +42,6 @@ function getInjectedFunnelData(): { funnel: Funnel; domain: string; queryParams:
   return null;
 }
 
-// Check if we're on a custom domain (not localhost or preview domains)
-function isCustomDomain(): boolean {
-  const hostname = window.location.hostname;
-  return !hostname.includes('localhost') && 
-         !hostname.includes('.app') && 
-         !hostname.includes('.lovable.') &&
-         !hostname.includes('lovableproject.com') &&
-         !hostname.includes('127.0.0.1');
-}
 
 export default function PublicFunnel() {
   const { slug } = useParams<{ slug: string }>();
@@ -81,7 +73,7 @@ export default function PublicFunnel() {
     // Skip if we already have injected data
     if (injectedData) return;
     
-    if (isCustomDomain() && !slug) {
+    if (isCustomDomainHost() && !slug) {
       // We're on a custom domain without a slug, resolve the domain
       setCustomDomainLoading(true);
       const hostname = window.location.hostname;

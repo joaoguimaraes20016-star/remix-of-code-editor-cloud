@@ -2,6 +2,7 @@ import * as React from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App";
+import { isCustomDomainHost } from "./lib/runtimeEnv";
 
 function escapeHtml(input: string) {
   return input
@@ -63,20 +64,12 @@ function renderBootError(title: string, details?: unknown) {
 
 function installGlobalErrorHandlers() {
   window.addEventListener("error", (event) => {
-    // Suppress Stripe loading errors on custom domain funnel views
+    // Suppress Stripe loading errors on custom domain hosts (CSP blocks Stripe)
     const errorMessage = event.error?.message || event.message || "";
     if (errorMessage.includes("Failed to load Stripe.js") || errorMessage.includes("Stripe")) {
-      const hostname = window.location.hostname;
-      const isCustomDomain = !hostname.includes('localhost') && 
-                           !hostname.includes('.app') && 
-                           !hostname.includes('.lovable.') &&
-                           !hostname.includes('lovableproject.com') &&
-                           !hostname.includes('127.0.0.1');
-      const hasFunnelData = !!(window as any).__INFOSTACK_FUNNEL__;
-      
-      if (isCustomDomain && hasFunnelData) {
-        // Silently ignore Stripe errors on custom domain funnel views
-        console.warn("[Boot] Suppressed Stripe error on custom domain:", errorMessage);
+      if (isCustomDomainHost()) {
+        // Silently ignore Stripe errors on custom domain hosts
+        console.warn("[Boot] Suppressed Stripe error on custom domain host:", errorMessage);
         event.preventDefault();
         return;
       }
@@ -88,20 +81,12 @@ function installGlobalErrorHandlers() {
   });
 
   window.addEventListener("unhandledrejection", (event) => {
-    // Suppress Stripe loading errors on custom domain funnel views
+    // Suppress Stripe loading errors on custom domain hosts (CSP blocks Stripe)
     const errorMessage = event.reason?.message || String(event.reason) || "";
     if (errorMessage.includes("Failed to load Stripe.js") || errorMessage.includes("Stripe")) {
-      const hostname = window.location.hostname;
-      const isCustomDomain = !hostname.includes('localhost') && 
-                           !hostname.includes('.app') && 
-                           !hostname.includes('.lovable.') &&
-                           !hostname.includes('lovableproject.com') &&
-                           !hostname.includes('127.0.0.1');
-      const hasFunnelData = !!(window as any).__INFOSTACK_FUNNEL__;
-      
-      if (isCustomDomain && hasFunnelData) {
-        // Silently ignore Stripe errors on custom domain funnel views
-        console.warn("[Boot] Suppressed Stripe promise rejection on custom domain:", errorMessage);
+      if (isCustomDomainHost()) {
+        // Silently ignore Stripe errors on custom domain hosts
+        console.warn("[Boot] Suppressed Stripe promise rejection on custom domain host:", errorMessage);
         event.preventDefault();
         return;
       }
