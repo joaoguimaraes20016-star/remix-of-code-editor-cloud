@@ -229,6 +229,55 @@ async function fetchWebsiteContent(url: string): Promise<string> {
       ...ctaLinks.map(a => stripHtml(a)),
     ].slice(0, 8);
     
+    // Extract video URLs
+    const videoUrls: Array<{ url: string; type: 'youtube' | 'vimeo' | 'loom' | 'wistia' | 'hosted' }> = [];
+    
+    // Extract YouTube embeds (multiple formats)
+    const youtubeEmbedMatches = html.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/gi) || [];
+    const youtubeWatchMatches = html.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/gi) || [];
+    const youtubeShortMatches = html.match(/youtu\.be\/([a-zA-Z0-9_-]+)/gi) || [];
+    [...youtubeEmbedMatches, ...youtubeWatchMatches, ...youtubeShortMatches].forEach(match => {
+      const videoId = match.match(/([a-zA-Z0-9_-]+)$/)?.[1];
+      if (videoId && !videoUrls.find(v => v.url.includes(videoId))) {
+        videoUrls.push({ url: `https://www.youtube.com/watch?v=${videoId}`, type: 'youtube' });
+      }
+    });
+    
+    // Extract Vimeo embeds
+    const vimeoMatches = html.match(/(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/gi) || [];
+    vimeoMatches.forEach(match => {
+      const videoId = match.match(/(\d+)$/)?.[1];
+      if (videoId && !videoUrls.find(v => v.url.includes(videoId))) {
+        videoUrls.push({ url: `https://vimeo.com/${videoId}`, type: 'vimeo' });
+      }
+    });
+    
+    // Extract Loom embeds
+    const loomMatches = html.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/gi) || [];
+    loomMatches.forEach(match => {
+      const videoId = match.match(/([a-zA-Z0-9]+)$/)?.[1];
+      if (videoId && !videoUrls.find(v => v.url.includes(videoId))) {
+        videoUrls.push({ url: `https://www.loom.com/share/${videoId}`, type: 'loom' });
+      }
+    });
+    
+    // Extract Wistia embeds
+    const wistiaMatches = html.match(/wistia\.(?:net|com)\/(?:medias|embed)\/([a-zA-Z0-9]+)/gi) || [];
+    wistiaMatches.forEach(match => {
+      const videoId = match.match(/([a-zA-Z0-9]+)$/)?.[1];
+      if (videoId && !videoUrls.find(v => v.url.includes(videoId))) {
+        videoUrls.push({ url: `https://fast.wistia.net/embed/iframe/${videoId}`, type: 'wistia' });
+      }
+    });
+    
+    // Extract direct video file URLs
+    const videoFileMatches = html.match(/https?:\/\/[^\s"']+\.(?:mp4|webm|ogg|mov|avi)(?:\?[^\s"']*)?/gi) || [];
+    videoFileMatches.forEach(url => {
+      if (!videoUrls.find(v => v.url === url)) {
+        videoUrls.push({ url, type: 'hosted' });
+      }
+    });
+    
     // Extract main content text
     const text = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
@@ -256,6 +305,9 @@ ${extractKeyMessages(html) || 'No clear messaging found'}
 
 CALLS TO ACTION:
 ${ctas.join('\n') || 'No CTAs found'}
+
+VIDEOS FOUND:
+${videoUrls.length > 0 ? videoUrls.map(v => `- ${v.type}: ${v.url}`).join('\n') : '- No videos detected'}
 
 SOCIAL PROOF:
 ${extractSocialProof(html)}
@@ -330,17 +382,25 @@ Return ONLY valid JSON:
         { "type": "heading", "preview": "The exact headline text you will use" },
         { "type": "text", "preview": "The description/body text you will use (first 100 chars)..." },
         { "type": "button", "preview": "Button text like 'Get Started'" },
-        { "type": "email-capture", "preview": "Email form with placeholder text" }
+        { "type": "email-capture", "preview": "Email form with placeholder text" },
+        { "type": "video", "preview": "Video: [YouTube/Vimeo/Loom URL if found]" },
+        { "type": "testimonial-slider", "preview": "Testimonials: [Quote 1], [Quote 2], etc." },
+        { "type": "social-proof", "preview": "Stats: [Number] [Label], [Number] [Label]" },
+        { "type": "reviews", "preview": "Reviews: [Rating] stars, [Count] reviews" },
+        { "type": "accordion", "preview": "FAQ: [Question 1], [Question 2]" }
       ]
     }
   ]` : `"step": {
     "name": "Step Name",
     "description": "Brief description of what this step does",
-    "blocks": [
-      { "type": "heading", "preview": "The exact headline text you will use" },
-      { "type": "text", "preview": "The description/body text you will use (first 100 chars)..." },
-      { "type": "button", "preview": "Button text like 'Get Started'" }
-    ]
+      "blocks": [
+        { "type": "heading", "preview": "The exact headline text you will use" },
+        { "type": "text", "preview": "The description/body text you will use (first 100 chars)..." },
+        { "type": "button", "preview": "Button text like 'Get Started'" },
+        { "type": "video", "preview": "Video: [YouTube/Vimeo/Loom URL if found]" },
+        { "type": "testimonial-slider", "preview": "Testimonials: [Quote 1], [Quote 2]" },
+        { "type": "social-proof", "preview": "Stats: [Number] [Label]" }
+      ]
   }`}
 }
 
@@ -620,6 +680,20 @@ Generate a complete funnel matching the user's prompt. Use ONLY V3 block types.
 Available V3 Block Types: ${V3_BLOCK_TYPES.join(', ')}
 ${brandingInstructions}
 
+INTELLIGENT BLOCK SELECTION - CRITICAL RULES:
+- If the prompt mentions testimonials, reviews, or customer quotes -> use "testimonial-slider" block (NOT text blocks)
+- If the prompt mentions star ratings or review counts -> use "reviews" block (NOT text blocks)
+- If the prompt mentions statistics, metrics, or numbers (e.g., "10,000+ customers") -> use "social-proof" block (NOT text blocks)
+- If the prompt mentions videos or video URLs -> use "video" block with the URL
+- If the prompt mentions FAQ or questions/answers -> use "accordion" block (NOT text blocks)
+- If the prompt mentions logos or partners -> use "logo-bar" block (NOT individual image blocks)
+- If the prompt mentions countdown timers -> use "countdown" block
+- If the prompt mentions webinars or events -> use "webinar" block
+- DO NOT put testimonial content in "text" blocks - use "testimonial-slider" block
+- DO NOT put statistics in "text" blocks - use "social-proof" block
+- DO NOT put video URLs in "text" blocks - use "video" block
+- DO NOT put FAQ content in "text" blocks - use "accordion" block
+
 Return JSON with V3 funnel structure:
 {
   "funnel": {
@@ -663,6 +737,55 @@ Return JSON with V3 funnel structure:
             },
             "styles": {
               "textAlign": "center"
+            }
+          },
+          {
+            "type": "testimonial-slider",
+            "content": {
+              "testimonials": [
+                {
+                  "id": "1",
+                  "quote": "Amazing product that changed my business!",
+                  "authorName": "John Doe",
+                  "authorTitle": "CEO, Company Inc."
+                }
+              ]
+            }
+          },
+          {
+            "type": "social-proof",
+            "content": {
+              "items": [
+                { "id": "1", "value": 10000, "label": "Happy Customers", "suffix": "+" },
+                { "id": "2", "value": 50, "label": "Countries", "suffix": "+" }
+              ]
+            }
+          },
+          {
+            "type": "video",
+            "content": {
+              "src": "https://www.youtube.com/watch?v=...",
+              "type": "youtube"
+            }
+          },
+          {
+            "type": "reviews",
+            "content": {
+              "rating": 4.8,
+              "reviewCount": "200+",
+              "avatars": []
+            }
+          },
+          {
+            "type": "accordion",
+            "content": {
+              "items": [
+                {
+                  "id": "1",
+                  "question": "What is this product?",
+                  "answer": "This product helps you..."
+                }
+              ]
             }
           }
         ],

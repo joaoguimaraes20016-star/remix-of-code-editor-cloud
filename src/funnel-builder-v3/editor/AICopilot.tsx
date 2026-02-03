@@ -113,6 +113,12 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
     instructions: string;
     action: 'replace-funnel' | 'replace-step';
   } | null>(null);
+  const [generationComplete, setGenerationComplete] = useState(false);
+  const [generatedPreview, setGeneratedPreview] = useState<{
+    stepCount: number;
+    blockCount: number;
+  } | null>(null);
+  const [pendingSteps, setPendingSteps] = useState<FunnelStep[] | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   
   const currentStep = funnel.steps.find(s => s.id === currentStepId);
@@ -312,12 +318,12 @@ ${userInstructions}`;
         setStreamedResponse(fullResponse);
       },
       onDone: () => {
-        setIsPlanningClone(false);
-        
         try {
           const responseText = fullResponse || streamedResponse;
           if (!responseText.trim()) {
             setError('No response received from AI');
+            setStreamedResponse(''); // Clear before setting flag
+            setIsPlanningClone(false);
             return;
           }
           
@@ -373,17 +379,23 @@ ${userInstructions}`;
               steps: parsed.steps,
               step: parsed.step,
             });
-            // Clear raw response to prevent HTML from showing - plan UI is cleaner
+            // Clear raw response BEFORE setting flag to prevent HTML leakage
             setStreamedResponse('');
+            setIsPlanningClone(false);
           } else {
             setError('Could not parse plan from response');
+            setStreamedResponse(''); // Clear before setting flag
+            setIsPlanningClone(false);
           }
         } catch (parseErr) {
           console.error('Parse plan error:', parseErr);
           setError(`Failed to parse plan: ${parseErr instanceof Error ? parseErr.message : 'Unknown error'}`);
+          setStreamedResponse(''); // Clear before setting flag
+          setIsPlanningClone(false);
         }
       },
       onError: (err) => {
+        setStreamedResponse(''); // Clear on error to prevent HTML leakage
         setIsPlanningClone(false);
         setError(err.message);
         toast.error(err.message);
@@ -527,52 +539,20 @@ ${userInstructions}`;
           
           const brandedSteps = applyBrandingToGeneratedSteps(parsed.steps);
           
-          if (plan.action === 'replace-funnel') {
-            // Replace entire funnel
-            console.log('[AICopilot] Replacing funnel with', brandedSteps.length, 'steps');
-            
-            setFunnel({
-              ...funnel,
-              steps: brandedSteps,
-            });
-            
-            toast.success(`Generated funnel with ${brandedSteps.length} steps from reference!`);
-            
-            // Clear all clone state after successful generation
-            setClonePlan(null);
-            setCloneUrl('');
-            setCloneInstructions('');
-            setStreamedResponse('');
-            setPrompt('');
-            setIsGeneratingFromReference(false);
-            setReferenceContext(null);
-          } else {
-            // Replace current step only (use first generated step)
-            if (brandedSteps.length > 0 && currentStepId) {
-              console.log('[AICopilot] Replacing step', currentStepId, 'with', brandedSteps[0].blocks.length, 'blocks');
-              
-              updateStep(currentStepId, {
-                ...brandedSteps[0],
-                id: currentStepId, // Keep the original step ID
-              });
-              
-              toast.success(`Generated step with ${brandedSteps[0].blocks.length} blocks from reference!`);
-              
-              // Clear all clone state after successful generation
-              setClonePlan(null);
-              setCloneUrl('');
-              setCloneInstructions('');
-              setStreamedResponse('');
-              setPrompt('');
-              setIsGeneratingFromReference(false);
-              setReferenceContext(null);
-            } else {
-              setError('No step to replace - select a step first');
-              toast.error('No step selected');
-              setIsGeneratingFromReference(false);
-              setReferenceContext(null);
-            }
-          }
+          // Calculate totals for preview
+          const totalBlocks = brandedSteps.reduce((sum, step) => sum + step.blocks.length, 0);
+          
+          // Store pending steps and show confirmation UI instead of immediately applying
+          setPendingSteps(brandedSteps);
+          setGeneratedPreview({
+            stepCount: brandedSteps.length,
+            blockCount: totalBlocks,
+          });
+          setGenerationComplete(true);
+          setIsGeneratingFromReference(false);
+          
+          // Clear clone UI but keep plan visible until accepted
+          setStreamedResponse('');
         } catch (err) {
           console.error('[AICopilot] Generate from plan error:', err);
           const errorMessage = err instanceof Error ? err.message : 'Failed to generate from reference';
@@ -580,6 +560,9 @@ ${userInstructions}`;
           toast.error('Generation failed');
           setIsGeneratingFromReference(false);
           setReferenceContext(null);
+          setGenerationComplete(false);
+          setGeneratedPreview(null);
+          setPendingSteps(null);
         }
       },
       onError: (err) => {
@@ -588,8 +571,74 @@ ${userInstructions}`;
         toast.error(err.message);
         setIsGeneratingFromReference(false);
         setReferenceContext(null);
+        setGenerationComplete(false);
+        setGeneratedPreview(null);
+        setPendingSteps(null);
       },
     });
+  };
+
+  // Accept generation and apply changes
+  const acceptGeneration = async () => {
+    if (!pendingSteps || !generatedPreview) return;
+    
+    try {
+      if (referenceContext?.action === 'replace-funnel') {
+        // Replace entire funnel
+        console.log('[AICopilot] Accepting: Replacing funnel with', pendingSteps.length, 'steps');
+        
+        setFunnel({
+          ...funnel,
+          steps: pendingSteps,
+        });
+        
+        toast.success(`Funnel saved with ${generatedPreview.stepCount} steps and ${generatedPreview.blockCount} blocks!`);
+      } else {
+        // Replace current step only (use first generated step)
+        if (pendingSteps.length > 0 && currentStepId) {
+          console.log('[AICopilot] Accepting: Replacing step', currentStepId, 'with', pendingSteps[0].blocks.length, 'blocks');
+          
+          updateStep(currentStepId, {
+            ...pendingSteps[0],
+            id: currentStepId, // Keep the original step ID
+          });
+          
+          toast.success(`Step saved with ${pendingSteps[0].blocks.length} blocks!`);
+        } else {
+          toast.error('No step selected');
+          return;
+        }
+      }
+      
+      // Clear all state after successful acceptance
+      setClonePlan(null);
+      setCloneUrl('');
+      setCloneInstructions('');
+      setStreamedResponse('');
+      setPrompt('');
+      setIsGeneratingFromReference(false);
+      setReferenceContext(null);
+      setGenerationComplete(false);
+      setGeneratedPreview(null);
+      setPendingSteps(null);
+    } catch (err) {
+      console.error('[AICopilot] Accept generation error:', err);
+      toast.error('Failed to apply changes');
+    }
+  };
+
+  // Discard generation
+  const discardGeneration = () => {
+    setGenerationComplete(false);
+    setGeneratedPreview(null);
+    setPendingSteps(null);
+    setClonePlan(null);
+    setCloneUrl('');
+    setCloneInstructions('');
+    setStreamedResponse('');
+    setIsGeneratingFromReference(false);
+    setReferenceContext(null);
+    toast.info('Generation discarded');
   };
 
   const executeClone = async (action: 'replace-funnel' | 'replace-step') => {
@@ -1192,54 +1241,91 @@ ${userInstructions}`;
                 </Accordion>
               )}
               
-              {/* User Instructions Input */}
-              <div className="pt-3 border-t border-border/50">
-                <div className="text-xs font-medium text-foreground/70 mb-2">
-                  Add instructions (optional):
+              {/* Generation Complete - Accept Confirmation */}
+              {generationComplete && generatedPreview && (
+                <div className="pt-3 border-t border-border/50">
+                  <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Check className="w-5 h-5 text-green-500" />
+                      <span className="font-medium text-sm">Generation Complete!</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground mb-4">
+                      Created <span className="font-medium text-foreground">{generatedPreview.stepCount}</span> {generatedPreview.stepCount === 1 ? 'step' : 'steps'} with <span className="font-medium text-foreground">{generatedPreview.blockCount}</span> {generatedPreview.blockCount === 1 ? 'block' : 'blocks'}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={acceptGeneration}
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        Accept & Save
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={discardGeneration}
+                      >
+                        Discard
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-                <Textarea
-                  value={cloneInstructions}
-                  onChange={(e) => setCloneInstructions(e.target.value)}
-                  placeholder="E.g., 'Focus on the benefits section', 'Remove testimonials', 'Add more CTAs', 'Make it more concise'..."
-                  className="min-h-[80px] text-sm resize-none"
-                  disabled={isProcessing}
-                />
-                <div className="text-xs text-muted-foreground mt-1">
-                  Tell the AI what to include, exclude, or modify from the reference
-                </div>
-              </div>
+              )}
               
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-3">
-                <Button 
-                  onClick={() => executeApprovedPlan(clonePlan)} 
-                  className="flex-1"
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    'Generate from Reference'
-                  )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setClonePlan(null);
-                    setCloneUrl('');
-                    setCloneInstructions('');
-                    setStreamedResponse('');
-                    setIsGeneratingFromReference(false);
-                    setReferenceContext(null);
-                  }}
-                  disabled={isProcessing}
-                >
-                  Cancel
-                </Button>
-              </div>
+              {/* User Instructions Input - Hide when generation complete */}
+              {!generationComplete && (
+                <div className="pt-3 border-t border-border/50">
+                  <div className="text-xs font-medium text-foreground/70 mb-2">
+                    Add instructions (optional):
+                  </div>
+                  <Textarea
+                    value={cloneInstructions}
+                    onChange={(e) => setCloneInstructions(e.target.value)}
+                    placeholder="E.g., 'Focus on the benefits section', 'Remove testimonials', 'Add more CTAs', 'Make it more concise'..."
+                    className="min-h-[80px] text-sm resize-none"
+                    disabled={isProcessing}
+                  />
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Tell the AI what to include, exclude, or modify from the reference
+                  </div>
+                </div>
+              )}
+              
+              {/* Action Buttons - Hide when generation complete */}
+              {!generationComplete && (
+                <div className="flex gap-2 pt-3">
+                  <Button 
+                    onClick={() => executeApprovedPlan(clonePlan)} 
+                    className="flex-1"
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      'Generate from Reference'
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setClonePlan(null);
+                      setCloneUrl('');
+                      setCloneInstructions('');
+                      setStreamedResponse('');
+                      setIsGeneratingFromReference(false);
+                      setReferenceContext(null);
+                      setGenerationComplete(false);
+                      setGeneratedPreview(null);
+                      setPendingSteps(null);
+                    }}
+                    disabled={isProcessing}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
           )}
           
