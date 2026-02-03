@@ -1044,6 +1044,9 @@ ${userInstructions}`;
   };
 
   const canSubmit = () => {
+    // Disable submit while planning (analyzing page)
+    if (isPlanningClone) return false;
+    
     if (mode === 'copy') {
       return selectedBlockId && prompt.trim() && !isProcessing;
     } else if (mode === 'clone') {
@@ -1231,7 +1234,7 @@ ${userInstructions}`;
 
           {/* Plan Preview */}
           {clonePlan && mode === 'clone' && (
-            <div className="relative p-4 rounded-lg bg-muted/30 border border-border/50 space-y-4">
+            <div className="relative p-4 rounded-lg bg-muted/30 border border-border/50 space-y-4" style={{ minWidth: 0, maxWidth: '100%' }}>
               {/* Generation Progress Overlay */}
               {isProcessing && isGeneratingFromReference && (
                 <div className="absolute inset-0 bg-background/95 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center z-10 p-6">
@@ -1283,9 +1286,11 @@ ${userInstructions}`;
               )}
               
               {/* Summary */}
-              <div>
-                <div className="text-sm font-medium mb-1">Here's what I'll build:</div>
-                <div className="text-sm text-muted-foreground leading-relaxed">{clonePlan.summary}</div>
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Here's what I'll build:</div>
+                <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words" style={{ wordBreak: 'break-word' }}>
+                  {clonePlan.summary}
+                </div>
               </div>
               
               {/* Branding Preview - Visual with all colors */}
@@ -1368,7 +1373,7 @@ ${userInstructions}`;
                         </div>
                       ))}
                       {clonePlan.step && (
-                        <div className="p-3 rounded-lg bg-background/50 border border-border/30">
+                        <div className="p-3 rounded-lg bg-background/50 border border-border/30" style={{ minWidth: 0, maxWidth: '100%' }}>
                           <div className="font-medium text-sm mb-2">{clonePlan.step.name}</div>
                           {clonePlan.step.description && (
                             <div className="text-xs text-muted-foreground mb-2">
@@ -1379,18 +1384,18 @@ ${userInstructions}`;
                           {clonePlan.step.blocks && clonePlan.step.blocks.length > 0 ? (
                             <div className="space-y-2">
                               {clonePlan.step.blocks.map((block, j) => (
-                                <div key={j} className="flex items-start gap-2 text-xs bg-muted/30 p-2 rounded border border-border/20">
+                                <div key={j} className="flex items-start gap-2 text-xs bg-muted/30 p-2.5 rounded border border-border/20" style={{ minWidth: 0, maxWidth: '100%' }}>
                                   <span className="text-muted-foreground font-mono bg-muted/70 px-1.5 py-0.5 rounded text-[10px] shrink-0">
                                     {block.type}
                                   </span>
-                                  <span className="text-foreground/90 break-words leading-relaxed">
+                                  <span className="text-foreground/90 break-words leading-relaxed flex-1" style={{ wordBreak: 'break-word', minWidth: 0 }}>
                                     "{block.preview}"
                                   </span>
                                 </div>
                               ))}
                             </div>
                           ) : clonePlan.step.blockTypes && clonePlan.step.blockTypes.length > 0 ? (
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-xs text-muted-foreground break-words" style={{ wordBreak: 'break-word' }}>
                               {clonePlan.step.blockCount || clonePlan.step.blockTypes.length} blocks: {clonePlan.step.blockTypes.join(', ')}
                             </div>
                           ) : null}
