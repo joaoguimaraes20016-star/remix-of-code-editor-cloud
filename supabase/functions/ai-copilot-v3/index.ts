@@ -354,7 +354,22 @@ BRANDING RULES - CRITICAL:
 - headingColor: Heading text color (can be same as textColor or accent)
 - primaryColor: Button/accent color that stands out from background
 
-IMPORTANT: Include a "blocks" array with the ACTUAL CONTENT you will create. Users need to see exactly what headlines, texts, and buttons you'll build BEFORE approving.
+INTELLIGENT BLOCK SELECTION - CRITICAL RULES:
+- If the page has testimonials with quotes and author names -> use "testimonial-slider" block
+- If the page has star ratings or review badges -> use "reviews" block
+- If the page has statistics/metrics (e.g., "10,000+ customers") -> use "social-proof" block
+- If the page has embedded videos -> use "video" block with the extracted URL
+- If the page has FAQ sections with questions/answers -> use "accordion" block
+- If the page has logo strips/partner logos -> use "logo-bar" block
+- NEVER use "card" blocks - they are layout containers, not content blocks
+- If you need to group content, use multiple sequential blocks instead
+- Focus on content blocks: heading, text, button, testimonial-slider, social-proof, reviews, video, accordion
+- DO NOT put testimonial content in "text" blocks - use the proper "testimonial-slider" block
+- DO NOT put statistics in "text" blocks - use "social-proof" block
+- DO NOT put video URLs in "text" blocks - use "video" block
+- DO NOT put FAQ content in "text" blocks - use "accordion" block
+
+IMPORTANT: Include a "blocks" array with the ACTUAL CONTENT you will create. Users need to see exactly what headlines, texts, buttons, videos, testimonials, and other blocks you'll build BEFORE approving.
 
 Return ONLY valid JSON:
 {
@@ -449,23 +464,41 @@ COMMON BLOCK USAGE:
 - spacer: Vertical spacing
 - logo-bar: Trust logos, partner logos
 - reviews: Testimonials, customer reviews
+- testimonial-slider: Multiple testimonials with quotes and author details
+
+CRITICAL BLOCK RULES:
+- NEVER use "card" blocks - they are layout containers, not content blocks
+- If you need to group content, use multiple sequential blocks instead
+- Focus on content blocks: heading, text, button, testimonial-slider, social-proof, reviews, video, accordion
 
 YOUR TASK:
+Create a ${isFunnel ? 'complete funnel with 2-4 steps' : 'single comprehensive step'} that captures the page's essence:
+
 ${isFunnel ? `
-Create a complete funnel with 2-4 steps that captures the page's essence:
-- Step 1 (capture): Hook + value prop + lead capture form
-- Step 2 (sell): Benefits, features, social proof
-- Step 3 (result): Thank you, next steps
+FUNNEL STRUCTURE (2-4 steps with 10-15 blocks each):
+- Step 1 (Capture): Hook headline + value proposition + benefit list + logo bar + social proof stats + reviews block + testimonials (3-5) + email capture form
+- Step 2 (Sell): Features/benefits + MULTIPLE testimonial sliders (3-5 testimonials EACH) + reviews block + social proof stats + video + accordion FAQ + logo bar + CTA button
+- Step 3 (Result): Thank you message + next steps + additional testimonials + social proof + CTA
 
-Each step should have 4-8 blocks that flow naturally. Use the page structure as inspiration but rebuild it with our blocks.
+CRITICAL: Each step should have 10-15 blocks that flow naturally. Layer multiple trust elements:
+- Use 3-4 social proof blocks per step (combine stats, testimonials, reviews, logos)
+- Include 3-5 testimonials in EACH testimonial-slider block (NOT just one!)
+- Extract and recreate ALL social proof elements from the original page
+- Build rich, meaningful content with specific metrics and results
 ` : `
-Create a single step that captures the page's:
-- Main headline and value proposition
-- Key benefits or features (use list or text blocks)
-- Call-to-action (button block)
-- Any social proof elements (social-proof, reviews blocks)
+SINGLE STEP STRUCTURE (10-15 blocks):
+- Main headline (heading block)
+- Value proposition (text block)
+- Key benefits (list block with 5-7 items)
+- Logo bar (if partners/clients mentioned)
+- Social proof stats block (metrics like "10,000+ customers")
+- Testimonial slider with 3-5 detailed testimonials
+- Reviews block (star rating + review count)
+- Video block (if video found on page)
+- Accordion FAQ (if questions/answers found)
+- CTA button
 
-Use 5-10 blocks to recreate the page's vibe and messaging.
+Use 10-15 blocks to recreate the page's vibe with layered trust elements and rich content.
 `}
 
 BRANDING & COLORS - CRITICAL FOR READABILITY:
@@ -680,6 +713,25 @@ Generate a complete funnel matching the user's prompt. Use ONLY V3 block types.
 Available V3 Block Types: ${V3_BLOCK_TYPES.join(', ')}
 ${brandingInstructions}
 
+COMPLEX FUNNEL ARCHITECTURE - CRITICAL RULES:
+- Each step should have 8-15 blocks for rich, engaging content
+- Layer multiple trust elements: Use 2-4 social proof blocks per step
+- Include 3-5 testimonials in EVERY testimonial-slider block (NOT just one!)
+- Build emotional connection with detailed value propositions
+- Create depth: explain benefits, show transformations, tell stories with specific metrics
+
+SOCIAL PROOF LAYERING STRATEGY:
+- Capture step: Logo bar + Social proof stats + Reviews block + 1-2 testimonials
+- Sell step: Multiple testimonial sliders (3-5 testimonials EACH) + Reviews block + Social proof stats + Logo bar + Video
+- Result step: Thank you + Social proof + Testimonials + Next steps
+
+TESTIMONIAL QUALITY REQUIREMENTS (CRITICAL):
+- Each testimonial MUST include specific results, metrics, or transformations
+- Good examples: "Increased revenue by 300%", "Went from $10K to $100K in 6 months", "Saved 20 hours per week"
+- Include full author details: Name, Title, Company
+- Use emotional language and specific outcomes, not generic praise like "great product"
+- Minimum 3 testimonials per testimonial-slider block, ideally 5
+
 INTELLIGENT BLOCK SELECTION - CRITICAL RULES:
 - If the prompt mentions testimonials, reviews, or customer quotes -> use "testimonial-slider" block (NOT text blocks)
 - If the prompt mentions star ratings or review counts -> use "reviews" block (NOT text blocks)
@@ -689,6 +741,9 @@ INTELLIGENT BLOCK SELECTION - CRITICAL RULES:
 - If the prompt mentions logos or partners -> use "logo-bar" block (NOT individual image blocks)
 - If the prompt mentions countdown timers -> use "countdown" block
 - If the prompt mentions webinars or events -> use "webinar" block
+- NEVER use "card" blocks - they are layout containers, not content blocks
+- If you need to group content, use multiple sequential blocks instead
+- Focus on content blocks: heading, text, button, testimonial-slider, social-proof, reviews, video, accordion
 - DO NOT put testimonial content in "text" blocks - use "testimonial-slider" block
 - DO NOT put statistics in "text" blocks - use "social-proof" block
 - DO NOT put video URLs in "text" blocks - use "video" block
@@ -745,11 +800,37 @@ Return JSON with V3 funnel structure:
               "testimonials": [
                 {
                   "id": "1",
-                  "quote": "Amazing product that changed my business!",
-                  "authorName": "John Doe",
-                  "authorTitle": "CEO, Company Inc."
+                  "quote": "I went from losing money every month to consistent 5-figure gains. This strategy changed everything for me. In just 3 months, I've made back my investment 10x over.",
+                  "authorName": "Marcus Thompson",
+                  "authorTitle": "Full-time Trader"
+                },
+                {
+                  "id": "2",
+                  "quote": "The framework helped us 3X our valuation in 18 months. His strategic insights were invaluable. We went from struggling startup to acquisition target.",
+                  "authorName": "David Park",
+                  "authorTitle": "Founder, Acquired Startup"
+                },
+                {
+                  "id": "3",
+                  "quote": "They took us from $50K to $500K monthly revenue in just 8 months. The ROI has been incredible. Best business decision we ever made.",
+                  "authorName": "Sarah Johnson",
+                  "authorTitle": "CEO, TechStartup Inc"
+                },
+                {
+                  "id": "4",
+                  "quote": "After implementing their system, we reduced customer acquisition cost by 60% while doubling our conversion rate. The results speak for themselves.",
+                  "authorName": "Michael Chen",
+                  "authorTitle": "CMO, SaaS Company"
+                },
+                {
+                  "id": "5",
+                  "quote": "From $0 to $100K in my first year using their exact blueprint. The step-by-step guidance made all the difference. Highly recommend!",
+                  "authorName": "Jennifer Martinez",
+                  "authorTitle": "Entrepreneur"
                 }
-              ]
+              ],
+              "autoPlay": true,
+              "interval": 5
             }
           },
           {
@@ -801,9 +882,8 @@ CRITICAL RULES:
 - Use ONLY V3 block types listed above
 - NO emojis in any text
 - NO external image URLs (use placeholders)
-- Headlines max 80 chars
-- Descriptions max 200 chars
-- Button text max 30 chars
+- Allow rich, detailed content for testimonials and descriptions
+- Build complex, meaningful funnels with 8-15 blocks per step
 ${hasBranding ? `- EVERY heading/text block MUST have styles.color set
 - EVERY button MUST have backgroundColor and color set
 - EVERY step MUST have settings.backgroundColor set to ${bgColor}` : ''}

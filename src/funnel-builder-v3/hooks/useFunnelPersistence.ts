@@ -55,7 +55,7 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
       };
     },
     enabled: !!funnelId,
-    staleTime: 0, // Always refetch for real-time updates
+    staleTime: 30000, // 30 seconds - reduce refetch frequency to prevent data loss
   });
 
   // Link domain to funnel
@@ -341,6 +341,27 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
       return false;
     }
   }, [session, funnelId, funnel, saveDraft]);
+
+  // Wire up auto-save when funnel changes
+  useEffect(() => {
+    if (funnel && funnelId) {
+      debouncedSave();
+    }
+  }, [funnel, debouncedSave, funnelId]);
+
+  // Add beforeunload handler to warn about unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const currentJson = JSON.stringify(funnel);
+      if (currentJson !== lastSavedRef.current) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [funnel]);
 
   // Clean up timeout on unmount
   useEffect(() => {

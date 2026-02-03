@@ -11,6 +11,7 @@ import {
   MessageSquare,
   Copy,
   Zap,
+  Check,
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -103,7 +104,7 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
   const [error, setError] = useState<string | null>(null);
   const [clonedBranding, setClonedBranding] = useState<ClonedStyle | null>(null);
   const [showCloneConfirm, setShowCloneConfirm] = useState(false);
-  const [cloneAction, setCloneAction] = useState<'replace-funnel' | 'replace-step' | null>(null);
+  const [cloneAction, setCloneAction] = useState<'replace-funnel' | 'replace-step' | 'apply-styling' | null>(null);
   const [clonePlan, setClonePlan] = useState<ClonePlan | null>(null);
   const [isPlanningClone, setIsPlanningClone] = useState(false);
   const [cloneInstructions, setCloneInstructions] = useState('');
@@ -302,7 +303,7 @@ ${userInstructions}`;
     setShowCloneConfirm(true);
   };
 
-  const generateClonePlan = async (action: 'replace-funnel' | 'replace-step') => {
+  const generateClonePlan = async (action: 'replace-funnel' | 'replace-step' | 'apply-styling') => {
     setShowCloneConfirm(false);
     setIsPlanningClone(true);
     setClonePlan(null);
@@ -406,6 +407,81 @@ ${userInstructions}`;
   // UNIFIED: Execute approved clone plan by using Generate flow
   // This stores the branding and content, then calls Generate to build the funnel
   const executeApprovedPlan = async (plan: ClonePlan) => {
+    // Handle styling-only mode - apply branding without generating new content
+    if (plan.action === 'apply-styling') {
+      setIsProcessing(true);
+      
+      try {
+        // Apply branding to existing funnel without changing content
+        const applyBrandingToExistingSteps = (steps: FunnelStep[]): FunnelStep[] => {
+          return steps.map(step => ({
+            ...step,
+            settings: {
+              ...step.settings,
+              backgroundColor: plan.branding.backgroundColor,
+            },
+            blocks: step.blocks.map(block => {
+              const newBlock = { ...block };
+              const content = { ...block.content } as any;
+              
+              // Apply text colors to heading/text blocks
+              if (block.type === 'heading' || block.type === 'text' || block.type === 'list') {
+                const colorToUse = block.type === 'heading' 
+                  ? (plan.branding.headingColor || plan.branding.textColor)
+                  : plan.branding.textColor;
+                
+                if (!content.styles) {
+                  content.styles = {};
+                }
+                content.styles.color = colorToUse;
+              }
+              
+              // Apply button colors
+              if (block.type === 'button') {
+                content.backgroundColor = plan.branding.primaryColor;
+                content.color = getContrastColor(plan.branding.primaryColor);
+              }
+              
+              // Apply text colors to forms and email captures
+              if (block.type === 'email-capture' || block.type === 'form') {
+                content.textColor = plan.branding.textColor;
+              }
+              
+              // Apply colors to social proof
+              if (block.type === 'social-proof') {
+                content.valueColor = plan.branding.headingColor || plan.branding.textColor;
+                content.labelColor = plan.branding.textColor;
+              }
+              
+              newBlock.content = content;
+              return newBlock;
+            }),
+          }));
+        };
+        
+        const styledSteps = applyBrandingToExistingSteps(funnel.steps);
+        
+        setFunnel({ ...funnel, steps: styledSteps });
+        toast.success('Branding applied to existing funnel!');
+        
+        // Clear all clone state
+        setClonePlan(null);
+        setCloneUrl('');
+        setCloneInstructions('');
+        setStreamedResponse('');
+        setIsProcessing(false);
+        setIsGeneratingFromReference(false);
+        setReferenceContext(null);
+        
+        return;
+      } catch (err) {
+        console.error('[AICopilot] Apply styling error:', err);
+        toast.error('Failed to apply styling');
+        setIsProcessing(false);
+        return;
+      }
+    }
+    
     // Store the plan's branding - this will be used by Generate via buildContext
     setClonedBranding(plan.branding);
     
@@ -1056,6 +1132,15 @@ ${userInstructions}`;
                   </div>
                 </button>
                 <button
+                  onClick={() => generateClonePlan('apply-styling')}
+                  className="w-full px-4 py-2.5 text-left text-sm rounded-md bg-background border border-border hover:bg-muted/50 transition-colors"
+                >
+                  <div className="font-medium">Apply styling only</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Keep your content, just apply the branding colors and theme
+                  </div>
+                </button>
+                <button
                   onClick={() => setShowCloneConfirm(false)}
                   className="w-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
@@ -1096,7 +1181,13 @@ ${userInstructions}`;
                             </div>
                           )}
                           <div className="text-muted-foreground/80">
-                            <span className="font-medium">Action:</span> {referenceContext.action === 'replace-funnel' ? 'Replace entire funnel' : 'Replace current step'}
+                            <span className="font-medium">Action:</span> {
+                              referenceContext.action === 'replace-funnel' 
+                                ? 'Replace entire funnel' 
+                                : referenceContext.action === 'replace-step'
+                                ? 'Replace current step'
+                                : 'Apply styling only'
+                            }
                           </div>
                         </div>
                       )}

@@ -219,6 +219,16 @@ export function parseGeneratedFunnel(json: string): ParsedFunnel {
       }
       
       const block = createBlockFromContent(blockType, v3Content, styles);
+      
+      // Filter out empty card blocks
+      if (blockType === 'card') {
+        const cardContent = block.content as any;
+        if (!cardContent.blocks || cardContent.blocks.length === 0) {
+          console.warn(`[funnel-parser] Skipping empty card block`);
+          continue;
+        }
+      }
+      
       stepBlocks.push(block);
     }
     
