@@ -282,6 +282,8 @@ BRANDING RULES - CRITICAL:
 - headingColor: Heading text color (can be same as textColor or accent)
 - primaryColor: Button/accent color that stands out from background
 
+IMPORTANT: Include a "blocks" array with the ACTUAL CONTENT you will create. Users need to see exactly what headlines, texts, and buttons you'll build BEFORE approving.
+
 Return ONLY valid JSON:
 {
   "summary": "YOUR DETAILED 3-5 SENTENCE SUMMARY HERE - MUST EXPLAIN WHAT YOU DETECTED, WHAT YOU'LL BUILD, BRANDING, AND STRUCTURE",
@@ -303,19 +305,30 @@ Return ONLY valid JSON:
     {
       "name": "Step Name",
       "type": "capture|sell|result",
-      "blockCount": 5,
-      "blockTypes": ["heading", "text", "button", "email-capture", "social-proof"],
-      "description": "Brief description of what this step does"
+      "description": "Brief description of what this step does",
+      "blocks": [
+        { "type": "heading", "preview": "The exact headline text you will use" },
+        { "type": "text", "preview": "The description/body text you will use (first 100 chars)..." },
+        { "type": "button", "preview": "Button text like 'Get Started'" },
+        { "type": "email-capture", "preview": "Email form with placeholder text" }
+      ]
     }
   ]` : `"step": {
     "name": "Step Name",
-    "blockCount": 6,
-    "blockTypes": ["heading", "text", "list", "button", "image", "spacer"],
-    "description": "Brief description of what this step does"
+    "description": "Brief description of what this step does",
+    "blocks": [
+      { "type": "heading", "preview": "The exact headline text you will use" },
+      { "type": "text", "preview": "The description/body text you will use (first 100 chars)..." },
+      { "type": "button", "preview": "Button text like 'Get Started'" }
+    ]
   }`}
 }
 
-REMEMBER: The summary field is the MOST IMPORTANT part. It must be a complete, detailed explanation of everything you'll do. Minimum 3 sentences, ideally 4-5 sentences.`;
+CRITICAL RULES:
+1. The summary field MUST be 3-5 detailed sentences explaining everything
+2. Each block in "blocks" array MUST have "type" and "preview" with ACTUAL content from the page
+3. Preview text should be the real headlines, descriptions, and button labels you'll use
+4. Minimum 3 sentences for summary, ideally 4-5 sentences`;
 }
 
 /**
@@ -386,11 +399,11 @@ Extract colors that match the original AND ensure proper contrast:
 4. primaryColor: Button/accent color - should stand out from background
 5. accentColor: Secondary color for highlights
 
-EVERY BLOCK MUST HAVE APPROPRIATE COLORS:
-- heading: MUST include "color": "#HEX" in content (use headingColor)
-- text: MUST include "color": "#HEX" in content (use textColor)
-- button: MUST include "backgroundColor" AND "color" in content
-- list: Items should use textColor for readability
+EVERY BLOCK MUST HAVE APPROPRIATE COLORS - STRUCTURE IS CRITICAL:
+- heading: Color goes in content.styles.color (NOT content.color)
+- text: Color goes in content.styles.color (NOT content.color)
+- button: backgroundColor AND color go directly in content (buttons are different)
+- list: Color goes in content.styles.color for readability
 
 Return ONLY valid JSON:
 {
@@ -417,20 +430,20 @@ Return ONLY valid JSON:
             "content": {
               "text": "Headline text",
               "level": 1,
-              "color": "#ffffff"
-            },
-            "styles": {
-              "textAlign": "center"
+              "styles": {
+                "color": "#ffffff",
+                "textAlign": "center"
+              }
             }
           },
           {
             "type": "text",
             "content": {
               "text": "Description text",
-              "color": "#f0f0f0"
-            },
-            "styles": {
-              "textAlign": "center"
+              "styles": {
+                "color": "#f0f0f0",
+                "textAlign": "center"
+              }
             }
           },
           {
@@ -463,20 +476,20 @@ Return ONLY valid JSON:
         "content": {
           "text": "Headline text",
           "level": 1,
-          "color": "#ffffff"
-        },
-        "styles": {
-          "textAlign": "center"
+          "styles": {
+            "color": "#ffffff",
+            "textAlign": "center"
+          }
         }
       },
       {
         "type": "text",
         "content": {
           "text": "Description text",
-          "color": "#f0f0f0"
-        },
-        "styles": {
-          "textAlign": "center"
+          "styles": {
+            "color": "#f0f0f0",
+            "textAlign": "center"
+          }
         }
       },
       {

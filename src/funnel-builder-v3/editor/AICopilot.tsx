@@ -33,6 +33,11 @@ interface AICopilotProps {
   onClose: () => void;
 }
 
+interface BlockPreview {
+  type: string;
+  preview: string;
+}
+
 interface ClonePlan {
   summary: string;
   action: 'replace-funnel' | 'replace-step';
@@ -51,16 +56,18 @@ interface ClonePlan {
   };
   steps?: Array<{
     name: string;
-    type: string;
-    blockCount: number;
-    blockTypes: string[];
+    type?: string;
+    blockCount?: number;
+    blockTypes?: string[];
     description?: string;
+    blocks?: BlockPreview[];
   }>;
   step?: {
     name: string;
-    blockCount: number;
-    blockTypes: string[];
+    blockCount?: number;
+    blockTypes?: string[];
     description?: string;
+    blocks?: BlockPreview[];
   };
 }
 
@@ -414,26 +421,58 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
                 ...(blockType === 'button' && !b.styles?.textAlign && { textAlign: 'center' }),
               };
               
+              // MIGRATION: Move color from wrong location (content.color) to correct location (content.styles.color)
+              // This handles AI responses that put color in the wrong place
+              if (blockType === 'heading' || blockType === 'text' || blockType === 'list') {
+                // Check if color is in wrong place (content.color) and not in right place (content.styles.color)
+                if (b.content?.color && !b.content?.styles?.color) {
+                  mergedContent.styles = {
+                    ...mergedContent.styles,
+                    color: b.content.color
+                  };
+                  delete (mergedContent as any).color; // Remove from wrong location
+                }
+              }
+              
               // Apply text colors from branding for proper contrast
+              // Colors go in content.styles.color for heading/text/list blocks
               if (parsed.branding) {
                 const { textColor, headingColor, primaryColor } = parsed.branding;
                 
-                // Headings get heading color or text color
-                if (blockType === 'heading' && !b.content?.color) {
-                  (mergedContent as any).color = headingColor || textColor || '#ffffff';
+                // Headings get heading color or text color - in content.styles.color
+                if (blockType === 'heading') {
+                  const colorToUse = headingColor || textColor || '#ffffff';
+                  if (!mergedContent.styles?.color) {
+                    mergedContent.styles = {
+                      ...mergedContent.styles,
+                      color: colorToUse
+                    };
+                  }
                 }
                 
-                // Text blocks get text color
-                if (blockType === 'text' && !b.content?.color) {
-                  (mergedContent as any).color = textColor || '#ffffff';
+                // Text blocks get text color - in content.styles.color
+                if (blockType === 'text') {
+                  const colorToUse = textColor || '#ffffff';
+                  if (!mergedContent.styles?.color) {
+                    mergedContent.styles = {
+                      ...mergedContent.styles,
+                      color: colorToUse
+                    };
+                  }
                 }
                 
-                // List blocks get text color
-                if (blockType === 'list' && !b.content?.color) {
-                  (mergedContent as any).color = textColor || '#ffffff';
+                // List blocks get text color - in content.styles.color
+                if (blockType === 'list') {
+                  const colorToUse = textColor || '#ffffff';
+                  if (!mergedContent.styles?.color) {
+                    mergedContent.styles = {
+                      ...mergedContent.styles,
+                      color: colorToUse
+                    };
+                  }
                 }
                 
-                // Buttons get proper background and contrast text color
+                // Buttons keep colors in content directly (different structure)
                 if (blockType === 'button') {
                   if (!b.content?.backgroundColor && primaryColor) {
                     (mergedContent as any).backgroundColor = primaryColor;
@@ -450,9 +489,14 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
                   (mergedContent as any).textColor = textColor || '#ffffff';
                 }
                 
-                // Social proof blocks
-                if (blockType === 'social-proof' && !b.content?.color) {
-                  (mergedContent as any).color = textColor || '#ffffff';
+                // Social proof blocks - use valueColor and labelColor
+                if (blockType === 'social-proof') {
+                  if (!b.content?.valueColor) {
+                    (mergedContent as any).valueColor = headingColor || textColor || '#ffffff';
+                  }
+                  if (!b.content?.labelColor) {
+                    (mergedContent as any).labelColor = textColor || '#ffffff';
+                  }
                 }
               }
               
@@ -1083,45 +1127,77 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
                 </div>
               </div>
               
-              {/* Expandable Details */}
+              {/* Expandable Details - Shows actual block content */}
               {(clonePlan.steps || clonePlan.step) && (
-                <Accordion type="single" collapsible className="w-full">
+                <Accordion type="single" collapsible defaultValue="details" className="w-full">
                   <AccordionItem value="details" className="border-none">
                     <AccordionTrigger className="text-xs py-2 hover:no-underline">
-                      View step details
+                      View content preview
                     </AccordionTrigger>
-                    <AccordionContent className="pt-2">
+                    <AccordionContent className="pt-2 space-y-3">
                       {clonePlan.steps?.map((step, i) => (
-                        <div key={i} className="py-2 border-b border-border/50 last:border-0">
-                          <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                        <div key={i} className="p-3 rounded-lg bg-background/50 border border-border/30">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
                               {i + 1}
                             </span>
                             <div className="font-medium text-sm">{step.name}</div>
                           </div>
                           {step.description && (
-                            <div className="text-xs text-muted-foreground mt-1 ml-7">
+                            <div className="text-xs text-muted-foreground mb-2 ml-7">
                               {step.description}
                             </div>
                           )}
-                          <div className="text-xs text-muted-foreground mt-1 ml-7">
-                            {step.blockCount} blocks: {step.blockTypes.slice(0, 5).join(', ')}
-                            {step.blockTypes.length > 5 && ` +${step.blockTypes.length - 5} more`}
-                          </div>
+                          {/* Block previews with actual content */}
+                          {step.blocks && step.blocks.length > 0 ? (
+                            <div className="space-y-1 ml-7">
+                              {step.blocks.map((block, j) => (
+                                <div key={j} className="flex items-start gap-2 text-xs">
+                                  <span className="text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded text-[10px]">
+                                    {block.type}
+                                  </span>
+                                  <span className="text-foreground/80 line-clamp-1">
+                                    "{block.preview}"
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : step.blockTypes && step.blockTypes.length > 0 ? (
+                            <div className="text-xs text-muted-foreground ml-7">
+                              {step.blockCount || step.blockTypes.length} blocks: {step.blockTypes.slice(0, 5).join(', ')}
+                              {step.blockTypes.length > 5 && ` +${step.blockTypes.length - 5} more`}
+                            </div>
+                          ) : null}
                         </div>
                       ))}
                       {clonePlan.step && (
-                        <div className="py-2">
-                          <div className="font-medium text-sm">{clonePlan.step.name}</div>
+                        <div className="p-3 rounded-lg bg-background/50 border border-border/30">
+                          <div className="font-medium text-sm mb-2">{clonePlan.step.name}</div>
                           {clonePlan.step.description && (
-                            <div className="text-xs text-muted-foreground mt-1">
+                            <div className="text-xs text-muted-foreground mb-2">
                               {clonePlan.step.description}
                             </div>
                           )}
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {clonePlan.step.blockCount} blocks: {clonePlan.step.blockTypes.slice(0, 5).join(', ')}
-                            {clonePlan.step.blockTypes.length > 5 && ` +${clonePlan.step.blockTypes.length - 5} more`}
-                          </div>
+                          {/* Block previews with actual content */}
+                          {clonePlan.step.blocks && clonePlan.step.blocks.length > 0 ? (
+                            <div className="space-y-1">
+                              {clonePlan.step.blocks.map((block, j) => (
+                                <div key={j} className="flex items-start gap-2 text-xs">
+                                  <span className="text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded text-[10px]">
+                                    {block.type}
+                                  </span>
+                                  <span className="text-foreground/80 line-clamp-1">
+                                    "{block.preview}"
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : clonePlan.step.blockTypes && clonePlan.step.blockTypes.length > 0 ? (
+                            <div className="text-xs text-muted-foreground">
+                              {clonePlan.step.blockCount || clonePlan.step.blockTypes.length} blocks: {clonePlan.step.blockTypes.slice(0, 5).join(', ')}
+                              {clonePlan.step.blockTypes.length > 5 && ` +${clonePlan.step.blockTypes.length - 5} more`}
+                            </div>
+                          ) : null}
                         </div>
                       )}
                     </AccordionContent>
