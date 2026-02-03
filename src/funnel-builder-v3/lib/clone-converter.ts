@@ -94,6 +94,7 @@ export function convertSectionsToV3Blocks(
             styles: {
               padding: { top: 16, right: 24, bottom: 16, left: 24 },
               margin: { top: 0, right: 'auto', bottom: 0, left: 'auto' },
+              textAlign: 'center',
             },
             trackingId: `block-${uuid()}`,
           });
@@ -276,6 +277,7 @@ export function convertSectionsToV3Blocks(
             },
             styles: {
               padding: { top: 16, right: 24, bottom: 16, left: 24 },
+              textAlign: 'center',
             },
             trackingId: `block-${uuid()}`,
           });

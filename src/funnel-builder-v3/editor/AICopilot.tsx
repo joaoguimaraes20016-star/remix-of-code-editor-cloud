@@ -25,6 +25,7 @@ import { ClonedStyle } from '@/funnel-builder-v3/lib/clone-converter';
 import { applyBrandingToStep, applyBrandingToFunnel } from '@/funnel-builder-v3/lib/branding-applier';
 import { Block, FunnelStep } from '@/funnel-builder-v3/types/funnel';
 import { blockDefinitions } from '@/funnel-builder-v3/lib/block-definitions';
+import { v4 as uuid } from 'uuid';
 
 interface AICopilotProps {
   isOpen: boolean;
@@ -204,14 +205,103 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
               }
               
               // Handle blocks if present
-              if (parsed.blocks && Array.isArray(parsed.blocks)) {
-                // Implementation would go here to add blocks
+              if (parsed.blocks && Array.isArray(parsed.blocks) && parsed.blocks.length > 0) {
+                // Convert parsed blocks to V3 Block format
+                const newBlocks: Block[] = parsed.blocks.map((b: any) => {
+                  const blockType = b.type as BlockType;
+                  const definition = blockDefinitions[blockType];
+                  
+                  if (!definition) {
+                    console.warn(`[AICopilot] Unknown block type: ${blockType}, skipping`);
+                    return null;
+                  }
+                  
+                  // Merge content with defaults
+                  const mergedContent = {
+                    ...definition.defaultContent,
+                    ...b.content,
+                  };
+                  
+                  // Merge styles with defaults, ensuring textAlign for buttons
+                  const mergedStyles = {
+                    ...definition.defaultStyles,
+                    ...b.styles,
+                    // Ensure buttons have textAlign center
+                    ...(blockType === 'button' && !b.styles?.textAlign && { textAlign: 'center' }),
+                  };
+                  
+                  return {
+                    id: uuid(),
+                    type: blockType,
+                    content: mergedContent,
+                    styles: mergedStyles,
+                    trackingId: `block-${uuid()}`,
+                  };
+                }).filter((b: Block | null): b is Block => b !== null);
+                
+                if (newBlocks.length === 0) {
+                  toast.error('No valid blocks found in clone response');
+                  return;
+                }
+                
+                // Add blocks to current or new step based on cloneLocation
+                if (cloneLocation === 'current' && currentStep) {
+                  // Apply branding to blocks if available
+                  const blocksToAdd = parsed.branding && clonedBranding
+                    ? newBlocks.map(block => {
+                        // Apply branding colors to buttons if they have backgroundColor
+                        if (block.type === 'button' && block.content.backgroundColor) {
+                          return {
+                            ...block,
+                            content: {
+                              ...block.content,
+                              backgroundColor: parsed.branding.primaryColor || block.content.backgroundColor,
+                            },
+                          };
+                        }
+                        return block;
+                      })
+                    : newBlocks;
+                  
+                  updateStep(currentStep.id, {
+                    blocks: [...currentStep.blocks, ...blocksToAdd],
+                  });
+                  
+                  toast.success(`Added ${blocksToAdd.length} blocks to current step`);
+                } else {
+                  // Create new step
+                  const newStep: FunnelStep = {
+                    id: uuid(),
+                    name: 'Cloned Page',
+                    type: 'capture',
+                    slug: 'cloned-page',
+                    blocks: newBlocks,
+                    settings: {
+                      backgroundColor: parsed.branding?.backgroundColor || '#ffffff',
+                    },
+                  };
+                  
+                  addStep(newStep);
+                  toast.success(`Created new step with ${newBlocks.length} blocks`);
+                }
+                
+                // Clear the input
+                setCloneUrl('');
+                setStreamedResponse('');
+              } else if (parsed.branding) {
+                // Only branding was cloned
                 toast.success('Branding cloned successfully');
+              } else {
+                toast.error('No blocks or branding found in clone response');
               }
+            } else {
+              toast.error('Could not parse JSON from clone response');
             }
           } catch (parseErr) {
             // If JSON parsing fails, just show the response
             console.error('Parse error:', parseErr);
+            setError(`Failed to parse response: ${parseErr instanceof Error ? parseErr.message : 'Unknown error'}`);
+            toast.error('Failed to parse clone response. Check the response tab for details.');
           }
         } catch (err) {
           console.error('[AICopilot] Clone error:', err);

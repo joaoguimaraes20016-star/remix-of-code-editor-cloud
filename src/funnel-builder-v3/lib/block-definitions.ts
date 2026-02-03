@@ -121,7 +121,7 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
       backgroundColor: '#3b82f6',
       color: '#ffffff',
     },
-    defaultStyles: { ...defaultStyles, padding: { top: 16, right: 24, bottom: 16, left: 24 } },
+    defaultStyles: { ...defaultStyles, padding: { top: 16, right: 24, bottom: 16, left: 24 }, textAlign: 'center' },
   },
   form: {
     type: 'form',

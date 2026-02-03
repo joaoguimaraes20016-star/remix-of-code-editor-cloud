@@ -79,18 +79,99 @@ Return ONLY valid JSON. No markdown, no explanation, no code blocks.`;
 }
 
 /**
+ * Fetch website content from URL
+ */
+async function fetchWebsiteContent(url: string): Promise<string> {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch URL: ${response.status}`);
+    }
+    
+    const html = await response.text();
+    
+    // Extract readable text from HTML (simple approach - remove scripts, styles, etc.)
+    // For better results, we could use a proper HTML parser, but this should work for most cases
+    let text = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Extract key elements that might be useful
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const title = titleMatch ? titleMatch[1] : '';
+    
+    // Extract meta description
+    const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+    const description = descMatch ? descMatch[1] : '';
+    
+    // Extract headings
+    const headings = html.match(/<h[1-6][^>]*>([^<]+)<\/h[1-6]>/gi) || [];
+    const headingTexts = headings.map(h => h.replace(/<[^>]+>/g, '').trim()).filter(Boolean);
+    
+    // Extract buttons/CTAs
+    const buttons = html.match(/<button[^>]*>([^<]+)<\/button>/gi) || [];
+    const buttonTexts = buttons.map(b => b.replace(/<[^>]+>/g, '').trim()).filter(Boolean);
+    
+    // Extract links that look like CTAs
+    const ctaLinks = html.match(/<a[^>]*class=["'][^"']*(?:btn|button|cta|call-to-action)[^"']*["'][^>]*>([^<]+)<\/a>/gi) || [];
+    const ctaTexts = ctaLinks.map(a => a.replace(/<[^>]+>/g, '').trim()).filter(Boolean);
+    
+    // Extract colors from inline styles and CSS (basic extraction)
+    const colorMatches = html.match(/#[0-9a-fA-F]{6}|rgb\([^)]+\)|rgba\([^)]+\)/g) || [];
+    const colors = [...new Set(colorMatches)].slice(0, 10); // Limit to 10 unique colors
+    
+    // Build structured content
+    const structuredContent = `
+TITLE: ${title}
+DESCRIPTION: ${description}
+
+HEADINGS:
+${headingTexts.slice(0, 10).join('\n')}
+
+BUTTONS/CTAs:
+${[...buttonTexts, ...ctaTexts].slice(0, 10).join('\n')}
+
+COLORS FOUND:
+${colors.join(', ')}
+
+MAIN CONTENT (first 10000 chars):
+${text.slice(0, 10000)}
+`.trim();
+    
+    return structuredContent;
+  } catch (error) {
+    console.error(`[ai-copilot-v3] Error fetching URL: ${error}`);
+    throw error;
+  }
+}
+
+/**
  * Get system prompt for clone task
  */
-function getClonePrompt(url: string, context: any): string {
+function getClonePrompt(htmlContent: string, context: any): string {
   return `You are a brand analyst for Funnel Builder V3.
 
-Extract branding and content from this URL: ${url}
+Analyze this website content and extract:
+1. Branding (colors, fonts, theme)
+2. Content sections (headlines, text, CTAs)
 
-Call the clone-style function first to get branding and sections, then convert sections to V3 blocks.
+Website Content:
+${htmlContent.slice(0, 15000)}
 
 Available V3 Block Types: ${V3_BLOCK_TYPES.join(', ')}
 
-Return JSON with:
+Convert the website content into V3 blocks. Study the structure, branding, and copy style, then recreate it using our V3 block system with similar uniqueness but using our own blocks.
+
+Return ONLY valid JSON:
 {
   "branding": {
     "primaryColor": "#HEX",
@@ -106,12 +187,34 @@ Return JSON with:
       "content": {
         "text": "Headline text",
         "level": 1
+      },
+      "styles": {
+        "textAlign": "center"
+      }
+    },
+    {
+      "type": "button",
+      "content": {
+        "text": "CTA text",
+        "variant": "primary",
+        "size": "lg",
+        "action": "next-step"
+      },
+      "styles": {
+        "textAlign": "center"
       }
     }
   ]
 }
 
-Use ONLY V3 block types. No emojis, no external image URLs.`;
+CRITICAL RULES:
+- Use ONLY V3 block types listed above
+- NO emojis in any text
+- NO external image URLs
+- Buttons should have textAlign: "center" in styles
+- Headings and text blocks should have appropriate textAlign based on the original design
+- Extract the actual content and structure, don't hallucinate
+- Return ONLY valid JSON, no markdown, no code blocks`;
 }
 
 /**
@@ -280,14 +383,27 @@ serve(async (req) => {
       );
     }
 
-    // Get the appropriate system prompt
+    // For clone task, fetch the URL content first
+    let userPrompt = prompt;
     let systemPrompt: string;
-    if (task === 'help') {
+    
+    if (task === 'clone') {
+      try {
+        console.log(`[ai-copilot-v3] Fetching URL content: ${prompt}`);
+        const htmlContent = await fetchWebsiteContent(prompt);
+        systemPrompt = getClonePrompt(htmlContent, context);
+        userPrompt = `Analyze this website and convert it to V3 blocks matching the branding and structure.`;
+      } catch (fetchError) {
+        console.error(`[ai-copilot-v3] Failed to fetch URL: ${fetchError}`);
+        return new Response(
+          JSON.stringify({ error: `Failed to fetch website: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else if (task === 'help') {
       systemPrompt = getHelpPrompt(context);
     } else if (task === 'plan') {
       systemPrompt = getPlanPrompt(context);
-    } else if (task === 'clone') {
-      systemPrompt = getClonePrompt(prompt, context);
     } else if (task === 'generate') {
       systemPrompt = getGeneratePrompt(context);
     } else {
@@ -306,10 +422,10 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: prompt },
+          { role: "user", content: userPrompt },
         ],
         stream,
-        max_tokens: (task === 'generate' || task === 'plan') ? 4096 : 2048,
+        max_tokens: (task === 'generate' || task === 'plan' || task === 'clone') ? 4096 : 2048,
         temperature: 0.7,
       }),
     });

@@ -137,6 +137,10 @@ export function parseGeneratedFunnel(json: string): ParsedFunnel {
             backgroundColor: content.backgroundColor || branding.primaryColor,
             color: content.color,
           };
+          // Ensure buttons have centered textAlign by default
+          if (!styles.textAlign) {
+            styles = { ...styles, textAlign: 'center' };
+          }
           break;
           
         case 'form':

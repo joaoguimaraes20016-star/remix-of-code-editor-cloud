@@ -81,6 +81,7 @@ export interface BlockStyles {
   borderColor?: string;
   shadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   shadowColor?: string; // Custom shadow color (e.g., '#000000', 'rgba(0,0,0,0.5)')
+  textAlign?: 'left' | 'center' | 'right';
   animation?: AnimationType;
   animationDuration?: AnimationDuration; // Legacy - kept for backwards compatibility
   animationDurationMs?: number; // New: duration in milliseconds (100-2000)

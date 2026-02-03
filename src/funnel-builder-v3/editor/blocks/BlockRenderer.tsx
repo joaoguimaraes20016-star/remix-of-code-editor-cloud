@@ -165,6 +165,11 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
     return result;
   };
 
+  // Check if this is a button block and if it should be centered
+  const isButton = block.type === 'button';
+  const buttonContent = block.content as any;
+  const shouldCenterButton = isButton && !buttonContent?.fullWidth;
+
   const wrapperStyle: React.CSSProperties = {
     paddingTop: styles.padding?.top,
     paddingRight: styles.padding?.right,
@@ -182,6 +187,13 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
     boxShadow: getShadowStyle(styles.shadow || 'none', styles.shadowColor),
     // Apply background gradient if set
     ...(styles.backgroundGradient && { background: styles.backgroundGradient }),
+    // Apply textAlign if set
+    ...(styles.textAlign && { textAlign: styles.textAlign }),
+    // Center non-fullWidth buttons
+    ...(shouldCenterButton && {
+      display: 'flex',
+      justifyContent: 'center',
+    }),
     // Apply animation timing styles
     ...getAnimationStyles(),
   };
