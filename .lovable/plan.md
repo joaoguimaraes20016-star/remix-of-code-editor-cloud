@@ -1,216 +1,142 @@
 
+## What the screenshot is telling us (step-by-step diagnosis)
 
-# Fix Stripe Loading Error on Custom Domains
+1. The browser is blocking Stripe’s script injection due to **Content Security Policy (CSP)** on the custom domain:
+   - Console shows a CSP error like: loading `https://js.stripe.com/v3/...` violates `script-src ...`
+2. That CSP block causes Stripe’s loader to fail, which triggers:
+   - `Error: Failed to load Stripe.js`
+   - then an **Unhandled promise rejection**
+3. Your app’s global boot error handler (`src/main.tsx`) converts that into the “INFOSTACK RUNTIME / Unhandled promise rejection” crash screen.
 
-## Problem
+So the problem is not “Stripe lazy loading” in principle; the problem is: **Stripe is still being attempted on the custom domain**, and CSP forbids it.
 
-When users visit a funnel on a custom domain (e.g., `goldeneramastery.us`), they see:
+## Why the current “custom domain” detection isn’t working reliably
 
-```
-INFOSTACK RUNTIME
-Unhandled promise rejection
-Error: Failed to load Stripe.js
-```
+Right now, multiple places (notably `src/lib/stripe.ts`, `src/main.tsx`, and `src/components/billing/CardForm.tsx`) decide “this is a funnel on a custom domain” using:
 
-**Root Cause:** The Vite configuration uses `inlineDynamicImports: true`, which bundles ALL code into a single JavaScript file. This means even "dynamic" imports of `@stripe/stripe-js` get bundled together. When the bundle loads, Stripe's internal initialization code tries to inject a script tag and fails on custom domains.
+- `isCustomDomain` AND
+- `hasFunnelData = !!window.__INFOSTACK_FUNNEL__`
 
-## Current State
+But your `PublicFunnel.tsx` explicitly supports a fallback mode where **injected funnel data may be absent** (it calls the `resolve-domain` edge function). In that scenario:
+- you are still on a custom domain
+- but `__INFOSTACK_FUNNEL__` can be undefined at boot time
+- therefore your “custom domain funnel” checks return false
+- therefore Stripe loading is allowed
+- therefore CSP blocks Stripe and the app crashes
 
-1. **Vite config** (`vite.config.ts` line 48): Forces single bundle
-2. **Stripe lib** (`src/lib/stripe.ts`): Uses lazy loading pattern, but it doesn't help with single bundle
-3. **Error handlers** (`main.tsx`): Try to suppress Stripe errors, but they fire too late
-4. **Build errors**: Missing `Button` import in `AddCardModal.tsx` and `published_at` column issue
+## Fix strategy (keep everything predictable and explicit)
 
-## Solution
+Given CSP blocks Stripe on the custom domain, the safest and most deterministic approach is:
 
-Since we cannot change the bundling strategy (needed for custom domain serving), we need to **completely prevent Stripe code from executing** on custom domains.
+- Treat **any custom domain host** as “Stripe disabled”
+- Do not rely on `__INFOSTACK_FUNNEL__` being present
+- Ensure any Stripe load attempt returns a clean “unavailable” result (no thrown errors, no unhandled rejections)
+- Add a final safety net in `main.tsx` to suppress Stripe-related boot errors on custom domains (so even if something slips through, it won’t blank-screen)
 
-### Part 1: Fix Build Errors
-
-**File: `src/components/billing/AddCardModal.tsx`**
-- Add missing `Button` import from `@/components/ui/button`
-
-**File: `src/funnel-builder-v3/hooks/useFunnelPersistence.ts`**
-- Remove all references to `published_at` column (doesn't exist in database)
-  - Line 26: Remove from `FunnelRecord` interface
-  - Line 48: Remove from select query
-  - Lines 52-55: Remove from type assertion
-  - Lines 328, 332: Remove from cache updates
-  - Line 369: Remove from return value
-
-### Part 2: Block Stripe Import at Build Time
-
-**File: `vite.config.ts`**
-
-Add a custom Vite plugin that replaces Stripe imports with empty stubs on custom domains. This prevents the Stripe bundle from executing entirely:
-
-```typescript
-const stripeBloackPlugin = () => ({
-  name: 'stripe-block',
-  resolveId(source: string) {
-    // On custom domains, replace Stripe with empty module
-    if (source === '@stripe/stripe-js' || source === '@stripe/react-stripe-js') {
-      return '\0virtual:stripe-stub';
-    }
-    return null;
-  },
-  load(id: string) {
-    if (id === '\0virtual:stripe-stub') {
-      return `
-        export const loadStripe = () => Promise.reject(new Error('Stripe not available'));
-        export const Elements = () => null;
-        export const CardElement = () => null;
-        export const useStripe = () => null;
-        export const useElements = () => null;
-      `;
-    }
-    return null;
-  }
-});
-```
-
-**Problem:** This would break Stripe in the main app too.
-
-### Part 3: Better Approach - Early Domain Check
-
-**File: `src/main.tsx`**
-
-Add an early check BEFORE React renders. If we're on a custom domain with funnel data, skip loading the full app and render just the funnel runtime:
-
-```typescript
-// At the very top of main.tsx, before any imports that might trigger Stripe
-const isCustomDomainFunnel = typeof window !== 'undefined' && 
-  (() => {
-    const hostname = window.location.hostname;
-    const isCustomDomain = !hostname.includes('localhost') && 
-                           !hostname.includes('.app') && 
-                           !hostname.includes('.lovable.') &&
-                           !hostname.includes('lovableproject.com') &&
-                           !hostname.includes('127.0.0.1');
-    const hasFunnelData = !!(window as any).__INFOSTACK_FUNNEL__;
-    return isCustomDomain && hasFunnelData;
-  })();
-
-if (isCustomDomainFunnel) {
-  // Load minimal funnel runtime only
-  import('./funnel-runtime-entry').then(({ bootstrap }) => bootstrap());
-} else {
-  // Load full app
-  bootstrap();
-}
-```
-
-**Problem:** With `inlineDynamicImports: true`, this won't work either because all imports are already bundled.
-
-### Part 4: Recommended Solution - Suppress at Stripe Library Level
-
-**File: `src/lib/stripe.ts`**
-
-The `@stripe/stripe-js` package loads Stripe via a script tag. The error occurs because the script fails to load on custom domains (CSP, network issues, etc.).
-
-The real fix is to **not call loadStripe at all** on custom domains, and ensure the dynamic import is wrapped in a try-catch that returns early:
-
-```typescript
-// src/lib/stripe.ts - Complete rewrite
-
-const STRIPE_PUBLISHABLE_KEY = "pk_test_...";
-
-function isCustomDomainFunnel(): boolean {
-  if (typeof window === 'undefined') return false;
-  const hostname = window.location.hostname;
-  const isCustomDomain = !hostname.includes('localhost') && 
-                         !hostname.includes('.app') && 
-                         !hostname.includes('.lovable.') &&
-                         !hostname.includes('lovableproject.com') &&
-                         !hostname.includes('127.0.0.1');
-  const hasFunnelData = !!(window as any).__INFOSTACK_FUNNEL__;
-  return isCustomDomain && hasFunnelData;
-}
-
-let stripePromiseInstance: Promise<any> | null = null;
-
-export async function getStripePromise(): Promise<any> {
-  // CRITICAL: Check BEFORE any Stripe code runs
-  if (isCustomDomainFunnel()) {
-    return null; // Return null instead of throwing
-  }
-
-  if (!stripePromiseInstance) {
-    try {
-      const { loadStripe } = await import("@stripe/stripe-js");
-      stripePromiseInstance = loadStripe(STRIPE_PUBLISHABLE_KEY);
-    } catch (error) {
-      console.warn("Failed to load Stripe:", error);
-      return null;
-    }
-  }
-  return stripePromiseInstance;
-}
-```
-
-**File: `src/components/billing/AddCardModal.tsx`**
-
-Update to handle null Stripe gracefully and add missing Button import:
-
-```typescript
-import { Button } from "@/components/ui/button";
-
-// In useEffect:
-Promise.all([
-  getStripePromise().catch(() => null),
-  import("@stripe/react-stripe-js").catch(() => null)
-]).then(([promise, module]) => {
-  if (promise && module) {
-    setStripePromise(promise);
-    setStripeElements(() => module.Elements);
-  } else {
-    // Stripe not available - show fallback UI
-    setStripeError(true);
-  }
-});
-```
-
-### Part 5: Alternative - Remove Stripe from Bundle
-
-The cleanest solution would be to change Vite config to allow code splitting:
-
-**File: `vite.config.ts`**
-
-```typescript
-// Change from:
-inlineDynamicImports: true,
-
-// To:
-inlineDynamicImports: false,
-manualChunks: {
-  stripe: ['@stripe/stripe-js', '@stripe/react-stripe-js'],
-}
-```
-
-**However**, the comment says this is needed "to avoid React initialization / chunk order issues" and for "custom domain serving". This would require testing to ensure custom domain serving still works.
+This matches your product principles: predictable behavior, no hidden magic, clear cause→effect.
 
 ---
 
-## Recommended Implementation Order
+## Implementation plan (exact changes)
 
-1. **Fix build errors first** (missing Button import, published_at references)
-2. **Update `getStripePromise` to return null instead of throwing**
-3. **Update `AddCardModal` to handle null Stripe gracefully**
-4. **Test on custom domain**
+### 1) Create a single shared “custom domain host” detector
+**Goal:** stop duplicating slightly-different hostname logic across files.
 
-## Files to Modify
+- Add a small utility (new file) like:
+  - `src/lib/runtimeEnv.ts` (or `src/lib/domain.ts`)
+  - export `isLovableHost(hostname)` and `isCustomDomainHost()`
 
-| File | Changes |
-|------|---------|
-| `src/components/billing/AddCardModal.tsx` | Add `Button` import, handle null Stripe |
-| `src/funnel-builder-v3/hooks/useFunnelPersistence.ts` | Remove all `published_at` references |
-| `src/lib/stripe.ts` | Return null instead of rejecting on custom domains |
+Logic should match what you already do in `App.tsx`:
+- Not custom if hostname contains: `localhost`, `127.0.0.1`, `.app`, `.lovable.`, `lovableproject.com`
+- Everything else is “custom domain host”
 
-## Technical Notes
+### 2) Update Stripe gating to use “custom host” only (no funnel-data requirement)
+**File:** `src/lib/stripe.ts`
 
-- The `inlineDynamicImports: true` setting is required for custom domain serving
-- With single bundle, we can't truly lazy-load Stripe separately
-- The Stripe library attempts to load even when imported dynamically due to module side effects
-- Returning `null` from `getStripePromise` instead of throwing prevents unhandled rejections
-- The UI should show "Payment form not available on this domain" when Stripe is null
+- Replace `isCustomDomainFunnel()` with something like `isStripeDisabledHost()` which:
+  - returns true if `isCustomDomainHost()` is true
+  - does NOT check `window.__INFOSTACK_FUNNEL__`
 
+- Ensure `getStripePromise()`:
+  - returns `null` immediately on custom domain hosts
+  - never calls `loadStripe()` on custom domain hosts
+  - never throws (always resolves `null` on failure)
+
+This prevents the CSP violation entirely because the Stripe script injection never happens.
+
+### 3) Fix AddCardModal’s UI state so “null Stripe” is not an infinite spinner
+**File:** `src/components/billing/AddCardModal.tsx`
+
+Right now:
+- `stripePromise` starts as `null`
+- `StripeElements` starts as `null`
+- your render treats `(null, null)` as “loading spinner”
+- if `getStripePromise()` returns `null`, you never transition to a “Stripe unavailable” UI state
+
+Change to an explicit state machine, e.g.:
+- `status: 'idle' | 'loading' | 'ready' | 'unavailable'`
+- On open:
+  - set `loading`
+  - call `getStripePromise()` and import `@stripe/react-stripe-js`
+  - if either returns null/fails => set `unavailable`
+  - else => set `ready`
+
+Render:
+- `ready` => render Elements + CardForm
+- `loading` => spinner
+- `unavailable` => show “Payment form isn’t available on this domain” (the UI you already have)
+
+### 4) Apply the same host-based gating in CardForm
+**File:** `src/components/billing/CardForm.tsx`
+
+It currently does:
+- custom domain AND `__INFOSTACK_FUNNEL__`
+
+Update it to:
+- custom domain host only
+
+Also consider matching the AddCardModal state behavior:
+- if Stripe module import is skipped/unavailable, show a small inline message instead of only a toast.
+
+### 5) Make boot error suppression work even when `__INFOSTACK_FUNNEL__` is absent
+**File:** `src/main.tsx`
+
+Update both handlers (`window.error` and `unhandledrejection`) to suppress Stripe-related failures on custom domain hosts **without requiring `__INFOSTACK_FUNNEL__`**.
+
+This is a safety net. With step (2) it should stop triggering, but this prevents future regressions from blank-screening funnels on custom domains.
+
+### 6) Verification checklist (how we’ll know it’s fixed)
+On the custom domain (e.g. `https://goldeneramastery.us`):
+
+- DevTools Console should show:
+  - No CSP error referencing `js.stripe.com`
+  - No “Failed to load Stripe.js”
+  - No “Unhandled promise rejection” boot screen
+
+Optional:
+- Add `?debug=1` to confirm `PublicFunnel` runtime selection logs are printed and the correct renderer is chosen.
+
+### 7) Note: Stripe inside funnels on custom domains (future capability)
+If you eventually want Stripe checkout/Elements inside the published funnel experience on the custom domain, you will need to change the custom domain CSP to allow:
+- `https://js.stripe.com`
+- and possibly related Stripe assets
+
+Right now your CSP explicitly blocks it, so the correct behavior is to **not attempt Stripe at all** on those hosts.
+
+---
+
+## Lock file (important for consistency)
+Your project is missing a lock file. Please generate and commit one:
+- run `npm install` (creates `package-lock.json`) or
+- run `bun install` (creates `bun.lockb`)
+
+This prevents “works on my machine” dependency drift.
+
+---
+
+## Files we will touch
+- Add: `src/lib/runtimeEnv.ts` (or similar shared helper)
+- Update: `src/lib/stripe.ts`
+- Update: `src/components/billing/AddCardModal.tsx`
+- Update: `src/components/billing/CardForm.tsx`
+- Update: `src/main.tsx`
