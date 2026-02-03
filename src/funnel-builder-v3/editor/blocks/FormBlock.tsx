@@ -142,22 +142,50 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
     setIsSubmitting(true);
 
     try {
-      // Handle webhook action from button
-      if (submitButton.action === 'webhook' && submitButton.actionValue) {
-        // Send data to webhook
-        await fetch(submitButton.actionValue, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fields: localValues,
-            submittedAt: new Date().toISOString(),
-          }),
-        });
-        toast.success('Form submitted successfully!');
+      // Handle action based on submitButton configuration
+      const action = submitButton.action || 'next-step';
+      const actionValue = submitButton.actionValue;
+
+      switch (action) {
+        case 'url':
+          if (actionValue) {
+            window.open(actionValue, '_blank');
+          }
+          break;
+        case 'scroll':
+          if (actionValue) {
+            const element = document.getElementById(actionValue);
+            element?.scrollIntoView({ behavior: 'smooth' });
+          }
+          break;
+        case 'webhook':
+          if (actionValue) {
+            // Send data to webhook
+            await fetch(actionValue, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                fields: localValues,
+                submittedAt: new Date().toISOString(),
+              }),
+            });
+            toast.success('Form submitted successfully!');
+          }
+          // After webhook, navigate to next step
+          runtime.goToNextStep();
+          break;
+        case 'submit':
+          runtime.submitForm();
+          break;
+        case 'next-step':
+        default:
+          if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
+            runtime.goToStep(actionValue);
+          } else {
+            runtime.goToNextStep();
+          }
+          break;
       }
-      
-      // Navigate to next step
-      runtime.goToNextStep();
     } catch (error) {
       toast.error('Failed to submit form. Please try again.');
     } finally {

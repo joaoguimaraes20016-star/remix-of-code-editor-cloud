@@ -105,8 +105,34 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
     setIsSubmitting(true);
     
     try {
-      // Navigate to next step
-      runtime.goToNextStep();
+      // Handle action based on submitButton configuration
+      const action = submitButton.action || 'next-step';
+      const actionValue = submitButton.actionValue;
+
+      switch (action) {
+        case 'url':
+          if (actionValue) {
+            window.open(actionValue, '_blank');
+          }
+          break;
+        case 'scroll':
+          if (actionValue) {
+            const element = document.getElementById(actionValue);
+            element?.scrollIntoView({ behavior: 'smooth' });
+          }
+          break;
+        case 'submit':
+          runtime.submitForm();
+          break;
+        case 'next-step':
+        default:
+          if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
+            runtime.goToStep(actionValue);
+          } else {
+            runtime.goToNextStep();
+          }
+          break;
+      }
     } finally {
       setIsSubmitting(false);
     }

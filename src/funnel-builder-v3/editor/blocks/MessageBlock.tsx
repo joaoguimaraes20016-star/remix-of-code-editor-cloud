@@ -112,19 +112,33 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
       runtime.setFormField(blockId, text);
     }
     
-    // Handle action
+    // Handle action based on submitButton configuration
     const action = submitButton.action || 'next-step';
     const actionValue = submitButton.actionValue;
 
-    if (action === 'url' && actionValue) {
-      window.open(actionValue, '_blank');
-    } else if (action === 'scroll' && actionValue) {
-      const element = document.getElementById(actionValue);
-      element?.scrollIntoView({ behavior: 'smooth' });
-    } else if ((action as string) === 'specific-step' && actionValue) {
-      runtime.goToStep(actionValue);
-    } else {
-      runtime.goToNextStep();
+    switch (action) {
+      case 'url':
+        if (actionValue) {
+          window.open(actionValue, '_blank');
+        }
+        break;
+      case 'scroll':
+        if (actionValue) {
+          const element = document.getElementById(actionValue);
+          element?.scrollIntoView({ behavior: 'smooth' });
+        }
+        break;
+      case 'submit':
+        runtime.submitForm();
+        break;
+      case 'next-step':
+      default:
+        if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
+          runtime.goToStep(actionValue);
+        } else {
+          runtime.goToNextStep();
+        }
+        break;
     }
   };
 
