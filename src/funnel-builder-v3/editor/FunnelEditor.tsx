@@ -4,6 +4,7 @@ import { Canvas } from './Canvas';
 import { RightPanel } from './RightPanel';
 import { EditorHeader } from './EditorHeader';
 import { PreviewMode } from './PreviewMode';
+import { AICopilot } from './AICopilot';
 import { useFunnel } from '@/funnel-builder-v3/context/FunnelContext';
 import { 
   DndContext, 
@@ -38,6 +39,7 @@ const dropAnimation: DropAnimation = {
 function EditorContent() {
   const { isPreviewMode, funnel, currentStepId, reorderBlocks } = useFunnel();
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
+  const [isAICopilotOpen, setIsAICopilotOpen] = useState(false);
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -91,7 +93,20 @@ function EditorContent() {
         <div className="h-screen flex flex-col bg-background overflow-hidden">
           <EditorHeader />
           <div className="flex-1 flex overflow-hidden">
-            <LeftPanel />
+            <AnimatePresence mode="wait">
+              {isAICopilotOpen ? (
+                <AICopilot 
+                  key="ai-copilot"
+                  isOpen={isAICopilotOpen} 
+                  onClose={() => setIsAICopilotOpen(false)} 
+                />
+              ) : (
+                <LeftPanel 
+                  key="left-panel"
+                  onOpenAICopilot={() => setIsAICopilotOpen(true)} 
+                />
+              )}
+            </AnimatePresence>
             <Canvas />
             <RightPanel />
           </div>

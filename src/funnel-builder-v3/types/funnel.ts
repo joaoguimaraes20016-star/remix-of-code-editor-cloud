@@ -674,3 +674,51 @@ export interface BlockDefinition {
   defaultContent: BlockContent;
   defaultStyles: BlockStyles;
 }
+
+// Planning Types
+export interface PlannedBlock {
+  id: string;
+  type: BlockType;
+  description?: string;
+  placeholder?: string; // e.g., "Hero heading", "CTA button"
+  order: number;
+}
+
+export interface PlannedStep {
+  id: string;
+  name: string;
+  type: StepType;
+  description?: string;
+  blocks: PlannedBlock[];
+  order: number;
+}
+
+export interface FunnelPlan {
+  id: string;
+  name: string;
+  description?: string;
+  steps: PlannedStep[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PlannedAction {
+  action: 'create-step' | 'add-block' | 'update-content' | 'generate-copy';
+  description: string;
+  target?: string; // step name or block type
+}
+
+export interface GeneratedPlan {
+  description: string;
+  steps: PlannedAction[];
+  canBuild: boolean;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  type: 'message' | 'plan' | 'build-result';
+  plan?: GeneratedPlan;
+  timestamp: Date;
+}

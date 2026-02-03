@@ -95,7 +95,11 @@ function StepItem({ step, index, isActive, isHome, onClick }: {
   );
 }
 
-export function LeftPanel() {
+interface LeftPanelProps {
+  onOpenAICopilot?: () => void;
+}
+
+export function LeftPanel({ onOpenAICopilot }: LeftPanelProps) {
   const { funnel, setFunnel, currentStepId, setCurrentStepId, addStep } = useFunnel();
   const [activeTab, setActiveTab] = useState('pages');
   const [showTemplateGallery, setShowTemplateGallery] = useState(false);
@@ -206,15 +210,18 @@ export function LeftPanel() {
 
       {/* Stacker AI Badge */}
       <div className="p-3 border-t border-border">
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/10">
+        <button
+          onClick={() => onOpenAICopilot?.()}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/10 hover:from-primary/10 hover:to-primary/15 hover:border-primary/20 transition-all cursor-pointer"
+        >
           <div className="w-6 h-6 rounded-lg bg-primary/20 flex items-center justify-center">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
           </div>
-          <div className="flex-1">
+          <div className="flex-1 text-left">
             <span className="text-xs font-medium">Stacker AI</span>
             <p className="text-[10px] text-muted-foreground">Powered by AI</p>
           </div>
-        </div>
+        </button>
       </div>
     </div>
   );
