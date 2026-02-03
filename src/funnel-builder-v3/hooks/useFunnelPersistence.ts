@@ -23,7 +23,6 @@ interface FunnelRecord {
   status: string;
   updated_at: string;
   domain_id: string | null;
-  published_at: string | null;
 }
 
 export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistenceOptions) {
@@ -38,21 +37,20 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef<string>('');
 
-  // Fetch funnel metadata (status, domain_id, published_at)
+  // Fetch funnel metadata (status, domain_id)
   const { data: funnelMeta } = useQuery({
     queryKey: ['funnel-meta', funnelId],
     queryFn: async () => {
       if (!funnelId) return null;
       const { data, error } = await supabase
         .from('funnels')
-        .select('status, domain_id, published_at, slug')
+        .select('status, domain_id, slug')
         .eq('id', funnelId)
         .single();
       if (error) return null;
       return data as { 
         status: string; 
         domain_id: string | null; 
-        published_at: string | null;
         slug: string;
       };
     },
@@ -319,17 +317,14 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
 
       // Optimistically update the cache immediately with published status
       // This ensures the UI updates instantly and persists
-      const now = new Date().toISOString();
       queryClient.setQueryData(['funnel-meta', currentFunnelId], (old: any) => {
-        // Preserve existing data and update status/published_at
+        // Preserve existing data and update status
         return old ? {
           ...old,
           status: 'published',
-          published_at: now,
         } : {
           domain_id: funnelMeta?.domain_id || null,
           status: 'published',
-          published_at: now,
           slug: funnelMeta?.slug || '',
         };
       });
@@ -366,7 +361,6 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
     isAuthenticated: !!user,
     funnelStatus: funnelMeta?.status || 'draft',
     currentDomainId: funnelMeta?.domain_id || null,
-    lastPublishedAt: funnelMeta?.published_at || null,
     slug: funnelMeta?.slug || funnel.name?.toLowerCase().replace(/\s+/g, '-') || 'untitled',
   };
 }
