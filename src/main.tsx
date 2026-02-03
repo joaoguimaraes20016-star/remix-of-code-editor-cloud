@@ -64,17 +64,13 @@ function renderBootError(title: string, details?: unknown) {
 
 function installGlobalErrorHandlers() {
   window.addEventListener("error", (event) => {
-    // Suppress Stripe loading errors on custom domain hosts (CSP blocks Stripe)
     const errorMessage = event.error?.message || event.message || "";
-    if (errorMessage.includes("Failed to load Stripe") || errorMessage.includes("stripe")) {
-      if (isCustomDomainHost()) {
-        // Silently ignore Stripe errors on custom domain hosts
-        console.warn("[Boot] Suppressed Stripe error on custom domain host:", errorMessage);
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        return;
-      }
+    
+    // Suppress Stripe loading errors on custom domain hosts (CSP blocks Stripe)
+    if (isCustomDomainHost() && (errorMessage.includes("Failed to load Stripe") || errorMessage.includes("stripe"))) {
+      console.warn("[Boot] Suppressed Stripe error on custom domain host:", errorMessage);
+      event.preventDefault();
+      return;
     }
     
     // event.error can be undefined for resource errors
@@ -83,17 +79,13 @@ function installGlobalErrorHandlers() {
   });
 
   window.addEventListener("unhandledrejection", (event) => {
-    // Suppress Stripe loading errors on custom domain hosts (CSP blocks Stripe)
     const errorMessage = event.reason?.message || String(event.reason) || "";
-    if (errorMessage.includes("Failed to load Stripe") || errorMessage.includes("stripe") || errorMessage.includes("@stripe")) {
-      if (isCustomDomainHost()) {
-        // Silently ignore Stripe errors on custom domain hosts
-        console.warn("[Boot] Suppressed Stripe promise rejection on custom domain host:", errorMessage);
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        return;
-      }
+    
+    // Suppress Stripe loading errors on custom domain hosts (CSP blocks Stripe)
+    if (isCustomDomainHost() && (errorMessage.includes("Failed to load Stripe") || errorMessage.includes("stripe") || errorMessage.includes("@stripe"))) {
+      console.warn("[Boot] Suppressed Stripe promise rejection on custom domain host:", errorMessage);
+      event.preventDefault();
+      return;
     }
     
     console.error("[Boot] unhandledrejection", event.reason);
@@ -110,13 +102,16 @@ async function bootstrap() {
     hasCreateContext: typeof (React as any)?.createContext === "function",
     hasInjectedFunnelData: typeof window !== "undefined" && !!(window as any).__INFOSTACK_FUNNEL__,
     host: typeof window !== "undefined" ? window.location.host : "(server)",
+    isCustomDomain: isCustomDomainHost(),
   });
 
   try {
+    console.info("[Boot] Starting render...");
     const rootEl = document.getElementById("root")!;
     const root = createRoot(rootEl);
     (window as any).__INFOSTACK_REACT_ROOT__ = root;
     root.render(<App />);
+    console.info("[Boot] Render complete");
   } catch (err) {
     console.error("[Boot] render failed", err);
     renderBootError("React render failed", err);
