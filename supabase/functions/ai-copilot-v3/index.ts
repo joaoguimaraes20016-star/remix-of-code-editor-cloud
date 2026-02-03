@@ -139,28 +139,46 @@ function detectMood(html: string): string {
 }
 
 /**
- * Detect page sections
+ * Detect page sections with order and content
  */
-function detectSections(html: string): Array<{ type: string; summary: string }> {
-  const sections: Array<{ type: string; summary: string }> = [];
+function detectSections(html: string): Array<{ 
+  type: string; 
+  order: number;
+  headings: string[];
+  content: string;
+}> {
+  const sections: Array<{ type: string; order: number; headings: string[]; content: string }> = [];
+  let order = 0;
   
-  // Look for semantic HTML5 elements
-  const headerMatch = html.match(/<header[^>]*>([\s\S]{0,500})<\/header>/i);
-  if (headerMatch) sections.push({ type: 'header', summary: 'Navigation and header content' });
+  // Extract sections in order they appear
+  const sectionPatterns = [
+    { type: 'header', regex: /<header[^>]*>([\s\S]*?)<\/header>/gi },
+    { type: 'hero', regex: /<section[^>]*(?:class|id)=["'][^"']*(?:hero|banner|intro|main)[^"']*["'][^>]*>([\s\S]*?)<\/section>/gi },
+    { type: 'features', regex: /<section[^>]*(?:class|id)=["'][^"']*(?:feature|benefit|advantage)[^"']*["'][^>]*>([\s\S]*?)<\/section>/gi },
+    { type: 'testimonials', regex: /<section[^>]*(?:class|id)=["'][^"']*(?:testimonial|review|quote)[^"']*["'][^>]*>([\s\S]*?)<\/section>/gi },
+    { type: 'social-proof', regex: /<section[^>]*(?:class|id)=["'][^"']*(?:proof|trust|stats|numbers)[^"']*["'][^>]*>([\s\S]*?)<\/section>/gi },
+    { type: 'cta', regex: /<section[^>]*(?:class|id)=["'][^"']*(?:cta|call-to-action|signup)[^"']*["'][^>]*>([\s\S]*?)<\/section>/gi },
+    { type: 'faq', regex: /<section[^>]*(?:class|id)=["'][^"']*(?:faq|questions)[^"']*["'][^>]*>([\s\S]*?)<\/section>/gi },
+  ];
   
-  const heroMatch = html.match(/<section[^>]*(?:class|id)=["'][^"']*(?:hero|banner|intro)[^"']*["'][^>]*>([\s\S]{0,500})<\/section>/i);
-  if (heroMatch) sections.push({ type: 'hero', summary: 'Main hero section with headline' });
+  for (const pattern of sectionPatterns) {
+    const matches = [...html.matchAll(pattern.regex)];
+    for (const match of matches) {
+      const sectionHtml = match[1];
+      const headings = [...sectionHtml.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi)]
+        .map(h => stripHtml(h[1]));
+      const content = stripHtml(sectionHtml).slice(0, 500);
+      
+      sections.push({
+        type: pattern.type,
+        order: order++,
+        headings,
+        content,
+      });
+    }
+  }
   
-  const featuresMatch = html.match(/<section[^>]*(?:class|id)=["'][^"']*(?:feature|benefit|advantage)[^"']*["'][^>]*>/gi);
-  if (featuresMatch) sections.push({ type: 'features', summary: `Features section with ${featuresMatch.length} items` });
-  
-  const testimonialsMatch = html.match(/<section[^>]*(?:class|id)=["'][^"']*(?:testimonial|review|quote)[^"']*["'][^>]*>/gi);
-  if (testimonialsMatch) sections.push({ type: 'testimonials', summary: 'Social proof and testimonials' });
-  
-  const ctaMatch = html.match(/<section[^>]*(?:class|id)=["'][^"']*(?:cta|call-to-action|signup)[^"']*["'][^>]*>/gi);
-  if (ctaMatch) sections.push({ type: 'cta', summary: 'Call-to-action section' });
-  
-  return sections;
+  return sections.sort((a, b) => a.order - b.order);
 }
 
 /**
@@ -286,6 +304,13 @@ async function fetchWebsiteContent(url: string): Promise<string> {
       .replace(/\s+/g, ' ')
       .trim();
     
+    // Extract font families and typography hints
+    const fontFamilies = [...new Set((html.match(/font-family:\s*["']?([^;"']+)/gi) || []).map(f => f.replace(/font-family:\s*["']?/i, '').replace(/["']/g, '').trim()))];
+    const headingStyles = html.match(/<h1[^>]*style=["'][^"']*["']/gi) || [];
+    
+    // Get ordered sections with content
+    const orderedSections = detectSections(html);
+    
     // Build structured analysis
     const analysis = `
 URL: ${url}
@@ -293,9 +318,13 @@ URL: ${url}
 BRANDING SIGNALS:
 - Colors found: ${extractColors(html).slice(0, 8).join(', ')}
 - Mood: ${detectMood(html)} (professional/playful/minimal/bold)
+${fontFamilies.length > 0 ? `- Fonts detected: ${fontFamilies.slice(0, 3).join(', ')}` : ''}
 
-PAGE STRUCTURE:
-${detectSections(html).map(s => `- ${s.type}: ${s.summary}`).join('\n') || '- Single page layout'}
+PAGE STRUCTURE (in order):
+${orderedSections.length > 0 ? orderedSections.map((s, i) => {
+  const headingText = s.headings.length > 0 ? s.headings.slice(0, 2).map(h => `"${h.slice(0, 60)}"`).join(' + ') : '';
+  return `${i + 1}. ${s.type}: ${headingText}${headingText ? ' + ' : ''}${s.content.slice(0, 100)}...`;
+}).join('\n') : '- Single page layout'}
 
 HEADLINES:
 ${headings.join('\n') || 'No headings found'}
@@ -471,6 +500,58 @@ CRITICAL BLOCK RULES:
 - If you need to group content, use multiple sequential blocks instead
 - Focus on content blocks: heading, text, button, testimonial-slider, social-proof, reviews, video, accordion
 
+TEXT HIERARCHY - CRITICAL FOR READABILITY:
+Every landing page needs proper text hierarchy. Use these levels:
+
+1. PRIMARY HEADLINE (heading level 1):
+   - The main hook/value proposition
+   - Largest, boldest text on the page
+   - Only 1 per step
+
+2. SUBHEADLINE/SUPPORTING TEXT (heading level 2):
+   - Supports the primary headline
+   - Explains or expands on the main message
+   - Smaller than primary, but still prominent
+
+3. DESCRIPTION TEXT (text block):
+   - Body copy, detailed explanations
+   - Regular paragraph text
+   - Can be multiple paragraphs
+
+STRUCTURE EXAMPLE:
+- Heading (level 1): "Triple Your Revenue in 90 Days" <- Primary headline
+- Heading (level 2): "The proven framework used by 10,000+ businesses" <- Subheadline
+- Text: "Learn the exact strategies that helped our clients achieve consistent growth..." <- Description
+
+SECTION-TO-BLOCK MAPPING (follow this pattern):
+
+hero section:
+  - heading (level 1): Primary headline
+  - heading (level 2): Subheadline/supporting text
+  - text: Description paragraph
+  - button: Main CTA
+  - video: If video present
+
+features section:
+  - heading (level 2): Section title like "Key Features"
+  - list: Feature items with icons
+  OR
+  - text: Feature descriptions
+
+testimonials section:
+  - heading (level 2): Section title like "What Customers Say"
+  - testimonial-slider: With 3-5 testimonials
+  - reviews: Star rating badge
+
+social-proof section:
+  - social-proof: Stats/metrics block
+  - logo-bar: Partner/client logos
+
+cta section:
+  - heading (level 2): Action headline
+  - text: Supporting copy
+  - button: CTA button
+
 YOUR TASK:
 Create a ${isFunnel ? 'complete funnel with 2-4 steps' : 'single comprehensive step'} that captures the page's essence:
 
@@ -485,6 +566,8 @@ CRITICAL: Each step should have 10-15 blocks that flow naturally. Layer multiple
 - Include 3-5 testimonials in EACH testimonial-slider block (NOT just one!)
 - Extract and recreate ALL social proof elements from the original page
 - Build rich, meaningful content with specific metrics and results
+- MATCH THE DETECTED SECTION ORDER: If the page analysis shows sections in order (hero → features → testimonials → CTA), recreate blocks in that EXACT sequence
+- Don't reorganize sections - preserve the original flow from the page
 ` : `
 SINGLE STEP STRUCTURE (10-15 blocks):
 - Main headline (heading block)
@@ -712,6 +795,35 @@ Generate a complete funnel matching the user's prompt. Use ONLY V3 block types.
 
 Available V3 Block Types: ${V3_BLOCK_TYPES.join(', ')}
 ${brandingInstructions}
+
+TEXT HIERARCHY - CRITICAL FOR READABILITY:
+Every landing page needs proper text hierarchy. Use these levels:
+
+1. PRIMARY HEADLINE (heading level 1):
+   - The main hook/value proposition
+   - Largest, boldest text on the page
+   - Only 1 per step
+
+2. SUBHEADLINE/SUPPORTING TEXT (heading level 2):
+   - Supports the primary headline
+   - Explains or expands on the main message
+   - Smaller than primary, but still prominent
+
+3. DESCRIPTION TEXT (text block):
+   - Body copy, detailed explanations
+   - Regular paragraph text
+   - Can be multiple paragraphs
+
+STRUCTURE EXAMPLE:
+- Heading (level 1): "Triple Your Revenue in 90 Days" <- Primary headline
+- Heading (level 2): "The proven framework used by 10,000+ businesses" <- Subheadline
+- Text: "Learn the exact strategies that helped our clients achieve consistent growth..." <- Description
+
+MATCH THE ORIGINAL PAGE STRUCTURE:
+- Look at the detected sections and recreate them IN ORDER
+- If the page has hero → features → testimonials → CTA, build blocks in that EXACT sequence
+- Don't reorganize sections - preserve the original flow
+- Each detected section should become a group of blocks that recreate its purpose
 
 COMPLEX FUNNEL ARCHITECTURE - CRITICAL RULES:
 - Each step should have 8-15 blocks for rich, engaging content

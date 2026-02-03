@@ -503,8 +503,8 @@ ${userInstructions}`;
     setError(null);
     setStreamedResponse('');
     
-    // DO NOT switch modes - stay on Clone tab for seamless flow
-    // DO NOT clear clonePlan - keep it visible with generation overlay
+    // Switch to Generate tab to show generation progress
+    setMode('generate');
     
     // Now trigger the generate flow with the extracted content
     setIsProcessing(true);
@@ -1093,13 +1093,29 @@ ${userInstructions}`;
             </div>
           )}
           
+          {mode === 'generate' && isGeneratingFromReference && (
+            <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <div>
+                  <div className="font-medium text-sm">Generating from reference...</div>
+                  {referenceContext && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Source: {referenceContext.sourceUrl}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
           {mode === 'copy' && !selectedBlockId && (
             <div className="text-sm text-muted-foreground py-2">
               Select a block to generate copy for it
             </div>
           )}
 
-          {clonedBranding && mode === 'generate' && (
+          {clonedBranding && mode === 'generate' && !isGeneratingFromReference && (
             <div className="p-4 rounded-md bg-muted/30 border border-border/50 text-sm">
               <div className="font-medium mb-2">Using branding:</div>
               <div className="text-muted-foreground break-words">
@@ -1337,7 +1353,7 @@ ${userInstructions}`;
                 <div className="pt-3 border-t border-border/50">
                   <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30">
                     <div className="flex items-center gap-2 mb-3">
-                      <Check className="w-5 h-5 text-green-500" />
+                      <Check className="w-5 h-5 text-primary" />
                       <span className="font-medium text-sm">Generation Complete!</span>
                     </div>
                     <div className="text-sm text-muted-foreground mb-4">
@@ -1346,7 +1362,7 @@ ${userInstructions}`;
                     <div className="flex gap-2">
                       <Button 
                         onClick={acceptGeneration}
-                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        className="flex-1 bg-primary hover:bg-primary/90"
                       >
                         <Check className="w-4 h-4 mr-2" />
                         Accept & Save
