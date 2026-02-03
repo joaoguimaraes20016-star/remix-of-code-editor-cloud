@@ -52,6 +52,8 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
   const [streamedResponse, setStreamedResponse] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [clonedBranding, setClonedBranding] = useState<ClonedStyle | null>(null);
+  const [showCloneConfirm, setShowCloneConfirm] = useState(false);
+  const [cloneAction, setCloneAction] = useState<'replace-funnel' | 'replace-step' | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   
   const currentStep = funnel.steps.find(s => s.id === currentStepId);
@@ -171,6 +173,13 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
       return;
     }
     
+    // Show confirmation dialog first
+    setShowCloneConfirm(true);
+  };
+
+  const executeClone = async (action: 'replace-funnel' | 'replace-step') => {
+    setShowCloneConfirm(false);
+    setCloneAction(action);
     setIsProcessing(true);
     setStreamedResponse('');
     setError(null);
@@ -178,7 +187,7 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
     const context = buildContext();
     let fullResponse = '';
     
-    await streamCloneFromURL(cloneUrl, context, {
+    await streamCloneFromURL(cloneUrl, { ...context, cloneAction: action }, {
       onDelta: (chunk) => {
         fullResponse += chunk;
         setStreamedResponse(fullResponse);
@@ -194,111 +203,155 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
             return;
           }
           
-          // Try to parse branding and blocks from response
+          // Try to parse response
           try {
             const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              const parsed = JSON.parse(jsonMatch[0]);
-              
-              if (parsed.branding) {
-                setClonedBranding(parsed.branding);
-              }
-              
-              // Handle blocks if present
-              if (parsed.blocks && Array.isArray(parsed.blocks) && parsed.blocks.length > 0) {
-                // Convert parsed blocks to V3 Block format
-                const newBlocks: Block[] = parsed.blocks.map((b: any) => {
-                  const blockType = b.type as BlockType;
-                  const definition = blockDefinitions[blockType];
-                  
-                  if (!definition) {
-                    console.warn(`[AICopilot] Unknown block type: ${blockType}, skipping`);
-                    return null;
-                  }
-                  
-                  // Merge content with defaults
-                  const mergedContent = {
-                    ...definition.defaultContent,
-                    ...b.content,
-                  };
-                  
-                  // Merge styles with defaults, ensuring textAlign for buttons
-                  const mergedStyles = {
-                    ...definition.defaultStyles,
-                    ...b.styles,
-                    // Ensure buttons have textAlign center
-                    ...(blockType === 'button' && !b.styles?.textAlign && { textAlign: 'center' }),
-                  };
-                  
-                  return {
-                    id: uuid(),
-                    type: blockType,
-                    content: mergedContent,
-                    styles: mergedStyles,
-                    trackingId: `block-${uuid()}`,
-                  };
-                }).filter((b: Block | null): b is Block => b !== null);
-                
-                if (newBlocks.length === 0) {
-                  toast.error('No valid blocks found in clone response');
-                  return;
-                }
-                
-                // Add blocks to current or new step based on cloneLocation
-                if (cloneLocation === 'current' && currentStep) {
-                  // Apply branding to blocks if available
-                  const blocksToAdd = parsed.branding && clonedBranding
-                    ? newBlocks.map(block => {
-                        // Apply branding colors to buttons if they have backgroundColor
-                        if (block.type === 'button' && block.content.backgroundColor) {
-                          return {
-                            ...block,
-                            content: {
-                              ...block.content,
-                              backgroundColor: parsed.branding.primaryColor || block.content.backgroundColor,
-                            },
-                          };
-                        }
-                        return block;
-                      })
-                    : newBlocks;
-                  
-                  updateStep(currentStep.id, {
-                    blocks: [...currentStep.blocks, ...blocksToAdd],
-                  });
-                  
-                  toast.success(`Added ${blocksToAdd.length} blocks to current step`);
-                } else {
-                  // Create new step
-                  const newStep: FunnelStep = {
-                    id: uuid(),
-                    name: 'Cloned Page',
-                    type: 'capture',
-                    slug: 'cloned-page',
-                    blocks: newBlocks,
-                    settings: {
-                      backgroundColor: parsed.branding?.backgroundColor || '#ffffff',
-                    },
-                  };
-                  
-                  addStep(newStep);
-                  toast.success(`Created new step with ${newBlocks.length} blocks`);
-                }
-                
-                // Clear the input
-                setCloneUrl('');
-                setStreamedResponse('');
-              } else if (parsed.branding) {
-                // Only branding was cloned
-                toast.success('Branding cloned successfully');
-              } else {
-                toast.error('No blocks or branding found in clone response');
-              }
-            } else {
+            if (!jsonMatch) {
               toast.error('Could not parse JSON from clone response');
+              return;
+            }
+            
+            const parsed = JSON.parse(jsonMatch[0]);
+            
+            if (parsed.branding) {
+              setClonedBranding(parsed.branding);
+            }
+            
+            // Helper function to create a block from parsed data
+            const createBlock = (b: any): Block | null => {
+              const blockType = b.type as BlockType;
+              const definition = blockDefinitions[blockType];
+              
+              if (!definition) {
+                console.warn(`[AICopilot] Unknown block type: ${blockType}, skipping`);
+                return null;
+              }
+              
+              const mergedContent = {
+                ...definition.defaultContent,
+                ...b.content,
+              };
+              
+              const mergedStyles = {
+                ...definition.defaultStyles,
+                ...b.styles,
+                ...(blockType === 'button' && !b.styles?.textAlign && { textAlign: 'center' }),
+              };
+              
+              // Apply branding colors to buttons
+              if (blockType === 'button' && parsed.branding?.primaryColor && !b.content?.backgroundColor) {
+                (mergedContent as any).backgroundColor = parsed.branding.primaryColor;
+              }
+              
+              return {
+                id: uuid(),
+                type: blockType,
+                content: mergedContent,
+                styles: mergedStyles,
+                trackingId: `block-${uuid()}`,
+              };
+            };
+            
+            // Handle replace-funnel action
+            if (cloneAction === 'replace-funnel' && parsed.funnel && parsed.funnel.steps) {
+              const newSteps: FunnelStep[] = parsed.funnel.steps.map((stepData: any) => {
+                const blocks = (stepData.blocks || [])
+                  .map(createBlock)
+                  .filter((b: Block | null): b is Block => b !== null);
+                
+                return {
+                  id: uuid(),
+                  name: stepData.name || 'Step',
+                  type: stepData.type || 'capture',
+                  slug: stepData.slug || stepData.name?.toLowerCase().replace(/\s+/g, '-') || 'step',
+                  blocks,
+                  settings: {
+                    backgroundColor: stepData.settings?.backgroundColor || parsed.branding?.backgroundColor || '#ffffff',
+                  },
+                };
+              });
+              
+              setFunnel({
+                ...funnel,
+                name: parsed.funnel.name || funnel.name,
+                steps: newSteps,
+              });
+              
+              toast.success(`Rebuilt funnel with ${newSteps.length} steps`);
+              setCloneUrl('');
+              setStreamedResponse('');
+              return;
+            }
+            
+            // Handle replace-step action
+            if (cloneAction === 'replace-step' && parsed.step) {
+              const blocks = (parsed.step.blocks || [])
+                .map(createBlock)
+                .filter((b: Block | null): b is Block => b !== null);
+              
+              if (blocks.length === 0) {
+                toast.error('No valid blocks found in clone response');
+                return;
+              }
+              
+              if (!currentStepId) {
+                toast.error('No current step selected');
+                return;
+              }
+              
+              updateStep(currentStepId, {
+                name: parsed.step.name || currentStep?.name || 'Step',
+                blocks,
+                settings: {
+                  backgroundColor: parsed.step.settings?.backgroundColor || parsed.branding?.backgroundColor || currentStep?.settings?.backgroundColor || '#ffffff',
+                },
+              });
+              
+              toast.success(`Rebuilt current step with ${blocks.length} blocks`);
+              setCloneUrl('');
+              setStreamedResponse('');
+              return;
+            }
+            
+            // Fallback: Handle old format (blocks array)
+            if (parsed.blocks && Array.isArray(parsed.blocks) && parsed.blocks.length > 0) {
+              const newBlocks = parsed.blocks
+                .map(createBlock)
+                .filter((b: Block | null): b is Block => b !== null);
+              
+              if (newBlocks.length === 0) {
+                toast.error('No valid blocks found in clone response');
+                return;
+              }
+              
+              if (cloneLocation === 'current' && currentStep) {
+                updateStep(currentStep.id, {
+                  blocks: [...currentStep.blocks, ...newBlocks],
+                });
+                toast.success(`Added ${newBlocks.length} blocks to current step`);
+              } else {
+                const newStep: FunnelStep = {
+                  id: uuid(),
+                  name: 'Cloned Page',
+                  type: 'capture',
+                  slug: 'cloned-page',
+                  blocks: newBlocks,
+                  settings: {
+                    backgroundColor: parsed.branding?.backgroundColor || '#ffffff',
+                  },
+                };
+                addStep(newStep);
+                toast.success(`Created new step with ${newBlocks.length} blocks`);
+              }
+              
+              setCloneUrl('');
+              setStreamedResponse('');
+            } else if (parsed.branding) {
+              toast.success('Branding cloned successfully');
+            } else {
+              toast.error('No blocks or branding found in clone response');
             }
           } catch (parseErr) {
-            // If JSON parsing fails, just show the response
             console.error('Parse error:', parseErr);
             setError(`Failed to parse response: ${parseErr instanceof Error ? parseErr.message : 'Unknown error'}`);
             toast.error('Failed to parse clone response. Check the response tab for details.');
@@ -442,7 +495,7 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
     if (mode === 'copy') {
       return selectedBlockId && prompt.trim() && !isProcessing;
     } else if (mode === 'clone') {
-      return cloneUrl.trim() && cloneUrl.startsWith('http') && !isProcessing;
+      return cloneUrl.trim() && cloneUrl.startsWith('http') && !isProcessing && !showCloneConfirm;
     } else {
       return prompt.trim() && !isProcessing;
     }
@@ -486,6 +539,39 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
               <div className="font-medium mb-2">Using branding:</div>
               <div className="text-muted-foreground break-words">
                 {clonedBranding.primaryColor} • {clonedBranding.theme} theme
+              </div>
+            </div>
+          )}
+
+          {/* Clone Confirmation Dialog */}
+          {showCloneConfirm && mode === 'clone' && (
+            <div className="p-4 rounded-lg bg-muted/30 border border-border/50 space-y-3">
+              <div className="text-sm font-medium text-foreground">What would you like to do?</div>
+              <div className="space-y-2">
+                <button
+                  onClick={() => executeClone('replace-funnel')}
+                  className="w-full px-4 py-2.5 text-left text-sm rounded-md bg-background border border-border hover:bg-muted/50 transition-colors"
+                >
+                  <div className="font-medium">Replace entire funnel</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Rebuild the whole funnel using this page as inspiration
+                  </div>
+                </button>
+                <button
+                  onClick={() => executeClone('replace-step')}
+                  className="w-full px-4 py-2.5 text-left text-sm rounded-md bg-background border border-border hover:bg-muted/50 transition-colors"
+                >
+                  <div className="font-medium">Replace current step only</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Rebuild just this step using the page as reference
+                  </div>
+                </button>
+                <button
+                  onClick={() => setShowCloneConfirm(false)}
+                  className="w-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           )}

@@ -79,6 +79,100 @@ Return ONLY valid JSON. No markdown, no explanation, no code blocks.`;
 }
 
 /**
+ * Extract colors from HTML and CSS
+ */
+function extractColors(html: string): string[] {
+  // Extract hex colors
+  const hexColors = html.match(/#[0-9a-fA-F]{6}/gi) || [];
+  // Extract rgb/rgba colors
+  const rgbColors = html.match(/rgba?\([^)]+\)/gi) || [];
+  // Extract CSS variables
+  const cssVars = html.match(/--[a-z-]+:\s*([#a-z0-9()]+)/gi) || [];
+  
+  const allColors = [...hexColors, ...rgbColors, ...cssVars];
+  return [...new Set(allColors)].slice(0, 15);
+}
+
+/**
+ * Detect page mood from content
+ */
+function detectMood(html: string): string {
+  const text = html.toLowerCase();
+  const keywords = {
+    professional: ['business', 'enterprise', 'solution', 'platform', 'service'],
+    playful: ['fun', 'creative', 'play', 'game', 'enjoy'],
+    minimal: ['simple', 'clean', 'minimal', 'elegant', 'refined'],
+    bold: ['powerful', 'strong', 'impact', 'transform', 'revolutionary'],
+  };
+  
+  let maxScore = 0;
+  let detectedMood = 'professional';
+  
+  for (const [mood, words] of Object.entries(keywords)) {
+    const score = words.reduce((acc, word) => acc + (text.includes(word) ? 1 : 0), 0);
+    if (score > maxScore) {
+      maxScore = score;
+      detectedMood = mood;
+    }
+  }
+  
+  return detectedMood;
+}
+
+/**
+ * Detect page sections
+ */
+function detectSections(html: string): Array<{ type: string; summary: string }> {
+  const sections: Array<{ type: string; summary: string }> = [];
+  
+  // Look for semantic HTML5 elements
+  const headerMatch = html.match(/<header[^>]*>([\s\S]{0,500})<\/header>/i);
+  if (headerMatch) sections.push({ type: 'header', summary: 'Navigation and header content' });
+  
+  const heroMatch = html.match(/<section[^>]*(?:class|id)=["'][^"']*(?:hero|banner|intro)[^"']*["'][^>]*>([\s\S]{0,500})<\/section>/i);
+  if (heroMatch) sections.push({ type: 'hero', summary: 'Main hero section with headline' });
+  
+  const featuresMatch = html.match(/<section[^>]*(?:class|id)=["'][^"']*(?:feature|benefit|advantage)[^"']*["'][^>]*>/gi);
+  if (featuresMatch) sections.push({ type: 'features', summary: `Features section with ${featuresMatch.length} items` });
+  
+  const testimonialsMatch = html.match(/<section[^>]*(?:class|id)=["'][^"']*(?:testimonial|review|quote)[^"']*["'][^>]*>/gi);
+  if (testimonialsMatch) sections.push({ type: 'testimonials', summary: 'Social proof and testimonials' });
+  
+  const ctaMatch = html.match(/<section[^>]*(?:class|id)=["'][^"']*(?:cta|call-to-action|signup)[^"']*["'][^>]*>/gi);
+  if (ctaMatch) sections.push({ type: 'cta', summary: 'Call-to-action section' });
+  
+  return sections;
+}
+
+/**
+ * Extract key messaging
+ */
+function extractKeyMessages(html: string): string {
+  // Get meta description
+  const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+  const description = descMatch ? descMatch[1] : '';
+  
+  // Get first paragraph
+  const firstP = html.match(/<p[^>]*>([^<]{20,200})<\/p>/i);
+  const firstParagraph = firstP ? firstP[1] : '';
+  
+  return [description, firstParagraph].filter(Boolean).join(' | ');
+}
+
+/**
+ * Extract social proof elements
+ */
+function extractSocialProof(html: string): string {
+  const stats = html.match(/(\d+[kKmMbB]?)\s*(?:users|customers|clients|reviews|stars|ratings)/gi) || [];
+  const testimonials = html.match(/<blockquote[^>]*>([^<]+)<\/blockquote>/gi) || [];
+  
+  return [
+    stats.length > 0 ? `Stats: ${stats.slice(0, 3).join(', ')}` : '',
+    testimonials.length > 0 ? `Testimonials: ${testimonials.length} found` : '',
+  ].filter(Boolean).join('\n') || 'No social proof detected';
+}
+
+/**
  * Fetch website content from URL
  */
 async function fetchWebsiteContent(url: string): Promise<string> {
@@ -95,59 +189,62 @@ async function fetchWebsiteContent(url: string): Promise<string> {
     
     const html = await response.text();
     
-    // Extract readable text from HTML (simple approach - remove scripts, styles, etc.)
-    // For better results, we could use a proper HTML parser, but this should work for most cases
-    let text = html
+    // Extract key elements
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const title = titleMatch ? titleMatch[1] : '';
+    
+    // Extract headings with hierarchy
+    const h1Matches = html.match(/<h1[^>]*>([^<]+)<\/h1>/gi) || [];
+    const h2Matches = html.match(/<h2[^>]*>([^<]+)<\/h2>/gi) || [];
+    const headings = [
+      ...h1Matches.map(h => 'H1: ' + h.replace(/<[^>]+>/g, '').trim()),
+      ...h2Matches.slice(0, 5).map(h => 'H2: ' + h.replace(/<[^>]+>/g, '').trim()),
+    ];
+    
+    // Extract CTAs
+    const buttons = html.match(/<button[^>]*>([^<]+)<\/button>/gi) || [];
+    const ctaLinks = html.match(/<a[^>]*(?:class|id)=["'][^"']*(?:btn|button|cta|call-to-action|signup|get-started)[^"']*["'][^>]*>([^<]+)<\/a>/gi) || [];
+    const ctas = [
+      ...buttons.map(b => b.replace(/<[^>]+>/g, '').trim()),
+      ...ctaLinks.map(a => a.replace(/<[^>]+>/g, '').trim()),
+    ].slice(0, 8);
+    
+    // Extract main content text
+    const text = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-      .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
     
-    // Extract key elements that might be useful
-    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    const title = titleMatch ? titleMatch[1] : '';
-    
-    // Extract meta description
-    const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
-    const description = descMatch ? descMatch[1] : '';
-    
-    // Extract headings
-    const headings = html.match(/<h[1-6][^>]*>([^<]+)<\/h[1-6]>/gi) || [];
-    const headingTexts = headings.map(h => h.replace(/<[^>]+>/g, '').trim()).filter(Boolean);
-    
-    // Extract buttons/CTAs
-    const buttons = html.match(/<button[^>]*>([^<]+)<\/button>/gi) || [];
-    const buttonTexts = buttons.map(b => b.replace(/<[^>]+>/g, '').trim()).filter(Boolean);
-    
-    // Extract links that look like CTAs
-    const ctaLinks = html.match(/<a[^>]*class=["'][^"']*(?:btn|button|cta|call-to-action)[^"']*["'][^>]*>([^<]+)<\/a>/gi) || [];
-    const ctaTexts = ctaLinks.map(a => a.replace(/<[^>]+>/g, '').trim()).filter(Boolean);
-    
-    // Extract colors from inline styles and CSS (basic extraction)
-    const colorMatches = html.match(/#[0-9a-fA-F]{6}|rgb\([^)]+\)|rgba\([^)]+\)/g) || [];
-    const colors = [...new Set(colorMatches)].slice(0, 10); // Limit to 10 unique colors
-    
-    // Build structured content
-    const structuredContent = `
-TITLE: ${title}
-DESCRIPTION: ${description}
+    // Build structured analysis
+    const analysis = `
+URL: ${url}
 
-HEADINGS:
-${headingTexts.slice(0, 10).join('\n')}
+BRANDING SIGNALS:
+- Colors found: ${extractColors(html).slice(0, 8).join(', ')}
+- Mood: ${detectMood(html)} (professional/playful/minimal/bold)
 
-BUTTONS/CTAs:
-${[...buttonTexts, ...ctaTexts].slice(0, 10).join('\n')}
+PAGE STRUCTURE:
+${detectSections(html).map(s => `- ${s.type}: ${s.summary}`).join('\n') || '- Single page layout'}
 
-COLORS FOUND:
-${colors.join(', ')}
+HEADLINES:
+${headings.join('\n') || 'No headings found'}
 
-MAIN CONTENT (first 10000 chars):
-${text.slice(0, 10000)}
+KEY MESSAGING:
+${extractKeyMessages(html) || 'No clear messaging found'}
+
+CALLS TO ACTION:
+${ctas.join('\n') || 'No CTAs found'}
+
+SOCIAL PROOF:
+${extractSocialProof(html)}
+
+MAIN CONTENT (first 8000 chars):
+${text.slice(0, 8000)}
 `.trim();
     
-    return structuredContent;
+    return analysis;
   } catch (error) {
     console.error(`[ai-copilot-v3] Error fetching URL: ${error}`);
     throw error;
@@ -157,19 +254,67 @@ ${text.slice(0, 10000)}
 /**
  * Get system prompt for clone task
  */
-function getClonePrompt(htmlContent: string, context: any): string {
-  return `You are a brand analyst for Funnel Builder V3.
+function getClonePrompt(pageAnalysis: string, action: 'replace-funnel' | 'replace-step', context: any): string {
+  const isFunnel = action === 'replace-funnel';
+  
+  return `You are an expert funnel designer. Study this website and use it as INSPIRATION to create ${isFunnel ? 'a complete funnel' : 'a single step'}.
 
-Analyze this website content and extract:
-1. Branding (colors, fonts, theme)
-2. Content sections (headlines, text, CTAs)
+IMPORTANT: You are NOT copying the website. You are:
+1. Studying its branding (colors, fonts, mood)
+2. Understanding its messaging and value proposition
+3. Identifying its structure (hero, features, social proof, CTA)
+4. REBUILDING it intelligently using OUR block system
 
-Website Content:
-${htmlContent.slice(0, 15000)}
+Think of it like: "If I were building this page from scratch with our tools, how would I recreate the same vibe and intent?"
 
-Available V3 Block Types: ${V3_BLOCK_TYPES.join(', ')}
+WEBSITE ANALYSIS:
+${pageAnalysis.slice(0, 15000)}
 
-Convert the website content into V3 blocks. Study the structure, branding, and copy style, then recreate it using our V3 block system with similar uniqueness but using our own blocks.
+AVAILABLE V3 BLOCKS (use these to rebuild):
+${V3_BLOCK_TYPES.map(t => `- ${t}`).join('\n')}
+
+COMMON BLOCK USAGE:
+- heading: Headlines (h1-h6), section titles
+- text: Body copy, descriptions, value propositions
+- button: CTAs (primary, secondary, outline variants)
+- form: Multi-field forms (contact, registration)
+- email-capture: Simple email opt-in
+- list: Bullet points, feature lists
+- accordion: FAQ sections, expandable content
+- social-proof: Stats, numbers, trust indicators
+- countdown: Urgency timers
+- video: Video embeds
+- image: Images (use placeholder URLs like "https://via.placeholder.com/800x600")
+- divider: Section separators
+- spacer: Vertical spacing
+- logo-bar: Trust logos, partner logos
+- reviews: Testimonials, customer reviews
+
+YOUR TASK:
+${isFunnel ? `
+Create a complete funnel with 2-4 steps that captures the page's essence:
+- Step 1 (capture): Hook + value prop + lead capture form
+- Step 2 (sell): Benefits, features, social proof
+- Step 3 (result): Thank you, next steps
+
+Each step should have 4-8 blocks that flow naturally. Use the page structure as inspiration but rebuild it with our blocks.
+` : `
+Create a single step that captures the page's:
+- Main headline and value proposition
+- Key benefits or features (use list or text blocks)
+- Call-to-action (button block)
+- Any social proof elements (social-proof, reviews blocks)
+
+Use 5-10 blocks to recreate the page's vibe and messaging.
+`}
+
+BRANDING: Extract colors that match the original's vibe:
+- primaryColor: Main action color (buttons, highlights) - choose from the colors found
+- accentColor: Secondary color - choose from the colors found
+- backgroundColor: Page background - choose from the colors found
+- headingFont: Choose from: Inter, Space Grotesk, DM Sans, Outfit, Poppins
+- bodyFont: Choose from: Inter, DM Sans
+- theme: "dark" if dark background detected, "light" otherwise
 
 Return ONLY valid JSON:
 {
@@ -177,43 +322,76 @@ Return ONLY valid JSON:
     "primaryColor": "#HEX",
     "accentColor": "#HEX",
     "backgroundColor": "#HEX",
-    "headingFont": "Inter|Space Grotesk|DM Sans|Outfit|Poppins",
-    "bodyFont": "Inter|DM Sans",
-    "theme": "dark|light"
+    "headingFont": "Font Name",
+    "bodyFont": "Font Name",
+    "theme": "light|dark"
   },
-  "blocks": [
-    {
-      "type": "heading",
-      "content": {
-        "text": "Headline text",
-        "level": 1
-      },
-      "styles": {
-        "textAlign": "center"
+  ${isFunnel ? `"funnel": {
+    "name": "Funnel name based on page topic",
+    "steps": [
+      {
+        "name": "Step name",
+        "type": "capture|sell|book|educate|result",
+        "slug": "step-slug",
+        "blocks": [
+          {
+            "type": "heading",
+            "content": {
+              "text": "Headline text",
+              "level": 1
+            },
+            "styles": {
+              "textAlign": "center"
+            }
+          },
+          {
+            "type": "button",
+            "content": {
+              "text": "CTA text",
+              "variant": "primary",
+              "size": "lg",
+              "action": "next-step"
+            },
+            "styles": {
+              "textAlign": "center"
+            }
+          }
+        ],
+        "settings": {
+          "backgroundColor": "#HEX"
+        }
       }
-    },
-    {
-      "type": "button",
-      "content": {
-        "text": "CTA text",
-        "variant": "primary",
-        "size": "lg",
-        "action": "next-step"
-      },
-      "styles": {
-        "textAlign": "center"
+    ]
+  }` : `"step": {
+    "name": "Step name",
+    "type": "capture|sell|result",
+    "slug": "step-slug",
+    "blocks": [
+      {
+        "type": "heading",
+        "content": {
+          "text": "Headline text",
+          "level": 1
+        },
+        "styles": {
+          "textAlign": "center"
+        }
       }
+    ],
+    "settings": {
+      "backgroundColor": "#HEX"
     }
-  ]
+  }`}
 }
 
 CRITICAL RULES:
 - Use ONLY V3 block types listed above
 - NO emojis in any text
-- NO external image URLs
+- NO external image URLs (use placeholders)
 - Buttons should have textAlign: "center" in styles
 - Headings and text blocks should have appropriate textAlign based on the original design
-- Extract the actual content and structure, don't hallucinate
+- Use the website as INSPIRATION - capture the same energy and intent, but rebuild with our blocks
+- Don't copy verbatim - understand the messaging and recreate it in your own words
 - Return ONLY valid JSON, no markdown, no code blocks`;
 }
 
@@ -390,9 +568,10 @@ serve(async (req) => {
     if (task === 'clone') {
       try {
         console.log(`[ai-copilot-v3] Fetching URL content: ${prompt}`);
-        const htmlContent = await fetchWebsiteContent(prompt);
-        systemPrompt = getClonePrompt(htmlContent, context);
-        userPrompt = `Analyze this website and convert it to V3 blocks matching the branding and structure.`;
+        const pageAnalysis = await fetchWebsiteContent(prompt);
+        const cloneAction = context.cloneAction || 'replace-step';
+        systemPrompt = getClonePrompt(pageAnalysis, cloneAction, context);
+        userPrompt = `Use this website as inspiration to rebuild ${cloneAction === 'replace-funnel' ? 'a complete funnel' : 'a single step'} with our V3 blocks.`;
       } catch (fetchError) {
         console.error(`[ai-copilot-v3] Failed to fetch URL: ${fetchError}`);
         return new Response(
