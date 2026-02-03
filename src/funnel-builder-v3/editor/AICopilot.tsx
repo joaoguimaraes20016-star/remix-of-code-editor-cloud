@@ -390,6 +390,9 @@ ${userInstructions}`;
     // Store the plan's branding - this will be used by Generate via buildContext
     setClonedBranding(plan.branding);
     
+    // SWITCH TO GENERATE MODE - so UI shows generate tab
+    setMode('generate');
+    
     // Build a detailed prompt from the plan's content + user instructions
     const generatePrompt = buildPromptFromPlan(plan, cloneInstructions);
     
@@ -425,15 +428,32 @@ ${userInstructions}`;
           const responseText = fullResponse || streamedResponse;
           if (!responseText.trim()) {
             setError('No response received from AI');
+            toast.error('No response received from AI');
             return;
           }
           
-          const parsed = parseGeneratedFunnel(responseText);
+          // Log response for debugging
+          console.log('[AICopilot] Generate response length:', responseText.length);
+          console.log('[AICopilot] Generate response preview:', responseText.slice(0, 200));
+          
+          let parsed;
+          try {
+            parsed = parseGeneratedFunnel(responseText);
+          } catch (parseErr) {
+            console.error('[AICopilot] Parse error:', parseErr);
+            console.error('[AICopilot] Response preview:', responseText.slice(0, 500));
+            setError(`Failed to parse response: ${parseErr instanceof Error ? parseErr.message : 'Unknown error'}`);
+            toast.error('Failed to parse AI response');
+            return;
+          }
           
           if (!parsed.steps || parsed.steps.length === 0) {
-            setError('No steps generated');
+            setError('No steps generated - AI response may be incomplete');
+            toast.error('No steps were generated');
             return;
           }
+          
+          console.log('[AICopilot] Parsed', parsed.steps.length, 'steps');
           
           // Apply the plan branding to all generated steps
           const applyBrandingToGeneratedSteps = (steps: FunnelStep[]): FunnelStep[] => {
@@ -496,27 +516,45 @@ ${userInstructions}`;
           
           if (plan.action === 'replace-funnel') {
             // Replace entire funnel
+            console.log('[AICopilot] Replacing funnel with', brandedSteps.length, 'steps');
+            
             setFunnel({
               ...funnel,
               steps: brandedSteps,
             });
+            
             toast.success(`Generated funnel with ${brandedSteps.length} steps from reference!`);
+            
+            // Clear all clone state after successful generation
+            setCloneInstructions('');
+            setStreamedResponse('');
+            setPrompt('');
           } else {
             // Replace current step only (use first generated step)
             if (brandedSteps.length > 0 && currentStepId) {
+              console.log('[AICopilot] Replacing step', currentStepId, 'with', brandedSteps[0].blocks.length, 'blocks');
+              
               updateStep(currentStepId, {
                 ...brandedSteps[0],
                 id: currentStepId, // Keep the original step ID
               });
+              
               toast.success(`Generated step with ${brandedSteps[0].blocks.length} blocks from reference!`);
+              
+              // Clear all clone state after successful generation
+              setCloneInstructions('');
+              setStreamedResponse('');
+              setPrompt('');
+            } else {
+              setError('No step to replace - select a step first');
+              toast.error('No step selected');
             }
           }
-          
-          setStreamedResponse('');
-          setPrompt('');
         } catch (err) {
           console.error('[AICopilot] Generate from plan error:', err);
-          setError(err instanceof Error ? err.message : 'Failed to generate from reference');
+          const errorMessage = err instanceof Error ? err.message : 'Failed to generate from reference';
+          setError(errorMessage);
+          toast.error('Generation failed');
         }
       },
       onError: (err) => {

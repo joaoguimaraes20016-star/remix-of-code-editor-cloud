@@ -79,6 +79,25 @@ Return ONLY valid JSON. No markdown, no explanation, no code blocks.`;
 }
 
 /**
+ * Strip HTML tags and decode entities from text
+ */
+function stripHtml(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/<[^>]*>/g, ' ')  // Remove all HTML tags
+    .replace(/&nbsp;/g, ' ')    // Replace common entities
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, '/')
+    .replace(/\s+/g, ' ')       // Collapse whitespace
+    .trim();
+}
+
+/**
  * Extract colors from HTML and CSS
  */
 function extractColors(html: string): string[] {
@@ -152,9 +171,9 @@ function extractKeyMessages(html: string): string {
   const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
   const description = descMatch ? descMatch[1] : '';
   
-  // Get first paragraph
-  const firstP = html.match(/<p[^>]*>([^<]{20,200})<\/p>/i);
-  const firstParagraph = firstP ? firstP[1] : '';
+  // Get first paragraph - capture all content including nested tags, then strip HTML
+  const firstP = html.match(/<p[^>]*>([\s\S]{20,200}?)<\/p>/i);
+  const firstParagraph = firstP ? stripHtml(firstP[1]) : '';
   
   return [description, firstParagraph].filter(Boolean).join(' | ');
 }
@@ -164,11 +183,12 @@ function extractKeyMessages(html: string): string {
  */
 function extractSocialProof(html: string): string {
   const stats = html.match(/(\d+[kKmMbB]?)\s*(?:users|customers|clients|reviews|stars|ratings)/gi) || [];
-  const testimonials = html.match(/<blockquote[^>]*>([^<]+)<\/blockquote>/gi) || [];
+  const testimonials = html.match(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi) || [];
+  const testimonialsText = testimonials.map(t => stripHtml(t)).filter(t => t.length > 0);
   
   return [
     stats.length > 0 ? `Stats: ${stats.slice(0, 3).join(', ')}` : '',
-    testimonials.length > 0 ? `Testimonials: ${testimonials.length} found` : '',
+    testimonialsText.length > 0 ? `Testimonials: ${testimonialsText.length} found` : '',
   ].filter(Boolean).join('\n') || 'No social proof detected';
 }
 
@@ -193,20 +213,20 @@ async function fetchWebsiteContent(url: string): Promise<string> {
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
     const title = titleMatch ? titleMatch[1] : '';
     
-    // Extract headings with hierarchy
-    const h1Matches = html.match(/<h1[^>]*>([^<]+)<\/h1>/gi) || [];
-    const h2Matches = html.match(/<h2[^>]*>([^<]+)<\/h2>/gi) || [];
+    // Extract headings with hierarchy - capture all content including nested tags, then strip HTML
+    const h1Matches = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/gi) || [];
+    const h2Matches = html.match(/<h2[^>]*>([\s\S]*?)<\/h2>/gi) || [];
     const headings = [
-      ...h1Matches.map(h => 'H1: ' + h.replace(/<[^>]+>/g, '').trim()),
-      ...h2Matches.slice(0, 5).map(h => 'H2: ' + h.replace(/<[^>]+>/g, '').trim()),
+      ...h1Matches.map(h => 'H1: ' + stripHtml(h)),
+      ...h2Matches.slice(0, 5).map(h => 'H2: ' + stripHtml(h)),
     ];
     
-    // Extract CTAs
-    const buttons = html.match(/<button[^>]*>([^<]+)<\/button>/gi) || [];
-    const ctaLinks = html.match(/<a[^>]*(?:class|id)=["'][^"']*(?:btn|button|cta|call-to-action|signup|get-started)[^"']*["'][^>]*>([^<]+)<\/a>/gi) || [];
+    // Extract CTAs - capture all content including nested tags, then strip HTML
+    const buttons = html.match(/<button[^>]*>([\s\S]*?)<\/button>/gi) || [];
+    const ctaLinks = html.match(/<a[^>]*(?:class|id)=["'][^"']*(?:btn|button|cta|call-to-action|signup|get-started)[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi) || [];
     const ctas = [
-      ...buttons.map(b => b.replace(/<[^>]+>/g, '').trim()),
-      ...ctaLinks.map(a => a.replace(/<[^>]+>/g, '').trim()),
+      ...buttons.map(b => stripHtml(b)),
+      ...ctaLinks.map(a => stripHtml(a)),
     ].slice(0, 8);
     
     // Extract main content text
