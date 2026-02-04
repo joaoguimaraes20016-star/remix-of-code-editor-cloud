@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { VideoQuestionContent, TextStyles, ButtonContent } from '@/funnel-builder-v3/types/funnel';
+import { VideoQuestionContent, VideoContent, TextStyles, ButtonContent } from '@/funnel-builder-v3/types/funnel';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { useEditableStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 import { Button } from '@/components/ui/button';
+import { VideoBlock } from './VideoBlock';
 
 // Default submit button configuration
 const defaultSubmitButton: ButtonContent = {
@@ -26,22 +28,20 @@ interface VideoQuestionBlockProps {
   isPreview?: boolean;
 }
 
-function getEmbedUrl(src: string, type: 'youtube' | 'vimeo' | 'hosted'): string {
-  if (type === 'youtube') {
-    const videoId = src.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)?.[1];
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : src;
-  }
-  if (type === 'vimeo') {
-    const videoId = src.match(/vimeo\.com\/(\d+)/)?.[1];
-    return videoId ? `https://player.vimeo.com/video/${videoId}` : src;
-  }
-  return src;
-}
-
 export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: VideoQuestionBlockProps) {
   const { 
+    // New unified video properties
+    src,
+    type,
+    autoplay,
+    controls,
+    aspectRatio,
+    muted,
+    loop,
+    // Legacy video properties for backwards compatibility
     videoSrc, 
     videoType, 
+    // Quiz properties
     question, 
     options,
     multiSelect,
@@ -59,11 +59,36 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
   const selectedChildElement = funnelContext?.selectedChildElement ?? null;
   const setSelectedChildElement = funnelContext?.setSelectedChildElement ?? (() => {});
   const [selected, setSelected] = useState<string[]>([]);
-  const embedUrl = getEmbedUrl(videoSrc, videoType);
+  
+  // Backwards compatibility: map legacy videoSrc/videoType to new src/type
+  const effectiveVideoSrc = src || videoSrc || '';
+  const effectiveVideoType = type || videoType || 'youtube';
+  
+  // Build VideoContent for VideoBlock component
+  const videoContent: VideoContent = {
+    src: effectiveVideoSrc,
+    type: effectiveVideoType,
+    autoplay,
+    controls,
+    aspectRatio,
+    muted,
+    loop,
+  };
 
   const canEdit = blockId && stepId && !isPreview;
   const shouldShowSubmitButton = showSubmitButton || multiSelect;
   const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
+  const isVideoSelected = !isPreview && selectedChildElement === 'video';
+  const hasChildSelected = !!selectedChildElement;
+
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'video-question',
+    hintText: 'Click to edit video question',
+    isEditing: hasChildSelected // Disable overlay when child is selected
+  });
 
   // Wire question text toolbar to block content
   const { styles: questionToolbarStyles, handleStyleChange: handleQuestionStyleChange } = useEditableStyleSync(
@@ -276,26 +301,16 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
       : { color: questionColor || undefined }),
   };
 
-  return (
+  const videoQuestionElement = (
     <div className="space-y-4">
-      {/* Video Player */}
-      <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-900">
-        {videoType === 'hosted' ? (
-          <video
-            src={videoSrc}
-            controls
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <iframe
-            src={embedUrl}
-            title="Video question"
-            className="w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        )}
-      </div>
+      {/* Video Player - uses unified VideoBlock component with embedded mode */}
+      <VideoBlock 
+        content={videoContent} 
+        blockId={blockId} 
+        stepId={stepId} 
+        isPreview={isPreview}
+        isEmbedded={true}
+      />
 
       {/* Question */}
       {canEdit ? (
@@ -474,4 +489,6 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
       })()}
     </div>
   );
+
+  return wrapWithOverlay(videoQuestionElement);
 }

@@ -211,15 +211,6 @@ export function ContactDetailDrawer({ contact, open, onOpenChange }: ContactDeta
                   </div>
                 )}
                 
-                {contact.opt_in && (
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-4 w-4 text-emerald-500 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground">Privacy Policy</p>
-                      <p className="text-sm font-medium">Accepted</p>
-                    </div>
-                  </div>
-                )}
               </div>
             </TabsContent>
 

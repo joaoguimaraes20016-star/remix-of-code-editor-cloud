@@ -4,6 +4,7 @@ import { Play } from 'lucide-react';
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { cn } from '@/lib/utils';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface WebinarBlockProps {
   content: WebinarContent;
@@ -33,6 +34,13 @@ export function WebinarBlock({ content, blockId, stepId, isPreview }: WebinarBlo
   const { videoSrc, videoType, title, buttonText, buttonColor, buttonGradient, titleColor, titleGradient } = content;
 
   const canEdit = blockId && stepId && !isPreview;
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'webinar',
+    hintText: 'Click to edit webinar'
+  });
 
   const handleTitleChange = useCallback((newTitle: string) => {
     if (blockId && stepId) {
@@ -67,12 +75,12 @@ export function WebinarBlock({ content, blockId, stepId, isPreview }: WebinarBlo
     titleStyle.color = titleColor;
   }
 
-  return (
+  return wrapWithOverlay(
     <div className="space-y-4">
       {/* Title */}
       {(title || canEdit) && (
         <div 
-          className={cn("text-xl font-bold text-center text-foreground", hasTitleGradient && "text-gradient-clip")}
+          className={cn("text-xl font-bold text-center", !titleColor && !hasTitleGradient && "text-foreground", hasTitleGradient && "text-gradient-clip")}
           style={{
             ...titleStyle,
             ...(hasTitleGradient ? { '--text-gradient': titleGradient } as React.CSSProperties : {})

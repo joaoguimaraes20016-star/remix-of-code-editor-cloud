@@ -3,12 +3,23 @@ import { SliderContent } from '@/funnel-builder-v3/types/funnel';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface SliderBlockProps {
   content: SliderContent;
+  blockId?: string;
+  stepId?: string;
+  isPreview?: boolean;
 }
 
-export function SliderBlock({ content }: SliderBlockProps) {
+export function SliderBlock({ content, blockId, stepId, isPreview }: SliderBlockProps) {
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'slider',
+    hintText: 'Click to edit slider'
+  });
   const { images, autoplay, interval = 5, showDots = true, showArrows = true } = content;
   const [selectedIndex, setSelectedIndex] = useState(0);
   
@@ -54,14 +65,14 @@ export function SliderBlock({ content }: SliderBlockProps) {
   }, [emblaApi, autoplay, interval]);
 
   if (images.length === 0) {
-    return (
+    return wrapWithOverlay(
       <div className="aspect-video bg-muted rounded-lg flex items-center justify-center text-muted-foreground">
         No images added
       </div>
     );
   }
 
-  return (
+  return wrapWithOverlay(
     <div className="relative group">
       <div className="overflow-hidden rounded-lg" ref={emblaRef}>
         <div className="flex">

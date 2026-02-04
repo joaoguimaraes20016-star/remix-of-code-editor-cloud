@@ -194,6 +194,26 @@ export function RightPanel() {
       );
     }
 
+    // Handle video child element (for video-question block)
+    if (selectedChildElement === 'video' && selectedBlock.type === 'video-question') {
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Video</h3>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setSelectedChildElement(null)}
+            >
+              ← Back
+            </Button>
+          </div>
+          <VideoInspector {...props} />
+        </div>
+      );
+    }
+
     // Handle form-field-* child element (for all field types in forms)
     if (selectedChildElement?.startsWith('form-field-') && 
         (selectedBlock.type === 'form' || selectedBlock.type === 'popup-form')) {
@@ -375,10 +395,10 @@ export function RightPanel() {
       data-right-panel
     >
       {/* Header - Compact */}
-      <div className="px-3 py-2 border-b border-border flex items-center justify-between shrink-0">
+      <div className="px-4 py-2.5 border-b border-border flex items-center justify-between shrink-0">
         <div>
           <h3 className="font-medium text-sm">{blockDef.name}</h3>
-          <p className="text-[10px] text-muted-foreground capitalize">{blockDef.category}</p>
+          <p className="text-xs text-muted-foreground capitalize">{blockDef.category}</p>
         </div>
         <Button
           variant="ghost"
@@ -391,12 +411,12 @@ export function RightPanel() {
       </div>
 
       <Tabs defaultValue="content" className="flex-1 flex flex-col min-h-0">
-        <div className="px-3 py-1.5 border-b border-border shrink-0">
+        <div className="px-4 py-2 border-b border-border shrink-0">
           <TabsList className="w-full h-7 bg-muted p-0.5">
-            <TabsTrigger value="content" className="flex-1 text-[11px] h-6 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger value="content" className="flex-1 text-xs h-6 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               Content
             </TabsTrigger>
-            <TabsTrigger value="style" className="flex-1 text-[11px] h-6 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger value="style" className="flex-1 text-xs h-6 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               Style
             </TabsTrigger>
           </TabsList>
@@ -404,7 +424,7 @@ export function RightPanel() {
 
         <TabsContent value="content" className="m-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
           <ScrollArea className="h-full">
-            <div className="p-3">
+            <div className="p-4">
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -417,11 +437,11 @@ export function RightPanel() {
 
         <TabsContent value="style" className="m-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
           <ScrollArea className="h-full">
-            <div className="p-3">
+            <div className="p-4">
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="space-y-4"
+                className="space-y-5"
               >
                 {/* Padding Section - hide for button/simple blocks */}
                 {selectedBlock?.type !== 'button' && (

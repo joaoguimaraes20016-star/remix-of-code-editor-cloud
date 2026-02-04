@@ -2,9 +2,12 @@ import React, { useEffect, useState, useRef } from 'react';
 import { LoaderContent } from '@/funnel-builder-v3/types/funnel';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { cn } from '@/lib/utils';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface LoaderBlockProps {
   content: LoaderContent;
+  blockId?: string;
+  stepId?: string;
   isPreview?: boolean;
 }
 
@@ -15,7 +18,14 @@ const sizeClasses = {
   large: { loader: 'w-16 h-16', text: 'text-lg', subtext: 'text-base' },
 };
 
-export function LoaderBlock({ content, isPreview }: LoaderBlockProps) {
+export function LoaderBlock({ content, blockId, stepId, isPreview }: LoaderBlockProps) {
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'loader',
+    hintText: 'Click to edit loader'
+  });
   const {
     text = 'Processing...',
     subtext,
@@ -97,7 +107,7 @@ export function LoaderBlock({ content, isPreview }: LoaderBlockProps) {
     }
   };
 
-  return (
+  return wrapWithOverlay(
     <div 
       className="flex flex-col items-center justify-center gap-4 py-8 px-4 rounded-lg"
       style={{ backgroundColor: backgroundColor || undefined }}
@@ -106,7 +116,11 @@ export function LoaderBlock({ content, isPreview }: LoaderBlockProps) {
       
       {text && (
         <p 
-          className={cn("font-medium text-center", sizeConfig.text)}
+          className={cn(
+            "font-medium text-center",
+            sizeConfig.text,
+            !content.textStyles?.color && "text-foreground"
+          )}
           style={content.textStyles ? {
             color: content.textStyles.color,
             fontSize: content.textStyles.fontSize,
@@ -119,7 +133,11 @@ export function LoaderBlock({ content, isPreview }: LoaderBlockProps) {
       
       {subtext && (
         <p 
-          className={cn("text-muted-foreground text-center", sizeConfig.subtext)}
+          className={cn(
+            "text-center",
+            sizeConfig.subtext,
+            !content.subtextStyles?.color && "text-muted-foreground"
+          )}
           style={content.subtextStyles ? {
             color: content.subtextStyles.color,
             fontSize: content.subtextStyles.fontSize,

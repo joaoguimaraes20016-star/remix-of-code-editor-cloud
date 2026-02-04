@@ -5,6 +5,7 @@ import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { cn } from '@/lib/utils';
 import { useSimpleStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface SocialProofBlockProps {
   content: SocialProofContent;
@@ -29,6 +30,14 @@ export function SocialProofBlock({ content, blockId, stepId, isPreview }: Social
   } = content;
 
   const canEdit = blockId && stepId && !isPreview;
+
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'social-proof',
+    hintText: 'Click to edit social proof'
+  });
 
   // Wire label text toolbar to block content
   const { styles: labelToolbarStyles, handleStyleChange: handleLabelStyleChange } = useSimpleStyleSync(
@@ -70,7 +79,7 @@ export function SocialProofBlock({ content, blockId, stepId, isPreview }: Social
     ),
   };
 
-  return (
+  return wrapWithOverlay(
     <div 
       className={cn(
         "flex py-4",

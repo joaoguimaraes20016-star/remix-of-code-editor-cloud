@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { useEditableStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface AccordionBlockProps {
   content: AccordionContentType;
@@ -30,6 +31,13 @@ export function AccordionBlock({ content, blockId, stepId, isPreview }: Accordio
   } = content;
 
   const canEdit = blockId && stepId && !isPreview;
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'accordion',
+    hintText: 'Click to edit accordion'
+  });
   
   const defaultOpen = items
     .filter(item => item.defaultOpen)
@@ -73,7 +81,7 @@ export function AccordionBlock({ content, blockId, stepId, isPreview }: Accordio
     return 'border-b border-border';
   };
 
-  return (
+  return wrapWithOverlay(
     <Accordion type="multiple" defaultValue={defaultOpen} className="w-full max-w-full" style={{ boxSizing: 'border-box' }}>
       {items.map((item) => (
         <AccordionItem 

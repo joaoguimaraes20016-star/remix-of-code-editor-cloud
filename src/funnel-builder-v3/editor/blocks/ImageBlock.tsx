@@ -2,9 +2,13 @@ import React from 'react';
 import { ImageContent } from '@/funnel-builder-v3/types/funnel';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { cn } from '@/lib/utils';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface ImageBlockProps {
   content: ImageContent;
+  blockId?: string;
+  stepId?: string;
+  isPreview?: boolean;
 }
 
 const aspectRatioMap: Record<string, number> = {
@@ -13,8 +17,15 @@ const aspectRatioMap: Record<string, number> = {
   '16:9': 16 / 9,
 };
 
-export function ImageBlock({ content }: ImageBlockProps) {
+export function ImageBlock({ content, blockId, stepId, isPreview }: ImageBlockProps) {
   const { src, alt, aspectRatio, borderRadius } = content;
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'image',
+    hintText: 'Click to edit image'
+  });
 
   const imageStyle: React.CSSProperties = {};
   if (borderRadius !== undefined) imageStyle.borderRadius = borderRadius;
@@ -25,7 +36,7 @@ export function ImageBlock({ content }: ImageBlockProps) {
   );
 
   if (aspectRatio && aspectRatio !== 'auto') {
-    return (
+    return wrapWithOverlay(
       <div className="w-full max-w-full">
         <AspectRatio ratio={aspectRatioMap[aspectRatio] || 16 / 9}>
           <img
@@ -39,7 +50,7 @@ export function ImageBlock({ content }: ImageBlockProps) {
     );
   }
 
-  return (
+  return wrapWithOverlay(
     <img
       src={src}
       alt={alt}

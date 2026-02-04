@@ -3,6 +3,7 @@ import { CountdownContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { cn } from '@/lib/utils';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface CountdownBlockProps {
   content: CountdownContent;
@@ -50,7 +51,10 @@ function TimeUnit({ value, label, textColor, textGradient }: TimeUnitProps) {
   return (
     <div className="flex flex-col items-center">
       <div 
-        className="w-16 h-16 rounded-xl bg-foreground text-background flex items-center justify-center"
+        className={cn(
+          "w-16 h-16 rounded-xl flex items-center justify-center",
+          textColor ? "text-background" : "bg-foreground text-background"
+        )}
         style={textColor ? { backgroundColor: textColor } : undefined}
       >
         <span className="text-2xl font-bold tabular-nums">
@@ -60,6 +64,7 @@ function TimeUnit({ value, label, textColor, textGradient }: TimeUnitProps) {
       <span 
         className={cn(
           "text-xs mt-2 uppercase tracking-wider",
+          !textColor && !hasGradient && "text-muted-foreground",
           hasGradient && "text-gradient-clip"
         )}
         style={labelStyle}
@@ -103,7 +108,7 @@ export function CountdownBlock({ content, blockId, stepId, isPreview }: Countdow
   const effectiveTextColor = textGradient ? undefined : textColor;
 
   if (!timeLeft) {
-    return (
+    return wrapWithOverlay(
       <div className="text-center py-4 rounded-lg" style={containerStyle}>
         <div 
           className="text-lg font-medium"
@@ -128,7 +133,7 @@ export function CountdownBlock({ content, blockId, stepId, isPreview }: Countdow
     );
   }
 
-  return (
+  return wrapWithOverlay(
     <div className="flex justify-center gap-3 py-4 rounded-lg" style={containerStyle}>
       {showDays && <TimeUnit value={timeLeft.days} label="Days" textColor={effectiveTextColor} textGradient={textGradient} />}
       <TimeUnit value={timeLeft.hours} label="Hours" textColor={effectiveTextColor} textGradient={textGradient} />

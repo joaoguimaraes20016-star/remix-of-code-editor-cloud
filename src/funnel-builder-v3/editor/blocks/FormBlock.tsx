@@ -19,6 +19,7 @@ import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { toast } from 'sonner';
 import { defaultCountryCodes } from '@/funnel-builder-v3/lib/block-definitions';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 // Default consent settings
 const defaultConsent: ConsentSettings = {
@@ -61,6 +62,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
     fields = [], 
     submitButton = defaultSubmitButton,
     consent = defaultConsent,
+    labelColor,
   } = content;
   const [localValues, setLocalValues] = useState<Record<string, string>>({});
   const [phoneCountryIds, setPhoneCountryIds] = useState<Record<string, string>>({});
@@ -69,10 +71,20 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
 
   const canEdit = blockId && stepId && !isPreview;
   const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
+  const hasChildSelected = !!selectedChildElement;
   
   // Check if any field is selected
   const isFieldSelected = (fieldId: string) => 
     !isPreview && selectedChildElement === `form-field-${fieldId}`;
+
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'form',
+    hintText: 'Click to edit form',
+    isEditing: hasChildSelected // Disable overlay when child is selected
+  });
 
   // Wire title toolbar to block content
   const { styles: titleToolbarStyles, handleStyleChange: handleTitleStyleChange } = useEditableStyleSync(
@@ -159,26 +171,51 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
           }
           break;
         case 'webhook':
+          // Submit to unified pipeline first
+          await runtime.submitForm(
+            consent.enabled ? {
+              agreed: hasConsented,
+              privacyPolicyUrl: consent.linkUrl,
+            } : undefined
+          );
+          // Then send to custom webhook
           if (actionValue) {
-            // Send data to webhook
-            await fetch(actionValue, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                fields: localValues,
-                submittedAt: new Date().toISOString(),
-              }),
-            });
-            toast.success('Form submitted successfully!');
+            try {
+              await fetch(actionValue, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  fields: localValues,
+                  submittedAt: new Date().toISOString(),
+                }),
+              });
+              toast.success('Form submitted successfully!');
+            } catch (webhookError) {
+              // Don't fail if webhook fails, lead is already saved
+              console.error('Webhook error:', webhookError);
+            }
           }
           // After webhook, navigate to next step
           runtime.goToNextStep();
           break;
         case 'submit':
-          runtime.submitForm();
+          runtime.submitForm(
+            consent.enabled ? {
+              agreed: hasConsented,
+              privacyPolicyUrl: consent.linkUrl,
+            } : undefined
+          );
           break;
         case 'next-step':
         default:
+          // Submit form data first, then navigate
+          await runtime.submitForm(
+            consent.enabled ? {
+              agreed: hasConsented,
+              privacyPolicyUrl: consent.linkUrl,
+            } : undefined
+          );
+          // Then navigate after submission
           if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
             runtime.goToStep(actionValue);
           } else {
@@ -312,11 +349,11 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
                 isPreview={isPreview}
                 showToolbar={true}
                 richText={true}
-                styles={{}}
+                styles={labelColor ? { color: labelColor } : {}}
                 onStyleChange={() => {}}
               />
             ) : (
-              <Label htmlFor={field.id}>
+              <Label htmlFor={field.id} style={labelColor ? { color: labelColor } : undefined}>
                 {field.label}
               </Label>
             )}
@@ -481,7 +518,8 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
           />
           <label 
             htmlFor="privacy-consent" 
-            className="text-sm text-muted-foreground leading-relaxed cursor-pointer select-none"
+            className={cn("text-sm leading-relaxed cursor-pointer select-none", !consent.textColor && "text-muted-foreground")}
+            style={consent.textColor ? { color: consent.textColor } : undefined}
           >
             {consent.text}{' '}
             <a 
@@ -525,4 +563,6 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
       </Button>
     </form>
   );
+
+  return wrapWithOverlay(formElement);
 }

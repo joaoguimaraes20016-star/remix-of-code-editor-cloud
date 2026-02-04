@@ -185,6 +185,7 @@ export interface ConsentSettings {
   linkText: string; // e.g., "privacy policy"
   linkUrl: string; // URL to privacy policy page
   required: boolean;
+  textColor?: string; // Color for consent text (contrast-aware)
 }
 
 export interface FormContent {
@@ -197,11 +198,14 @@ export interface FormContent {
   consent?: ConsentSettings;
   // Popup/Modal settings
   popupSettings?: PopupSettings;
+  // Color properties for contrast awareness
+  labelColor?: string; // Color for field labels
 }
 
 export interface EmailCaptureContent {
   placeholder: string;
   subtitle?: string;
+  subtitleColor?: string;
   // Submit button - uses ButtonContent for consistency
   submitButton?: ButtonContent;
   // Privacy consent checkbox
@@ -227,6 +231,8 @@ export interface PhoneCaptureContent {
   // Popup/Modal settings
   popupSettings?: PopupSettings;
   // Note: countryCodes are now global (stored in Funnel.countryCodes)
+  // Color properties for contrast awareness
+  subtitleColor?: string; // Color for subtitle/description text
 }
 
 // Compact social proof badge with overlapping avatars and rating
@@ -362,6 +368,8 @@ export interface CalendarContent {
   provider?: 'native' | 'calendly';
   url?: string;
   height?: number;
+  // Color properties for contrast awareness
+  titleColor?: string; // Color for title text
 }
 
 export interface SpacerContent {
@@ -492,8 +500,16 @@ export interface ImageQuizContent {
 }
 
 export interface VideoQuestionContent {
-  videoSrc: string;
-  videoType: 'youtube' | 'vimeo' | 'hosted';
+  // Video properties - unified with VideoContent
+  src?: string;  // New unified property
+  type?: 'youtube' | 'vimeo' | 'wistia' | 'loom' | 'hosted';  // Expanded types
+  autoplay?: boolean;
+  controls?: boolean;
+  aspectRatio?: '16:9' | '9:16' | '4:3' | '1:1';
+  muted?: boolean;
+  loop?: boolean;
+  
+  // Quiz properties
   question: string;
   options: {
     id: string;
@@ -520,6 +536,10 @@ export interface VideoQuestionContent {
   optionTextColor?: string;
   selectedOptionColor?: string;
   questionStyles?: TextStyles;
+  
+  // DEPRECATED - kept for backwards compatibility (map to src/type)
+  videoSrc?: string;
+  videoType?: 'youtube' | 'vimeo' | 'hosted';
 }
 
 // Interactive - Forms Content Types
@@ -530,6 +550,9 @@ export interface UploadContent {
   buttonText: string;
   // Privacy consent checkbox
   consent?: ConsentSettings;
+  // Color properties for contrast awareness
+  labelColor?: string; // Color for label text
+  helperTextColor?: string; // Color for helper/instruction text
 }
 
 export interface MessageContent {
@@ -550,6 +573,8 @@ export interface MessageContent {
   
   // Popup/Modal settings
   popupSettings?: PopupSettings;
+  // Color properties for contrast awareness
+  helperTextColor?: string; // Color for helper text (e.g., character count)
 }
 
 export interface DatePickerContent {
@@ -557,6 +582,8 @@ export interface DatePickerContent {
   placeholder: string;
   minDate?: string;
   maxDate?: string;
+  // Color properties for contrast awareness
+  labelColor?: string; // Color for label text
 }
 
 export interface DropdownContent {
@@ -567,6 +594,8 @@ export interface DropdownContent {
     value: string;
     label: string;
   }[];
+  // Color properties for contrast awareness
+  labelColor?: string; // Color for label text
 }
 
 export interface PaymentContent {
@@ -574,6 +603,7 @@ export interface PaymentContent {
   currency: string;
   buttonText: string;
   description?: string;
+  descriptionColor?: string;
   url?: string;
   height?: number;
   stripeUrl?: string;
@@ -583,6 +613,8 @@ export interface PaymentContent {
   buttonColor?: string;
   buttonGradient?: string;
   amountColor?: string;
+  // Color properties for contrast awareness
+  labelColor?: string; // Color for label text (e.g., "Amount Due")
 }
 
 export type BlockContent = 

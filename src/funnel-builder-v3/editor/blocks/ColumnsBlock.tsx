@@ -2,19 +2,28 @@ import React from 'react';
 import { ColumnsContent, Block } from '@/funnel-builder-v3/types/funnel';
 import { BlockRenderer } from './BlockRenderer';
 import { cn } from '@/lib/utils';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface ColumnsBlockProps {
   content: ColumnsContent;
+  blockId?: string;
   stepId: string;
   isPreview?: boolean;
 }
 
-export function ColumnsBlock({ content, stepId, isPreview }: ColumnsBlockProps) {
+export function ColumnsBlock({ content, blockId, stepId, isPreview }: ColumnsBlockProps) {
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'columns',
+    hintText: 'Click to edit columns'
+  });
   const columnCount = content.columns || 2;
   const gap = content.gap || 16;
   const columnBlocks = content.blocks || Array(columnCount).fill([]);
 
-  return (
+  return wrapWithOverlay(
     <div
       className="grid"
       style={{

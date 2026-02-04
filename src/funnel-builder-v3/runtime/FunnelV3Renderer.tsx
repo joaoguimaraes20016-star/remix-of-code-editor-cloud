@@ -1,11 +1,11 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { FunnelRuntimeProvider, FunnelFormData, FunnelSelections, useFunnelRuntime } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { FunnelProvider } from '@/funnel-builder-v3/context/FunnelContext';
 import { BlockRenderer } from '@/funnel-builder-v3/editor/blocks/BlockRenderer';
 import { Funnel, FunnelStep } from '@/funnel-builder-v3/types/funnel';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { useUnifiedLeadSubmit, createUnifiedPayload, extractIdentityFromAnswers } from '@/flow-canvas/shared/hooks/useUnifiedLeadSubmit';
 
 interface FunnelV3RendererProps {
   document: {
@@ -50,6 +50,37 @@ function convertDocumentToFunnel(document: FunnelV3RendererProps['document']): F
   };
 }
 
+// Helper function to extract identity from form fields based on field type and label
+function extractIdentityFromFormData(
+  formData: FunnelFormData,
+  blocks: any[]
+): { name?: string; email?: string; phone?: string } {
+  const identity: { name?: string; email?: string; phone?: string } = {};
+  
+  // Find form blocks and extract identity from their fields
+  for (const block of blocks) {
+    if (block.type === 'form' && block.content?.fields) {
+      for (const field of block.content.fields) {
+        const value = formData[field.id];
+        if (typeof value !== 'string' || !value.trim()) continue;
+        
+        const fieldType = field.type?.toLowerCase() || '';
+        const fieldLabel = (field.label || '').toLowerCase();
+        
+        if (fieldType === 'email' || fieldLabel.includes('email')) {
+          identity.email = value;
+        } else if (fieldType === 'phone' || fieldLabel.includes('phone')) {
+          identity.phone = value;
+        } else if (fieldType === 'text' && (fieldLabel.includes('name') || fieldLabel.includes('full name'))) {
+          identity.name = value;
+        }
+      }
+    }
+  }
+  
+  return identity;
+}
+
 // Inner component that uses runtime context
 function FunnelV3Content({ funnel }: { funnel: Funnel }) {
   const runtime = useFunnelRuntime();
@@ -87,69 +118,180 @@ function FunnelV3Content({ funnel }: { funnel: Funnel }) {
   );
 }
 
+
 export function FunnelV3Renderer({ document, settings, funnelId, teamId }: FunnelV3RendererProps) {
   // Convert document to Funnel format
   const funnel = convertDocumentToFunnel(document);
 
-  // Handle form submission with webhook support
-  const handleFormSubmit = useCallback(async (data: FunnelFormData, selections: FunnelSelections) => {
+  // Use unified lead submission hook
+  const { submit, saveDraft, leadId } = useUnifiedLeadSubmit({
+    funnelId,
+    teamId,
+    onLeadSaved: (id, mode) => {
+      console.log(`[FunnelV3Renderer] Lead saved: ${id}, mode: ${mode}`);
+    },
+    onError: (error) => {
+      console.error('[FunnelV3Renderer] Submission error:', error);
+      toast.error('Failed to submit form');
+    },
+  });
+
+  // Handle form submission using unified pipeline
+  // We'll use a ref to track current step ID since we can't access runtime here
+  const currentStepIdRef = useRef<string | undefined>(funnel.steps[0]?.id);
+  
+  const handleFormSubmit = useCallback(async (
+    data: FunnelFormData, 
+    selections: FunnelSelections,
+    consent?: { agreed: boolean; privacyPolicyUrl?: string }
+  ) => {
     try {
-      // Collect all form data
-      const submissionData = {
+      // Build answers object from form data and selections
+      const answers: Record<string, any> = { ...data, ...selections };
+      
+      // Extract identity from form fields (check current step first, then all steps)
+      const currentStep = funnel.steps.find(s => s.id === currentStepIdRef.current);
+      let identityFromFields: { name?: string; email?: string; phone?: string } = {};
+      
+      if (currentStep) {
+        identityFromFields = extractIdentityFromFormData(data, currentStep.blocks || []);
+      }
+      
+      // Fallback: check all steps if not found in current step
+      if (!identityFromFields.name && !identityFromFields.email && !identityFromFields.phone) {
+        for (const step of funnel.steps) {
+          const extracted = extractIdentityFromFormData(data, step.blocks || []);
+          if (extracted.name) identityFromFields.name = extracted.name;
+          if (extracted.email) identityFromFields.email = extracted.email;
+          if (extracted.phone) identityFromFields.phone = extracted.phone;
+        }
+      }
+      
+      // Also use extractIdentityFromAnswers as fallback
+      const { identity: identityFromAnswers } = extractIdentityFromAnswers(answers);
+      
+      // Merge identity sources (form fields take precedence)
+      const identity = {
+        name: identityFromFields.name || identityFromAnswers.name,
+        email: identityFromFields.email || identityFromAnswers.email,
+        phone: identityFromFields.phone || identityFromAnswers.phone,
+      };
+      
+      // Determine step intent based on position
+      const currentStepId = currentStepIdRef.current;
+      const stepIndex = funnel.steps.findIndex(s => s.id === currentStepId);
+      const isLastStep = stepIndex === funnel.steps.length - 1;
+      const stepIntent: 'capture' | 'qualify' | 'schedule' | 'convert' | 'complete' | 'navigate' | 'info' = 
+        isLastStep ? 'convert' : 'capture';
+      
+      // Create unified payload
+      const payload = createUnifiedPayload(answers, {
         funnelId,
         teamId,
-        formData: data,
-        selections,
-        timestamp: new Date().toISOString(),
-      };
-
-      // Send to webhook if configured
-      const webhookUrl = settings?.webhookUrl || document.settings?.webhookUrl;
-      if (webhookUrl) {
-        try {
-          await fetch(webhookUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(submissionData),
-          });
-        } catch (webhookError) {
-          console.error('Webhook error:', webhookError);
-          // Don't fail the submission if webhook fails
-        }
+        stepId: currentStepId,
+        stepIntent,
+      }, {
+        consent: consent ? {
+          agreed: consent.agreed,
+          privacyPolicyUrl: consent.privacyPolicyUrl,
+          timestamp: new Date().toISOString(),
+        } : undefined,
+      });
+      
+      // Override identity if we extracted it from form fields
+      if (identity.name || identity.email || identity.phone) {
+        payload.identity = identity;
       }
-
-      // Note: funnel_submissions table may not exist in all deployments
-      // Store submission in database if table exists
-      try {
-        const { error: dbError } = await (supabase as any)
-          .from('funnel_submissions')
-          .insert({
-            funnel_id: funnelId,
-            team_id: teamId,
-            data: submissionData,
-            created_at: new Date().toISOString(),
-          });
-
-        if (dbError) {
-          console.error('Database error:', dbError);
-        }
-      } catch (e) {
-        console.warn('Submission storage skipped - table may not exist');
+      
+      // Submit through unified pipeline
+      const result = await submit(payload);
+      
+      if (!result.error) {
+        toast.success('Form submitted successfully!');
       }
-
-      toast.success('Form submitted successfully!');
     } catch (error) {
-      console.error('Submission error:', error);
+      console.error('[FunnelV3Renderer] Submission exception:', error);
       toast.error('Failed to submit form');
     }
-  }, [funnelId, teamId, settings, document.settings]);
+  }, [funnelId, teamId, submit, funnel.steps]);
+  
+  // Track step changes and auto-save draft for drop-off tracking
+  const handleStepChange = useCallback(async (
+    stepId: string,
+    formData: FunnelFormData,
+    selections: FunnelSelections
+  ) => {
+    currentStepIdRef.current = stepId;
+    
+    // Auto-save current data as draft for drop-off tracking
+    // Only save if there's actual data to save
+    const hasData = Object.keys(formData).length > 0 || Object.keys(selections).length > 0;
+    if (!hasData) return;
+    
+    try {
+      // Build answers from current state
+      const answers: Record<string, any> = { ...formData, ...selections };
+      
+      // Extract identity from form fields
+      const currentStep = funnel.steps.find(s => s.id === stepId);
+      let identityFromFields: { name?: string; email?: string; phone?: string } = {};
+      
+      if (currentStep) {
+        identityFromFields = extractIdentityFromFormData(formData, currentStep.blocks || []);
+      }
+      
+      // Fallback: check all steps if not found in current step
+      if (!identityFromFields.name && !identityFromFields.email && !identityFromFields.phone) {
+        for (const step of funnel.steps) {
+          const extracted = extractIdentityFromFormData(formData, step.blocks || []);
+          if (extracted.name) identityFromFields.name = extracted.name;
+          if (extracted.email) identityFromFields.email = extracted.email;
+          if (extracted.phone) identityFromFields.phone = extracted.phone;
+        }
+      }
+      
+      // Also use extractIdentityFromAnswers as fallback
+      const { identity: identityFromAnswers } = extractIdentityFromAnswers(answers);
+      
+      // Merge identity sources (form fields take precedence)
+      const identity = {
+        name: identityFromFields.name || identityFromAnswers.name,
+        email: identityFromFields.email || identityFromAnswers.email,
+        phone: identityFromFields.phone || identityFromAnswers.phone,
+      };
+      
+      // Determine step intent based on position
+      const stepIndex = funnel.steps.findIndex(s => s.id === stepId);
+      const isLastStep = stepIndex === funnel.steps.length - 1;
+      const stepIntent: 'capture' | 'qualify' | 'schedule' | 'convert' | 'complete' | 'navigate' | 'info' = 
+        isLastStep ? 'convert' : 'capture';
+      
+      // Create unified payload
+      const payload = createUnifiedPayload(answers, {
+        funnelId,
+        teamId,
+        stepId,
+        stepIntent,
+      });
+      
+      // Override identity if we extracted it from form fields
+      if (identity.name || identity.email || identity.phone) {
+        payload.identity = identity;
+      }
+      
+      // Save as draft (no automations triggered, for drop-off tracking)
+      await saveDraft(payload);
+    } catch (error) {
+      // Don't block navigation if draft save fails
+      console.error('[FunnelV3Renderer] Draft save error:', error);
+    }
+  }, [funnelId, teamId, saveDraft, funnel.steps]);
 
   return (
     <FunnelRuntimeProvider 
       funnel={funnel}
       onFormSubmit={handleFormSubmit}
+      onStepChange={handleStepChange}
     >
       <FunnelProvider initialFunnel={funnel}>
         <FunnelV3Content funnel={funnel} />

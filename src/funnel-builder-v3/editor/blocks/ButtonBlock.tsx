@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface ButtonBlockProps {
   content: ButtonContent;
@@ -17,6 +18,7 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
   const runtime = useFunnelRuntimeOptional();
   const funnelContext = useFunnelOptional();
   const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
+  const selectedChildElement = funnelContext?.selectedChildElement ?? null;
   const { text, variant, size, fullWidth, backgroundColor, backgroundGradient, color, textGradient, action, actionValue, borderColor, borderWidth, fontSize } = content;
 
   const sizeClasses: Record<string, string> = {
@@ -62,11 +64,13 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
   const hasCustomBg = shouldApplyCustomBg && (!!backgroundColor || !!backgroundGradient);
   const hasTextGradient = !!textGradient;
 
-  const handleClick = () => {
+  const handleClick = async () => {
     if (!runtime) return; // In editor mode, don't do anything
 
     switch (action) {
       case 'next-step':
+        // Submit form data first, then navigate
+        await runtime.submitForm();
         runtime.goToNextStep();
         break;
       case 'url':
@@ -81,10 +85,12 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
         }
         break;
       case 'submit':
-        runtime.submitForm();
+        await runtime.submitForm();
         break;
       default:
         // Default to next step for conversion-focused behavior
+        // Submit form data first, then navigate
+        await runtime.submitForm();
         runtime.goToNextStep();
     }
   };
@@ -96,6 +102,16 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
   };
 
   const canEdit = blockId && stepId && !isPreview;
+  const hasChildSelected = !!selectedChildElement;
+
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'button',
+    hintText: 'Click to edit button',
+    isEditing: hasChildSelected // Disable overlay when child is selected
+  });
 
   // Inline toolbar should be unified with the inspector: it must write back to
   // ButtonContent.color / ButtonContent.textGradient so the inspector swatch and
@@ -120,7 +136,7 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
     }
   };
 
-  return (
+  const buttonElement = (
     <Button
       variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
       className={cn(
@@ -158,4 +174,6 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
       )}
     </Button>
   );
+
+  return wrapWithOverlay(buttonElement);
 }

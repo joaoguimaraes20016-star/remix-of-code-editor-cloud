@@ -7,6 +7,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CreditCard, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 // Default consent settings
 const defaultConsent: ConsentSettings = {
@@ -19,10 +21,13 @@ const defaultConsent: ConsentSettings = {
 
 interface PaymentBlockProps {
   content: PaymentContent;
+  blockId?: string;
+  stepId?: string;
+  isPreview?: boolean;
 }
 
-export function PaymentBlock({ content }: PaymentBlockProps) {
-  const { amount, currency, buttonText, description, buttonColor, buttonGradient, amountColor, consent = defaultConsent } = content;
+export function PaymentBlock({ content, blockId, stepId, isPreview }: PaymentBlockProps) {
+  const { amount, currency, buttonText, description, buttonColor, buttonGradient, amountColor, consent = defaultConsent, descriptionColor, labelColor } = content;
   const [hasConsented, setHasConsented] = useState(false);
 
   const handlePayment = () => {
@@ -61,12 +66,12 @@ export function PaymentBlock({ content }: PaymentBlockProps) {
     <div className="space-y-4">
       {/* Amount Display */}
       <div className="text-center p-4 bg-muted/50 rounded-xl">
-        <p className="text-sm text-muted-foreground">Amount Due</p>
-        <p className="text-3xl font-bold text-foreground" style={amountStyle}>
+        <p className={cn("text-sm", !labelColor && "text-muted-foreground")} style={labelColor ? { color: labelColor } : undefined}>Amount Due</p>
+        <p className={cn("text-3xl font-bold", !amountColor && "text-foreground")} style={amountStyle}>
           {formatCurrency(amount, currency)}
         </p>
         {description && (
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+          <p className={cn("text-sm mt-1", !descriptionColor && "text-muted-foreground")} style={descriptionColor ? { color: descriptionColor } : undefined}>{description}</p>
         )}
       </div>
 
@@ -105,7 +110,8 @@ export function PaymentBlock({ content }: PaymentBlockProps) {
             />
             <label 
               htmlFor="privacy-consent-payment" 
-              className="text-sm text-muted-foreground leading-relaxed cursor-pointer select-none"
+              className={cn("text-sm leading-relaxed cursor-pointer select-none", !consent.textColor && "text-muted-foreground")}
+              style={consent.textColor ? { color: consent.textColor } : undefined}
             >
               {consent.text}{' '}
               <a 
@@ -133,8 +139,8 @@ export function PaymentBlock({ content }: PaymentBlockProps) {
           {buttonText}
         </Button>
 
-        <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
-          <Lock className="w-3 h-3" />
+        <p className={cn("text-xs text-center flex items-center justify-center gap-1", !descriptionColor && "text-muted-foreground")} style={descriptionColor ? { color: descriptionColor } : undefined}>
+          <Lock className={cn("w-3 h-3", !descriptionColor && "text-muted-foreground")} style={descriptionColor ? { color: descriptionColor } : undefined} />
           Secured with 256-bit SSL encryption
         </p>
       </div>

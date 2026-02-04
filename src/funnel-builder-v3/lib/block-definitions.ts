@@ -575,8 +575,18 @@ export const blockDefinitions: Record<BlockType, BlockDefinition> = {
     icon: 'PlayCircle',
     category: 'advanced',
     defaultContent: {
+      // New unified video properties
+      src: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      type: 'youtube',
+      autoplay: false,
+      controls: true,
+      aspectRatio: '16:9',
+      muted: false,
+      loop: false,
+      // Legacy properties for backwards compatibility
       videoSrc: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       videoType: 'youtube',
+      // Quiz content
       question: 'After watching, what resonated most with you?',
       options: [
         { id: '1', text: 'Option A' },

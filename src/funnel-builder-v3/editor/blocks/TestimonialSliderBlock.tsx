@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TestimonialSliderContent } from '@/funnel-builder-v3/types/funnel';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface TestimonialSliderBlockProps {
   content: TestimonialSliderContent;
@@ -10,7 +11,14 @@ interface TestimonialSliderBlockProps {
   isPreview?: boolean;
 }
 
-export function TestimonialSliderBlock({ content }: TestimonialSliderBlockProps) {
+export function TestimonialSliderBlock({ content, blockId, stepId, isPreview }: TestimonialSliderBlockProps) {
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'testimonial-slider',
+    hintText: 'Click to edit testimonial slider'
+  });
   const { 
     testimonials = [],
     autoPlay = false,
@@ -39,7 +47,7 @@ export function TestimonialSliderBlock({ content }: TestimonialSliderBlockProps)
   };
 
   if (testimonials.length === 0) {
-    return (
+    return wrapWithOverlay(
       <div className="aspect-[4/5] bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
         <div className="text-center text-white/80 p-6">
           <p className="text-lg font-medium">Add a testimonial</p>
@@ -51,7 +59,7 @@ export function TestimonialSliderBlock({ content }: TestimonialSliderBlockProps)
 
   const currentTestimonial = testimonials[currentIndex];
 
-  return (
+  return wrapWithOverlay(
     <div className="relative aspect-[4/5] rounded-xl overflow-hidden group">
       {/* Background Image */}
       <div 

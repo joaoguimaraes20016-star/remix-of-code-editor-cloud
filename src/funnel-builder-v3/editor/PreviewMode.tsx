@@ -9,6 +9,37 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
+// Step dots component for inside device screens
+function StepDotsInsideScreen() {
+  const { funnel } = useFunnel();
+  const runtime = useFunnelRuntime();
+  
+  // Respect the showStepIndicator setting
+  if (runtime.totalSteps <= 1 || funnel.settings.showStepIndicator === false) return null;
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4 }}
+      className="flex items-center justify-center gap-2 bg-background/50 backdrop-blur-sm px-4 py-2 rounded-full border border-border/50"
+    >
+      {funnel.steps.map((step, i) => (
+        <button
+          key={step.id}
+          onClick={() => runtime.goToStep(step.id)}
+          className={cn(
+            'h-2 rounded-full transition-all duration-300',
+            step.id === runtime.currentStepId 
+              ? 'bg-primary w-8' 
+              : 'bg-muted-foreground/30 w-2 hover:bg-muted-foreground/50'
+          )}
+        />
+      ))}
+    </motion.div>
+  );
+}
+
 // Inner component that uses runtime context
 function PreviewContent({ deviceMode }: { deviceMode: 'mobile' | 'tablet' | 'desktop' }) {
   const runtime = useFunnelRuntime();
@@ -27,11 +58,11 @@ function PreviewContent({ deviceMode }: { deviceMode: 'mobile' | 'tablet' | 'des
           
           {/* Screen Content */}
           <div 
-            className="preview-phone-screen"
+            className="preview-phone-screen relative"
             style={{ backgroundColor: stepBgColor || undefined }}
           >
             <ScrollArea className="h-full">
-              <div className="min-h-full" style={{ backgroundColor: stepBgColor || undefined }}>
+              <div className="min-h-full pb-20" style={{ backgroundColor: stepBgColor || undefined }}>
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={runtime.currentStepId}
@@ -51,6 +82,11 @@ function PreviewContent({ deviceMode }: { deviceMode: 'mobile' | 'tablet' | 'des
                 </AnimatePresence>
               </div>
             </ScrollArea>
+            <div className="absolute inset-0 pointer-events-none flex items-end justify-center pb-8 z-20">
+              <div className="pointer-events-auto">
+                <StepDotsInsideScreen />
+              </div>
+            </div>
           </div>
           
           {/* Home Indicator */}
@@ -62,11 +98,11 @@ function PreviewContent({ deviceMode }: { deviceMode: 'mobile' | 'tablet' | 'des
       {deviceMode === 'tablet' && (
         <div className="preview-tablet-frame">
           <div 
-            className="preview-tablet-screen"
+            className="preview-tablet-screen relative"
             style={{ backgroundColor: stepBgColor || undefined }}
           >
             <ScrollArea className="h-full">
-              <div className="min-h-full" style={{ backgroundColor: stepBgColor || undefined }}>
+              <div className="min-h-full pb-20" style={{ backgroundColor: stepBgColor || undefined }}>
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={runtime.currentStepId}
@@ -86,6 +122,11 @@ function PreviewContent({ deviceMode }: { deviceMode: 'mobile' | 'tablet' | 'des
                 </AnimatePresence>
               </div>
             </ScrollArea>
+            <div className="absolute inset-0 pointer-events-none flex items-end justify-center pb-8 z-20">
+              <div className="pointer-events-auto">
+                <StepDotsInsideScreen />
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -111,11 +152,11 @@ function PreviewContent({ deviceMode }: { deviceMode: 'mobile' | 'tablet' | 'des
           
           {/* Browser Content */}
           <div 
-            className="preview-browser-screen"
+            className="preview-browser-screen relative"
             style={{ backgroundColor: stepBgColor || undefined }}
           >
             <ScrollArea className="h-full">
-              <div className="min-h-full max-w-md mx-auto" style={{ backgroundColor: stepBgColor || undefined }}>
+              <div className="min-h-full max-w-md mx-auto pb-20" style={{ backgroundColor: stepBgColor || undefined }}>
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={runtime.currentStepId}
@@ -135,6 +176,11 @@ function PreviewContent({ deviceMode }: { deviceMode: 'mobile' | 'tablet' | 'des
                 </AnimatePresence>
               </div>
             </ScrollArea>
+            <div className="absolute inset-0 pointer-events-none flex items-end justify-center pb-8 z-20">
+              <div className="pointer-events-auto">
+                <StepDotsInsideScreen />
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -198,35 +244,6 @@ function PreviewNavigationRight() {
   );
 }
 
-function PreviewStepDots() {
-  const { funnel } = useFunnel();
-  const runtime = useFunnelRuntime();
-  
-  // Respect the showStepIndicator setting
-  if (runtime.totalSteps <= 1 || funnel.settings.showStepIndicator === false) return null;
-  
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 }}
-      className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 bg-background/50 backdrop-blur-sm px-4 py-2 rounded-full border border-border/50"
-    >
-      {funnel.steps.map((step, i) => (
-        <button
-          key={step.id}
-          onClick={() => runtime.goToStep(step.id)}
-          className={cn(
-            'h-2 rounded-full transition-all duration-300',
-            step.id === runtime.currentStepId 
-              ? 'bg-primary w-8' 
-              : 'bg-muted-foreground/30 w-2 hover:bg-muted-foreground/50'
-          )}
-        />
-      ))}
-    </motion.div>
-  );
-}
 
 function PreviewHeader({ deviceMode, setDeviceMode }: { 
   deviceMode: 'mobile' | 'tablet' | 'desktop';
@@ -371,7 +388,6 @@ export function PreviewMode() {
           </motion.div>
 
           <PreviewNavigationRight />
-          <PreviewStepDots />
         </div>
       </motion.div>
     </FunnelRuntimeProvider>

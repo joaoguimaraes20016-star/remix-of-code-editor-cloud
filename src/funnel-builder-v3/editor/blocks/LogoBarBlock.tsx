@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { LogoBarContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { cn } from '@/lib/utils';
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface LogoBarBlockProps {
   content: LogoBarContent;
@@ -26,6 +27,13 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
   } = content;
 
   const canEdit = blockId && stepId && !isPreview;
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'logo-bar',
+    hintText: 'Click to edit logo bar'
+  });
 
   const handleTitleChange = useCallback((newTitle: string) => {
     if (blockId && stepId) {
@@ -42,7 +50,14 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
   }, [blockId, stepId, titleStyles, updateBlockContent]);
 
   // Filter out logos with empty src
-  const validLogos = useMemo(() => logos.filter(logo => logo.src), [logos]);
+  // Safety check: ensure logos is an array before filtering
+  const validLogos = useMemo(() => {
+    if (!Array.isArray(logos)) return [];
+    return logos.filter(logo => logo && logo.src);
+  }, [logos]);
+
+  // State for hover pause functionality - MUST be before any conditional returns (React Rules of Hooks)
+  const [isHovered, setIsHovered] = useState(false);
 
   // Calculate repeat count to ensure viewport is always filled with logos
   // Each logo is ~130-180px wide depending on screen, need at least 8 slots for continuous scroll on larger screens
@@ -53,13 +68,13 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
     return Math.ceil(minSlots / logoCount);
   }, [validLogos.length]);
 
-  // Animation duration based on speed AND total logo count (including repeats)
+  // Animation duration based on speed only (for seamless infinite loop)
+  // The animation always moves 50% (one set width), so duration should be consistent
   const animationDuration = useMemo(() => {
-    const totalLogos = (validLogos.length * repeatCount) || 1;
-    const baseTimePerLogo = speed === 'slow' ? 3 : speed === 'fast' ? 1 : 2; // seconds per logo
-    const totalTime = totalLogos * baseTimePerLogo;
-    return `${totalTime}s`;
-  }, [speed, validLogos.length, repeatCount]);
+    // Fixed durations for smooth infinite scrolling
+    // The keyframes move 50% regardless of logo count, so duration is speed-based only
+    return speed === 'slow' ? '60s' : speed === 'fast' ? '15s' : '30s';
+  }, [speed]);
 
   // Determine if we should animate:
   // - If user explicitly enabled animation, always animate
@@ -95,54 +110,60 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
             placeholder="Add title..."
           />
         ) : (
-          title
+          <span style={titleStyles?.color ? { color: titleStyles.color } : undefined}>{title}</span>
         )}
       </div>
     );
   };
 
-  // Render a complete logo set (used twice for seamless loop)
-  // Logos are repeated based on repeatCount to ensure continuous scrolling
-  const renderLogoSet = useCallback((setId: string) => {
-    // Create an array of repeated logos to fill the viewport
-    const repeatedLogos: Array<{ src: string; alt: string; key: string }> = [];
+  // Create duplicated logos array for seamless infinite loop
+  // Logos are repeated based on repeatCount, then duplicated for seamless animation
+  // Uses stable identifiers for React keys to prevent console errors when logos are deleted
+  const duplicatedLogos = useMemo(() => {
+    // Safety check: return empty array if no valid logos
+    if (!validLogos || validLogos.length === 0) {
+      return [];
+    }
+
+    // First, repeat logos to fill viewport
+    const repeated: Array<{ src: string; alt: string; key: string }> = [];
     for (let r = 0; r < repeatCount; r++) {
       validLogos.forEach((logo, idx) => {
-        repeatedLogos.push({ 
-          src: logo.src, 
+        // Safety check: ensure logo exists and has required properties
+        if (!logo) return;
+        
+        // Use logo.id if available (most stable - doesn't change)
+        // Otherwise use logo.src (should be unique per logo and stable)
+        // Fallback to index only as last resort (but this shouldn't happen)
+        const identifier = logo.id || logo.src || `logo-${idx}`;
+        // Sanitize to remove special characters that could cause key issues
+        const sanitizedId = String(identifier).replace(/[^a-zA-Z0-9-]/g, '-').substring(0, 50);
+        repeated.push({ 
+          src: logo.src || '', 
           alt: logo.alt || 'Company logo', 
-          key: `${setId}-${r}-${idx}` 
+          key: `r${r}-${sanitizedId}` 
         });
       });
     }
+    // Duplicate the entire set for seamless loop (animation moves -50%)
+    return [...repeated, ...repeated.map(l => ({ ...l, key: `dup-${l.key}` }))];
+  }, [validLogos, repeatCount]);
 
-    return (
-      <div className="flex items-center shrink-0 h-full gap-0">
-        {repeatedLogos.map((logo) => (
-          <div key={logo.key} className="flex-shrink-0 px-4 sm:px-6 lg:px-8 h-full flex items-center">
-            <img
-              src={logo.src}
-              alt={logo.alt}
-              className={cn(
-                "h-8 sm:h-10 lg:h-12 max-h-10 sm:max-h-12 lg:max-h-14 w-auto max-w-[100px] sm:max-w-[140px] lg:max-w-[180px] object-contain",
-                grayscale
-                  ? "opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-300"
-                  : "opacity-80 hover:opacity-100 transition-opacity duration-300"
-              )}
-              loading="eager"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-        ))}
-      </div>
-    );
-  }, [validLogos, grayscale, repeatCount]);
+  // Stable animation key - only changes when logos, direction, or speed change
+  // This ensures animation only restarts when content/config actually changes
+  // MUST be before any conditional returns (React Rules of Hooks)
+  const animationKey = useMemo(() => {
+    if (!validLogos || validLogos.length === 0) {
+      return `marquee-empty-${direction}-${speed}`;
+    }
+    return `marquee-${validLogos.map(l => l?.src || '').filter(Boolean).join('-')}-${direction}-${speed}`;
+  }, [validLogos, direction, speed]);
 
   // Static (non-animated) version - used for 3 or fewer logos, or when animation is disabled
   if (!shouldAnimate) {
     // Show empty state if no valid logos
     if (validLogos.length === 0) {
-      return (
+      return wrapWithOverlay(
         <div className="w-full max-w-full overflow-x-hidden py-2">
           {renderTitle()}
           <div className="flex items-center justify-center h-16 sm:h-20 lg:h-24 text-muted-foreground text-sm sm:text-base">
@@ -152,7 +173,7 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
       );
     }
     
-    return (
+    return wrapWithOverlay(
       <div className="w-full max-w-full overflow-x-hidden py-2">
         {renderTitle()}
         <div className="flex items-center justify-center gap-6 sm:gap-8 lg:gap-12 flex-wrap h-16 sm:h-20 lg:h-24">
@@ -179,7 +200,7 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
 
   // Empty state - check validLogos instead of logos
   if (!validLogos || validLogos.length === 0) {
-    return (
+    return wrapWithOverlay(
       <div className="w-full max-w-full overflow-x-hidden py-2">
         {renderTitle()}
         <div className="flex items-center justify-center h-16 sm:h-20 lg:h-24 text-muted-foreground text-sm sm:text-base">
@@ -190,34 +211,73 @@ export function LogoBarBlock({ content, blockId, stepId, isPreview }: LogoBarBlo
   }
 
   // Animated marquee version
-  return (
-    <div className="w-full max-w-full overflow-x-hidden py-2">
+  // Safety check: if no duplicated logos, show empty state
+  if (!duplicatedLogos || duplicatedLogos.length === 0) {
+    return wrapWithOverlay(
+      <div className="w-full max-w-full overflow-hidden py-2">
+        {renderTitle()}
+        <div className="flex items-center justify-center h-16 sm:h-20 lg:h-24 text-muted-foreground text-sm sm:text-base">
+          {canEdit ? 'Add logos in the inspector' : 'No logos to display'}
+        </div>
+      </div>
+    );
+  }
+
+  return wrapWithOverlay(
+    <div className="w-full max-w-full overflow-hidden py-2">
       {renderTitle()}
-      {/* Wrapper - clips content, fixed height, relative for absolute child, edge fade */}
+      {/* Wrapper - relative positioning, clips content, fixed height */}
       <div 
         className="relative w-full overflow-hidden h-16 sm:h-20 lg:h-24"
+        onMouseEnter={() => pauseOnHover && setIsHovered(true)}
+        onMouseLeave={() => pauseOnHover && setIsHovered(false)}
         style={{
-          maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
-          WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+          // CSS mask for subtle edge fading
+          maskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)',
         }}
       >
-        {/* Content - absolutely positioned, animates, contains two identical sets */}
+        {/* Animation track - absolute positioned, removed from document flow */}
         <div
-          className={cn(
-            "absolute inset-y-0 left-0 flex items-center h-full",
-            pauseOnHover && "hover:[animation-play-state:paused]"
-          )}
+          key={animationKey}
+          className="absolute top-0 left-0 h-full flex items-center"
           style={{
+            gap: '2rem',
             animation: `${direction === 'right' ? 'marquee-right' : 'marquee-left'} ${animationDuration} linear infinite`,
+            animationPlayState: isHovered ? 'paused' : 'running',
             willChange: 'transform',
-            transform: 'translateZ(0)',
-            backfaceVisibility: 'hidden',
           }}
         >
-          {/* Logo Set 1 */}
-          {renderLogoSet('set1')}
-          {/* Logo Set 2 - DUPLICATE for seamless loop */}
-          {renderLogoSet('set2')}
+          {/* Render all duplicated logos */}
+          {duplicatedLogos.map((logo) => {
+            // Safety check: ensure logo exists before rendering
+            if (!logo || !logo.src) return null;
+            return (
+              <img
+                key={logo.key}
+                src={logo.src}
+                alt={logo.alt || 'Company logo'}
+                className={cn(
+                  "h-8 sm:h-10 lg:h-12 max-h-10 sm:max-h-12 lg:max-h-14 object-contain",
+                  grayscale
+                    ? "opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-300"
+                    : "opacity-80 hover:opacity-100 transition-opacity duration-300"
+                )}
+                style={{
+                  // Override .canvas-content img { width: 100%; max-width: 100% } rules
+                  width: 'auto',
+                  maxWidth: 'none',
+                  flexShrink: 0,
+                }}
+                loading="eager"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  // Prevent broken images from causing crashes
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            );
+          })}
         </div>
       </div>
     </div>

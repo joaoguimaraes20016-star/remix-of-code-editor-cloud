@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { InlineTextToolbar } from '@/funnel-builder-v3/editor/InlineTextToolbar';
 import { sanitizeHtml, containsHtml, applyInlineStyle } from '@/funnel-builder-v3/lib/selection-utils';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface HeadingBlockProps {
   content: HeadingContent;
@@ -23,6 +24,15 @@ export function HeadingBlock({ content, blockId, stepId, isPreview }: HeadingBlo
   const toolbarPopoverOpenRef = useRef(false);
 
   const canEdit = blockId && stepId && !isPreview;
+  
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'heading',
+    isEditing, // Disables overlay when editing
+    hintText: 'Click to edit heading'
+  });
 
   useEffect(() => {
     if (!isEditing) {
@@ -34,6 +44,24 @@ export function HeadingBlock({ content, blockId, stepId, isPreview }: HeadingBlo
   useEffect(() => {
     toolbarPopoverOpenRef.current = toolbarPopoverOpen;
   }, [toolbarPopoverOpen]);
+
+  // Auto-enter edit mode when block is selected
+  useEffect(() => {
+    if (canEdit && funnelContext?.selectedBlockId === blockId && !isEditing) {
+      setIsEditing(true);
+      // Focus and select text when entering edit mode
+      setTimeout(() => {
+        if (elementRef.current) {
+          elementRef.current.focus();
+          const selection = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(elementRef.current);
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+        }
+      }, 0);
+    }
+  }, [funnelContext?.selectedBlockId, blockId, canEdit, isEditing]);
 
   const handleSave = useCallback(() => {
     if (elementRef.current && blockId && stepId) {
@@ -95,8 +123,9 @@ export function HeadingBlock({ content, blockId, stepId, isPreview }: HeadingBlo
         return;
       }
       
-      // Close editing
+      // Close editing and deselect block
       handleSave();
+      funnelContext?.setSelectedBlockId(null);
     };
 
     // Add listener after a short delay to avoid immediate trigger
@@ -238,26 +267,12 @@ export function HeadingBlock({ content, blockId, stepId, isPreview }: HeadingBlo
 
   const headingElement = renderHeading();
 
-  // Wrap in link if URL is set and in preview mode (only for block-level links without inline HTML)
-  if (isPreview && styles?.linkUrl && !containsHtml(text)) {
-    return (
-      <a 
-        href={styles.linkUrl} 
-        target={styles.linkTarget || '_blank'}
-        rel={styles.linkTarget === '_blank' ? 'noopener noreferrer' : undefined}
-        className="block"
-      >
-        {headingElement}
-      </a>
-    );
-  }
-
   const handleCloseToolbar = useCallback(() => {
     setIsEditing(false);
     window.getSelection()?.removeAllRanges();
   }, []);
 
-  return (
+  const contentElement = (
     <>
       {headingElement}
       {isEditing && canEdit && (
@@ -272,4 +287,20 @@ export function HeadingBlock({ content, blockId, stepId, isPreview }: HeadingBlo
       )}
     </>
   );
+
+  // Wrap in link if URL is set and in preview mode (only for block-level links without inline HTML)
+  if (isPreview && styles?.linkUrl && !containsHtml(text)) {
+    return (
+      <a 
+        href={styles.linkUrl} 
+        target={styles.linkTarget || '_blank'}
+        rel={styles.linkTarget === '_blank' ? 'noopener noreferrer' : undefined}
+        className="block"
+      >
+        {headingElement}
+      </a>
+    );
+  }
+
+  return wrapWithOverlay(contentElement);
 }

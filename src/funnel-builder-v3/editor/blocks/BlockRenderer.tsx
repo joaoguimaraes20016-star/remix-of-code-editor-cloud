@@ -212,8 +212,8 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
     ...(shouldCenterButton && {
       justifyContent: 'center',
     }),
-    // Center media blocks (image, video)
-    ...((block.type === 'image' || block.type === 'video') && {
+    // Center image blocks only - video needs full width for aspect ratio
+    ...(block.type === 'image' && {
       justifyContent: 'center',
       alignItems: 'center',
     }),
@@ -228,13 +228,13 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
       case 'text':
         return <TextBlock content={block.content as any} {...editableProps} />;
       case 'image':
-        return <ImageBlock content={block.content as any} />;
+        return <ImageBlock content={block.content as any} {...editableProps} />;
       case 'button':
         return <ButtonBlock content={block.content as any} {...editableProps} />;
       case 'divider':
-        return <DividerBlock content={block.content as any} />;
+        return <DividerBlock content={block.content as any} {...editableProps} />;
       case 'spacer':
-        return <SpacerBlock content={block.content as any} />;
+        return <SpacerBlock content={block.content as any} {...editableProps} />;
       case 'email-capture':
         return <EmailCaptureBlock content={block.content as any} {...editableProps} />;
       case 'social-proof':
@@ -251,7 +251,7 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
       case 'logo-bar':
         return <LogoBarBlock content={block.content as any} {...editableProps} />;
       case 'video':
-        return <VideoBlock content={block.content as any} />;
+        return <VideoBlock content={block.content as any} blockId={block.id} stepId={stepId} isPreview={isPreview} />;
       case 'phone-capture':
         return <PhoneCaptureBlock content={block.content as any} {...editableProps} />;
       case 'calendar':
@@ -261,9 +261,9 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
       case 'testimonial-slider':
         return <TestimonialSliderBlock content={block.content as any} {...editableProps} />;
       case 'columns':
-        return <ColumnsBlock content={block.content as any} stepId={stepId} isPreview={isPreview} />;
+        return <ColumnsBlock content={block.content as any} blockId={block.id} stepId={stepId} isPreview={isPreview} />;
       case 'card':
-        return <CardBlock content={block.content as any} stepId={stepId} isPreview={isPreview} />;
+        return <CardBlock content={block.content as any} blockId={block.id} stepId={stepId} isPreview={isPreview} />;
       case 'list':
         return <ListBlock content={block.content as any} {...editableProps} />;
       case 'slider':
@@ -292,7 +292,7 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
       case 'dropdown':
         return <DropdownBlock content={block.content as any} {...editableProps} />;
       case 'payment':
-        return <PaymentBlock content={block.content as any} />;
+        return <PaymentBlock content={block.content as any} {...editableProps} />;
       default:
         return (
           <div className="p-4 bg-muted rounded-lg text-center text-muted-foreground text-sm">

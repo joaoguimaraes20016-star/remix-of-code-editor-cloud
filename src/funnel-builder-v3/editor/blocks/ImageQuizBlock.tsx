@@ -7,6 +7,7 @@ import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { useEditableStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
 import { Button } from '@/components/ui/button';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 // Default submit button configuration
 const defaultSubmitButton: ButtonContent = {
@@ -49,6 +50,16 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
   const canEdit = blockId && stepId && !isPreview;
   const shouldShowSubmitButton = showSubmitButton || multiSelect;
   const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
+  const hasChildSelected = !!selectedChildElement;
+
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'image-quiz',
+    hintText: 'Click to edit image quiz',
+    isEditing: hasChildSelected // Disable overlay when child is selected
+  });
 
   // Wire question text toolbar to block content
   const { styles: questionToolbarStyles, handleStyleChange: handleQuestionStyleChange } = useEditableStyleSync(
@@ -81,7 +92,7 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
   }, [runtime, blockId]);
 
   // Helper function to execute answer action
-  const executeAnswerAction = (option: any) => {
+  const executeAnswerAction = async (option: any) => {
     if (!runtime) return;
     
     // Get action from new format or legacy nextStepId
@@ -95,10 +106,13 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
         }
         break;
       case 'submit':
-        runtime.submitForm();
+        await runtime.submitForm();
         break;
       case 'next-step':
       default:
+        // Submit form data first, then navigate
+        await runtime.submitForm();
+        // Then navigate after submission
         if (actionValue) {
           setTimeout(() => runtime.goToStep(actionValue), 300);
         } else {
@@ -135,7 +149,7 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
   };
 
   // Handle submit button click - when submit button exists, it OVERRIDES answer actions
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (runtime && selected.length > 0) {
       const action = submitButton.action || 'next-step';
       const actionValue = submitButton.actionValue;
@@ -154,10 +168,13 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
           }
           break;
         case 'submit':
-          runtime.submitForm();
+          await runtime.submitForm();
           break;
         case 'next-step':
         default:
+          // Submit form data first, then navigate
+          await runtime.submitForm();
+          // Then navigate after submission
           if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
             runtime.goToStep(actionValue);
           } else {
@@ -278,7 +295,7 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
     return style;
   };
 
-  return (
+  const quizElement = (
     <div className="space-y-4">
       <div className={cn(
         "text-lg font-semibold text-center",
@@ -466,4 +483,6 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
       })()}
     </div>
   );
+
+  return wrapWithOverlay(quizElement);
 }

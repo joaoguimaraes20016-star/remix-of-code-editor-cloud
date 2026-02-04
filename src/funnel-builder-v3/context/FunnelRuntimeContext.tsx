@@ -31,7 +31,7 @@ interface FunnelRuntimeContextType {
   setSelection: (blockId: string, optionId: string | string[]) => void;
   
   // Submission
-  submitForm: () => Promise<void>;
+  submitForm: (consent?: { agreed: boolean; privacyPolicyUrl?: string }) => Promise<void>;
   
   // Step info
   getCurrentStep: () => FunnelStep | undefined;
@@ -53,8 +53,12 @@ interface FunnelRuntimeProviderProps {
   funnel: Funnel;
   initialStepId?: string;
   children: ReactNode;
-  onStepChange?: (stepId: string) => void;
-  onFormSubmit?: (data: FunnelFormData, selections: FunnelSelections) => Promise<void>;
+  onStepChange?: (stepId: string, formData: FunnelFormData, selections: FunnelSelections) => void;
+  onFormSubmit?: (
+    data: FunnelFormData, 
+    selections: FunnelSelections, 
+    consent?: { agreed: boolean; privacyPolicyUrl?: string }
+  ) => Promise<void>;
 }
 
 export function FunnelRuntimeProvider({ 
@@ -87,10 +91,14 @@ export function FunnelRuntimeProvider({
     const stepExists = funnel.steps.some(s => s.id === stepId);
     if (!stepExists) return;
     
+    // Capture current state before navigation
+    const currentFormData = formData;
+    const currentSelections = selections;
+    
     setCurrentStepId(stepId);
     setStepHistory(prev => [...prev, stepId]);
-    onStepChange?.(stepId);
-  }, [funnel.steps, onStepChange]);
+    onStepChange?.(stepId, currentFormData, currentSelections);
+  }, [funnel.steps, formData, selections, onStepChange]);
 
   const goToNextStep = useCallback(() => {
     const currentIndex = getStepIndex();
@@ -112,11 +120,16 @@ export function FunnelRuntimeProvider({
     if (stepHistory.length > 1) {
       const newHistory = stepHistory.slice(0, -1);
       const prevStepId = newHistory[newHistory.length - 1];
+      
+      // Capture current state before navigation
+      const currentFormData = formData;
+      const currentSelections = selections;
+      
       setStepHistory(newHistory);
       setCurrentStepId(prevStepId);
-      onStepChange?.(prevStepId);
+      onStepChange?.(prevStepId, currentFormData, currentSelections);
     }
-  }, [stepHistory, onStepChange]);
+  }, [stepHistory, formData, selections, onStepChange]);
 
   const setFormField = useCallback((fieldId: string, value: string | string[] | File | null) => {
     setFormData(prev => ({ ...prev, [fieldId]: value }));
@@ -126,12 +139,12 @@ export function FunnelRuntimeProvider({
     setSelections(prev => ({ ...prev, [blockId]: optionId }));
   }, []);
 
-  const submitForm = useCallback(async () => {
+  const submitForm = useCallback(async (consent?: { agreed: boolean; privacyPolicyUrl?: string }) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     
     try {
-      await onFormSubmit?.(formData, selections);
+      await onFormSubmit?.(formData, selections, consent);
     } finally {
       setIsSubmitting(false);
     }

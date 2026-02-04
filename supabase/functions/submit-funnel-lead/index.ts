@@ -158,12 +158,17 @@ async function resolveContact(
   emailNorm: string | null,
   phoneNorm: string | null,
   nameNorm: string | null,
+  funnelName: string | null = null,
+  leadId: string | null = null,
+  answers: Record<string, any> = {},
+  optInStatus: boolean | null = null,
 ): Promise<{
   contactId: string | null;
   identity_match_type: "email" | "phone" | "none";
   identity_mismatch: boolean;
   identity_mismatch_reason: string | null;
 }> {
+  // Updated: Create contact if ANY field exists (not just email/phone)
   if (!emailNorm && !phoneNorm && !nameNorm) {
     return {
       contactId: null,
@@ -178,11 +183,12 @@ async function resolveContact(
 
   try {
     if (emailNorm) {
+      // Use case-insensitive email lookup (normalize for comparison)
       const { data, error } = await supabase
         .from("contacts")
         .select("*")
         .eq("team_id", team_id)
-        .eq("primary_email_normalized", emailNorm)
+        .ilike("email", emailNorm) // Case-insensitive match
         .limit(1)
         .maybeSingle();
 
@@ -194,11 +200,12 @@ async function resolveContact(
     }
 
     if (phoneNorm) {
+      // Phone lookup - use exact match (phone numbers are typically normalized)
       const { data, error } = await supabase
         .from("contacts")
         .select("*")
         .eq("team_id", team_id)
-        .eq("primary_phone_normalized", phoneNorm)
+        .eq("phone", phoneNorm)
         .limit(1)
         .maybeSingle();
 
@@ -236,14 +243,29 @@ async function resolveContact(
 
   if (!chosenContact) {
     try {
+      // Create new contact with correct field names and all required data
+      const contactData: any = {
+        team_id,
+        email: emailNorm || null,
+        phone: phoneNorm || null,
+        name: nameNorm || null,
+        opt_in: optInStatus ?? false,
+        custom_fields: answers || {},
+      };
+
+      // Set source if funnel name provided
+      if (funnelName) {
+        contactData.source = `Funnel: ${funnelName}`;
+      }
+
+      // Set funnel_lead_id if lead ID provided (may be null on first call)
+      if (leadId) {
+        contactData.funnel_lead_id = leadId;
+      }
+
       const { data: newContact, error: insertError } = await supabase
         .from("contacts")
-        .insert({
-          team_id,
-          primary_email_normalized: emailNorm,
-          primary_phone_normalized: phoneNorm,
-          display_name: nameNorm,
-        })
+        .insert(contactData)
         .select("*")
         .single();
 
@@ -268,15 +290,10 @@ async function resolveContact(
       };
     }
   } else if (identity_match_type !== "none" && identity_mismatch_reason !== "email_phone_conflict") {
-    const contactEmailNorm = normalizeEmail(
-      chosenContact.primary_email_normalized ?? chosenContact.email ?? null,
-    );
-    const contactPhoneNorm = normalizePhone(
-      chosenContact.primary_phone_normalized ?? chosenContact.phone ?? null,
-    );
-    const contactNameNorm = normalizeName(
-      chosenContact.display_name ?? chosenContact.name ?? null,
-    );
+    // Check for mismatches using correct field names
+    const contactEmailNorm = normalizeEmail(chosenContact.email ?? null);
+    const contactPhoneNorm = normalizePhone(chosenContact.phone ?? null);
+    const contactNameNorm = normalizeName(chosenContact.name ?? null);
 
     const mismatches: string[] = [];
 
@@ -287,6 +304,54 @@ async function resolveContact(
     if (mismatches.length > 0) {
       identity_mismatch = true;
       identity_mismatch_reason = mismatches.join(",");
+    }
+
+    // Update existing contact with missing fields if needed
+    // This ensures source, funnel_lead_id, and custom_fields are set even for existing contacts
+    if (chosenContact && (funnelName || leadId || Object.keys(answers).length > 0)) {
+      try {
+        const updateData: any = {};
+        let needsUpdate = false;
+
+        // Update source if funnel name provided and contact doesn't have source or has different source
+        if (funnelName && (!chosenContact.source || !chosenContact.source.includes(funnelName))) {
+          updateData.source = `Funnel: ${funnelName}`;
+          needsUpdate = true;
+        }
+
+        // Update funnel_lead_id if lead ID provided
+        if (leadId && chosenContact.funnel_lead_id !== leadId) {
+          updateData.funnel_lead_id = leadId;
+          needsUpdate = true;
+        }
+
+        // Merge custom_fields with new answers
+        if (Object.keys(answers).length > 0) {
+          const existingCustomFields = chosenContact.custom_fields || {};
+          const mergedCustomFields = { ...existingCustomFields, ...answers };
+          updateData.custom_fields = mergedCustomFields;
+          needsUpdate = true;
+        }
+
+        // Update opt_in if provided
+        if (optInStatus !== null && chosenContact.opt_in !== optInStatus) {
+          updateData.opt_in = optInStatus;
+          needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+          const { error: updateError } = await supabase
+            .from("contacts")
+            .update(updateData)
+            .eq("id", chosenContact.id);
+
+          if (updateError) {
+            console.error("[submit-funnel-lead] Error updating existing contact:", updateError);
+          }
+        }
+      } catch (updateErr) {
+        console.error("[submit-funnel-lead] Unexpected error updating existing contact:", updateErr);
+      }
     }
   }
 
@@ -640,12 +705,17 @@ serve(async (req) => {
       (!existingLead || !existingLead.contact_id);
 
     if (shouldAttemptContactResolution) {
+      // First attempt: resolve/create contact (leadId may be null if creating new lead)
       const contactResult = await resolveContact(
         supabase,
         funnel.team_id,
         emailNormalized,
         phoneNormalized,
         nameNormalized,
+        funnel.name,  // funnel name for source field
+        lead_id,      // may be null for new leads
+        answers,      // form answers for custom_fields
+        optInStatus,  // consent status
       );
 
       contactId = contactResult.contactId;
@@ -763,6 +833,46 @@ serve(async (req) => {
 
         lead = createdLead;
         console.log("Lead created successfully");
+      }
+
+      // Update contact with lead_id, source, and custom_fields after lead is created/updated
+      if (contactId && lead?.id) {
+        try {
+          // Get existing contact to merge custom_fields
+          const { data: existingContact } = await supabase
+            .from("contacts")
+            .select("custom_fields, source")
+            .eq("id", contactId)
+            .single();
+
+          const existingCustomFields = existingContact?.custom_fields || {};
+          const mergedCustomFields = { ...existingCustomFields, ...answers };
+
+          // Update contact with lead link and funnel info
+          const contactUpdate: any = {
+            funnel_lead_id: lead.id,
+            source: `Funnel: ${funnel.name}`,
+            custom_fields: mergedCustomFields,
+          };
+
+          // Update opt_in if provided
+          if (optInStatus !== null) {
+            contactUpdate.opt_in = optInStatus;
+          }
+
+          const { error: updateError } = await supabase
+            .from("contacts")
+            .update(contactUpdate)
+            .eq("id", contactId);
+
+          if (updateError) {
+            console.error("[submit-funnel-lead] Error updating contact:", updateError);
+          } else {
+            console.log("[submit-funnel-lead] Contact updated with lead link and funnel info");
+          }
+        } catch (updateErr) {
+          console.error("[submit-funnel-lead] Unexpected error updating contact:", updateErr);
+        }
       }
     }
 

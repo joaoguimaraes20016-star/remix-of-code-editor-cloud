@@ -10,6 +10,7 @@ import {
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface DropdownBlockProps {
   content: DropdownContent;
@@ -19,13 +20,20 @@ interface DropdownBlockProps {
 }
 
 export function DropdownBlock({ content, blockId, stepId, isPreview }: DropdownBlockProps) {
-  const { label, placeholder, options } = content;
+  const { label, placeholder, options, labelColor } = content;
   const runtime = useFunnelRuntimeOptional();
   const funnelContext = useFunnelOptional();
   const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const [value, setValue] = useState<string>('');
 
   const canEdit = blockId && stepId && !isPreview;
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'dropdown',
+    hintText: 'Click to edit dropdown'
+  });
 
   // Load saved value from runtime on mount
   useEffect(() => {
@@ -50,7 +58,7 @@ export function DropdownBlock({ content, blockId, stepId, isPreview }: DropdownB
     }
   }, [blockId, stepId, updateBlockContent]);
 
-  return (
+  return wrapWithOverlay(
     <div className="space-y-2">
       {(label || canEdit) && (
         <div className="text-sm font-medium">
@@ -62,12 +70,12 @@ export function DropdownBlock({ content, blockId, stepId, isPreview }: DropdownB
               isPreview={isPreview}
               showToolbar={true}
               richText={true}
-              styles={{}}
+              styles={labelColor ? { color: labelColor } : {}}
               onStyleChange={() => {}}
               placeholder="Add label..."
             />
           ) : (
-            label
+            <span style={labelColor ? { color: labelColor } : undefined}>{label}</span>
           )}
         </div>
       )}

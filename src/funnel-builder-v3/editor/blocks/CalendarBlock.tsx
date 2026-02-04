@@ -6,6 +6,7 @@ import { CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface CalendarBlockProps {
   content: CalendarContent;
@@ -19,8 +20,16 @@ export function CalendarBlock({ content, blockId, stepId, isPreview }: CalendarB
   const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const [date, setDate] = useState<Date | undefined>(undefined);
   const accentColor = content.accentColor || '#6366f1';
+  const { titleColor } = content;
 
   const canEdit = blockId && stepId && !isPreview;
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'calendar',
+    hintText: 'Click to edit calendar'
+  });
 
   const handleTitleChange = (newTitle: string) => {
     if (blockId && stepId) {
@@ -36,10 +45,10 @@ export function CalendarBlock({ content, blockId, stepId, isPreview }: CalendarB
 
   // For Calendly embed
   if (content.provider === 'calendly' && content.url) {
-    return (
+    return wrapWithOverlay(
       <div className="space-y-4">
         {(content.title || canEdit) && (
-          <div className="text-lg font-semibold text-center">
+          <div className={cn("text-lg font-semibold text-center", !titleColor && "text-foreground")} style={titleColor ? { color: titleColor } : undefined}>
             {canEdit ? (
               <EditableText
                 value={content.title || ''}
@@ -48,7 +57,7 @@ export function CalendarBlock({ content, blockId, stepId, isPreview }: CalendarB
                 isPreview={isPreview}
                 showToolbar={true}
                 richText={true}
-                styles={{}}
+                styles={titleColor ? { color: titleColor } : {}}
                 onStyleChange={() => {}}
                 placeholder="Add title..."
               />
@@ -68,10 +77,10 @@ export function CalendarBlock({ content, blockId, stepId, isPreview }: CalendarB
     );
   }
 
-  return (
+  return wrapWithOverlay(
     <div className="space-y-4">
       {(content.title || canEdit) && (
-        <div className="text-lg font-semibold text-center">
+        <div className={cn("text-lg font-semibold text-center", !titleColor && "text-foreground")} style={titleColor ? { color: titleColor } : undefined}>
             {canEdit ? (
               <EditableText
                 value={content.title || ''}
@@ -80,7 +89,7 @@ export function CalendarBlock({ content, blockId, stepId, isPreview }: CalendarB
                 isPreview={isPreview}
                 showToolbar={true}
                 richText={true}
-                styles={{}}
+                styles={titleColor ? { color: titleColor } : {}}
                 onStyleChange={() => {}}
                 placeholder="Add title..."
               />

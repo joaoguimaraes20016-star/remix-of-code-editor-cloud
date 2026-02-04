@@ -22,16 +22,18 @@ interface InspectorSectionProps {
 
 export function InspectorSection({ title, info, children, className }: InspectorSectionProps) {
   return (
-    <div className={cn("space-y-1.5", className)}>
+    <div className={cn("space-y-2.5", className)} style={{ minWidth: 0, maxWidth: '100%' }}>
       <div className="flex items-center justify-between">
-        <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{title}</h4>
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{title}</h4>
         {info && (
           <button className="w-3.5 h-3.5 rounded-full border border-border flex items-center justify-center text-[9px] text-muted-foreground hover:bg-muted">
             i
           </button>
         )}
       </div>
-      {children}
+      <div style={{ minWidth: 0, maxWidth: '100%', width: '100%' }}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -58,7 +60,7 @@ export function IconToggleRow({ options, value, onChange, className }: IconToggl
           key={option.value}
           onClick={() => onChange(option.value)}
           className={cn(
-            "h-7 px-2.5 rounded flex items-center justify-center transition-all",
+            "h-8 px-3 rounded flex items-center justify-center transition-all",
             value === option.value 
               ? "bg-background shadow-sm text-foreground" 
               : "text-muted-foreground hover:text-foreground"
@@ -94,7 +96,7 @@ export function LabeledToggleRow({ options, value, onChange, className }: Labele
           key={option.value}
           onClick={() => onChange(option.value)}
           className={cn(
-            "h-7 rounded flex items-center justify-center gap-1 px-2 transition-all text-[11px] font-medium",
+            "h-8 rounded flex items-center justify-center gap-1.5 px-3 transition-all text-xs font-medium",
             value === option.value 
               ? "bg-background shadow-sm text-foreground" 
               : "text-muted-foreground hover:text-foreground"
@@ -169,7 +171,7 @@ export function VisualSlider({
   className 
 }: VisualSliderProps) {
   return (
-    <div className={cn("flex items-center gap-2 bg-muted/50 px-2 py-1.5 rounded-md", className)}>
+    <div className={cn("flex items-center gap-2.5 bg-muted/50 px-3 py-2 rounded-md", className)}>
       {icon && <div className="text-muted-foreground shrink-0">{icon}</div>}
       <Slider
         value={[value]}
@@ -179,7 +181,7 @@ export function VisualSlider({
         step={step}
         className="flex-1"
       />
-      <span className="text-[11px] text-muted-foreground tabular-nums w-9 text-right">
+      <span className="text-xs text-muted-foreground tabular-nums w-9 text-right">
         {value}{unit}
       </span>
     </div>

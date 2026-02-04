@@ -427,7 +427,7 @@ export function Canvas() {
 
               {/* Step Indicator */}
               {funnel.steps.length > 1 && funnel.settings.showStepIndicator !== false && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center justify-center gap-1.5 z-10">
                   {funnel.steps.map((step, i) => (
                     <motion.div
                       key={step.id}

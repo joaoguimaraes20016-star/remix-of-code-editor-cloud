@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface DatePickerBlockProps {
   content: DatePickerContent;
@@ -18,13 +19,20 @@ interface DatePickerBlockProps {
 }
 
 export function DatePickerBlock({ content, blockId, stepId, isPreview }: DatePickerBlockProps) {
-  const { label, placeholder, minDate, maxDate } = content;
+  const { label, placeholder, minDate, maxDate, labelColor } = content;
   const runtime = useFunnelRuntimeOptional();
   const funnelContext = useFunnelOptional();
   const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const [date, setDate] = useState<Date | undefined>();
 
   const canEdit = blockId && stepId && !isPreview;
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'date-picker',
+    hintText: 'Click to edit date picker'
+  });
 
   const minDateObj = minDate ? new Date(minDate) : undefined;
   const maxDateObj = maxDate ? new Date(maxDate) : undefined;
@@ -52,7 +60,7 @@ export function DatePickerBlock({ content, blockId, stepId, isPreview }: DatePic
     }
   }, [blockId, stepId, updateBlockContent]);
 
-  return (
+  return wrapWithOverlay(
     <div className="space-y-2">
       {(label || canEdit) && (
         <div className="text-sm font-medium">
@@ -64,12 +72,12 @@ export function DatePickerBlock({ content, blockId, stepId, isPreview }: DatePic
               isPreview={isPreview}
               showToolbar={true}
               richText={true}
-              styles={{}}
+              styles={labelColor ? { color: labelColor } : {}}
               onStyleChange={() => {}}
               placeholder="Add label..."
             />
           ) : (
-            label
+            <span style={labelColor ? { color: labelColor } : undefined}>{label}</span>
           )}
         </div>
       )}

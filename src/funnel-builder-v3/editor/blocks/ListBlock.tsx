@@ -4,6 +4,7 @@ import { Circle } from 'lucide-react';
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { getIconByName } from '@/funnel-builder-v3/editor/IconPicker';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface ListBlockProps {
   content: ListContent;
@@ -33,6 +34,14 @@ export function ListBlock({ content, blockId, stepId, isPreview }: ListBlockProp
   } = content;
 
   const canEdit = blockId && stepId && !isPreview;
+
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'list',
+    hintText: 'Click to edit list'
+  });
 
   // Normalize style: treat legacy 'check' as 'icon'
   const normalizedStyle = (style as string) === 'check' ? 'icon' : style;
@@ -164,7 +173,7 @@ export function ListBlock({ content, blockId, stepId, isPreview }: ListBlockProp
         const itemIconSize = getEffectiveIconSize(item);
         
         return (
-        <li key={item.id} className="flex items-start gap-2.5 text-foreground" style={textStyle}>
+        <li key={item.id} className={`flex items-start gap-2.5 ${!textColor ? 'text-foreground' : ''}`} style={textStyle}>
           {normalizedStyle === 'bullet' && (
             <div 
               className="flex items-center justify-center flex-shrink-0"
@@ -239,4 +248,6 @@ export function ListBlock({ content, blockId, stepId, isPreview }: ListBlockProp
       })}
     </ul>
   );
+
+  return wrapWithOverlay(listElement);
 }

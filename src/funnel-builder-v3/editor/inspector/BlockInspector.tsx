@@ -70,7 +70,7 @@ function PopupSettingsSection({ content, onContentChange }: { content: any; onCo
     <>
       <Separator />
       <InspectorSection title="Popup Settings">
-        <div className="space-y-3">
+        <div className="space-y-4">
           <ToggleSwitchRow
             label="Show as Popup"
             checked={popupSettings.enabled || false}
@@ -79,8 +79,8 @@ function PopupSettingsSection({ content, onContentChange }: { content: any; onCo
           
           {popupSettings.enabled && (
             <>
-              <div className="space-y-1.5">
-                <span className="text-xs text-muted-foreground">Trigger</span>
+              <div className="space-y-2">
+                <span className="text-sm text-muted-foreground">Trigger</span>
                 <LabeledToggleRow
                   value={popupSettings.trigger || 'on-load'}
                   onChange={(v) => updatePopupSettings({ trigger: v })}
@@ -93,8 +93,8 @@ function PopupSettingsSection({ content, onContentChange }: { content: any; onCo
               </div>
               
               {popupSettings.trigger === 'on-delay' && (
-                <div className="space-y-1.5">
-                  <span className="text-xs text-muted-foreground">Delay (seconds)</span>
+                <div className="space-y-2">
+                  <span className="text-sm text-muted-foreground">Delay (seconds)</span>
                   <VisualSlider
                     value={popupSettings.delay || 3}
                     onChange={(v) => updatePopupSettings({ delay: v })}
@@ -112,7 +112,7 @@ function PopupSettingsSection({ content, onContentChange }: { content: any; onCo
               />
               
               {popupSettings.required && (
-                <p className="text-[10px] text-muted-foreground px-1">
+                <p className="text-xs text-muted-foreground px-1">
                   User cannot close this popup without completing the form.
                 </p>
               )}
@@ -152,7 +152,7 @@ function PrivacyConsentSection({ content, onContentChange }: { content: any; onC
                 <Input
                   value={consent.text}
                   onChange={(e) => updateConsent({ text: e.target.value })}
-                  className="h-8 bg-muted border-0"
+                  className="h-10 bg-muted border-0"
                   placeholder="I have read and accept the"
                 />
               </div>
@@ -162,7 +162,7 @@ function PrivacyConsentSection({ content, onContentChange }: { content: any; onC
                 <Input
                   value={consent.linkText}
                   onChange={(e) => updateConsent({ linkText: e.target.value })}
-                  className="h-8 bg-muted border-0"
+                  className="h-10 bg-muted border-0"
                   placeholder="privacy policy"
                 />
               </div>
@@ -172,7 +172,7 @@ function PrivacyConsentSection({ content, onContentChange }: { content: any; onC
                 <Input
                   value={consent.linkUrl}
                   onChange={(e) => updateConsent({ linkUrl: e.target.value })}
-                  className="h-8 bg-muted border-0"
+                  className="h-10 bg-muted border-0"
                   placeholder="https://example.com/privacy"
                 />
               </div>
@@ -274,10 +274,10 @@ export function HeadingInspector({ block, onContentChange, onBlockChange }: Bloc
         <Input
           value={stripHtmlTags(content.text)}
           onChange={(e) => onContentChange({ text: e.target.value })}
-          className="h-9 bg-muted border-0"
+          className="h-10 bg-muted border-0"
           placeholder="Enter heading..."
         />
-        <p className="text-[10px] text-muted-foreground">Double-click on canvas to edit inline</p>
+        <p className="text-xs text-muted-foreground">Double-click on canvas to edit inline</p>
       </InspectorSection>
 
       <InspectorSection title="Size">
@@ -568,10 +568,10 @@ export function ButtonInspector({ block, onContentChange, onBlockChange }: Block
           ]}
         />
         {/* Contextual help text for each action */}
-        <div className="mt-2 p-2 bg-muted/50 rounded-lg border border-border/50">
+        <div className="mt-2.5 p-3 bg-muted/50 rounded-lg border border-border/50">
           <div className="flex items-start gap-2">
             <Info className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
-            <div className="text-[10px] text-muted-foreground space-y-1">
+            <div className="text-xs text-muted-foreground space-y-1">
               {content.action === 'next-step' && (
                 <div>
                   <p className="font-medium text-foreground mb-0.5">Next Step</p>
@@ -613,7 +613,7 @@ export function ButtonInspector({ block, onContentChange, onBlockChange }: Block
           <Input
             value={content.actionValue || ''}
             onChange={(e) => onContentChange({ actionValue: e.target.value })}
-            className="h-9 bg-muted border-0"
+            className="h-10 bg-muted border-0"
             placeholder="https://..."
           />
         </InspectorSection>
@@ -624,10 +624,10 @@ export function ButtonInspector({ block, onContentChange, onBlockChange }: Block
           <Input
             value={content.actionValue || ''}
             onChange={(e) => onContentChange({ actionValue: e.target.value })}
-            className="h-9 bg-muted border-0"
+            className="h-10 bg-muted border-0"
             placeholder="https://..."
           />
-          <p className="text-[10px] text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Send form data to external services (Zapier, Make, etc.)
           </p>
         </InspectorSection>
@@ -638,7 +638,7 @@ export function ButtonInspector({ block, onContentChange, onBlockChange }: Block
           <Input
             value={content.actionValue || ''}
             onChange={(e) => onContentChange({ actionValue: e.target.value })}
-            className="h-9 bg-muted border-0"
+            className="h-10 bg-muted border-0"
             placeholder="Element ID or selector"
           />
         </InspectorSection>
@@ -1003,8 +1003,15 @@ export function VideoInspector({ block, onContentChange, onBlockChange }: BlockI
           <Input
             value={isUploadedVideo ? '' : (content.src || '')}
             onChange={(e) => handleUrlChange(e.target.value)}
-            className="h-9 bg-muted border-0"
+            className="h-10 bg-muted border-0 w-full max-w-full min-w-0 px-2"
             placeholder="Paste any video link..."
+            style={{ 
+              overflowX: 'auto',
+              textOverflow: 'clip',
+              whiteSpace: 'nowrap',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}
           />
           {platformName && content.src && !isUploadedVideo && (
             <div className="flex items-center gap-1.5 mt-1.5">
@@ -2662,7 +2669,7 @@ export function FormInspector({ block, onContentChange, onBlockChange }: BlockIn
                 <Input
                   value={consent.text}
                   onChange={(e) => updateConsent({ text: e.target.value })}
-                  className="h-8 bg-muted border-0"
+                  className="h-10 bg-muted border-0"
                   placeholder="I have read and accept the"
                 />
               </div>
@@ -2672,7 +2679,7 @@ export function FormInspector({ block, onContentChange, onBlockChange }: BlockIn
                 <Input
                   value={consent.linkText}
                   onChange={(e) => updateConsent({ linkText: e.target.value })}
-                  className="h-8 bg-muted border-0"
+                  className="h-10 bg-muted border-0"
                   placeholder="privacy policy"
                 />
               </div>
@@ -2682,7 +2689,7 @@ export function FormInspector({ block, onContentChange, onBlockChange }: BlockIn
                 <Input
                   value={consent.linkUrl}
                   onChange={(e) => updateConsent({ linkUrl: e.target.value })}
-                  className="h-8 bg-muted border-0"
+                  className="h-10 bg-muted border-0"
                   placeholder="https://example.com/privacy"
                 />
               </div>
@@ -4311,25 +4318,15 @@ export function VideoQuestionInspector({ block, onContentChange, onBlockChange, 
 
   return (
     <div className="space-y-4">
-      <InspectorSection title="Video Type">
-        <LabeledToggleRow
-          value={content.videoType || 'youtube'}
-          onChange={(v) => onContentChange({ videoType: v })}
-          options={[
-            { value: 'youtube', label: 'YouTube' },
-            { value: 'vimeo', label: 'Vimeo' },
-            { value: 'hosted', label: 'Hosted' },
-          ]}
-        />
-      </InspectorSection>
-
-      <MediaPicker
-        value={content.videoSrc || ''}
-        onChange={(url) => onContentChange({ videoSrc: url })}
-        type="video"
-        label="Video"
-        placeholder={content.videoType === 'hosted' ? 'https://example.com/video.mp4' : 'https://youtube.com/watch?v=...'}
-      />
+      {/* Video editing hint */}
+      <div className="p-2 bg-muted/50 rounded-lg border border-border/50">
+        <div className="flex items-start gap-2">
+          <Play className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+          <p className="text-[10px] text-muted-foreground">
+            Click the video on canvas to edit video settings (URL, controls, aspect ratio, etc.)
+          </p>
+        </div>
+      </div>
 
       <Separator />
 

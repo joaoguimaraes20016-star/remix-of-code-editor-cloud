@@ -10,11 +10,10 @@ import {
   Plus, ExternalLink, Edit, Trash2, Copy, Users, Search, 
   LayoutGrid, List, Link2, MoreHorizontal, Star, BarChart3,
   MessageSquare, Calendar, Download, TrendingUp, TrendingDown,
-  Phone, Mail, CheckCircle, ArrowLeft, Globe, Plug, Settings,
-  ChevronRight, Archive, AppWindow, FolderInput, FileText
+  Phone, Mail, CheckCircle, ArrowLeft, Globe, Settings,
+  ChevronRight, Archive, FolderInput
 } from 'lucide-react';
 import { DomainsSection } from '@/components/funnel-builder/DomainsSection';
-import { IntegrationsSection } from '@/components/funnel-builder/IntegrationsSection';
 import { FunnelSettingsDialog } from '@/components/funnel-builder/FunnelSettingsDialog';
 import { toast } from '@/hooks/use-toast';
 import { CreateFunnelDialog } from '@/components/funnel-builder/CreateFunnelDialog';
@@ -24,9 +23,7 @@ import { cn } from '@/lib/utils';
 import { generateCSV, downloadCSV, FUNNEL_LEAD_COLUMNS, CONTACT_COLUMNS } from '@/lib/csvExport';
 import { FunnelDropOffChart } from '@/components/funnel-analytics/FunnelDropOffChart';
 import { LeadsVsVisitorsChart } from '@/components/funnel-analytics/LeadsVsVisitorsChart';
-import { ExpandableLeadRow } from '@/components/funnel-analytics/ExpandableLeadRow';
 import { ContactDetailDrawer } from '@/components/funnel-analytics/ContactDetailDrawer';
-import { FormSubmissionsSection } from '@/components/funnel-analytics/FormSubmissionsSection';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,6 +84,8 @@ interface Funnel {
   created_at: string;
   updated_at: string;
   lead_count?: number;
+  published_document_snapshot?: Record<string, any> | null;
+  builder_document?: Record<string, any> | null;
 }
 
 interface FunnelLead {
@@ -109,6 +108,47 @@ interface FunnelStep {
   step_type: string;
   content: { headline?: string; question?: string };
   funnel_id: string;
+  name?: string;
+}
+
+// Analytics step interface for hybrid step extraction
+interface AnalyticsStep {
+  id: string;
+  order_index: number;
+  step_type: string;
+  name: string;
+  funnel_id: string;
+}
+
+// Extract steps from funnel snapshot (supports V3, FlowCanvas, and old formats)
+function extractStepsFromFunnel(funnel: Funnel): AnalyticsStep[] {
+  const snapshot = funnel.published_document_snapshot;
+  
+  if (!snapshot) return [];
+  
+  // V3 format (pages with blocks)
+  if (typeof snapshot.version === 'number' && snapshot.version === 3 && Array.isArray(snapshot.pages)) {
+    return snapshot.pages.map((page: any, idx: number) => ({
+      id: page.id || `page-${idx}`,
+      order_index: idx,
+      step_type: 'page',
+      name: page.name || `Page ${idx + 1}`,
+      funnel_id: funnel.id,
+    }));
+  }
+  
+  // FlowCanvas format (steps with blocks)
+  if (Array.isArray(snapshot.steps)) {
+    return snapshot.steps.map((step: any, idx: number) => ({
+      id: step.id || `step-${idx}`,
+      order_index: idx,
+      step_type: step.type || 'step',
+      name: step.name || `Step ${idx + 1}`,
+      funnel_id: funnel.id,
+    }));
+  }
+  
+  return []; // No snapshot = no steps
 }
 
 interface Contact {
@@ -125,7 +165,7 @@ interface Contact {
   updated_at: string;
 }
 
-type TabType = 'funnels' | 'performance' | 'submissions' | 'contacts' | 'domains' | 'integrations';
+type TabType = 'funnels' | 'performance' | 'contacts' | 'domains';
 type ViewMode = 'grid' | 'list';
 
 export default function FunnelList() {
@@ -141,6 +181,7 @@ export default function FunnelList() {
   const [funnelToDelete, setFunnelToDelete] = useState<Funnel | null>(null);
   const [selectedFunnelId, setSelectedFunnelId] = useState<string>('all');
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [settingsFunnel, setSettingsFunnel] = useState<Funnel | null>(null);
   const [renameFunnel, setRenameFunnel] = useState<Funnel | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -149,10 +190,10 @@ export default function FunnelList() {
   const { data: funnels, isLoading: funnelsLoading } = useQuery({
     queryKey: ['funnels', teamId],
     queryFn: async () => {
-      // Fetch funnels without builder_document (large field not needed for list view)
+      // Fetch funnels with published_document_snapshot for V3 step extraction
       const { data: funnelsData, error: funnelsError } = await supabase
         .from('funnels')
-        .select('id, team_id, name, slug, status, settings, domain_id, created_at, updated_at, created_by')
+        .select('id, team_id, name, slug, status, settings, domain_id, created_at, updated_at, created_by, published_document_snapshot, builder_document')
         .eq('team_id', teamId)
         .order('updated_at', { ascending: false });
 
@@ -210,8 +251,9 @@ export default function FunnelList() {
     refetchOnReconnect: false,
   });
 
-  // Fetch all funnel steps for drop-off analytics - lazy loaded only when Performance tab is active
-  const { data: allSteps } = useQuery({
+  // Extract steps from funnel snapshots (supports V3, FlowCanvas, and old formats)
+  // For old funnels without snapshots, fall back to funnel_steps table
+  const { data: oldSteps } = useQuery({
     queryKey: ['funnel-steps', teamId],
     queryFn: async () => {
       if (!funnels?.length) return [];
@@ -229,6 +271,41 @@ export default function FunnelList() {
     enabled: !!funnels?.length && activeTab === 'performance', // Only load when Performance tab is active
   });
 
+  // Compute steps from snapshots (V3/FlowCanvas) and merge with old steps
+  const allSteps = useMemo(() => {
+    if (!funnels?.length) return [];
+    
+    const snapshotSteps = funnels.flatMap(f => extractStepsFromFunnel(f));
+    const oldStepsData = oldSteps || [];
+    
+    // Merge: snapshot steps take precedence, old steps fill gaps
+    const stepsMap = new Map<string, AnalyticsStep>();
+    
+    // Add snapshot steps first
+    snapshotSteps.forEach(step => {
+      stepsMap.set(`${step.funnel_id}-${step.order_index}`, step);
+    });
+    
+    // Add old steps for funnels without snapshots
+    oldStepsData.forEach(step => {
+      const key = `${step.funnel_id}-${step.order_index}`;
+      if (!stepsMap.has(key)) {
+        stepsMap.set(key, {
+          id: step.id,
+          order_index: step.order_index,
+          step_type: step.step_type,
+          name: step.content?.headline || step.content?.question || `Step ${step.order_index + 1}`,
+          funnel_id: step.funnel_id,
+        });
+      }
+    });
+    
+    return Array.from(stepsMap.values()).sort((a, b) => {
+      if (a.funnel_id !== b.funnel_id) return a.funnel_id.localeCompare(b.funnel_id);
+      return a.order_index - b.order_index;
+    });
+  }, [funnels, oldSteps]);
+
   // Fetch contacts - lazy loaded only when Contacts tab is active
   const {
     data: contacts,
@@ -236,13 +313,27 @@ export default function FunnelList() {
     isFetching: contactsFetching,
     error: contactsError,
   } = useQuery({
-    queryKey: ['contacts', teamId],
+    queryKey: ['contacts', teamId, selectedFunnelId],
     queryFn: async () => {
-      console.log('[Contacts] teamId:', teamId);
+      console.log('[Contacts] teamId:', teamId, 'selectedFunnelId:', selectedFunnelId);
 
-      const { data, error } = await supabase
-        .from('contacts')
-.select(`
+      // Filter by funnel if specific funnel is selected
+      if (selectedFunnelId && selectedFunnelId !== 'all') {
+        // Get funnel_lead_ids for the selected funnel
+        const { data: funnelLeadIds } = await supabase
+          .from('funnel_leads')
+          .select('id')
+          .eq('funnel_id', selectedFunnelId);
+        
+        if (!funnelLeadIds || funnelLeadIds.length === 0) {
+          console.log('[Contacts] No leads for funnel:', selectedFunnelId);
+          return [];
+        }
+
+        const ids = funnelLeadIds.map(fl => fl.id);
+        const { data, error } = await supabase
+          .from('contacts')
+          .select(`
   id,
   team_id,
   name,
@@ -257,7 +348,32 @@ export default function FunnelList() {
   created_at,
   updated_at
 `)
+          .eq('team_id', teamId)
+          .in('funnel_lead_id', ids)
+          .order('created_at', { ascending: false });
 
+        if (error) throw error;
+        return data as Contact[];
+      }
+
+      // Show all contacts when "All Funnels" is selected
+      const { data, error } = await supabase
+        .from('contacts')
+        .select(`
+  id,
+  team_id,
+  name,
+  email,
+  phone,
+  opt_in,
+  source,
+  calendly_booked_at,
+  custom_fields,
+  tags,
+  funnel_lead_id,
+  created_at,
+  updated_at
+`)
         .eq('team_id', teamId)
         .order('created_at', { ascending: false });
 
@@ -352,6 +468,68 @@ export default function FunnelList() {
 });
 
 
+  const deleteContactMutation = useMutation({
+    mutationFn: async (contactId: string) => {
+      const { data, error } = await supabase
+        .from('contacts')
+        .delete()
+        .eq('id', contactId)
+        .eq('team_id', teamId)
+        .select('id');
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('Delete blocked by RLS or insufficient permissions');
+      }
+
+      return contactId;
+    },
+
+    onMutate: async (contactId: string) => {
+      await queryClient.cancelQueries({
+        queryKey: ['contacts', teamId, selectedFunnelId],
+      });
+
+      const previousContacts = queryClient.getQueryData<Contact[]>([
+        'contacts',
+        teamId,
+        selectedFunnelId,
+      ]);
+
+      queryClient.setQueryData<Contact[]>(
+        ['contacts', teamId, selectedFunnelId],
+        (old) => old?.filter((c) => c.id !== contactId) ?? []
+      );
+
+      return { previousContacts };
+    },
+
+    onError: (_error, _contactId, context) => {
+      if (context?.previousContacts) {
+        queryClient.setQueryData(
+          ['contacts', teamId, selectedFunnelId],
+          context.previousContacts
+        );
+      }
+
+      toast({
+        title: 'Failed to delete contact',
+        variant: 'destructive',
+      });
+    },
+
+    onSettled: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['contacts', teamId, selectedFunnelId],
+      });
+    },
+
+    onSuccess: () => {
+      toast({ title: 'Contact deleted' });
+      setContactToDelete(null);
+    },
+  });
+
   const renameMutation = useMutation({
     mutationFn: async ({ id, name }: { id: string; name: string }) => {
       const { error } = await supabase
@@ -391,31 +569,37 @@ export default function FunnelList() {
           created_by: (await supabase.auth.getUser()).data.user?.id,
           settings: funnel.settings,
           status: 'draft',
+          // Copy V3 documents if they exist
+          builder_document: funnel.builder_document || null,
+          published_document_snapshot: funnel.published_document_snapshot || null,
         })
         .select()
         .single();
 
       if (funnelError) throw funnelError;
 
-      // Copy steps
-      const { data: steps } = await supabase
-        .from('funnel_steps')
-        .select('*')
-        .eq('funnel_id', funnel.id)
-        .order('order_index');
-
-      if (steps?.length) {
-        const { error: stepsError } = await supabase
+      // Only copy funnel_steps for old funnels without snapshots
+      // V3 funnels store everything in builder_document/published_document_snapshot
+      if (!funnel.published_document_snapshot && !funnel.builder_document) {
+        const { data: steps } = await supabase
           .from('funnel_steps')
-          .insert(
-            steps.map(step => ({
-              funnel_id: newFunnel.id,
-              step_type: step.step_type,
-              order_index: step.order_index,
-              content: step.content,
-            }))
-          );
-        if (stepsError) throw stepsError;
+          .select('*')
+          .eq('funnel_id', funnel.id)
+          .order('order_index');
+
+        if (steps?.length) {
+          const { error: stepsError } = await supabase
+            .from('funnel_steps')
+            .insert(
+              steps.map(step => ({
+                funnel_id: newFunnel.id,
+                step_type: step.step_type,
+                order_index: step.order_index,
+                content: step.content,
+              }))
+            );
+          if (stepsError) throw stepsError;
+        }
       }
 
       return newFunnel;
@@ -444,8 +628,8 @@ export default function FunnelList() {
     toast({ title: 'URL copied to clipboard' });
   };
 
-  // Helper: A "real lead" has ALL THREE: name + phone + email
-  const isRealLead = (lead: FunnelLead) => !!(lead.name && lead.phone && lead.email);
+  // Helper: A "contact" has ANY contact field: name OR phone OR email
+  const isContact = (lead: FunnelLead) => !!(lead.name || lead.phone || lead.email);
   
   // Calculate performance stats with real percentage changes
   const now = new Date();
@@ -457,32 +641,32 @@ export default function FunnelList() {
   const monthAgo = subDays(now, 30);
   const twoMonthsAgo = subDays(now, 60);
 
-  // Filter to only real leads (name + phone + email)
-  const realLeads = leads?.filter(isRealLead) || [];
+  // Filter to contacts (anyone with ANY contact field)
+  const contactLeads = leads?.filter(isContact) || [];
   
-  // Current period - REAL LEADS only
-  const todayLeads = realLeads.filter(l => new Date(l.created_at) >= todayStart).length;
-  const weekLeads = realLeads.filter(l => new Date(l.created_at) >= weekAgo).length;
-  const monthLeads = realLeads.filter(l => new Date(l.created_at) >= monthAgo).length;
-  const totalLeads = realLeads.length;
+  // Current period - CONTACTS (called "Leads" in Performance tab)
+  const todayLeads = contactLeads.filter(l => new Date(l.created_at) >= todayStart).length;
+  const weekLeads = contactLeads.filter(l => new Date(l.created_at) >= weekAgo).length;
+  const monthLeads = contactLeads.filter(l => new Date(l.created_at) >= monthAgo).length;
+  const totalLeads = contactLeads.length;
 
-  // Visitors (started but not real leads)
-  const totalVisitors = (leads?.length || 0) - realLeads.length;
+  // Visitors (started but no contact info)
+  const totalVisitors = (leads?.length || 0) - contactLeads.length;
   const todayVisitors = (leads?.filter(l => new Date(l.created_at) >= todayStart).length || 0) - todayLeads;
   const weekVisitors = (leads?.filter(l => new Date(l.created_at) >= weekAgo).length || 0) - weekLeads;
 
-  // Previous period leads for comparison (real leads only)
-  const yesterdayLeads = realLeads.filter(l => {
+  // Previous period leads for comparison (contacts)
+  const yesterdayLeads = contactLeads.filter(l => {
     const date = new Date(l.created_at);
     return date >= twoDaysAgo && date < yesterdayStart;
   }).length;
   
-  const previousWeekLeads = realLeads.filter(l => {
+  const previousWeekLeads = contactLeads.filter(l => {
     const date = new Date(l.created_at);
     return date >= twoWeeksAgo && date < weekAgo;
   }).length;
   
-  const previousMonthLeads = realLeads.filter(l => {
+  const previousMonthLeads = contactLeads.filter(l => {
     const date = new Date(l.created_at);
     return date >= twoMonthsAgo && date < monthAgo;
   }).length;
@@ -497,11 +681,45 @@ export default function FunnelList() {
   const weekChange = calcPercentChange(weekLeads, previousWeekLeads);
   const monthChange = calcPercentChange(monthLeads, previousMonthLeads);
   
-  // Conversion rate: real leads / total visitors
-  const conversionRate = leads?.length ? Math.round((realLeads.length / leads.length) * 100) : 0;
+  // Conversion rate: contacts / total visitors
+  const conversionRate = leads?.length ? Math.round((contactLeads.length / leads.length) * 100) : 0;
 
   const optedInContacts = contacts?.filter(c => c.opt_in).length || 0;
   const bookedContacts = contacts?.filter(c => c.calendly_booked_at).length || 0;
+
+  // Contact time-based metrics
+  const todayContacts = contacts?.filter(c => new Date(c.created_at) >= todayStart).length || 0;
+  const yesterdayContacts = contacts?.filter(c => {
+    const date = new Date(c.created_at);
+    return date >= twoDaysAgo && date < yesterdayStart;
+  }).length || 0;
+
+  const weekContacts = contacts?.filter(c => new Date(c.created_at) >= weekAgo).length || 0;
+  const previousWeekContacts = contacts?.filter(c => {
+    const date = new Date(c.created_at);
+    return date >= twoWeeksAgo && date < weekAgo;
+  }).length || 0;
+
+  const monthContacts = contacts?.filter(c => new Date(c.created_at) >= monthAgo).length || 0;
+  const previousMonthContacts = contacts?.filter(c => {
+    const date = new Date(c.created_at);
+    return date >= twoMonthsAgo && date < monthAgo;
+  }).length || 0;
+
+  const optInRate = contacts?.length ? Math.round((optedInContacts / contacts.length) * 100) : 0;
+
+  // Percentage changes for contacts
+  const todayContactsChange = yesterdayContacts > 0 
+    ? Math.round(((todayContacts - yesterdayContacts) / yesterdayContacts) * 100) 
+    : todayContacts > 0 ? 100 : 0;
+
+  const weekContactsChange = previousWeekContacts > 0
+    ? Math.round(((weekContacts - previousWeekContacts) / previousWeekContacts) * 100)
+    : weekContacts > 0 ? 100 : 0;
+
+  const monthContactsChange = previousMonthContacts > 0
+    ? Math.round(((monthContacts - previousMonthContacts) / previousMonthContacts) * 100)
+    : monthContacts > 0 ? 100 : 0;
 
   const leadsLastUpdatedLabel = leadsUpdatedAt
     ? formatDistanceToNow(new Date(leadsUpdatedAt), { addSuffix: true })
@@ -610,14 +828,12 @@ export default function FunnelList() {
     }
   };
 
-  // Tabs - only admins see domains/integrations
+  // Tabs - only admins see domains
   const tabs = [
     { id: 'funnels' as const, label: 'Funnels', icon: LayoutGrid, adminOnly: false },
     { id: 'performance' as const, label: 'Performance', icon: BarChart3, adminOnly: false },
-    { id: 'submissions' as const, label: 'Submissions', icon: FileText, adminOnly: false },
     { id: 'contacts' as const, label: 'Contacts', icon: Users, adminOnly: false },
     { id: 'domains' as const, label: 'Domains', icon: Globe, adminOnly: true },
-    { id: 'integrations' as const, label: 'Integrations', icon: Plug, adminOnly: true },
   ].filter(tab => !tab.adminOnly || isAdmin);
 
   return (
@@ -806,13 +1022,6 @@ export default function FunnelList() {
                               }}>
                                 <BarChart3 className="h-4 w-4 mr-2" /> Metrics
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedFunnelId(funnel.id);
-                                setActiveTab('integrations');
-                              }}>
-                                <AppWindow className="h-4 w-4 mr-2" /> Apps
-                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={(e) => {
                                 e.stopPropagation();
@@ -972,13 +1181,6 @@ export default function FunnelList() {
                                 }}>
                                   <BarChart3 className="h-4 w-4 mr-2" /> Metrics
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedFunnelId(funnel.id);
-                                  setActiveTab('integrations');
-                                }}>
-                                  <AppWindow className="h-4 w-4 mr-2" /> Apps
-                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={(e) => {
                                   e.stopPropagation();
@@ -1070,180 +1272,85 @@ export default function FunnelList() {
               </div>
             </div>
 
-            {/* Perspective-style Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-              <div className="bg-card border rounded-xl p-5">
-                <p className="text-sm text-muted-foreground mb-1">Today</p>
-                <p className="text-2xl font-semibold">{todayLeads} Leads</p>
-                <p className="text-sm mt-2 flex items-center gap-1">
-                  {todayChange !== 0 ? (
-                    <>
-                      {todayChange > 0 ? (
-                        <TrendingUp className="h-3 w-3 text-emerald-500" />
-                      ) : (
-                        <TrendingDown className="h-3 w-3 text-red-500" />
-                      )}
-                      <span className={todayChange > 0 ? "text-emerald-500" : "text-red-500"}>
-                        {todayChange > 0 ? '+' : ''}{todayChange}%
-                      </span>
-                    </>
-                  ) : yesterdayLeads === 0 && todayLeads > 0 ? (
-                    <span className="text-emerald-500">New</span>
+            {/* Clean Compact Stats - Conversion Focus */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              {/* Today */}
+              <div className="bg-card border rounded-lg p-5">
+                <div className="text-sm text-muted-foreground mb-1">Today</div>
+                <div className="text-3xl font-bold">{todayLeads} Leads</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {yesterdayLeads > 0 ? (
+                    <span className={todayChange >= 0 ? 'text-emerald-600' : 'text-destructive'}>
+                      • {todayChange >= 0 ? '+' : ''}{todayChange}% vs. yesterday
+                    </span>
                   ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                  <span className="text-muted-foreground">vs. yesterday</span>
-                </p>
-              </div>
-              
-              <div className="bg-card border rounded-xl p-5">
-                <p className="text-sm text-muted-foreground mb-1">Last 7 days</p>
-                <p className="text-2xl font-semibold">{weekLeads} Leads</p>
-                <p className="text-sm mt-2 flex items-center gap-1">
-                  {weekChange !== 0 ? (
-                    <>
-                      {weekChange > 0 ? (
-                        <TrendingUp className="h-3 w-3 text-emerald-500" />
-                      ) : (
-                        <TrendingDown className="h-3 w-3 text-red-500" />
-                      )}
-                      <span className={weekChange > 0 ? "text-emerald-500" : "text-red-500"}>
-                        {weekChange > 0 ? '+' : ''}{weekChange}%
-                      </span>
-                    </>
-                  ) : previousWeekLeads === 0 && weekLeads > 0 ? (
-                    <span className="text-emerald-500">New</span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                  <span className="text-muted-foreground">vs. prev 7 days</span>
-                </p>
-              </div>
-              
-              <div className="bg-card border rounded-xl p-5">
-                <p className="text-sm text-muted-foreground mb-1">Last 30 days</p>
-                <p className="text-2xl font-semibold">{monthLeads} Leads</p>
-                <p className="text-sm mt-2 flex items-center gap-1">
-                  {monthChange !== 0 ? (
-                    <>
-                      {monthChange > 0 ? (
-                        <TrendingUp className="h-3 w-3 text-emerald-500" />
-                      ) : (
-                        <TrendingDown className="h-3 w-3 text-red-500" />
-                      )}
-                      <span className={monthChange > 0 ? "text-emerald-500" : "text-red-500"}>
-                        {monthChange > 0 ? '+' : ''}{monthChange}%
-                      </span>
-                    </>
-                  ) : previousMonthLeads === 0 && monthLeads > 0 ? (
-                    <span className="text-emerald-500">New</span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                  <span className="text-muted-foreground">vs. prev 30 days</span>
-                </p>
-              </div>
-              
-              <div className="bg-card border rounded-xl p-5">
-                <p className="text-sm text-muted-foreground mb-1">Total Leads</p>
-                <p className="text-2xl font-semibold">{totalLeads}</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  {totalVisitors} visitors
-                </p>
-              </div>
-              
-              <div className="bg-card border rounded-xl p-5">
-                <p className="text-sm text-muted-foreground mb-1">Conversion Rate</p>
-                <p className="text-2xl font-semibold">{conversionRate}%</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Visitors to leads
-                </p>
-              </div>
-            </div>
-
-            {/* Leads vs Visitors Chart */}
-            {leads && leads.length > 0 && (
-              <div className="mb-8">
-                <LeadsVsVisitorsChart 
-                  leads={selectedFunnelId === 'all' 
-                    ? leads 
-                    : leads.filter(l => l.funnel?.id === selectedFunnelId)
-                  }
-                  selectedFunnelId={selectedFunnelId}
-                />
-              </div>
-            )}
-
-            {/* Drop-off Analytics - Only when specific funnel selected */}
-            {selectedFunnelId !== 'all' && allSteps && leads && (
-              <div className="mb-8">
-                <FunnelDropOffChart 
-                  steps={allSteps.filter(s => s.funnel_id === selectedFunnelId)}
-                  leads={leads.filter(l => l.funnel?.id === selectedFunnelId)}
-                  funnelName={funnels?.find(f => f.id === selectedFunnelId)?.name || ''}
-                />
-              </div>
-            )}
-
-            {/* Recent Leads Table - Only REAL leads (name + phone + email) */}
-            <div className="bg-card border rounded-xl overflow-hidden">
-              <div className="p-4 border-b">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <h2 className="font-semibold">Recent Leads</h2>
-                    <p className="text-sm text-muted-foreground">Only showing leads with complete contact info (name, phone, email)</p>
-                  </div>
-                  {leadsLastUpdatedLabel && (
-                    <p className="text-xs text-muted-foreground whitespace-nowrap">
-                      Last updated {leadsLastUpdatedLabel}
-                    </p>
+                    '• 0% vs. yesterday'
                   )}
                 </div>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Funnel</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Submitted</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(selectedFunnelId === 'all' ? realLeads : realLeads.filter(l => l.funnel?.id === selectedFunnelId))
-                    .slice(0, 20)
-                    .map((lead) => (
-                      <ExpandableLeadRow 
-                        key={lead.id} 
-                        lead={lead} 
-                        steps={allSteps?.filter(s => s.funnel_id === lead.funnel?.id)}
-                      />
-                    ))}
-                </TableBody>
-              </Table>
-              {!realLeads.length && (
-                <div className="text-center py-12 text-muted-foreground">
-                  No leads captured yet. Leads require name, phone, and email.
+
+              {/* Last 7 days */}
+              <div className="bg-card border rounded-lg p-5">
+                <div className="text-sm text-muted-foreground mb-1">Last 7 days</div>
+                <div className="text-3xl font-bold">{weekLeads} Leads</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {previousWeekLeads > 0 ? (
+                    <span className={weekChange >= 0 ? 'text-emerald-600' : 'text-destructive'}>
+                      • {weekChange >= 0 ? '+' : ''}{weekChange}% vs. 7 days ago
+                    </span>
+                  ) : (
+                    '• 0% vs. 7 days ago'
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Last 30 days */}
+              <div className="bg-card border rounded-lg p-5">
+                <div className="text-sm text-muted-foreground mb-1">Last 30 days</div>
+                <div className="text-3xl font-bold">{monthLeads} Leads</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {previousMonthLeads > 0 ? (
+                    <span className={monthChange >= 0 ? 'text-emerald-600' : 'text-destructive'}>
+                      • {monthChange >= 0 ? '+' : ''}{monthChange}% vs. 30 days ago
+                    </span>
+                  ) : (
+                    '• 0% vs. 30 days ago'
+                  )}
+                </div>
+              </div>
+
+              {/* Total */}
+              <div className="bg-card border rounded-lg p-5">
+                <div className="text-sm text-muted-foreground mb-1">Total</div>
+                <div className="text-3xl font-bold">{totalLeads} Leads</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {conversionRate.toFixed(2)}% of all visitors
+                </div>
+              </div>
             </div>
+
+            {/* Leads vs. Visitors Chart */}
+            <div className="mb-8">
+              <LeadsVsVisitorsChart 
+                leads={selectedFunnelId === 'all' 
+                  ? (leads || [])
+                  : (leads || []).filter(l => l.funnel?.id === selectedFunnelId)
+                }
+                selectedFunnelId={selectedFunnelId}
+                steps={selectedFunnelId !== 'all' && allSteps 
+                  ? allSteps.filter(s => s.funnel_id === selectedFunnelId)
+                  : undefined
+                }
+                funnelName={selectedFunnelId !== 'all' 
+                  ? funnels?.find(f => f.id === selectedFunnelId)?.name
+                  : undefined
+                }
+              />
+            </div>
+
           </>
         )}
 
-        {/* Submissions Tab */}
-        {activeTab === 'submissions' && teamId && funnels && (
-          <>
-            <div className="flex items-center justify-between mb-8">
-              <h1 className="text-2xl font-bold text-foreground">Form Submissions</h1>
-            </div>
-            <FormSubmissionsSection 
-              teamId={teamId} 
-              funnels={funnels.map(f => ({ id: f.id, name: f.name }))} 
-            />
-          </>
-        )}
 
         {/* Contacts Tab */}
         {activeTab === 'contacts' && (
@@ -1265,41 +1372,77 @@ export default function FunnelList() {
               )}
             </div>
 
-            {/* Contact Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <div className="bg-card border rounded-xl p-5">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-lg bg-blue-500/10">
-                    <Users className="h-5 w-5 text-blue-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Contacts</p>
-                    <p className="text-2xl font-bold">{contacts?.length || 0}</p>
-                  </div>
+            {/* Contact Stats - Compact n8n-style */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              {/* Today */}
+              <div className="bg-card border rounded-lg p-5">
+                <div className="text-sm text-muted-foreground mb-1">Today</div>
+                <div className="text-3xl font-bold">{todayContacts}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {todayContactsChange > 0 ? (
+                    <span className="text-emerald-600 flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3" />
+                      {Math.abs(todayContactsChange)}% vs. yesterday
+                    </span>
+                  ) : todayContactsChange < 0 ? (
+                    <span className="text-destructive flex items-center gap-1">
+                      <TrendingDown className="h-3 w-3" />
+                      {Math.abs(todayContactsChange)}% vs. yesterday
+                    </span>
+                  ) : (
+                    '• 0% vs. yesterday'
+                  )}
                 </div>
               </div>
-              <div className="bg-card border rounded-xl p-5">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-lg bg-emerald-500/10">
-                    <CheckCircle className="h-5 w-5 text-emerald-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Consent</p>
-                    <p className="text-2xl font-bold">{optedInContacts}</p>
-                  </div>
+
+              {/* Last 7 Days */}
+              <div className="bg-card border rounded-lg p-5">
+                <div className="text-sm text-muted-foreground mb-1">Last 7 Days</div>
+                <div className="text-3xl font-bold">{weekContacts}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {weekContactsChange > 0 ? (
+                    <span className="text-emerald-600 flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3" />
+                      {Math.abs(weekContactsChange)}% vs. previous week
+                    </span>
+                  ) : weekContactsChange < 0 ? (
+                    <span className="text-destructive flex items-center gap-1">
+                      <TrendingDown className="h-3 w-3" />
+                      {Math.abs(weekContactsChange)}% vs. previous week
+                    </span>
+                  ) : (
+                    '• 0% vs. previous week'
+                  )}
                 </div>
               </div>
-              <div className="bg-card border rounded-xl p-5">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-lg bg-purple-500/10">
-                    <MessageSquare className="h-5 w-5 text-purple-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">With Form Responses</p>
-                    <p className="text-2xl font-bold">
-                      {contacts?.filter(c => c.custom_fields && Object.keys(c.custom_fields).length > 0).length || 0}
-                    </p>
-                  </div>
+
+              {/* Last 30 Days */}
+              <div className="bg-card border rounded-lg p-5">
+                <div className="text-sm text-muted-foreground mb-1">Last 30 Days</div>
+                <div className="text-3xl font-bold">{monthContacts}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {monthContactsChange > 0 ? (
+                    <span className="text-emerald-600 flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3" />
+                      {Math.abs(monthContactsChange)}% vs. previous month
+                    </span>
+                  ) : monthContactsChange < 0 ? (
+                    <span className="text-destructive flex items-center gap-1">
+                      <TrendingDown className="h-3 w-3" />
+                      {Math.abs(monthContactsChange)}% vs. previous month
+                    </span>
+                  ) : (
+                    '• 0% vs. previous month'
+                  )}
+                </div>
+              </div>
+
+              {/* Total */}
+              <div className="bg-card border rounded-lg p-5">
+                <div className="text-sm text-muted-foreground mb-1">Total</div>
+                <div className="text-3xl font-bold">{contacts?.length || 0}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  all-time total
                 </div>
               </div>
             </div>
@@ -1310,115 +1453,76 @@ export default function FunnelList() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Contact</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>
-                      <div className="flex items-center gap-1">
-                        <span>Consent</span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="cursor-help text-xs text-muted-foreground">?</span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>True only when explicit consent was captured.</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </TableHead>
+                    <TableHead>Funnel</TableHead>
                     <TableHead>Added</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {contacts?.map((contact) => (
-                    <TableRow 
-                      key={contact.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => setSelectedContact(contact)}
-                    >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-xs font-medium text-primary">
-                              {contact.name?.charAt(0)?.toUpperCase() || contact.email?.charAt(0)?.toUpperCase() || '?'}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium">{contact.name || '—'}</p>
-                            {contact.custom_fields && Object.keys(contact.custom_fields).length > 0 && (
-                              <p className="text-xs text-muted-foreground">
-                                {Object.keys(contact.custom_fields).length} response{Object.keys(contact.custom_fields).length !== 1 ? 's' : ''}
-                              </p>
-                            )}
-                            {(contact.email || contact.phone) && (
-                              <Badge variant="outline" className="mt-1 text-[10px] px-1.5 py-0">
-                                Has Contact Info
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {contact.email ? (
-                          <div className="flex items-center gap-1 text-sm">
-                            <Mail className="h-3 w-3 text-muted-foreground" />
-                            {contact.email}
-                          </div>
-                        ) : '—'}
-                      </TableCell>
-                      <TableCell>
-                        {contact.phone ? (
-                          <div className="flex items-center gap-1 text-sm">
-                            <Phone className="h-3 w-3 text-muted-foreground" />
-                            {contact.phone}
-                          </div>
-                        ) : '—'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {contact.source?.replace('Funnel: ', '') || 'Direct'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {contact.opt_in ? (
-                          <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/50 text-xs">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Yes
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">No</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {formatDistanceToNow(new Date(contact.created_at), { addSuffix: true })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="px-2 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewInPipeline(contact);
-                          }}
-                        >
-                          View in Pipeline
-                        </Button>
+                  {contacts && contacts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                        <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No contacts found</p>
+                        <p className="text-sm mt-1">Contacts will appear here when leads submit your funnels</p>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    contacts?.map((contact) => {
+                      // Extract funnel name from source
+                      const funnelName = contact.source?.replace('Funnel: ', '') || 'Direct';
+                      const isFromFunnel = contact.source?.startsWith('Funnel: ');
+                      const initials = contact.name?.charAt(0)?.toUpperCase() || contact.email?.charAt(0)?.toUpperCase() || '?';
+                      const displayName = contact.name || contact.email || contact.phone || '—';
+                      
+                      return (
+                        <TableRow 
+                          key={contact.id}
+                          className="h-12 cursor-pointer hover:bg-muted/50"
+                          onClick={() => setSelectedContact(contact)}
+                        >
+                          <TableCell className="py-2 font-medium">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-medium text-primary flex-shrink-0">
+                                {initials}
+                              </div>
+                              <span className="text-sm">{displayName}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-2">
+                            {isFromFunnel ? (
+                              <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/50">
+                                <BarChart3 className="h-3 w-3 mr-1" />
+                                {funnelName}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px]">
+                                Direct
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2 text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(contact.created_at), { addSuffix: true })}
+                          </TableCell>
+                          <TableCell className="py-2 text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setContactToDelete(contact);
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </TableCell>
+                    </TableRow>
+                      );
+                    })
+                  )}
                 </TableBody>
               </Table>
-              {teamId && !contactsLoading && contacts && contacts.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No contacts yet</p>
-                  <p className="text-sm mt-1">Contacts will appear here when leads submit your funnels</p>
-                </div>
-              )}
             </div>
           </>
         )}
@@ -1435,10 +1539,6 @@ export default function FunnelList() {
           <DomainsSection teamId={teamId!} />
         )}
 
-        {/* Integrations Tab */}
-        {activeTab === 'integrations' && (
-          <IntegrationsSection teamId={teamId!} />
-        )}
       </div>
 
       <CreateFunnelDialog
@@ -1466,6 +1566,27 @@ export default function FunnelList() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Contact Dialog */}
+      <AlertDialog open={!!contactToDelete} onOpenChange={() => setContactToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{contactToDelete?.name || contactToDelete?.email || 'this contact'}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => contactToDelete && deleteContactMutation.mutate(contactToDelete.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

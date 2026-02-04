@@ -1,9 +1,13 @@
 import React from 'react';
 import { EmbedContent } from '@/funnel-builder-v3/types/funnel';
 import { Code, Star, MapPin, Award, Building2 } from 'lucide-react';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface EmbedBlockProps {
   content: EmbedContent;
+  blockId?: string;
+  stepId?: string;
+  isPreview?: boolean;
 }
 
 const providerInfo = {

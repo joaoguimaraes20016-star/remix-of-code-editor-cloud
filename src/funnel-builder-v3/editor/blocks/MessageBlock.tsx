@@ -9,6 +9,7 @@ import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { useEditableStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
 import { toast } from 'sonner';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 // Default consent settings
 const defaultConsent: ConsentSettings = {
@@ -47,6 +48,7 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
     questionStyles,
     submitButton = defaultSubmitButton,
     consent = defaultConsent,
+    helperTextColor,
   } = content;
   const runtime = useFunnelRuntimeOptional();
   const funnelContext = useFunnelOptional();
@@ -58,6 +60,16 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
 
   const canEdit = blockId && stepId && !isPreview;
   const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
+  const hasChildSelected = !!selectedChildElement;
+
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'message',
+    hintText: 'Click to edit message',
+    isEditing: hasChildSelected // Disable overlay when child is selected
+  });
 
   // Wire question text toolbar to block content (like QuizBlock)
   const { styles: questionToolbarStyles, handleStyleChange: handleQuestionStyleChange } = useEditableStyleSync(
@@ -242,7 +254,7 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
         onChange={handleChange}
       />
       {maxLength && (
-        <p className="text-xs text-muted-foreground text-right">
+        <p className={cn("text-xs text-right", !helperTextColor && "text-muted-foreground")} style={helperTextColor ? { color: helperTextColor } : undefined}>
           {text.length} / {maxLength}
         </p>
       )}
@@ -258,7 +270,8 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
           />
           <label 
             htmlFor="privacy-consent-message" 
-            className="text-sm text-muted-foreground leading-relaxed cursor-pointer select-none"
+            className={cn("text-sm leading-relaxed cursor-pointer select-none", !consent.textColor && "text-muted-foreground")}
+            style={consent.textColor ? { color: consent.textColor } : undefined}
           >
             {consent.text}{' '}
             <a 
@@ -324,4 +337,6 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
       </div>
     </div>
   );
+
+  return wrapWithOverlay(messageElement);
 }

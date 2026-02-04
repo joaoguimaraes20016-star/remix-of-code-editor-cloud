@@ -16,6 +16,9 @@ import {
   Layers,
   FolderOpen,
   Sparkles,
+  Pencil,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -25,15 +28,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
 
-function StepItem({ step, index, isActive, isHome, onClick }: {
+function StepItem({ step, index, isActive, isHome, onClick, totalSteps, onRename, onMoveUp, onMoveDown, onDelete }: {
   step: { id: string; name: string; type: string };
   index: number;
   isActive: boolean;
   isHome: boolean;
   onClick: () => void;
+  totalSteps: number;
+  onRename: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onDelete: () => void;
 }) {
-  const { deleteStep, funnel } = useFunnel();
-  const canDelete = funnel.steps.length > 1;
+  const canMoveUp = index > 0;
+  const canMoveDown = index < totalSteps - 1;
+  const canDelete = totalSteps > 1;
 
   return (
     <motion.div
@@ -68,29 +77,61 @@ function StepItem({ step, index, isActive, isHome, onClick }: {
         {step.name}
       </span>
       
-      {canDelete && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="h-3.5 w-3.5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-popover">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 opacity-60 hover:opacity-100 transition-opacity shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreHorizontal className="h-3.5 w-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="bg-popover w-48">
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onRename();
+            }}
+          >
+            <Pencil className="h-4 w-4 mr-2" />
+            Rename
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onMoveUp();
+            }}
+            disabled={!canMoveUp}
+          >
+            <ChevronUp className="h-4 w-4 mr-2" />
+            Move Up
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onMoveDown();
+            }}
+            disabled={!canMoveDown}
+          >
+            <ChevronDown className="h-4 w-4 mr-2" />
+            Move Down
+          </DropdownMenuItem>
+          {canDelete && (
             <DropdownMenuItem
               className="text-destructive"
-              onClick={() => deleteStep(step.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete
             </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </motion.div>
   );
 }
@@ -100,13 +141,48 @@ interface LeftPanelProps {
 }
 
 export function LeftPanel({ onOpenAICopilot }: LeftPanelProps) {
-  const { funnel, setFunnel, currentStepId, setCurrentStepId, addStep } = useFunnel();
+  const { funnel, setFunnel, currentStepId, setCurrentStepId, addStep, updateStep, reorderSteps, deleteStep } = useFunnel();
   const [activeTab, setActiveTab] = useState('pages');
   const [showTemplateGallery, setShowTemplateGallery] = useState(false);
+  const [editingStepId, setEditingStepId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
 
   const handleTemplateSelect = (template: Funnel) => {
     setFunnel({ ...template, id: funnel.id });
     setCurrentStepId(template.steps[0]?.id || null);
+  };
+
+  const handleRename = (stepId: string) => {
+    const step = funnel.steps.find(s => s.id === stepId);
+    if (step) {
+      setEditingStepId(stepId);
+      setEditValue(step.name);
+    }
+  };
+
+  const handleRenameSubmit = (stepId: string) => {
+    if (editValue.trim()) {
+      updateStep(stepId, { name: editValue.trim() });
+    }
+    setEditingStepId(null);
+    setEditValue('');
+  };
+
+  const handleRenameCancel = () => {
+    setEditingStepId(null);
+    setEditValue('');
+  };
+
+  const handleMoveUp = (index: number) => {
+    if (index > 0) {
+      reorderSteps(index, index - 1);
+    }
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index < funnel.steps.length - 1) {
+      reorderSteps(index, index + 1);
+    }
   };
 
   return (
@@ -148,14 +224,42 @@ export function LeftPanel({ onOpenAICopilot }: LeftPanelProps) {
             </div>
             <div className="space-y-1">
               {funnel.steps.map((step, index) => (
-                <StepItem
-                  key={step.id}
-                  step={step}
-                  index={index}
-                  isActive={step.id === currentStepId}
-                  isHome={index === 0}
-                  onClick={() => setCurrentStepId(step.id)}
-                />
+                editingStepId === step.id ? (
+                  <div
+                    key={step.id}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5"
+                  >
+                    <input
+                      type="text"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onBlur={() => handleRenameSubmit(step.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleRenameSubmit(step.id);
+                        } else if (e.key === 'Escape') {
+                          handleRenameCancel();
+                        }
+                      }}
+                      className="flex-1 text-sm font-medium bg-transparent border-none outline-none text-foreground"
+                      autoFocus
+                    />
+                  </div>
+                ) : (
+                  <StepItem
+                    key={step.id}
+                    step={step}
+                    index={index}
+                    isActive={step.id === currentStepId}
+                    isHome={index === 0}
+                    totalSteps={funnel.steps.length}
+                    onClick={() => setCurrentStepId(step.id)}
+                    onRename={() => handleRename(step.id)}
+                    onMoveUp={() => handleMoveUp(index)}
+                    onMoveDown={() => handleMoveDown(index)}
+                    onDelete={() => deleteStep(step.id)}
+                  />
+                )
               ))}
             </div>
           </TabsContent>

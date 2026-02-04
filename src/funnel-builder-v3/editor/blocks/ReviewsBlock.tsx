@@ -2,6 +2,7 @@ import React from 'react';
 import { ReviewsContent } from '@/funnel-builder-v3/types/funnel';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface ReviewsBlockProps {
   content: ReviewsContent;
@@ -10,7 +11,14 @@ interface ReviewsBlockProps {
   isPreview?: boolean;
 }
 
-export function ReviewsBlock({ content }: ReviewsBlockProps) {
+export function ReviewsBlock({ content, blockId, stepId, isPreview }: ReviewsBlockProps) {
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'reviews',
+    hintText: 'Click to edit reviews'
+  });
   const { 
     avatars = [],
     rating = 4.8,
@@ -62,7 +70,7 @@ export function ReviewsBlock({ content }: ReviewsBlockProps) {
     return stars;
   };
 
-  return (
+  return wrapWithOverlay(
     <div className="flex flex-col items-center gap-2 py-4">
       {/* Overlapping Avatars */}
       {avatars.length > 0 && (

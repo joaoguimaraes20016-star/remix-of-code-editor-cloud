@@ -2,9 +2,15 @@ import React from 'react';
 import { VideoContent } from '@/funnel-builder-v3/types/funnel';
 import { Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface VideoBlockProps {
   content: VideoContent;
+  blockId?: string;
+  stepId?: string;
+  isPreview?: boolean;
+  isEmbedded?: boolean; // True when used inside another block like VideoQuestionBlock
 }
 
 function getYouTubeId(url: string): string | null {
@@ -50,22 +56,41 @@ function detectVideoType(url: string): VideoContent['type'] {
   return 'hosted';
 }
 
-function getAspectRatioClass(ratio: string = '16:9'): string {
+function getAspectRatioPadding(ratio: string = '16:9'): string {
   switch (ratio) {
-    case '9:16': return 'aspect-[9/16]';
-    case '4:3': return 'aspect-[4/3]';
-    case '1:1': return 'aspect-square';
+    case '9:16': return '177.78%'; // 16/9 * 100 (height/width * 100)
+    case '4:3': return '75%'; // 3/4 * 100 (height/width * 100)
+    case '1:1': return '100%'; // 1/1 * 100 (height/width * 100)
     case '16:9':
-    default: return 'aspect-video';
+    default: return '56.25%'; // 9/16 * 100 (height/width * 100)
   }
 }
 
-export function VideoBlock({ content }: VideoBlockProps) {
+export function VideoBlock({ content, blockId, stepId, isPreview, isEmbedded }: VideoBlockProps) {
   const { src, type: providedType, autoplay, controls, aspectRatio, muted, loop } = content;
   const videoRef = React.useRef<HTMLVideoElement>(null);
+  const funnelContext = useFunnelOptional();
+  const selectedChildElement = funnelContext?.selectedChildElement ?? null;
   
   const type = providedType || detectVideoType(src);
-  const aspectClass = getAspectRatioClass(aspectRatio);
+  // Ensure aspectRatio has a value, default to '16:9' if undefined
+  const effectiveAspectRatio = aspectRatio || '16:9';
+  const aspectPadding = getAspectRatioPadding(effectiveAspectRatio);
+  
+  // Determine if we're in editor mode and should show hover overlay
+  const canEdit = blockId && stepId && !isPreview;
+  const isVideoSelected = !isPreview && isEmbedded && selectedChildElement === 'video';
+
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'video',
+    hintText: 'Click to edit video',
+    isEmbedded,
+    childElementId: isEmbedded ? 'video' : undefined,
+    isChildSelected: isVideoSelected
+  });
   
   // Handle autoplay for hosted videos
   React.useEffect(() => {
@@ -93,12 +118,23 @@ export function VideoBlock({ content }: VideoBlockProps) {
   }, [muted, type]);
 
   if (!src) {
-    return (
-      <div className={cn(aspectClass, "bg-muted rounded-lg flex items-center justify-center w-full max-w-full")} style={{ minWidth: '280px' }}>
-        <div className="text-center text-muted-foreground">
-          <Play className="h-10 w-10 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">Paste a video URL</p>
-          <p className="text-xs opacity-60">YouTube, Vimeo, Wistia, Loom, or direct link</p>
+    return wrapWithOverlay(
+      <div 
+        className="bg-muted rounded-lg flex items-center justify-center w-full" 
+        style={{ 
+          position: 'relative',
+          width: '100%',
+          paddingBottom: aspectPadding,
+          height: 0,
+          boxSizing: 'border-box',
+        }}
+      >
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <Play className="h-10 w-10 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">Paste a video URL</p>
+            <p className="text-xs opacity-60">YouTube, Vimeo, Wistia, Loom, or direct link</p>
+          </div>
         </div>
       </div>
     );
@@ -109,8 +145,18 @@ export function VideoBlock({ content }: VideoBlockProps) {
     const videoId = getYouTubeId(src);
     if (!videoId) {
       return (
-        <div className={cn(aspectClass, "bg-muted rounded-lg flex items-center justify-center w-full max-w-full")} style={{ minWidth: '280px' }}>
-          <p className="text-sm text-muted-foreground">Invalid YouTube URL</p>
+        <div 
+          className="bg-muted rounded-lg flex items-center justify-center w-full" 
+          style={{ 
+            position: 'relative',
+            width: '100%',
+            paddingBottom: aspectPadding,
+            minHeight: 0,
+          }}
+        >
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-sm text-muted-foreground">Invalid YouTube URL</p>
+          </div>
         </div>
       );
     }
@@ -123,14 +169,25 @@ export function VideoBlock({ content }: VideoBlockProps) {
       params.set('playlist', videoId);
     }
     
-    return (
-      <div className={cn(aspectClass, "rounded-lg overflow-hidden w-full max-w-full")} style={{ minWidth: '280px' }}>
+    return wrapWithOverlay(
+      <div 
+        key={`youtube-${effectiveAspectRatio}`}
+        className="relative rounded-lg overflow-hidden w-full"
+        style={{ 
+          position: 'relative',
+          width: '100%',
+          paddingBottom: aspectPadding,
+          height: 0,
+          boxSizing: 'border-box',
+        }}
+      >
         <iframe
-          className="w-full h-full"
+          className="absolute top-0 left-0 w-full h-full border-0"
           src={`https://www.youtube.com/embed/${videoId}${params.toString() ? '?' + params.toString() : ''}`}
           title="YouTube video"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
+          style={{ position: 'absolute', width: '100%', height: '100%' }}
         />
       </div>
     );
@@ -141,8 +198,19 @@ export function VideoBlock({ content }: VideoBlockProps) {
     const videoId = getVimeoId(src);
     if (!videoId) {
       return (
-        <div className={cn(aspectClass, "bg-muted rounded-lg flex items-center justify-center w-full max-w-full")} style={{ minWidth: '280px' }}>
-          <p className="text-sm text-muted-foreground">Invalid Vimeo URL</p>
+        <div 
+          className="bg-muted rounded-lg flex items-center justify-center w-full" 
+          style={{ 
+            position: 'relative',
+            width: '100%',
+            paddingBottom: aspectPadding,
+            height: 0,
+            boxSizing: 'border-box',
+          }}
+        >
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-sm text-muted-foreground">Invalid Vimeo URL</p>
+          </div>
         </div>
       );
     }
@@ -152,14 +220,25 @@ export function VideoBlock({ content }: VideoBlockProps) {
     if (muted) params.set('muted', '1');
     if (loop) params.set('loop', '1');
     
-    return (
-      <div className={cn(aspectClass, "rounded-lg overflow-hidden w-full max-w-full")} style={{ minWidth: '280px' }}>
+    return wrapWithOverlay(
+      <div 
+        key={`vimeo-${effectiveAspectRatio}`}
+        className="relative rounded-lg overflow-hidden w-full"
+        style={{ 
+          position: 'relative',
+          width: '100%',
+          paddingBottom: aspectPadding,
+          height: 0,
+          boxSizing: 'border-box',
+        }}
+      >
         <iframe
-          className="w-full h-full"
+          className="absolute top-0 left-0 w-full h-full border-0"
           src={`https://player.vimeo.com/video/${videoId}${params.toString() ? '?' + params.toString() : ''}`}
           title="Vimeo video"
           allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen
+          style={{ position: 'absolute', width: '100%', height: '100%' }}
         />
       </div>
     );
@@ -170,8 +249,19 @@ export function VideoBlock({ content }: VideoBlockProps) {
     const videoId = getWistiaId(src);
     if (!videoId) {
       return (
-        <div className={cn(aspectClass, "bg-muted rounded-lg flex items-center justify-center w-full max-w-full")} style={{ minWidth: '280px' }}>
-          <p className="text-sm text-muted-foreground">Invalid Wistia URL</p>
+        <div 
+          className="bg-muted rounded-lg flex items-center justify-center w-full" 
+          style={{ 
+            position: 'relative',
+            width: '100%',
+            paddingBottom: aspectPadding,
+            height: 0,
+            boxSizing: 'border-box',
+          }}
+        >
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-sm text-muted-foreground">Invalid Wistia URL</p>
+          </div>
         </div>
       );
     }
@@ -182,14 +272,25 @@ export function VideoBlock({ content }: VideoBlockProps) {
     if (loop) params.set('endVideoBehavior', 'loop');
     else params.set('endVideoBehavior', 'default');
     
-    return (
-      <div className={cn(aspectClass, "rounded-lg overflow-hidden w-full max-w-full")} style={{ minWidth: '280px' }}>
+    return wrapWithOverlay(
+      <div 
+        key={`wistia-${effectiveAspectRatio}`}
+        className="relative rounded-lg overflow-hidden w-full"
+        style={{ 
+          position: 'relative',
+          width: '100%',
+          paddingBottom: aspectPadding,
+          height: 0,
+          boxSizing: 'border-box',
+        }}
+      >
         <iframe
-          className="w-full h-full"
+          className="absolute top-0 left-0 w-full h-full border-0"
           src={`https://fast.wistia.net/embed/iframe/${videoId}?${params.toString()}`}
           title="Wistia video"
           allow="autoplay; fullscreen"
           allowFullScreen
+          style={{ position: 'absolute', width: '100%', height: '100%' }}
         />
       </div>
     );
@@ -200,20 +301,42 @@ export function VideoBlock({ content }: VideoBlockProps) {
     const videoId = getLoomId(src);
     if (!videoId) {
       return (
-        <div className={cn(aspectClass, "bg-muted rounded-lg flex items-center justify-center w-full max-w-full")} style={{ minWidth: '280px' }}>
-          <p className="text-sm text-muted-foreground">Invalid Loom URL</p>
+        <div 
+          className="bg-muted rounded-lg flex items-center justify-center w-full" 
+          style={{ 
+            position: 'relative',
+            width: '100%',
+            paddingBottom: aspectPadding,
+            height: 0,
+            boxSizing: 'border-box',
+          }}
+        >
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-sm text-muted-foreground">Invalid Loom URL</p>
+          </div>
         </div>
       );
     }
     
-    return (
-      <div className={cn(aspectClass, "rounded-lg overflow-hidden w-full max-w-full")} style={{ minWidth: '280px' }}>
+    return wrapWithOverlay(
+      <div 
+        key={`loom-${effectiveAspectRatio}`}
+        className="relative rounded-lg overflow-hidden w-full"
+        style={{ 
+          position: 'relative',
+          width: '100%',
+          paddingBottom: aspectPadding,
+          height: 0,
+          boxSizing: 'border-box',
+        }}
+      >
         <iframe
-          className="w-full h-full"
+          className="absolute top-0 left-0 w-full h-full border-0"
           src={`https://www.loom.com/embed/${videoId}${autoplay ? '?autoplay=1' : ''}`}
           title="Loom video"
           allow="autoplay; fullscreen"
           allowFullScreen
+          style={{ position: 'absolute', width: '100%', height: '100%' }}
         />
       </div>
     );
@@ -223,12 +346,22 @@ export function VideoBlock({ content }: VideoBlockProps) {
   const isDataUrl = src.startsWith('data:') || src.startsWith('blob:');
   const showControls = controls !== false;
   
-  return (
-    <div className={cn(aspectClass, "rounded-lg overflow-hidden bg-black relative w-full max-w-full")} style={{ minWidth: '280px' }}>
+  return wrapWithOverlay(
+    <div 
+      key={`hosted-${effectiveAspectRatio}`}
+      className="relative rounded-lg overflow-hidden bg-black w-full"
+      style={{ 
+        position: 'relative',
+        width: '100%',
+        paddingBottom: aspectPadding,
+        height: 0,
+        boxSizing: 'border-box',
+      }}
+    >
       <video
         ref={videoRef}
         key={src.slice(0, 50)}
-        className="w-full h-full object-contain"
+        className="absolute top-0 left-0 w-full h-full object-cover"
         src={src}
         controls={showControls}
         autoPlay={autoplay}
@@ -236,6 +369,7 @@ export function VideoBlock({ content }: VideoBlockProps) {
         loop={loop}
         playsInline
         preload="auto"
+        style={{ position: 'absolute', width: '100%', height: '100%' }}
       />
       {/* Show play overlay when controls are hidden */}
       {!showControls && (

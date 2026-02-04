@@ -5,6 +5,7 @@ import { v4 as uuid } from 'uuid';
 import { blockDefinitions } from '@/funnel-builder-v3/lib/block-definitions';
 import { defaultCountryCodes } from '@/funnel-builder-v3/lib/block-definitions';
 import { generateTrackingId } from '@/funnel-builder-v3/lib/tracking-ids';
+import { getColorContext, applyColorContextToContent, applyColorContextToStyles } from '@/funnel-builder-v3/lib/color-context';
 
 // Media Library Types
 export interface MediaItem {
@@ -473,6 +474,16 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
     const rawContent = JSON.parse(JSON.stringify(definition.defaultContent));
     const processedContent = addTrackingIdsToContent(rawContent, blockType);
     
+    // Get the step to access its background color for color-context awareness
+    const step = funnel.steps.find(s => s.id === stepId);
+    const backgroundColor = step?.settings?.backgroundColor || '#ffffff';
+    
+    // Get color context based on background
+    const colorContext = getColorContext(backgroundColor);
+    
+    // Apply color-aware defaults to content
+    applyColorContextToContent(processedContent, blockType, colorContext);
+    
     // Ensure textAlign is set for text-based blocks - always default to center
     const defaultStylesCopy = JSON.parse(JSON.stringify(definition.defaultStyles));
     const textBasedBlocks = ['heading', 'text', 'list', 'button', 'accordion', 'social-proof', 'reviews', 'testimonial-slider'];
@@ -485,6 +496,9 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
         defaultStylesCopy.textAlign = 'center'; // Always default to center
       }
     }
+    
+    // Apply color-aware styles (borders, outlines, etc.)
+    applyColorContextToStyles(defaultStylesCopy, blockType, colorContext);
     
     const newBlock: Block = {
       id: uuid(),
@@ -512,16 +526,41 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
 
   // Batch add multiple blocks atomically (avoids race conditions)
   const addBlocks = useCallback((stepId: string, blockTypes: Block['type'][]) => {
+    // Get the step to access its background color for color-context awareness
+    const step = funnel.steps.find(s => s.id === stepId);
+    const backgroundColor = step?.settings?.backgroundColor || '#ffffff';
+    
+    // Get color context based on background (shared for all blocks in batch)
+    const colorContext = getColorContext(backgroundColor);
+    
     const newBlocks: Block[] = blockTypes.map(blockType => {
       const definition = blockDefinitions[blockType];
       const rawContent = JSON.parse(JSON.stringify(definition.defaultContent));
       const processedContent = addTrackingIdsToContent(rawContent, blockType);
       
+      // Apply color-aware defaults to content
+      applyColorContextToContent(processedContent, blockType, colorContext);
+      
+      // Ensure textAlign is set for text-based blocks - always default to center
+      const defaultStylesCopy = JSON.parse(JSON.stringify(definition.defaultStyles));
+      const textBasedBlocks = ['heading', 'text', 'list', 'button', 'accordion', 'social-proof', 'reviews', 'testimonial-slider'];
+      if (textBasedBlocks.includes(blockType) && !defaultStylesCopy.textAlign) {
+        const contentStyles = processedContent?.styles as any;
+        if (contentStyles?.textAlign && ['left', 'center', 'right'].includes(contentStyles.textAlign)) {
+          defaultStylesCopy.textAlign = contentStyles.textAlign;
+        } else {
+          defaultStylesCopy.textAlign = 'center';
+        }
+      }
+      
+      // Apply color-aware styles
+      applyColorContextToStyles(defaultStylesCopy, blockType, colorContext);
+      
       return {
         id: uuid(),
         type: blockType,
         content: processedContent,
-        styles: JSON.parse(JSON.stringify(definition.defaultStyles)),
+        styles: defaultStylesCopy,
         trackingId: generateTrackingId('block'),
       };
     });

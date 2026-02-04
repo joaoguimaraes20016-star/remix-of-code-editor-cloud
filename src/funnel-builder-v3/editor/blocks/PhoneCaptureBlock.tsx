@@ -8,6 +8,7 @@ import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { defaultCountryCodes } from '@/funnel-builder-v3/lib/block-definitions';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 import {
   Select,
   SelectContent,
@@ -76,6 +77,16 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
   const selectedCountry = countryCodes.find(c => c.id === selectedCountryId) || countryCodes[0];
   const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
   const isPhoneInputSelected = !isPreview && selectedChildElement === 'phone-input';
+  const hasChildSelected = !!selectedChildElement;
+
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'phone-capture',
+    hintText: 'Click to edit phone capture',
+    isEditing: hasChildSelected // Disable overlay when child is selected
+  });
 
   // Load saved phone from runtime
   useEffect(() => {
@@ -122,10 +133,23 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
           }
           break;
         case 'submit':
-          runtime.submitForm();
+          await runtime.submitForm(
+            consent.enabled ? {
+              agreed: hasConsented,
+              privacyPolicyUrl: consent.linkUrl,
+            } : undefined
+          );
           break;
         case 'next-step':
         default:
+          // Submit form data first, then navigate
+          await runtime.submitForm(
+            consent.enabled ? {
+              agreed: hasConsented,
+              privacyPolicyUrl: consent.linkUrl,
+            } : undefined
+          );
+          // Then navigate after submission
           if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
             runtime.goToStep(actionValue);
           } else {
@@ -202,7 +226,7 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
 
   const canEdit = blockId && stepId && !isPreview;
 
-  return (
+  const formElement = (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div 
         className={cn(
@@ -281,7 +305,8 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
           />
           <label 
             htmlFor="privacy-consent-phone" 
-            className="text-sm text-muted-foreground leading-relaxed cursor-pointer select-none"
+            className={cn("text-sm leading-relaxed cursor-pointer select-none", !consent.textColor && "text-muted-foreground")}
+            style={consent.textColor ? { color: consent.textColor } : undefined}
           >
             {consent.text}{' '}
             <a 
@@ -325,4 +350,6 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
       </Button>
     </form>
   );
+
+  return wrapWithOverlay(formElement);
 }

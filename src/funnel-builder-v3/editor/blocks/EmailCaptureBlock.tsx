@@ -8,6 +8,7 @@ import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRunt
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { toast } from 'sonner';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 // Default submit button configuration
 const defaultSubmitButton: ButtonContent = {
@@ -46,9 +47,29 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
   const { 
     placeholder, 
     subtitle,
+    subtitleColor,
     submitButton = defaultSubmitButton,
     consent = defaultConsent,
   } = content;
+  
+  // Get step background color for dynamic color context
+  const currentStep = funnelContext?.funnel?.steps?.find(s => s.id === stepId);
+  const stepBackgroundColor = currentStep?.settings?.backgroundColor || '#ffffff';
+  
+  // If subtitleColor is not set, calculate it from background
+  const effectiveSubtitleColor = subtitleColor || (stepBackgroundColor ? 
+    (() => {
+      // Simple luminance check - if dark background, use white; if light, use dark
+      const rgb = stepBackgroundColor.match(/^#([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+      if (rgb) {
+        const r = parseInt(rgb[1], 16);
+        const g = parseInt(rgb[2], 16);
+        const b = parseInt(rgb[3], 16);
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        return luminance < 0.5 ? '#ffffff' : '#6b7280';
+      }
+      return '#6b7280'; // Default muted color
+    })() : '#6b7280');
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
@@ -56,6 +77,16 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
   const canEdit = blockId && stepId && !isPreview;
   const isMobile = currentViewport === 'mobile';
   const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
+  const hasChildSelected = !!selectedChildElement;
+  
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'email-capture',
+    hintText: 'Click to edit email capture',
+    isEditing: hasChildSelected // Disable overlay when child is selected
+  });
   
   // Get button text for sizing calculations
   const buttonText = submitButton.text || 'Subscribe';
@@ -134,10 +165,23 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
           }
           break;
         case 'submit':
-          runtime.submitForm();
+          await runtime.submitForm(
+            consent.enabled ? {
+              agreed: hasConsented,
+              privacyPolicyUrl: consent.linkUrl,
+            } : undefined
+          );
           break;
         case 'next-step':
         default:
+          // Submit form data first, then navigate
+          await runtime.submitForm(
+            consent.enabled ? {
+              agreed: hasConsented,
+              privacyPolicyUrl: consent.linkUrl,
+            } : undefined
+          );
+          // Then navigate after submission
           if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
             runtime.goToStep(actionValue);
           } else {
@@ -211,7 +255,7 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
   const hasCustomBg = shouldApplyCustomBg && (!!backgroundColor || !!backgroundGradient);
   const hasTextGradient = !!textGradient;
 
-  return (
+  const formElement = (
     <form onSubmit={handleSubmit} className="space-y-2">
       <div className="flex gap-1.5">
         <Input
@@ -262,9 +306,11 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
           <label 
             htmlFor="privacy-consent-email" 
             className={cn(
-              "text-muted-foreground leading-relaxed cursor-pointer select-none",
+              "leading-relaxed cursor-pointer select-none",
+              !consent.textColor && "text-muted-foreground",
               isMobile ? "text-[10px]" : "text-sm"
             )}
+            style={consent.textColor ? { color: consent.textColor } : undefined}
           >
             {consent.text}{' '}
             <a 
@@ -282,10 +328,13 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
       )}
 
       {(subtitle || canEdit) && (
-        <div className={cn(
-          "text-center text-muted-foreground leading-tight",
-          isMobile ? "text-[10px] px-1" : "text-xs"
-        )}>
+        <div 
+          className={cn(
+            "text-center leading-tight",
+            isMobile ? "text-[10px] px-1" : "text-xs"
+          )}
+          style={{ color: effectiveSubtitleColor }}
+        >
           {canEdit ? (
             <EditableText
               value={subtitle || ''}
@@ -294,7 +343,7 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
               isPreview={isPreview}
               showToolbar={true}
               richText={true}
-              styles={{}}
+              styles={{ color: effectiveSubtitleColor }}
               onStyleChange={() => {}}
               placeholder="Add subtitle..."
             />
@@ -305,4 +354,6 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
       )}
     </form>
   );
+
+  return wrapWithOverlay(formElement);
 }

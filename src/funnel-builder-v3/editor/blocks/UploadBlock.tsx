@@ -8,6 +8,7 @@ import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRunt
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { toast } from 'sonner';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 // Default consent settings
 const defaultConsent: ConsentSettings = {
@@ -26,7 +27,7 @@ interface UploadBlockProps {
 }
 
 export function UploadBlock({ content, blockId, stepId, isPreview }: UploadBlockProps) {
-  const { label, acceptedTypes, maxSize, buttonText, consent = defaultConsent } = content;
+  const { label, acceptedTypes, maxSize, buttonText, consent = defaultConsent, labelColor, helperTextColor } = content;
   const runtime = useFunnelRuntimeOptional();
   const funnelContext = useFunnelOptional();
   const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
@@ -35,6 +36,13 @@ export function UploadBlock({ content, blockId, stepId, isPreview }: UploadBlock
   const [hasConsented, setHasConsented] = useState(false);
 
   const canEdit = blockId && stepId && !isPreview;
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'upload',
+    hintText: 'Click to edit upload'
+  });
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -95,7 +103,7 @@ export function UploadBlock({ content, blockId, stepId, isPreview }: UploadBlock
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  return (
+  return wrapWithOverlay(
     <div className="space-y-3">
       {(label || canEdit) && (
         <div className="text-sm font-medium">
@@ -107,12 +115,12 @@ export function UploadBlock({ content, blockId, stepId, isPreview }: UploadBlock
               isPreview={isPreview}
               showToolbar={true}
               richText={true}
-              styles={{}}
+              styles={labelColor ? { color: labelColor } : {}}
               onStyleChange={() => {}}
               placeholder="Add label..."
             />
           ) : (
-            label
+            <span style={labelColor ? { color: labelColor } : undefined}>{label}</span>
           )}
         </div>
       )}
@@ -135,10 +143,10 @@ export function UploadBlock({ content, blockId, stepId, isPreview }: UploadBlock
               <File className="w-5 h-5 text-primary" />
             </div>
             <div className="text-left">
-              <p className="text-sm font-medium text-foreground truncate max-w-48">
+              <p className="text-sm font-medium truncate max-w-48" style={labelColor ? { color: labelColor } : undefined}>
                 {file.name}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className={cn("text-xs", !helperTextColor && "text-muted-foreground")} style={helperTextColor ? { color: helperTextColor } : undefined}>
                 {formatFileSize(file.size)}
               </p>
             </div>
@@ -146,19 +154,19 @@ export function UploadBlock({ content, blockId, stepId, isPreview }: UploadBlock
               onClick={() => handleFile(null)}
               className="p-1 rounded-full hover:bg-accent"
             >
-              <X className="w-4 h-4 text-muted-foreground" />
+              <X className={cn("w-4 h-4", !helperTextColor && "text-muted-foreground")} style={helperTextColor ? { color: helperTextColor } : undefined} />
             </button>
           </div>
         ) : (
           <>
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-              <Upload className="w-6 h-6 text-muted-foreground" />
+              <Upload className={cn("w-6 h-6", !helperTextColor && "text-muted-foreground")} style={helperTextColor ? { color: helperTextColor } : undefined} />
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">
+              <p className={cn("text-sm font-medium", !labelColor && "text-foreground")} style={labelColor ? { color: labelColor } : undefined}>
                 Drag and drop your file here
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className={cn("text-xs mt-1", !helperTextColor && "text-muted-foreground")} style={helperTextColor ? { color: helperTextColor } : undefined}>
                 or click to browse • Max {maxSize}MB
               </p>
             </div>
@@ -183,7 +191,8 @@ export function UploadBlock({ content, blockId, stepId, isPreview }: UploadBlock
           />
           <label 
             htmlFor="privacy-consent-upload" 
-            className="text-sm text-muted-foreground leading-relaxed cursor-pointer select-none"
+            className={cn("text-sm leading-relaxed cursor-pointer select-none", !consent.textColor && "text-muted-foreground")}
+            style={consent.textColor ? { color: consent.textColor } : undefined}
           >
             {consent.text}{' '}
             <a 

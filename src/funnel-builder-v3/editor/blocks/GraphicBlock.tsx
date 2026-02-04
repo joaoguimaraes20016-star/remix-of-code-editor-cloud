@@ -2,16 +2,27 @@ import React from 'react';
 import { GraphicContent } from '@/funnel-builder-v3/types/funnel';
 import * as LucideIcons from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 
 interface GraphicBlockProps {
   content: GraphicContent;
+  blockId?: string;
+  stepId?: string;
+  isPreview?: boolean;
 }
 
-export function GraphicBlock({ content }: GraphicBlockProps) {
+export function GraphicBlock({ content, blockId, stepId, isPreview }: GraphicBlockProps) {
   const { type, value, size, color } = content;
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'graphic',
+    hintText: 'Click to edit graphic'
+  });
 
   if (type === 'emoji') {
-    return (
+    return wrapWithOverlay(
       <div className="flex justify-center">
         <span style={{ fontSize: size }} className="leading-none">
           {value}
@@ -23,7 +34,7 @@ export function GraphicBlock({ content }: GraphicBlockProps) {
   if (type === 'icon') {
     // Dynamically get icon from lucide-react
     const IconComponent = (LucideIcons as any)[value] || LucideIcons.HelpCircle;
-    return (
+    return wrapWithOverlay(
       <div className="flex justify-center">
         <IconComponent
           style={{ width: size, height: size, color: color || 'currentColor' }}
@@ -41,7 +52,7 @@ export function GraphicBlock({ content }: GraphicBlockProps) {
       diamond: 'rotate-45 rounded-sm',
     };
 
-    return (
+    return wrapWithOverlay(
       <div className="flex justify-center">
         <div
           className={cn(shapeStyles[value] || 'rounded-full', 'bg-primary')}
