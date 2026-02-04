@@ -224,7 +224,16 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
     };
 
     try {
-      console.log(`[useUnifiedLeadSubmit] mode=${mode}, funnelId=${funnelId}, leadId=${leadIdRef.current}`);
+      console.log(`[useUnifiedLeadSubmit] ====== SUBMISSION STARTED ======`, {
+        mode,
+        funnelId,
+        teamId,
+        leadId: leadIdRef.current,
+        hasIdentity: !!(payload.identity?.name || payload.identity?.email || payload.identity?.phone),
+        answersCount: Object.keys(payload.answers).length,
+        stepId: payload.source.stepId,
+        stepIntent: payload.source.stepIntent,
+      });
 
       const { data, error } = await supabase.functions.invoke('submit-funnel-lead', {
         body: {
@@ -275,7 +284,14 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
       });
 
       if (error) {
-        console.error('[useUnifiedLeadSubmit] Submission error:', error);
+        console.error('[useUnifiedLeadSubmit] ====== SUBMISSION ERROR ======', {
+          error,
+          mode,
+          funnelId,
+          teamId,
+          leadId: leadIdRef.current,
+          stepId: payload.source.stepId,
+        });
         setLastError(error.message || 'Submission failed');
         onError?.(error);
         return { error };
@@ -284,10 +300,26 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
       // Extract lead ID from response (handle various response shapes)
       const returnedLeadId = data?.lead_id || data?.lead?.id || data?.leadId || data?.id;
       
+      console.log('[useUnifiedLeadSubmit] ====== SUBMISSION RESPONSE ======', {
+        success: !!returnedLeadId,
+        returnedLeadId,
+        mode,
+        funnelId,
+        teamId,
+        responseData: data,
+      });
+      
       if (returnedLeadId) {
         updateLeadId(returnedLeadId);
         console.log(`[useUnifiedLeadSubmit] Success: leadId=${returnedLeadId}, mode=${mode}`);
         onLeadSaved?.(returnedLeadId, mode);
+      } else {
+        console.warn('[useUnifiedLeadSubmit] No lead ID in response', {
+          data,
+          mode,
+          funnelId,
+          teamId,
+        });
       }
 
       // Track submit time for draft save prevention

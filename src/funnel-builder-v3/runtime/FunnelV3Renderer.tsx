@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useMemo, memo } from 'react';
+import React, { useCallback, useRef, useMemo, memo, useEffect } from 'react';
 import { FunnelRuntimeProvider, FunnelFormData, FunnelSelections, useFunnelRuntime } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { FunnelProvider } from '@/funnel-builder-v3/context/FunnelContext';
 import { BlockRenderer } from '@/funnel-builder-v3/editor/blocks/BlockRenderer';
@@ -153,16 +153,28 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
   }, [document]);
 
   // Use unified lead submission hook
+  console.log('[FunnelV3Renderer] Initializing useUnifiedLeadSubmit', {
+    funnelId,
+    teamId,
+    isValid: !!(funnelId && teamId),
+  });
+  
   const { submit, saveDraft, leadId } = useUnifiedLeadSubmit({
     funnelId,
     teamId,
     onLeadSaved: (id, mode) => {
-      console.log(`[FunnelV3Renderer] Lead saved: ${id}, mode: ${mode}`);
+      console.log(`[FunnelV3Renderer] Lead saved callback: ${id}, mode: ${mode}`);
     },
     onError: (error) => {
-      console.error('[FunnelV3Renderer] Submission error:', error);
+      console.error('[FunnelV3Renderer] Submission error callback:', error);
       toast.error('Failed to submit form');
     },
+  });
+  
+  console.log('[FunnelV3Renderer] useUnifiedLeadSubmit initialized', {
+    hasSubmit: !!submit,
+    hasSaveDraft: !!saveDraft,
+    currentLeadId: leadId,
   });
 
   // Handle form submission using unified pipeline
@@ -184,15 +196,32 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     consent?: { agreed: boolean; privacyPolicyUrl?: string }
   ) => {
     try {
+      console.log('[FunnelV3Renderer] ====== FORM SUBMISSION STARTED ======', {
+        funnelId,
+        teamId,
+        hasData: Object.keys(data).length > 0,
+        hasSelections: Object.keys(selections).length > 0,
+        hasConsent: !!consent,
+      });
+      
       // Build answers object from form data and selections
       const answers: Record<string, any> = { ...data, ...selections };
       
       // Use ref value, but validate it exists
       const currentStepId = currentStepIdRef.current || funnel.steps[0]?.id;
       if (!currentStepId) {
-        console.error('[FunnelV3Renderer] No current step ID available for form submission');
+        console.error('[FunnelV3Renderer] No current step ID available for form submission', {
+          refValue: currentStepIdRef.current,
+          firstStepId: funnel.steps[0]?.id,
+        });
         return;
       }
+      
+      console.log('[FunnelV3Renderer] Current step ID resolved', {
+        currentStepId,
+        stepIndex: funnel.steps.findIndex(s => s.id === currentStepId),
+        totalSteps: funnel.steps.length,
+      });
       
       // Extract identity from form fields (check current step first, then all steps)
       const currentStep = funnel.steps.find(s => s.id === currentStepId);
@@ -248,11 +277,38 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       }
       
       // Submit through unified pipeline
+      console.log('[FunnelV3Renderer] Calling submit() with payload', {
+        funnelId: payload.source.funnelId,
+        teamId: payload.source.teamId,
+        stepId: payload.source.stepId,
+        stepIntent: payload.source.stepIntent,
+        hasIdentity: !!(payload.identity?.name || payload.identity?.email || payload.identity?.phone),
+        answersCount: Object.keys(payload.answers).length,
+      });
+      
       const result = await submit(payload);
+      
+      console.log('[FunnelV3Renderer] Submit result received', {
+        success: !result.error,
+        leadId: result.leadId,
+        error: result.error,
+        stepIntent,
+      });
       
       // Track this step as just submitted
       if (!result.error) {
         lastSubmitStepRef.current = currentStepId;
+        console.log('[FunnelV3Renderer] Lead created/updated successfully', {
+          leadId: result.leadId,
+          stepId: currentStepId,
+        });
+      } else {
+        console.error('[FunnelV3Renderer] Submission failed', {
+          error: result.error,
+          funnelId,
+          teamId,
+          stepId: currentStepId,
+        });
       }
       
       // Only show success toast on final conversion step, not on intermediate steps or drafts
@@ -266,7 +322,8 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
   }, [funnelId, teamId, submit, funnel.steps]);
   
   // Track step changes and auto-save draft for drop-off tracking
-  const handleStepChange = useCallback(async (
+  // Make this truly fire-and-forget (no await) to prevent blocking navigation
+  const handleStepChange = useCallback((
     stepId: string,
     formData: FunnelFormData,
     selections: FunnelSelections
@@ -278,15 +335,28 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     // Skip draft save if navigating away from just-submitted step
     if (lastSubmitStepRef.current === previousStepId) {
       lastSubmitStepRef.current = null;
+      console.log('[FunnelV3Renderer] Skipping draft save - step was just submitted', {
+        previousStepId,
+        newStepId: stepId,
+      });
       return; // Skip draft save, data was just submitted
     }
     
     // Auto-save current data as draft for drop-off tracking
     // Only save if there's actual data to save
     const hasData = Object.keys(formData).length > 0 || Object.keys(selections).length > 0;
-    if (!hasData) return;
+    if (!hasData) {
+      console.log('[FunnelV3Renderer] Skipping draft save - no data to save', {
+        stepId,
+        formDataKeys: Object.keys(formData).length,
+        selectionsKeys: Object.keys(selections).length,
+      });
+      return;
+    }
     
-    try {
+    // Fire-and-forget: don't await, let it run in background
+    (async () => {
+      try {
       // Build answers from current state
       const answers: Record<string, any> = { ...formData, ...selections };
       
@@ -337,12 +407,28 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         payload.identity = identity;
       }
       
-      // Save as draft (no automations triggered, for drop-off tracking)
-      await saveDraft(payload);
-    } catch (error) {
-      // Don't block navigation if draft save fails
-      console.error('[FunnelV3Renderer] Draft save error:', error);
-    }
+        // Save as draft (no automations triggered, for drop-off tracking)
+        console.log('[FunnelV3Renderer] Auto-saving draft on step change', {
+          stepId,
+          funnelId,
+          teamId,
+          hasData: true,
+        });
+        
+        await saveDraft(payload);
+        
+        console.log('[FunnelV3Renderer] Draft save completed', {
+          stepId,
+        });
+      } catch (error) {
+        // Don't block navigation if draft save fails
+        console.error('[FunnelV3Renderer] Draft save error:', error, {
+          stepId,
+          funnelId,
+          teamId,
+        });
+      }
+    })();
   }, [funnelId, teamId, saveDraft, funnel.steps]);
 
   console.log('[FunnelV3Renderer] Rendering providers and content', {

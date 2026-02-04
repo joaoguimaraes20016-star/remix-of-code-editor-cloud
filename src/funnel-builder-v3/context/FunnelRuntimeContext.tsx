@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
 import { Funnel, FunnelStep } from '@/funnel-builder-v3/types/funnel';
 
 // Form data collected during funnel execution
@@ -77,6 +77,27 @@ export function FunnelRuntimeProvider({
   const [selections, setSelections] = useState<FunnelSelections>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Use refs to avoid stale closures in callbacks
+  const formDataRef = useRef<FunnelFormData>({});
+  const selectionsRef = useRef<FunnelSelections>({});
+  const currentStepIdRef = useRef<string>(initialStepId || firstStepId);
+  
+  // Sync refs with state
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
+  
+  useEffect(() => {
+    selectionsRef.current = selections;
+  }, [selections]);
+  
+  useEffect(() => {
+    currentStepIdRef.current = currentStepId;
+  }, [currentStepId]);
+  
+  // Navigation guard: prevent concurrent navigation calls
+  const isNavigatingRef = useRef(false);
+  
   // Debug: Log provider initialization
   useEffect(() => {
     console.log('[FunnelRuntimeProvider] Initialized', {
@@ -102,37 +123,66 @@ export function FunnelRuntimeProvider({
   }, [funnel.steps, currentStepId]);
 
   const goToStep = useCallback((stepId: string) => {
-    const stepExists = funnel.steps.some(s => s.id === stepId);
-    if (!stepExists) {
-      console.warn(`[FunnelRuntimeContext] goToStep failed - step not found: ${stepId}`, {
-        availableSteps: funnel.steps.map(s => ({ id: s.id, name: s.name })),
-        currentStepId,
+    // Navigation guard: prevent concurrent calls
+    if (isNavigatingRef.current) {
+      console.log('[FunnelRuntimeContext] Navigation blocked - already navigating', {
+        requestedStepId: stepId,
+        currentStepId: currentStepIdRef.current,
       });
       return;
     }
     
+    const stepExists = funnel.steps.some(s => s.id === stepId);
+    if (!stepExists) {
+      console.warn(`[FunnelRuntimeContext] goToStep failed - step not found: ${stepId}`, {
+        availableSteps: funnel.steps.map(s => ({ id: s.id, name: s.name })),
+        currentStepId: currentStepIdRef.current,
+      });
+      return;
+    }
+    
+    // Set guard immediately
+    isNavigatingRef.current = true;
+    
+    const currentStepIdValue = currentStepIdRef.current;
     console.log(`[FunnelRuntimeContext] Navigating to step: ${stepId}`, {
-      currentStepId,
+      currentStepId: currentStepIdValue,
       stepName: funnel.steps.find(s => s.id === stepId)?.name,
     });
     
-    // Capture current state before navigation
-    const currentFormData = formData;
-    const currentSelections = selections;
+    // Use refs to get current state (avoids stale closures)
+    const currentFormData = formDataRef.current;
+    const currentSelections = selectionsRef.current;
     
     setCurrentStepId(stepId);
     setStepHistory(prev => [...prev, stepId]);
+    
+    // Call onStepChange with current ref values
     onStepChange?.(stepId, currentFormData, currentSelections);
-  }, [funnel.steps, formData, selections, onStepChange, currentStepId]);
+    
+    // Reset guard after a small delay to allow state updates to complete
+    setTimeout(() => {
+      isNavigatingRef.current = false;
+    }, 100);
+  }, [funnel.steps, onStepChange]);
 
   const goToNextStep = useCallback(() => {
+    // Navigation guard: prevent concurrent calls
+    if (isNavigatingRef.current) {
+      console.log('[FunnelRuntimeContext] goToNextStep blocked - already navigating', {
+        currentStepId: currentStepIdRef.current,
+      });
+      return;
+    }
+    
     const currentIndex = getStepIndex();
     const currentStep = getCurrentStep();
+    const currentStepIdValue = currentStepIdRef.current;
     
     console.log(`[FunnelRuntimeContext] goToNextStep called`, {
       currentIndex,
       totalSteps: funnel.steps.length,
-      currentStepId,
+      currentStepId: currentStepIdValue,
       currentStepName: currentStep?.name,
       configuredNextStepId: currentStep?.settings.nextStepId,
     });
@@ -152,32 +202,47 @@ export function FunnelRuntimeProvider({
       console.log(`[FunnelRuntimeContext] goToNextStep called on last step - calling onComplete`, {
         currentIndex,
         totalSteps: funnel.steps.length,
-        currentStepId,
+        currentStepId: currentStepIdValue,
       });
       if (onComplete) {
         try {
-          onComplete(formData, selections);
+          // Use refs to get current state
+          onComplete(formDataRef.current, selectionsRef.current);
         } catch (error) {
           console.error('[FunnelRuntimeContext] onComplete callback error:', error);
         }
       }
     }
-  }, [funnel.steps, getStepIndex, getCurrentStep, goToStep, currentStepId, formData, selections, onComplete]);
+  }, [funnel.steps, getStepIndex, getCurrentStep, goToStep, onComplete]);
 
   const goToPrevStep = useCallback(() => {
+    // Navigation guard: prevent concurrent calls
+    if (isNavigatingRef.current) {
+      console.log('[FunnelRuntimeContext] goToPrevStep blocked - already navigating');
+      return;
+    }
+    
     if (stepHistory.length > 1) {
       const newHistory = stepHistory.slice(0, -1);
       const prevStepId = newHistory[newHistory.length - 1];
       
-      // Capture current state before navigation
-      const currentFormData = formData;
-      const currentSelections = selections;
+      // Set guard immediately
+      isNavigatingRef.current = true;
+      
+      // Use refs to get current state (avoids stale closures)
+      const currentFormData = formDataRef.current;
+      const currentSelections = selectionsRef.current;
       
       setStepHistory(newHistory);
       setCurrentStepId(prevStepId);
       onStepChange?.(prevStepId, currentFormData, currentSelections);
+      
+      // Reset guard after a small delay
+      setTimeout(() => {
+        isNavigatingRef.current = false;
+      }, 100);
     }
-  }, [stepHistory, formData, selections, onStepChange]);
+  }, [stepHistory, onStepChange]);
 
   const setFormField = useCallback((fieldId: string, value: string | string[] | File | null) => {
     setFormData(prev => ({ ...prev, [fieldId]: value }));
@@ -193,14 +258,15 @@ export function FunnelRuntimeProvider({
     setIsSubmitting(true);
     
     try {
-      await onFormSubmit?.(formData, selections, consent);
+      // Use refs to get current state (avoids stale closures)
+      await onFormSubmit?.(formDataRef.current, selectionsRef.current, consent);
     } catch (error) {
       // Log error but don't throw - fire-and-forget pattern
       console.error('[FunnelRuntimeContext] submitForm error:', error);
     } finally {
       setIsSubmitting(false);
     }
-  }, [formData, selections, onFormSubmit]);
+  }, [onFormSubmit]);
 
   // Popup handlers
   const openPopup = useCallback((blockId: string) => {
