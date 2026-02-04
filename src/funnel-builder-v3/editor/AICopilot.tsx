@@ -39,6 +39,16 @@ interface BlockPreview {
   preview: string;
 }
 
+// Branding subset used by AICopilot for color/theme context (separate from full ClonedStyle)
+interface CopilotBranding {
+  primaryColor: string;
+  accentColor?: string;
+  backgroundColor: string;
+  textColor: string;
+  headingColor?: string;
+  theme: 'dark' | 'light';
+}
+
 interface ClonePlan {
   summary: string;
   action: 'replace-funnel' | 'replace-step' | 'apply-styling';
@@ -47,14 +57,7 @@ interface ClonePlan {
     style: string;
     keyElements?: string[];
   };
-  branding: {
-    primaryColor: string;
-    accentColor?: string;
-    backgroundColor: string;
-    textColor: string;
-    headingColor?: string;
-    theme: string;
-  };
+  branding: CopilotBranding;
   steps?: Array<{
     name: string;
     type?: string;
@@ -102,7 +105,7 @@ export function AICopilot({ isOpen, onClose }: AICopilotProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [streamedResponse, setStreamedResponse] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [clonedBranding, setClonedBranding] = useState<ClonedStyle | null>(null);
+  const [clonedBranding, setClonedBranding] = useState<CopilotBranding | null>(null);
   const [showCloneConfirm, setShowCloneConfirm] = useState(false);
   const [cloneAction, setCloneAction] = useState<'replace-funnel' | 'replace-step' | 'apply-styling' | null>(null);
   const [clonePlan, setClonePlan] = useState<ClonePlan | null>(null);
