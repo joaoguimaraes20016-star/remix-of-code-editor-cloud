@@ -561,9 +561,7 @@ export function ButtonInspector({ block, onContentChange, onBlockChange }: Block
           onChange={(v) => onContentChange({ action: v })}
           options={[
             { value: 'next-step', label: 'Next Step' },
-            { value: 'submit', label: 'Submit' },
             { value: 'url', label: 'URL' },
-            { value: 'webhook', label: 'Webhook' },
             { value: 'scroll', label: 'Scroll' },
           ]}
         />
@@ -575,32 +573,19 @@ export function ButtonInspector({ block, onContentChange, onBlockChange }: Block
               {content.action === 'next-step' && (
                 <div>
                   <p className="font-medium text-foreground mb-0.5">Next Step</p>
-                  <p>Navigates to the next step in sequence. If quiz options have custom routing configured, those will be respected. Lead data is saved as draft automatically.</p>
-                </div>
-              )}
-              {content.action === 'submit' && (
-                <div>
-                  <p className="font-medium text-foreground mb-0.5">Submit</p>
-                  <p className="font-semibold text-amber-600 dark:text-amber-500 mb-1">⚠️ Finalizes the lead</p>
-                  <p>Finalizes the lead with status "complete", triggers configured webhooks and automations, then navigates to the next step. Use this for final form submissions.</p>
+                  <p>Navigates to the next step in sequence. If quiz options have custom routing configured, those will be respected. Lead data is saved automatically.</p>
                 </div>
               )}
               {content.action === 'url' && (
                 <div>
                   <p className="font-medium text-foreground mb-0.5">URL</p>
-                  <p>Opens the specified URL in a new tab. Navigation within the funnel continues normally after the link opens.</p>
-                </div>
-              )}
-              {content.action === 'webhook' && (
-                <div>
-                  <p className="font-medium text-foreground mb-0.5">Webhook</p>
-                  <p>Sends form data to the specified webhook URL (e.g., Zapier, Make). Data is sent immediately on button click, then navigation proceeds. Lead is also saved to database separately.</p>
+                  <p>Opens the specified URL in a new tab. Lead data is saved automatically before opening the link.</p>
                 </div>
               )}
               {content.action === 'scroll' && (
                 <div>
                   <p className="font-medium text-foreground mb-0.5">Scroll</p>
-                  <p>Smoothly scrolls to the element with the specified ID on the current page. Useful for same-page navigation without changing steps.</p>
+                  <p>Smoothly scrolls to the element with the specified ID on the current page. Lead data is saved automatically before scrolling.</p>
                 </div>
               )}
             </div>
@@ -616,20 +601,6 @@ export function ButtonInspector({ block, onContentChange, onBlockChange }: Block
             className="h-10 bg-muted border-0"
             placeholder="https://..."
           />
-        </InspectorSection>
-      )}
-
-      {content.action === 'webhook' && (
-        <InspectorSection title="Webhook URL">
-          <Input
-            value={content.actionValue || ''}
-            onChange={(e) => onContentChange({ actionValue: e.target.value })}
-            className="h-10 bg-muted border-0"
-            placeholder="https://..."
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Send form data to external services (Zapier, Make, etc.)
-          </p>
         </InspectorSection>
       )}
 
@@ -1644,7 +1615,7 @@ export function QuizInspector({ block, onContentChange, onBlockChange, funnel }:
                       onChange={(e) => {
                         const action = e.target.value;
                         updateOption(i, { 
-                          action: action as 'next-step' | 'url' | 'submit',
+                          action: action as 'next-step' | 'url',
                           // Clear actionValue if switching away from next-step
                           actionValue: action === 'next-step' ? (opt.actionValue || opt.nextStepId) : undefined
                         });
@@ -1653,7 +1624,6 @@ export function QuizInspector({ block, onContentChange, onBlockChange, funnel }:
                     >
                       <option value="next-step">Next Step</option>
                       <option value="url">URL</option>
-                      <option value="submit">Submit</option>
                     </select>
                   </div>
                   
@@ -1678,12 +1648,6 @@ export function QuizInspector({ block, onContentChange, onBlockChange, funnel }:
                       placeholder="https://..."
                       className="h-5 text-[10px] bg-background"
                     />
-                  )}
-                  
-                  {(opt.action || 'next-step') === 'submit' && (
-                    <p className="text-[9px] text-amber-600 dark:text-amber-500">
-                      Will finalize lead and trigger webhooks
-                    </p>
                   )}
                 </div>
               )}
@@ -2604,8 +2568,6 @@ export function FormInspector({ block, onContentChange, onBlockChange }: BlockIn
   ];
 
   const submitButton = content.submitButton || {};
-  const buttonAction = submitButton.action || 'next-step';
-  const isFinalSubmit = buttonAction === 'submit';
 
   return (
     <div className="space-y-4">
@@ -2616,22 +2578,9 @@ export function FormInspector({ block, onContentChange, onBlockChange }: BlockIn
           <div className="flex-1 space-y-1">
             <p className="text-xs font-medium text-foreground">Lead Capture: Enabled</p>
             <div className="text-[10px] text-muted-foreground space-y-0.5">
-              {isFinalSubmit ? (
-                <>
-                  <p className="font-semibold text-amber-600 dark:text-amber-500">⚠️ Final Submission</p>
-                  <p>• Form data will be saved with status "complete"</p>
-                  <p>• Configured webhooks will be triggered</p>
-                  <p>• Automations will fire</p>
-                  <p>• Then navigates to next step</p>
-                </>
-              ) : (
-                <>
-                  <p>• Form data will be saved as draft automatically</p>
-                  <p>• Lead status: "incomplete" (saved progressively)</p>
-                  <p>• Webhooks will NOT trigger until final submit</p>
-                  <p>• Navigates to next step after submission</p>
-                </>
-              )}
+              <p>• Form data will be saved automatically</p>
+              <p>• Data is collected on every button click</p>
+              <p>• Navigation happens immediately after data is saved</p>
             </div>
           </div>
         </div>
@@ -4130,7 +4079,7 @@ export function ImageQuizInspector({ block, onContentChange, onBlockChange, funn
                       onChange={(e) => {
                         const action = e.target.value;
                         updateOption(i, { 
-                          action: action as 'next-step' | 'url' | 'submit',
+                          action: action as 'next-step' | 'url',
                           // Clear actionValue if switching away from next-step
                           actionValue: action === 'next-step' ? (opt.actionValue || opt.nextStepId) : undefined
                         });
@@ -4139,7 +4088,6 @@ export function ImageQuizInspector({ block, onContentChange, onBlockChange, funn
                     >
                       <option value="next-step">Next Step</option>
                       <option value="url">URL</option>
-                      <option value="submit">Submit</option>
                     </select>
                   </div>
                   
@@ -4164,12 +4112,6 @@ export function ImageQuizInspector({ block, onContentChange, onBlockChange, funn
                       placeholder="https://..."
                       className="h-5 text-[10px] bg-background"
                     />
-                  )}
-                  
-                  {(opt.action || 'next-step') === 'submit' && (
-                    <p className="text-[9px] text-amber-600 dark:text-amber-500">
-                      Will finalize lead and trigger webhooks
-                    </p>
                   )}
                 </div>
               )}
@@ -4409,7 +4351,7 @@ export function VideoQuestionInspector({ block, onContentChange, onBlockChange, 
                     onChange={(e) => {
                       const action = e.target.value;
                       updateOption(i, { 
-                        action: action as 'next-step' | 'url' | 'submit',
+                        action: action as 'next-step' | 'url',
                         // Clear actionValue if switching away from next-step
                         actionValue: action === 'next-step' ? (opt.actionValue || opt.nextStepId) : undefined
                       });
@@ -4418,7 +4360,6 @@ export function VideoQuestionInspector({ block, onContentChange, onBlockChange, 
                   >
                     <option value="next-step">Next Step</option>
                     <option value="url">URL</option>
-                    <option value="submit">Submit</option>
                   </select>
                 </div>
                 
@@ -4443,12 +4384,6 @@ export function VideoQuestionInspector({ block, onContentChange, onBlockChange, 
                     placeholder="https://..."
                     className="h-5 text-[10px] bg-background"
                   />
-                )}
-                
-                {(opt.action || 'next-step') === 'submit' && (
-                  <p className="text-[9px] text-amber-600 dark:text-amber-500">
-                    Will finalize lead and trigger webhooks
-                  </p>
                 )}
                 </div>
               )}
