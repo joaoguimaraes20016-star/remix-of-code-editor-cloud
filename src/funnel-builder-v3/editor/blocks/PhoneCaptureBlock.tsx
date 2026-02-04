@@ -133,23 +133,28 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
           }
           break;
         case 'submit':
-          await runtime.submitForm(
+          // Fire-and-forget submission (don't block UI)
+          runtime.submitForm(
             consent.enabled ? {
               agreed: hasConsented,
               privacyPolicyUrl: consent.linkUrl,
             } : undefined
-          );
+          ).catch((error) => {
+            console.error('[PhoneCaptureBlock] submitForm error:', error);
+          });
           break;
         case 'next-step':
         default:
-          // Submit form data first, then navigate
-          await runtime.submitForm(
+          // Fire-and-forget submission, then navigate immediately
+          runtime.submitForm(
             consent.enabled ? {
               agreed: hasConsented,
               privacyPolicyUrl: consent.linkUrl,
             } : undefined
-          );
-          // Then navigate after submission
+          ).catch((error) => {
+            console.error('[PhoneCaptureBlock] submitForm error:', error);
+          });
+          // Navigate immediately without waiting for submission
           if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
             runtime.goToStep(actionValue);
           } else {

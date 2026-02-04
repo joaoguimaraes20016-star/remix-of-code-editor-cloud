@@ -5,7 +5,9 @@ import { BlockRenderer } from '@/funnel-builder-v3/editor/blocks/BlockRenderer';
 import { Funnel, FunnelStep } from '@/funnel-builder-v3/types/funnel';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import { useUnifiedLeadSubmit, createUnifiedPayload, extractIdentityFromAnswers } from '@/flow-canvas/shared/hooks/useUnifiedLeadSubmit';
+import { recordEvent } from '@/lib/events/recordEvent';
 
 interface FunnelV3RendererProps {
   document: {
@@ -152,6 +154,9 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     return converted;
   }, [document]);
 
+  // Get query client for cache invalidation
+  const queryClient = useQueryClient();
+  
   // Use unified lead submission hook
   console.log('[FunnelV3Renderer] Initializing useUnifiedLeadSubmit', {
     funnelId,
@@ -164,6 +169,9 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     teamId,
     onLeadSaved: (id, mode) => {
       console.log(`[FunnelV3Renderer] Lead saved callback: ${id}, mode: ${mode}`);
+      // Invalidate Performance tab query to refresh data immediately
+      queryClient.invalidateQueries({ queryKey: ['funnel-leads', teamId] });
+      console.log('[FunnelV3Renderer] Invalidated funnel-leads query cache');
     },
     onError: (error) => {
       console.error('[FunnelV3Renderer] Submission error callback:', error);
@@ -189,6 +197,68 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       currentStepIdRef.current = funnel.steps[0].id;
     }
   }, [funnel.steps]);
+  
+  // Track initial funnel view (create visitor entry)
+  const hasTrackedViewRef = useRef(false);
+  
+  useEffect(() => {
+    // Only track once per session, and only if we have valid IDs
+    if (hasTrackedViewRef.current || !funnelId || !teamId) return;
+    hasTrackedViewRef.current = true;
+    
+    // Create initial visitor entry (fire-and-forget)
+    const initialStepId = funnel.steps[0]?.id;
+    if (!initialStepId) return;
+    
+    const payload = createUnifiedPayload({}, {
+      funnelId,
+      teamId,
+      stepId: initialStepId,
+      stepIntent: 'navigate', // Just viewing, not submitting
+      lastStepIndex: 0,
+    });
+    
+    // Use submit() instead of saveDraft() to ensure immediate tracking without debounce
+    // Note: submit() uses submitMode: 'submit' which may trigger automations, but automations
+    // typically require contact info to be useful, so this should be safe for initial visitor tracking
+    console.log('[FunnelV3Renderer] Tracking initial visitor view', {
+      funnelId,
+      teamId,
+      stepId: initialStepId,
+    });
+    
+    // Track initial step view event
+    const sessionId = getOrCreateSessionId();
+    recordEvent({
+      funnel_id: funnelId,
+      step_id: initialStepId,
+      event_type: 'step_viewed',
+      session_id: sessionId,
+      dedupe_key: `step_viewed:${funnelId}:${initialStepId}:${sessionId}`,
+      payload: {
+        stepIndex: 0,
+        stepName: funnel.steps[0]?.name,
+      },
+    }).catch((error) => {
+      console.error('[FunnelV3Renderer] Failed to record step_viewed event:', error);
+    });
+    
+    // Create funnel_leads entry immediately (no debounce)
+    submit(payload).catch((error) => {
+      console.error('[FunnelV3Renderer] Failed to track initial view:', error);
+    });
+  }, [funnelId, teamId, funnel.steps, submit]);
+  
+  // Helper to get or create session ID
+  const getOrCreateSessionId = useCallback(() => {
+    const storageKey = `funnel_session_${funnelId}`;
+    let sessionId = sessionStorage.getItem(storageKey);
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      sessionStorage.setItem(storageKey, sessionId);
+    }
+    return sessionId;
+  }, [funnelId]);
   
   const handleFormSubmit = useCallback(async (
     data: FunnelFormData, 
@@ -263,6 +333,7 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         teamId,
         stepId: currentStepId,
         stepIntent,
+        lastStepIndex: stepIndex, // Add step index for proper step tracking
       }, {
         consent: consent ? {
           agreed: consent.agreed,
@@ -332,6 +403,27 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     // Update ref immediately to keep it in sync
     currentStepIdRef.current = stepId;
     
+    // Calculate step index for tracking
+    const stepIndex = funnel.steps.findIndex(s => s.id === stepId);
+    const currentStep = funnel.steps.find(s => s.id === stepId);
+    
+    // Track step view event (always track, even if no data)
+    const sessionId = getOrCreateSessionId();
+    recordEvent({
+      funnel_id: funnelId,
+      step_id: stepId,
+      event_type: 'step_viewed',
+      session_id: sessionId,
+      dedupe_key: `step_viewed:${funnelId}:${stepId}:${sessionId}:${Date.now()}`,
+      payload: {
+        stepIndex,
+        stepName: currentStep?.name,
+        previousStepId,
+      },
+    }).catch((error) => {
+      console.error('[FunnelV3Renderer] Failed to record step_viewed event:', error);
+    });
+    
     // Skip draft save if navigating away from just-submitted step
     if (lastSubmitStepRef.current === previousStepId) {
       lastSubmitStepRef.current = null;
@@ -342,14 +434,27 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       return; // Skip draft save, data was just submitted
     }
     
-    // Auto-save current data as draft for drop-off tracking
-    // Only save if there's actual data to save
+    // Always update last_step_index, even if no form data
+    // This ensures drop-off tracking works for pure visitors
     const hasData = Object.keys(formData).length > 0 || Object.keys(selections).length > 0;
     if (!hasData) {
-      console.log('[FunnelV3Renderer] Skipping draft save - no data to save', {
+      // Even without form data, update last_step_index for drop-off tracking
+      const emptyPayload = createUnifiedPayload({}, {
+        funnelId,
+        teamId,
         stepId,
-        formDataKeys: Object.keys(formData).length,
-        selectionsKeys: Object.keys(selections).length,
+        stepIntent: 'navigate',
+        lastStepIndex: stepIndex,
+      });
+      
+      // Update lead with new step index (fire-and-forget)
+      saveDraft(emptyPayload).catch((error) => {
+        console.error('[FunnelV3Renderer] Failed to update step index:', error);
+      });
+      
+      console.log('[FunnelV3Renderer] Updated step index without form data', {
+        stepId,
+        stepIndex,
       });
       return;
     }
@@ -388,8 +493,7 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         phone: identityFromFields.phone || identityFromAnswers.phone,
       };
       
-      // Determine step intent based on position
-      const stepIndex = funnel.steps.findIndex(s => s.id === stepId);
+      // Determine step intent based on position (stepIndex already calculated above)
       const isLastStep = stepIndex === funnel.steps.length - 1;
       const stepIntent: 'capture' | 'qualify' | 'schedule' | 'convert' | 'complete' | 'navigate' | 'info' = 
         isLastStep ? 'convert' : 'capture';
@@ -400,6 +504,7 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         teamId,
         stepId,
         stepIntent,
+        lastStepIndex: stepIndex, // Add step index for proper step tracking
       });
       
       // Override identity if we extracted it from form fields
@@ -429,7 +534,7 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         });
       }
     })();
-  }, [funnelId, teamId, saveDraft, funnel.steps]);
+  }, [funnelId, teamId, saveDraft, funnel.steps, getOrCreateSessionId]);
 
   console.log('[FunnelV3Renderer] Rendering providers and content', {
     funnelStepsCount: funnel.steps.length,

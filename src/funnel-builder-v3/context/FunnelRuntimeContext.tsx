@@ -160,10 +160,11 @@ export function FunnelRuntimeProvider({
     // Call onStepChange with current ref values
     onStepChange?.(stepId, currentFormData, currentSelections);
     
-    // Reset guard after a small delay to allow state updates to complete
-    setTimeout(() => {
+    // Reset guard immediately after state updates using requestAnimationFrame
+    // This allows React to batch state updates without blocking navigation
+    requestAnimationFrame(() => {
       isNavigatingRef.current = false;
-    }, 100);
+    });
   }, [funnel.steps, onStepChange]);
 
   const goToNextStep = useCallback(() => {
@@ -237,10 +238,10 @@ export function FunnelRuntimeProvider({
       setCurrentStepId(prevStepId);
       onStepChange?.(prevStepId, currentFormData, currentSelections);
       
-      // Reset guard after a small delay
-      setTimeout(() => {
+      // Reset guard immediately after state updates using requestAnimationFrame
+      requestAnimationFrame(() => {
         isNavigatingRef.current = false;
-      }, 100);
+      });
     }
   }, [stepHistory, onStepChange]);
 

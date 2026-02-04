@@ -14,7 +14,8 @@ interface HeadingBlockProps {
 }
 
 export function HeadingBlock({ content, blockId, stepId, isPreview }: HeadingBlockProps) {
-  const { text, level, styles } = content;
+  // Add null/undefined checks with defaults to prevent missing text
+  const { text = '', level = 1, styles = {} } = content || {};
   const funnelContext = useFunnelOptional();
   const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const [isEditing, setIsEditing] = useState(false);
@@ -242,10 +243,12 @@ export function HeadingBlock({ content, blockId, stepId, isPreview }: HeadingBlo
     };
 
     // Use dangerouslySetInnerHTML for rich text, but only when content contains HTML
-    const hasHtmlContent = containsHtml(text);
+    // Ensure text is a string before processing
+    const safeText = text || '';
+    const hasHtmlContent = safeText && containsHtml(safeText);
     const contentProps = hasHtmlContent 
-      ? { dangerouslySetInnerHTML: { __html: sanitizeHtml(text) } }
-      : { children: text };
+      ? { dangerouslySetInnerHTML: { __html: sanitizeHtml(safeText) } }
+      : { children: safeText };
 
     switch (level) {
       case 1:
