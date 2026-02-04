@@ -405,6 +405,13 @@ export default function FunnelList() {
     enabled: !!teamId && activeTab === 'contacts', // Only load when Contacts tab is active
   });
 
+  // Refetch leads when switching to Performance tab to ensure fresh data
+  useEffect(() => {
+    if (activeTab === 'performance' && teamId && refetchLeads) {
+      refetchLeads();
+    }
+  }, [activeTab, teamId, refetchLeads]);
+
  const deleteMutation = useMutation({
   mutationFn: async (funnelId: string) => {
       const { data, error } = await supabase
@@ -1486,7 +1493,24 @@ export default function FunnelList() {
                               <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-medium text-primary flex-shrink-0">
                                 {initials}
                               </div>
-                              <span className="text-sm">{displayName}</span>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-medium truncate">
+                                  {contact.name || contact.email || contact.phone || '—'}
+                                </span>
+                                {(contact.email || contact.phone) && contact.name && (
+                                  <div className="flex flex-col gap-0.5 mt-0.5">
+                                    {contact.email && (
+                                      <span className="text-xs text-muted-foreground truncate">{contact.email}</span>
+                                    )}
+                                    {contact.phone && (
+                                      <span className="text-xs text-muted-foreground truncate">{contact.phone}</span>
+                                    )}
+                                  </div>
+                                )}
+                                {!contact.name && contact.email && contact.phone && (
+                                  <span className="text-xs text-muted-foreground truncate">{contact.phone}</span>
+                                )}
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell className="py-2">

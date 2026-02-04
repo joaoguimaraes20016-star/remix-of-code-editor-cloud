@@ -206,7 +206,8 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       // Submit through unified pipeline
       const result = await submit(payload);
       
-      if (!result.error) {
+      // Only show success toast on final conversion step, not on intermediate steps or drafts
+      if (!result.error && stepIntent === 'convert') {
         toast.success('Form submitted successfully!');
       }
     } catch (error) {
