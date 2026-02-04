@@ -196,16 +196,25 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         stepName: funnel.steps[0]?.name,
       },
     }).catch((error) => {
-      if (import.meta.env.DEV) {
-        console.error('[FunnelV3Renderer] Failed to record step_viewed event:', error);
-      }
+      // Always log errors (not just in DEV) for production debugging
+      console.error('[FunnelV3Renderer] Failed to record step_viewed event:', {
+        error,
+        funnelId,
+        teamId,
+        stepId: initialStepId,
+        sessionId: getOrCreateSessionId(),
+      });
     });
     
     // Create funnel_leads entry immediately (no debounce)
     submit(payload).catch((error) => {
-      if (import.meta.env.DEV) {
-        console.error('[FunnelV3Renderer] Failed to track initial view:', error);
-      }
+      // Always log errors (not just in DEV) for production debugging
+      console.error('[FunnelV3Renderer] Failed to track initial view:', {
+        error,
+        funnelId,
+        teamId,
+        stepId: initialStepId,
+      });
     });
   }, [funnelId, teamId, funnel.steps, submit]);
   
@@ -295,13 +304,17 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       // Track this step as just submitted
       if (!result.error) {
         lastSubmitStepRef.current = currentStepId;
-      } else if (import.meta.env.DEV) {
+      } else {
+        // Always log errors (not just in DEV) for production debugging
         console.error('[FunnelV3Renderer] Submission failed', {
           error: result.error,
           funnelId,
           teamId,
           stepId: currentStepId,
+          stepIntent,
+          hasIdentity: !!(identity.name || identity.email || identity.phone),
         });
+        toast.error('Failed to submit form');
       }
       
       // Only show success toast on final conversion step, not on intermediate steps or drafts
@@ -309,9 +322,13 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         toast.success('Form submitted successfully!');
       }
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('[FunnelV3Renderer] Submission exception:', error);
-      }
+      // Always log errors (not just in DEV) for production debugging
+      console.error('[FunnelV3Renderer] Submission exception:', {
+        error,
+        funnelId,
+        teamId,
+        stepId: currentStepIdRef.current,
+      });
       toast.error('Failed to submit form');
     }
   }, [funnelId, teamId, submit, funnel.steps]);
@@ -348,9 +365,14 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
           previousStepId,
         },
       }).catch((error) => {
-        if (import.meta.env.DEV) {
-          console.error('[FunnelV3Renderer] Failed to record step_viewed event:', error);
-        }
+        // Always log errors (not just in DEV) for production debugging
+        console.error('[FunnelV3Renderer] Failed to record step_viewed event:', {
+          error,
+          funnelId,
+          teamId,
+          stepId,
+          sessionId: getOrCreateSessionId(),
+        });
       });
       
       // Skip draft save if navigating away from just-submitted step
@@ -435,10 +457,15 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
           
           await saveDraft(payload);
         } catch (error) {
-          // Don't block navigation if draft save fails
-          if (import.meta.env.DEV) {
-            console.error('[FunnelV3Renderer] Draft save error:', error);
-          }
+          // Don't block navigation if draft save fails, but always log errors
+          console.error('[FunnelV3Renderer] Draft save error:', {
+            error,
+            funnelId,
+            teamId,
+            stepId,
+            stepIndex,
+            hasIdentity: !!(identity.name || identity.email || identity.phone),
+          });
         }
       })();
     });

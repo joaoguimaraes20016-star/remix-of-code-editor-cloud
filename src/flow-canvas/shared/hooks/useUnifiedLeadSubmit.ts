@@ -169,8 +169,9 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   
-  // Prevent duplicate submissions
-  const pendingRef = useRef(false);
+  // Prevent duplicate submissions - separate refs for draft vs submit
+  const pendingDraftRef = useRef(false);
+  const pendingSubmitRef = useRef(false);
   // Track lead ID in ref for stable access in callbacks
   const leadIdRef = useRef<string | null>(initialLeadId || null);
   // Track last submit time to skip draft saves immediately after submit
@@ -193,14 +194,43 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
     payload: UnifiedSubmitPayload,
     mode: 'draft' | 'submit'
   ): Promise<{ leadId?: string; error?: any }> => {
-    // Prevent duplicate submissions
-    if (pendingRef.current) {
-      console.log('[useUnifiedLeadSubmit] Ignoring duplicate - submission in progress');
-      return { error: 'Submission already in progress' };
+    // Prevent duplicate submissions of the same mode
+    // Submit mode can interrupt draft saves (submit is higher priority)
+    if (mode === 'submit') {
+      if (pendingSubmitRef.current) {
+        console.log('[useUnifiedLeadSubmit] Ignoring duplicate submit - submit already in progress');
+        return { error: 'Submit already in progress' };
+      }
+      // Cancel any pending draft save when submit is called
+      if (draftTimeoutRef.current) {
+        clearTimeout(draftTimeoutRef.current);
+        draftTimeoutRef.current = null;
+        pendingDraftRef.current = false;
+      }
+    } else {
+      // Draft mode: block if submit is in progress (submit takes priority)
+      if (pendingSubmitRef.current) {
+        console.log('[useUnifiedLeadSubmit] Ignoring draft - submit in progress (submit takes priority)');
+        return { error: 'Submit in progress, draft skipped' };
+      }
+      // Block if draft is already pending
+      if (pendingDraftRef.current) {
+        console.log('[useUnifiedLeadSubmit] Ignoring duplicate draft - draft already pending');
+        return { error: 'Draft already in progress' };
+      }
     }
 
-    pendingRef.current = true;
-    setIsSubmitting(true);
+    // Set appropriate pending flag
+    if (mode === 'submit') {
+      pendingSubmitRef.current = true;
+    } else {
+      pendingDraftRef.current = true;
+    }
+    
+    // Only set isSubmitting for submit mode (draft saves are background operations)
+    if (mode === 'submit') {
+      setIsSubmitting(true);
+    }
     setLastError(null);
 
     // Generate stable client request ID for submit mode (idempotency)
@@ -224,6 +254,7 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
     };
 
     try {
+      // Always log submission start (not just in DEV) for production debugging
       console.log(`[useUnifiedLeadSubmit] ====== SUBMISSION STARTED ======`, {
         mode,
         funnelId,
@@ -233,8 +264,10 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
         answersCount: Object.keys(payload.answers).length,
         stepId: payload.source.stepId,
         stepIntent: payload.source.stepIntent,
+        clientRequestId: mode === 'submit' ? 'will-be-generated' : 'n/a',
       });
 
+      // Invoke Edge Function - this is the critical call that must succeed
       const { data, error } = await supabase.functions.invoke('submit-funnel-lead', {
         body: {
           // Required identifiers (both formats for compatibility)
@@ -300,13 +333,19 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
       // Extract lead ID from response (handle various response shapes)
       const returnedLeadId = data?.lead_id || data?.lead?.id || data?.leadId || data?.id;
       
+      // Always log response (not just in DEV) for production debugging
       console.log('[useUnifiedLeadSubmit] ====== SUBMISSION RESPONSE ======', {
         success: !!returnedLeadId,
         returnedLeadId,
         mode,
         funnelId,
         teamId,
-        responseData: data,
+        stepId: payload.source.stepId,
+        stepIntent: payload.source.stepIntent,
+        hasResponseData: !!data,
+        responseKeys: data ? Object.keys(data) : [],
+        // Log full response in DEV, summary in PROD
+        ...(import.meta.env.DEV ? { responseData: data } : {}),
       });
       
       if (returnedLeadId) {
@@ -330,13 +369,29 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
       return { leadId: returnedLeadId };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('[useUnifiedLeadSubmit] Exception:', err);
+      // Always log errors (not just in DEV) for production debugging
+      console.error('[useUnifiedLeadSubmit] ====== EXCEPTION ======', {
+        error: err,
+        errorMessage,
+        mode,
+        funnelId,
+        teamId,
+        leadId: leadIdRef.current,
+        stepId: payload.source.stepId,
+        stepIntent: payload.source.stepIntent,
+        hasIdentity: !!(payload.identity?.name || payload.identity?.email || payload.identity?.phone),
+      });
       setLastError(errorMessage);
       onError?.(err);
       return { error: err };
     } finally {
-      pendingRef.current = false;
-      setIsSubmitting(false);
+      // Clear appropriate pending flag
+      if (mode === 'submit') {
+        pendingSubmitRef.current = false;
+        setIsSubmitting(false);
+      } else {
+        pendingDraftRef.current = false;
+      }
     }
   }, [funnelId, teamId, utmSource, utmMedium, utmCampaign, onLeadSaved, onError, updateLeadId]);
 
@@ -353,10 +408,17 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
         return Promise.resolve({});
       }
       
+      // Skip if submit is in progress (submit takes priority)
+      if (pendingSubmitRef.current) {
+        console.log('[useUnifiedLeadSubmit] Skipping draft save - submit in progress');
+        return Promise.resolve({});
+      }
+      
       // Cancel any pending draft save
       if (draftTimeoutRef.current) {
         clearTimeout(draftTimeoutRef.current);
         draftTimeoutRef.current = null;
+        pendingDraftRef.current = false;
       }
       
       // Debounce: wait 500ms before saving

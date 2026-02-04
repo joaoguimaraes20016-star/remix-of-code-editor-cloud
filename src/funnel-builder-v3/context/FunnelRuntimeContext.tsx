@@ -250,16 +250,25 @@ export function FunnelRuntimeProvider({
   const submitForm = useCallback((consent?: { agreed: boolean; privacyPolicyUrl?: string }): Promise<void> => {
     // Fire-and-forget pattern: callers don't need to await, but can use .catch() for error handling
     // The underlying useUnifiedLeadSubmit hook handles deduplication at the API level
-    setIsSubmitting(true);
+    
+    // Defer isSubmitting state update to avoid blocking navigation
+    // Use queueMicrotask to defer after current synchronous operations complete
+    queueMicrotask(() => {
+      setIsSubmitting(true);
+    });
     
     // Use refs to get current state (avoids stale closures)
     // Return the promise chain so callers can optionally chain .catch()
     return (onFormSubmit?.(formDataRef.current, selectionsRef.current, consent) ?? Promise.resolve())
       .catch((error) => {
-        // Log error but don't rethrow - fire-and-forget pattern
-        if (import.meta.env.DEV) {
-          console.error('[FunnelRuntimeContext] submitForm error:', error);
-        }
+        // Always log errors (not just in DEV) for production debugging
+        // Don't rethrow - fire-and-forget pattern
+        console.error('[FunnelRuntimeContext] submitForm error:', {
+          error,
+          currentStepId: currentStepIdRef.current,
+          hasFormData: Object.keys(formDataRef.current).length > 0,
+          hasSelections: Object.keys(selectionsRef.current).length > 0,
+        });
       })
       .finally(() => {
         setIsSubmitting(false);

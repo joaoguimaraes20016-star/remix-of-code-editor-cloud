@@ -11,7 +11,7 @@ import {
   LayoutGrid, List, Link2, MoreHorizontal, Star, BarChart3,
   MessageSquare, Calendar, Download, TrendingUp, TrendingDown,
   Phone, Mail, CheckCircle, ArrowLeft, Globe, Settings,
-  ChevronRight, Archive, FolderInput, Loader2
+  ChevronRight, Archive, FolderInput, Loader2, RefreshCw
 } from 'lucide-react';
 import { DomainsSection } from '@/components/funnel-builder/DomainsSection';
 import { FunnelSettingsDialog } from '@/components/funnel-builder/FunnelSettingsDialog';
@@ -249,9 +249,10 @@ export default function FunnelList() {
       return data as FunnelLead[];
     },
     enabled: !!teamId && activeTab === 'performance', // Only load when Performance tab is active
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false, // Disable auto-refetch to improve performance
-    refetchOnReconnect: false,
+    staleTime: 0, // Always consider data stale to allow polling
+    refetchInterval: 5000, // Auto-refresh every 5 seconds when tab is active
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnReconnect: true, // Refetch when reconnecting
   });
 
   // Extract steps from funnel snapshots (supports V3, FlowCanvas, and old formats)
@@ -406,6 +407,10 @@ export default function FunnelList() {
       return data as Contact[];
     },
     enabled: !!teamId && activeTab === 'contacts', // Only load when Contacts tab is active
+    staleTime: 0, // Always consider data stale to allow polling
+    refetchInterval: 5000, // Auto-refresh every 5 seconds when tab is active
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnReconnect: true, // Refetch when reconnecting
   });
 
 
@@ -1265,7 +1270,17 @@ export default function FunnelList() {
                   onClick={() => refetchLeads()}
                   disabled={leadsIsFetching}
                 >
-                  Refresh
+                  {leadsIsFetching ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Refreshing...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Refresh
+                    </>
+                  )}
                 </Button>
                 {isAdmin && (
                   <Button variant="outline" onClick={exportLeads} disabled={!leads?.length}>
@@ -1393,14 +1408,57 @@ export default function FunnelList() {
             })}
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-2xl font-bold text-foreground">Contacts</h1>
-              {isAdmin && (
-                <Button variant="outline" onClick={exportContacts} disabled={!contacts?.length}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export to CRM
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => refetchContacts()}
+                  disabled={contactsFetching}
+                >
+                  {contactsFetching ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Refreshing...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Refresh
+                    </>
+                  )}
                 </Button>
-              )}
+                {isAdmin && (
+                  <Button variant="outline" onClick={exportContacts} disabled={!contacts?.length}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export to CRM
+                  </Button>
+                )}
+              </div>
             </div>
 
+            {/* Loading State */}
+            {contactsLoading && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            )}
+
+            {/* Error State */}
+            {contactsError && (
+              <div className="text-center py-12 text-destructive">
+                <p className="font-medium mb-2">Failed to load contacts</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {contactsError instanceof Error ? contactsError.message : 'An unknown error occurred'}
+                </p>
+                <Button variant="outline" onClick={() => refetchContacts()}>
+                  Try Again
+                </Button>
+              </div>
+            )}
+
+            {/* Content - only show when not loading and no error */}
+            {!contactsLoading && !contactsError && (
+              <>
             {/* Contact Stats - Compact n8n-style */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
               {/* Today */}
@@ -1570,6 +1628,8 @@ export default function FunnelList() {
                 </TableBody>
               </Table>
             </div>
+              </>
+            )}
           </>
         )}
 
