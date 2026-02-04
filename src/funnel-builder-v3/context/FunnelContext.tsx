@@ -185,10 +185,16 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
     const raw = initialFunnel ?? loadFunnelFromStorage() ?? createEmptyFunnel();
     return normalizeFunnel(raw);
   });
-  const [currentStepId, setCurrentStepId] = useState<string | null>(null);
+  const [currentStepId, setCurrentStepIdState] = useState<string | null>(null);
   const [selectedBlockId, setSelectedBlockIdState] = useState<string | null>(null);
   const [selectedChildElement, setSelectedChildElement] = useState<string | null>(null);
   const [isPreviewMode, setPreviewMode] = useState(false);
+  
+  // Wrapper for setCurrentStepId that clears child selection when step changes
+  const setCurrentStepId = useCallback((id: string | null) => {
+    setCurrentStepIdState(id);
+    setSelectedChildElement(null); // Clear child selection when step changes
+  }, []);
   
   // Wrapper for setSelectedBlockId that clears child selection
   const setSelectedBlockId = useCallback((id: string | null) => {
@@ -324,13 +330,19 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   const [history, setHistory] = useState<Funnel[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   
+  // Use ref to track history index to avoid stale closures during rapid updates
+  const historyIndexRef = React.useRef(-1);
+  React.useEffect(() => {
+    historyIndexRef.current = historyIndex;
+  }, [historyIndex]);
+  
   // Initialize current step when funnel changes
   React.useEffect(() => {
     if (!currentStepId && funnel.steps.length > 0) {
       setCurrentStepId(funnel.steps[0].id);
     }
-  }, [funnel, currentStepId]);
-
+  }, [funnel, currentStepId, setCurrentStepId]);
+  
   // Handle escape key for preview mode
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -344,18 +356,27 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   
   const pushToHistory = useCallback((currentFunnel: Funnel) => {
     setHistory(prev => {
+      // Use ref to get current historyIndex to avoid stale closure issues during rapid updates
+      const currentIndex = historyIndexRef.current;
       // Slice history to current position (discard any "future" states after undo)
-      const newHistory = prev.slice(0, historyIndex + 1);
+      const newHistory = prev.slice(0, currentIndex + 1);
       newHistory.push(currentFunnel);
       // Keep within max limit
+      let newIndex: number;
       if (newHistory.length > MAX_HISTORY) {
         newHistory.shift();
-        return newHistory;
+        // Adjust index if we shifted (history is full)
+        newIndex = MAX_HISTORY - 1;
+      } else {
+        // Update index to match new history length
+        newIndex = newHistory.length - 1;
       }
+      // Update both state and ref atomically
+      historyIndexRef.current = newIndex;
+      setHistoryIndex(newIndex);
       return newHistory;
     });
-    setHistoryIndex(prev => Math.min(prev + 1, MAX_HISTORY - 1));
-  }, [historyIndex]);
+  }, []);
   
   const setFunnel = useCallback((newFunnel: Funnel) => {
     // Save current state to history before updating
@@ -369,7 +390,9 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   const undo = useCallback(() => {
     if (historyIndex >= 0 && history[historyIndex]) {
       const previousState = history[historyIndex];
-      setHistoryIndex(prev => prev - 1);
+      const newIndex = historyIndex - 1;
+      historyIndexRef.current = newIndex;
+      setHistoryIndex(newIndex);
       setFunnelState(normalizeFunnel(previousState));
     }
   }, [history, historyIndex]);
@@ -377,7 +400,9 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   const redo = useCallback(() => {
     if (historyIndex < history.length - 1) {
       const nextState = history[historyIndex + 1];
-      setHistoryIndex(prev => prev + 1);
+      const newIndex = historyIndex + 1;
+      historyIndexRef.current = newIndex;
+      setHistoryIndex(newIndex);
       setFunnelState(normalizeFunnel(nextState));
     }
   }, [history, historyIndex]);
