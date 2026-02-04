@@ -268,10 +268,16 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
 
   // Handle submit button click in editor/preview modes
   const handleButtonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     console.log('[QuizBlock] ====== handleButtonClick FIRED ======', {
       isPreview,
       hasRuntime: !!runtime,
       selectedCount: selected.length,
+      eventType: e.type,
+      target: e.target,
+      currentTarget: e.currentTarget,
     });
 
     if (!isPreview) {

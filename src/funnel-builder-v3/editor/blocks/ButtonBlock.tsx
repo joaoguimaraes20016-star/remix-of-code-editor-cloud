@@ -65,6 +65,11 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
   const hasTextGradient = !!textGradient;
 
   const handleClick = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     console.log('[ButtonBlock] ====== CLICK EVENT FIRED ======', {
       hasRuntime: !!runtime,
       isPreview,
@@ -72,7 +77,9 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
       stepId,
       action,
       actionValue,
-      event: e,
+      eventType: e?.type,
+      target: e?.target,
+      currentTarget: e?.currentTarget,
       timestamp: new Date().toISOString(),
     });
 

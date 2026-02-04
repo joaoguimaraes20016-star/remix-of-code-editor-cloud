@@ -83,8 +83,23 @@ function extractIdentityFromFormData(
 
 // Inner component that uses runtime context - memoized to prevent unnecessary re-renders
 const FunnelV3Content = memo(function FunnelV3Content({ funnel }: { funnel: Funnel }) {
+  console.log('[FunnelV3Content] Component rendering', {
+    funnelStepsCount: funnel.steps.length,
+  });
+  
   const runtime = useFunnelRuntime();
+  console.log('[FunnelV3Content] Runtime context accessed', {
+    hasRuntime: !!runtime,
+    currentStepId: runtime?.currentStepId,
+    totalSteps: runtime?.totalSteps,
+  });
+  
   const currentStep = runtime.getCurrentStep();
+  console.log('[FunnelV3Content] Current step retrieved', {
+    stepId: currentStep?.id,
+    stepName: currentStep?.name,
+    blocksCount: currentStep?.blocks?.length || 0,
+  });
 
   if (!currentStep) {
     return (
@@ -120,8 +135,22 @@ const FunnelV3Content = memo(function FunnelV3Content({ funnel }: { funnel: Funn
 
 
 export function FunnelV3Renderer({ document, settings, funnelId, teamId }: FunnelV3RendererProps) {
+  console.log('[FunnelV3Renderer] Component initialized', {
+    funnelId,
+    teamId,
+    documentVersion: document.version,
+    pagesCount: document.pages?.length || 0,
+  });
+  
   // Convert document to Funnel format - memoized to prevent recalculation on every render
-  const funnel = useMemo(() => convertDocumentToFunnel(document), [document]);
+  const funnel = useMemo(() => {
+    const converted = convertDocumentToFunnel(document);
+    console.log('[FunnelV3Renderer] Funnel converted', {
+      stepsCount: converted.steps.length,
+      firstStepId: converted.steps[0]?.id,
+    });
+    return converted;
+  }, [document]);
 
   // Use unified lead submission hook
   const { submit, saveDraft, leadId } = useUnifiedLeadSubmit({
@@ -315,6 +344,10 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       console.error('[FunnelV3Renderer] Draft save error:', error);
     }
   }, [funnelId, teamId, saveDraft, funnel.steps]);
+
+  console.log('[FunnelV3Renderer] Rendering providers and content', {
+    funnelStepsCount: funnel.steps.length,
+  });
 
   return (
     <FunnelRuntimeProvider 
