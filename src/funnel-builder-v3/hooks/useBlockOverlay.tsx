@@ -36,7 +36,8 @@ export function useBlockOverlay(options: UseBlockOverlayOptions) {
   const [isHovered, setIsHovered] = useState(false);
   
   const canEdit = blockId && stepId && !isPreview;
-  const shouldShowOverlay = canEdit && !isEditing && !isChildSelected;
+  // Only show overlay for video blocks - other blocks don't need click-to-edit overlay
+  const shouldShowOverlay = canEdit && !isEditing && !isChildSelected && blockType === 'video';
   
   // Check if an element is interactive (should not be blocked by overlay)
   const isInteractiveElement = (element: Element | null): boolean => {
