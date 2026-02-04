@@ -5,14 +5,27 @@
  */
 
 import { FunnelStep, Funnel } from '@/funnel-builder-v3/types/funnel';
-import { ClonedStyle } from './clone-converter';
+
+/**
+ * Minimal branding interface for applying colors/theme
+ * (subset of full ClonedStyle - only uses what's actually needed)
+ */
+export interface AppliedBranding {
+  primaryColor: string;
+  accentColor?: string;
+  backgroundColor: string;
+  textColor?: string;
+  headingColor?: string;
+  bodyFont?: string;
+  theme?: 'dark' | 'light';
+}
 
 /**
  * Apply branding to a step
  */
 export function applyBrandingToStep(
   step: FunnelStep,
-  branding: ClonedStyle
+  branding: AppliedBranding
 ): FunnelStep {
   return {
     ...step,
@@ -28,7 +41,7 @@ export function applyBrandingToStep(
  */
 export function applyBrandingToSteps(
   steps: FunnelStep[],
-  branding: ClonedStyle
+  branding: AppliedBranding
 ): FunnelStep[] {
   return steps.map(step => applyBrandingToStep(step, branding));
 }
@@ -38,7 +51,7 @@ export function applyBrandingToSteps(
  */
 export function applyBrandingToFunnel(
   funnel: Funnel,
-  branding: ClonedStyle
+  branding: AppliedBranding
 ): Funnel {
   return {
     ...funnel,
