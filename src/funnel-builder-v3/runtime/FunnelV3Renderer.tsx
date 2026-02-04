@@ -142,6 +142,13 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
   // Track last submit step to prevent duplicate draft saves
   const lastSubmitStepRef = useRef<string | null>(null);
   
+  // Sync ref with initial step ID
+  useEffect(() => {
+    if (funnel.steps[0]?.id) {
+      currentStepIdRef.current = funnel.steps[0].id;
+    }
+  }, [funnel.steps]);
+  
   const handleFormSubmit = useCallback(async (
     data: FunnelFormData, 
     selections: FunnelSelections,
@@ -151,8 +158,15 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       // Build answers object from form data and selections
       const answers: Record<string, any> = { ...data, ...selections };
       
+      // Use ref value, but validate it exists
+      const currentStepId = currentStepIdRef.current || funnel.steps[0]?.id;
+      if (!currentStepId) {
+        console.error('[FunnelV3Renderer] No current step ID available for form submission');
+        return;
+      }
+      
       // Extract identity from form fields (check current step first, then all steps)
-      const currentStep = funnel.steps.find(s => s.id === currentStepIdRef.current);
+      const currentStep = funnel.steps.find(s => s.id === currentStepId);
       let identityFromFields: { name?: string; email?: string; phone?: string } = {};
       
       if (currentStep) {
@@ -180,7 +194,6 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       };
       
       // Determine step intent based on position
-      const currentStepId = currentStepIdRef.current;
       const stepIndex = funnel.steps.findIndex(s => s.id === currentStepId);
       const isLastStep = stepIndex === funnel.steps.length - 1;
       const stepIntent: 'capture' | 'qualify' | 'schedule' | 'convert' | 'complete' | 'navigate' | 'info' = 
@@ -230,6 +243,7 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     selections: FunnelSelections
   ) => {
     const previousStepId = currentStepIdRef.current;
+    // Update ref immediately to keep it in sync
     currentStepIdRef.current = stepId;
     
     // Skip draft save if navigating away from just-submitted step

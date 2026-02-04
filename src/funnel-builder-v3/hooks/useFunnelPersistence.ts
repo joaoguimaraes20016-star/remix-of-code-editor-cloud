@@ -36,6 +36,7 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
   
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef<string>('');
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // Fetch funnel metadata (status, domain_id)
   const { data: funnelMeta } = useQuery({
@@ -105,9 +106,25 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
 
     try {
       // Preserve existing status if funnel is already published
-      // Only set to 'draft' if this is a new funnel or current status is 'draft'
-      const currentStatus = funnelMeta?.status || 'draft';
-      const preserveStatus = currentStatus === 'published' ? 'published' : 'draft';
+      // Fetch fresh status from database if query data is unavailable or might be stale
+      let currentStatus = funnelMeta?.status;
+      
+      // If query data is missing and we have a funnelId, fetch fresh status
+      if (!currentStatus && funnelId) {
+        try {
+          const { data } = await supabase
+            .from('funnels')
+            .select('status')
+            .eq('id', funnelId)
+            .single();
+          currentStatus = data?.status || 'draft';
+        } catch (fetchError) {
+          console.warn('[useFunnelPersistence] Failed to fetch fresh status, using default:', fetchError);
+          currentStatus = 'draft';
+        }
+      }
+      
+      const preserveStatus = (currentStatus === 'published') ? 'published' : 'draft';
 
       const saveData = {
         name: funnel.name || 'Untitled Funnel',
@@ -178,6 +195,9 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
       toast.error('Not authenticated');
       return false;
     }
+
+    // Set publishing flag to prevent auto-save race condition
+    setIsPublishing(true);
 
     let currentFunnelId = funnelId;
     if (!currentFunnelId) {
@@ -334,18 +354,26 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
         };
       });
 
-      // Don't invalidate immediately - let the optimistic update persist
-      // The query will naturally refetch when needed (on remount, window focus, etc.)
-      // This prevents race conditions where a refetch might get stale data and overwrite the optimistic update
-      // If we need to force a refetch later, we can do it when the modal closes/reopens
+      // CRITICAL: Invalidate and refetch immediately to prevent race condition
+      // This ensures auto-save reads fresh 'published' status instead of stale 'draft'
+      await queryClient.invalidateQueries({ 
+        queryKey: ['funnel-meta', currentFunnelId],
+        refetchType: 'active' // Force immediate refetch for active queries
+      });
+      
+      // Clear publishing flag after a short delay to ensure query has refetched
+      setTimeout(() => {
+        setIsPublishing(false);
+      }, 500);
       
       return true;
     } catch (e) {
       console.error('Error publishing funnel:', e);
       toast.error('Failed to publish funnel');
+      setIsPublishing(false); // Clear flag on error
       return false;
     }
-  }, [session, funnelId, funnel, saveDraft]);
+  }, [session, funnelId, funnel, saveDraft, queryClient, funnelMeta]);
 
   // Wire up auto-save when funnel changes
   useEffect(() => {

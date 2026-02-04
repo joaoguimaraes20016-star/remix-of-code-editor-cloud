@@ -167,14 +167,17 @@ async function resolveContact(
   identity_match_type: "email" | "phone" | "none";
   identity_mismatch: boolean;
   identity_mismatch_reason: string | null;
+  contactCreationError?: string | null;
 }> {
   // Updated: Create contact if ANY field exists (not just email/phone)
   if (!emailNorm && !phoneNorm && !nameNorm) {
+    console.log("[submit-funnel-lead] Contact creation skipped: No identity fields provided");
     return {
       contactId: null,
       identity_match_type: "none",
       identity_mismatch: false,
       identity_mismatch_reason: null,
+      contactCreationError: "No identity fields (email, phone, or name) provided",
     };
   }
 
@@ -270,23 +273,27 @@ async function resolveContact(
         .single();
 
       if (insertError) {
+        const errorMessage = insertError.message || JSON.stringify(insertError);
         console.error("[submit-funnel-lead] Error creating new contact:", insertError);
         return {
           contactId: null,
           identity_match_type: "none",
           identity_mismatch: false,
           identity_mismatch_reason: null,
+          contactCreationError: `Database error: ${errorMessage}`,
         };
       }
 
       chosenContact = newContact;
     } catch (insertErr) {
+      const errorMessage = insertErr instanceof Error ? insertErr.message : String(insertErr);
       console.error("[submit-funnel-lead] Unexpected error creating new contact:", insertErr);
       return {
         contactId: null,
         identity_match_type: "none",
         identity_mismatch: false,
         identity_mismatch_reason: null,
+        contactCreationError: `Unexpected error: ${errorMessage}`,
       };
     }
   } else if (identity_match_type !== "none" && identity_mismatch_reason !== "email_phone_conflict") {
@@ -360,6 +367,7 @@ async function resolveContact(
     identity_match_type,
     identity_mismatch,
     identity_mismatch_reason,
+    contactCreationError: null,
   };
 }
 
@@ -704,6 +712,8 @@ serve(async (req) => {
       hasIdentityInput &&
       (!existingLead || !existingLead.contact_id);
 
+    let contactCreationError: string | null = null;
+    
     if (shouldAttemptContactResolution) {
       // First attempt: resolve/create contact (leadId may be null if creating new lead)
       const contactResult = await resolveContact(
@@ -722,7 +732,24 @@ serve(async (req) => {
       identityMatchType = contactResult.identity_match_type;
       identityMismatch = contactResult.identity_mismatch;
       identityMismatchReason = contactResult.identity_mismatch_reason;
+      contactCreationError = contactResult.contactCreationError || null;
       identityFieldsResolved = true;
+      
+      // Log contact creation issues for debugging
+      if (contactCreationError) {
+        console.warn("[submit-funnel-lead] Contact creation failed:", contactCreationError);
+      } else if (!contactId && hasIdentityInput) {
+        console.warn("[submit-funnel-lead] Contact creation skipped despite having identity fields");
+      }
+    } else {
+      // Log why contact resolution was skipped
+      if (!hasIdentityInput) {
+        console.log("[submit-funnel-lead] Contact resolution skipped: No identity fields provided");
+      } else if (!autoCreateAllowed) {
+        console.log("[submit-funnel-lead] Contact resolution skipped: auto_create_contact is disabled");
+      } else if (existingLead && existingLead.contact_id) {
+        console.log("[submit-funnel-lead] Contact resolution skipped: Lead already has contact_id");
+      }
     }
 
     let lead: any = null;
@@ -959,6 +986,9 @@ serve(async (req) => {
         lead_id: lead.id,
         lead,
         status: leadStatus,
+        contact_id: contactId,
+        contactCreationError: contactCreationError || undefined,
+        contactCreationSkipped: !shouldAttemptContactResolution,
       }),
       {
         status: 200,

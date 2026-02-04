@@ -361,7 +361,7 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
     return style;
   };
 
-  return (
+  const quizElement = (
     <div className="space-y-4">
       <div className={cn(
         "text-lg font-semibold text-center",
