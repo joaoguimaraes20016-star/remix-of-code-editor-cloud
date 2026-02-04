@@ -85,23 +85,8 @@ function extractIdentityFromFormData(
 
 // Inner component that uses runtime context - memoized to prevent unnecessary re-renders
 const FunnelV3Content = memo(function FunnelV3Content({ funnel }: { funnel: Funnel }) {
-  console.log('[FunnelV3Content] Component rendering', {
-    funnelStepsCount: funnel.steps.length,
-  });
-  
   const runtime = useFunnelRuntime();
-  console.log('[FunnelV3Content] Runtime context accessed', {
-    hasRuntime: !!runtime,
-    currentStepId: runtime?.currentStepId,
-    totalSteps: runtime?.totalSteps,
-  });
-  
   const currentStep = runtime.getCurrentStep();
-  console.log('[FunnelV3Content] Current step retrieved', {
-    stepId: currentStep?.id,
-    stepName: currentStep?.name,
-    blocksCount: currentStep?.blocks?.length || 0,
-  });
 
   if (!currentStep) {
     return (
@@ -137,52 +122,28 @@ const FunnelV3Content = memo(function FunnelV3Content({ funnel }: { funnel: Funn
 
 
 export function FunnelV3Renderer({ document, settings, funnelId, teamId }: FunnelV3RendererProps) {
-  console.log('[FunnelV3Renderer] Component initialized', {
-    funnelId,
-    teamId,
-    documentVersion: document.version,
-    pagesCount: document.pages?.length || 0,
-  });
-  
   // Convert document to Funnel format - memoized to prevent recalculation on every render
   const funnel = useMemo(() => {
-    const converted = convertDocumentToFunnel(document);
-    console.log('[FunnelV3Renderer] Funnel converted', {
-      stepsCount: converted.steps.length,
-      firstStepId: converted.steps[0]?.id,
-    });
-    return converted;
+    return convertDocumentToFunnel(document);
   }, [document]);
 
   // Get query client for cache invalidation
   const queryClient = useQueryClient();
   
   // Use unified lead submission hook
-  console.log('[FunnelV3Renderer] Initializing useUnifiedLeadSubmit', {
-    funnelId,
-    teamId,
-    isValid: !!(funnelId && teamId),
-  });
-  
   const { submit, saveDraft, leadId } = useUnifiedLeadSubmit({
     funnelId,
     teamId,
     onLeadSaved: (id, mode) => {
-      console.log(`[FunnelV3Renderer] Lead saved callback: ${id}, mode: ${mode}`);
       // Invalidate Performance tab query to refresh data immediately
       queryClient.invalidateQueries({ queryKey: ['funnel-leads', teamId] });
-      console.log('[FunnelV3Renderer] Invalidated funnel-leads query cache');
     },
     onError: (error) => {
-      console.error('[FunnelV3Renderer] Submission error callback:', error);
+      if (import.meta.env.DEV) {
+        console.error('[FunnelV3Renderer] Submission error callback:', error);
+      }
       toast.error('Failed to submit form');
     },
-  });
-  
-  console.log('[FunnelV3Renderer] useUnifiedLeadSubmit initialized', {
-    hasSubmit: !!submit,
-    hasSaveDraft: !!saveDraft,
-    currentLeadId: leadId,
   });
 
   // Handle form submission using unified pipeline
@@ -221,11 +182,6 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     // Use submit() instead of saveDraft() to ensure immediate tracking without debounce
     // Note: submit() uses submitMode: 'submit' which may trigger automations, but automations
     // typically require contact info to be useful, so this should be safe for initial visitor tracking
-    console.log('[FunnelV3Renderer] Tracking initial visitor view', {
-      funnelId,
-      teamId,
-      stepId: initialStepId,
-    });
     
     // Track initial step view event
     const sessionId = getOrCreateSessionId();
@@ -240,12 +196,16 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         stepName: funnel.steps[0]?.name,
       },
     }).catch((error) => {
-      console.error('[FunnelV3Renderer] Failed to record step_viewed event:', error);
+      if (import.meta.env.DEV) {
+        console.error('[FunnelV3Renderer] Failed to record step_viewed event:', error);
+      }
     });
     
     // Create funnel_leads entry immediately (no debounce)
     submit(payload).catch((error) => {
-      console.error('[FunnelV3Renderer] Failed to track initial view:', error);
+      if (import.meta.env.DEV) {
+        console.error('[FunnelV3Renderer] Failed to track initial view:', error);
+      }
     });
   }, [funnelId, teamId, funnel.steps, submit]);
   
@@ -266,32 +226,14 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     consent?: { agreed: boolean; privacyPolicyUrl?: string }
   ) => {
     try {
-      console.log('[FunnelV3Renderer] ====== FORM SUBMISSION STARTED ======', {
-        funnelId,
-        teamId,
-        hasData: Object.keys(data).length > 0,
-        hasSelections: Object.keys(selections).length > 0,
-        hasConsent: !!consent,
-      });
-      
       // Build answers object from form data and selections
       const answers: Record<string, any> = { ...data, ...selections };
       
       // Use ref value, but validate it exists
       const currentStepId = currentStepIdRef.current || funnel.steps[0]?.id;
       if (!currentStepId) {
-        console.error('[FunnelV3Renderer] No current step ID available for form submission', {
-          refValue: currentStepIdRef.current,
-          firstStepId: funnel.steps[0]?.id,
-        });
         return;
       }
-      
-      console.log('[FunnelV3Renderer] Current step ID resolved', {
-        currentStepId,
-        stepIndex: funnel.steps.findIndex(s => s.id === currentStepId),
-        totalSteps: funnel.steps.length,
-      });
       
       // Extract identity from form fields (check current step first, then all steps)
       const currentStep = funnel.steps.find(s => s.id === currentStepId);
@@ -333,7 +275,7 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         teamId,
         stepId: currentStepId,
         stepIntent,
-        lastStepIndex: stepIndex, // Add step index for proper step tracking
+        lastStepIndex: stepIndex,
       }, {
         consent: consent ? {
           agreed: consent.agreed,
@@ -348,32 +290,12 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       }
       
       // Submit through unified pipeline
-      console.log('[FunnelV3Renderer] Calling submit() with payload', {
-        funnelId: payload.source.funnelId,
-        teamId: payload.source.teamId,
-        stepId: payload.source.stepId,
-        stepIntent: payload.source.stepIntent,
-        hasIdentity: !!(payload.identity?.name || payload.identity?.email || payload.identity?.phone),
-        answersCount: Object.keys(payload.answers).length,
-      });
-      
       const result = await submit(payload);
-      
-      console.log('[FunnelV3Renderer] Submit result received', {
-        success: !result.error,
-        leadId: result.leadId,
-        error: result.error,
-        stepIntent,
-      });
       
       // Track this step as just submitted
       if (!result.error) {
         lastSubmitStepRef.current = currentStepId;
-        console.log('[FunnelV3Renderer] Lead created/updated successfully', {
-          leadId: result.leadId,
-          stepId: currentStepId,
-        });
-      } else {
+      } else if (import.meta.env.DEV) {
         console.error('[FunnelV3Renderer] Submission failed', {
           error: result.error,
           funnelId,
@@ -387,7 +309,9 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         toast.success('Form submitted successfully!');
       }
     } catch (error) {
-      console.error('[FunnelV3Renderer] Submission exception:', error);
+      if (import.meta.env.DEV) {
+        console.error('[FunnelV3Renderer] Submission exception:', error);
+      }
       toast.error('Failed to submit form');
     }
   }, [funnelId, teamId, submit, funnel.steps]);
@@ -403,142 +327,123 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     // Update ref immediately to keep it in sync
     currentStepIdRef.current = stepId;
     
-    // Calculate step index for tracking
-    const stepIndex = funnel.steps.findIndex(s => s.id === stepId);
-    const currentStep = funnel.steps.find(s => s.id === stepId);
-    
-    // Track step view event (always track, even if no data)
-    const sessionId = getOrCreateSessionId();
-    recordEvent({
-      funnel_id: funnelId,
-      step_id: stepId,
-      event_type: 'step_viewed',
-      session_id: sessionId,
-      dedupe_key: `step_viewed:${funnelId}:${stepId}:${sessionId}:${Date.now()}`,
-      payload: {
-        stepIndex,
-        stepName: currentStep?.name,
-        previousStepId,
-      },
-    }).catch((error) => {
-      console.error('[FunnelV3Renderer] Failed to record step_viewed event:', error);
-    });
-    
-    // Skip draft save if navigating away from just-submitted step
-    if (lastSubmitStepRef.current === previousStepId) {
-      lastSubmitStepRef.current = null;
-      console.log('[FunnelV3Renderer] Skipping draft save - step was just submitted', {
-        previousStepId,
-        newStepId: stepId,
-      });
-      return; // Skip draft save, data was just submitted
-    }
-    
-    // Always update last_step_index, even if no form data
-    // This ensures drop-off tracking works for pure visitors
-    const hasData = Object.keys(formData).length > 0 || Object.keys(selections).length > 0;
-    if (!hasData) {
-      // Even without form data, update last_step_index for drop-off tracking
-      const emptyPayload = createUnifiedPayload({}, {
-        funnelId,
-        teamId,
-        stepId,
-        stepIntent: 'navigate',
-        lastStepIndex: stepIndex,
-      });
-      
-      // Update lead with new step index (fire-and-forget)
-      saveDraft(emptyPayload).catch((error) => {
-        console.error('[FunnelV3Renderer] Failed to update step index:', error);
-      });
-      
-      console.log('[FunnelV3Renderer] Updated step index without form data', {
-        stepId,
-        stepIndex,
-      });
-      return;
-    }
-    
-    // Fire-and-forget: don't await, let it run in background
-    (async () => {
-      try {
-      // Build answers from current state
-      const answers: Record<string, any> = { ...formData, ...selections };
-      
-      // Extract identity from form fields
+    // Defer ALL heavy work to next microtask to prevent blocking navigation
+    // This ensures the UI updates instantly while background work happens after
+    queueMicrotask(() => {
+      // Calculate step index for tracking
+      const stepIndex = funnel.steps.findIndex(s => s.id === stepId);
       const currentStep = funnel.steps.find(s => s.id === stepId);
-      let identityFromFields: { name?: string; email?: string; phone?: string } = {};
       
-      if (currentStep) {
-        identityFromFields = extractIdentityFromFormData(formData, currentStep.blocks || []);
-      }
-      
-      // Fallback: check all steps if not found in current step
-      if (!identityFromFields.name && !identityFromFields.email && !identityFromFields.phone) {
-        for (const step of funnel.steps) {
-          const extracted = extractIdentityFromFormData(formData, step.blocks || []);
-          if (extracted.name) identityFromFields.name = extracted.name;
-          if (extracted.email) identityFromFields.email = extracted.email;
-          if (extracted.phone) identityFromFields.phone = extracted.phone;
+      // Track step view event (always track, even if no data)
+      const sessionId = getOrCreateSessionId();
+      recordEvent({
+        funnel_id: funnelId,
+        step_id: stepId,
+        event_type: 'step_viewed',
+        session_id: sessionId,
+        dedupe_key: `step_viewed:${funnelId}:${stepId}:${sessionId}:${Date.now()}`,
+        payload: {
+          stepIndex,
+          stepName: currentStep?.name,
+          previousStepId,
+        },
+      }).catch((error) => {
+        if (import.meta.env.DEV) {
+          console.error('[FunnelV3Renderer] Failed to record step_viewed event:', error);
         }
-      }
-      
-      // Also use extractIdentityFromAnswers as fallback
-      const { identity: identityFromAnswers } = extractIdentityFromAnswers(answers);
-      
-      // Merge identity sources (form fields take precedence)
-      const identity = {
-        name: identityFromFields.name || identityFromAnswers.name,
-        email: identityFromFields.email || identityFromAnswers.email,
-        phone: identityFromFields.phone || identityFromAnswers.phone,
-      };
-      
-      // Determine step intent based on position (stepIndex already calculated above)
-      const isLastStep = stepIndex === funnel.steps.length - 1;
-      const stepIntent: 'capture' | 'qualify' | 'schedule' | 'convert' | 'complete' | 'navigate' | 'info' = 
-        isLastStep ? 'convert' : 'capture';
-      
-      // Create unified payload
-      const payload = createUnifiedPayload(answers, {
-        funnelId,
-        teamId,
-        stepId,
-        stepIntent,
-        lastStepIndex: stepIndex, // Add step index for proper step tracking
       });
       
-      // Override identity if we extracted it from form fields
-      if (identity.name || identity.email || identity.phone) {
-        payload.identity = identity;
+      // Skip draft save if navigating away from just-submitted step
+      if (lastSubmitStepRef.current === previousStepId) {
+        lastSubmitStepRef.current = null;
+        return; // Skip draft save, data was just submitted
       }
       
-        // Save as draft (no automations triggered, for drop-off tracking)
-        console.log('[FunnelV3Renderer] Auto-saving draft on step change', {
-          stepId,
+      // Always update last_step_index, even if no form data
+      // This ensures drop-off tracking works for pure visitors
+      const hasData = Object.keys(formData).length > 0 || Object.keys(selections).length > 0;
+      if (!hasData) {
+        // Even without form data, update last_step_index for drop-off tracking
+        const emptyPayload = createUnifiedPayload({}, {
           funnelId,
           teamId,
-          hasData: true,
+          stepId,
+          stepIntent: 'navigate',
+          lastStepIndex: stepIndex,
         });
         
-        await saveDraft(payload);
-        
-        console.log('[FunnelV3Renderer] Draft save completed', {
-          stepId,
+        // Update lead with new step index (fire-and-forget)
+        saveDraft(emptyPayload).catch((error) => {
+          if (import.meta.env.DEV) {
+            console.error('[FunnelV3Renderer] Failed to update step index:', error);
+          }
         });
-      } catch (error) {
-        // Don't block navigation if draft save fails
-        console.error('[FunnelV3Renderer] Draft save error:', error, {
-          stepId,
-          funnelId,
-          teamId,
-        });
+        return;
       }
-    })();
+      
+      // Fire-and-forget: build payload and save draft
+      (async () => {
+        try {
+          // Build answers from current state
+          const answers: Record<string, any> = { ...formData, ...selections };
+          
+          // Extract identity from form fields
+          let identityFromFields: { name?: string; email?: string; phone?: string } = {};
+          
+          if (currentStep) {
+            identityFromFields = extractIdentityFromFormData(formData, currentStep.blocks || []);
+          }
+          
+          // Fallback: check all steps if not found in current step
+          if (!identityFromFields.name && !identityFromFields.email && !identityFromFields.phone) {
+            for (const step of funnel.steps) {
+              const extracted = extractIdentityFromFormData(formData, step.blocks || []);
+              if (extracted.name) identityFromFields.name = extracted.name;
+              if (extracted.email) identityFromFields.email = extracted.email;
+              if (extracted.phone) identityFromFields.phone = extracted.phone;
+            }
+          }
+          
+          // Also use extractIdentityFromAnswers as fallback
+          const { identity: identityFromAnswers } = extractIdentityFromAnswers(answers);
+          
+          // Merge identity sources (form fields take precedence)
+          const identity = {
+            name: identityFromFields.name || identityFromAnswers.name,
+            email: identityFromFields.email || identityFromAnswers.email,
+            phone: identityFromFields.phone || identityFromAnswers.phone,
+          };
+          
+          // Determine step intent based on position
+          const isLastStep = stepIndex === funnel.steps.length - 1;
+          const stepIntent: 'capture' | 'qualify' | 'schedule' | 'convert' | 'complete' | 'navigate' | 'info' = 
+            isLastStep ? 'convert' : 'capture';
+          
+          // Create unified payload
+          const payload = createUnifiedPayload(answers, {
+            funnelId,
+            teamId,
+            stepId,
+            stepIntent,
+            lastStepIndex: stepIndex,
+          });
+          
+          // Override identity if we extracted it from form fields
+          if (identity.name || identity.email || identity.phone) {
+            payload.identity = identity;
+          }
+          
+          await saveDraft(payload);
+        } catch (error) {
+          // Don't block navigation if draft save fails
+          if (import.meta.env.DEV) {
+            console.error('[FunnelV3Renderer] Draft save error:', error);
+          }
+        }
+      })();
+    });
   }, [funnelId, teamId, saveDraft, funnel.steps, getOrCreateSessionId]);
 
-  console.log('[FunnelV3Renderer] Rendering providers and content', {
-    funnelStepsCount: funnel.steps.length,
-  });
 
   return (
     <FunnelRuntimeProvider 

@@ -217,7 +217,7 @@ export function LeftPanel({ onOpenAICopilot }: LeftPanelProps) {
                 variant="ghost" 
                 size="icon" 
                 className="h-6 w-6 hover:bg-primary/10" 
-                onClick={addStep}
+                onClick={() => addStep()}
               >
                 <Plus className="h-4 w-4" />
               </Button>

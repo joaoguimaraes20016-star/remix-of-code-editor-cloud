@@ -41,7 +41,7 @@ interface BlockPreview {
 
 interface ClonePlan {
   summary: string;
-  action: 'replace-funnel' | 'replace-step';
+  action: 'replace-funnel' | 'replace-step' | 'apply-styling';
   detected?: {
     topic: string;
     style: string;

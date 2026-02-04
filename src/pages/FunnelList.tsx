@@ -90,6 +90,7 @@ interface Funnel {
 
 interface FunnelLead {
   id: string;
+  funnel_id: string;
   name: string | null;
   email: string | null;
   phone: string | null;
@@ -1360,7 +1361,7 @@ export default function FunnelList() {
               <LeadsVsVisitorsChart 
                 leads={selectedFunnelId === 'all' 
                   ? (leads || [])
-                  : (leads || []).filter(l => l.funnel?.id === selectedFunnelId)
+                  : (leads || []).filter(l => (l.funnel?.id || l.funnel_id) === selectedFunnelId)
                 }
                 selectedFunnelId={selectedFunnelId}
                 steps={selectedFunnelId !== 'all' && allSteps 
