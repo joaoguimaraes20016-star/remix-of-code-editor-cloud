@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { Funnel, FunnelStep } from '@/funnel-builder-v3/types/funnel';
 
 // Form data collected during funnel execution
@@ -76,6 +76,18 @@ export function FunnelRuntimeProvider({
   const [formData, setFormData] = useState<FunnelFormData>({});
   const [selections, setSelections] = useState<FunnelSelections>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Debug: Log provider initialization
+  useEffect(() => {
+    console.log('[FunnelRuntimeProvider] Initialized', {
+      funnelId: funnel.id || 'no-id',
+      totalSteps: funnel.steps.length,
+      firstStepId,
+      currentStepId,
+      hasOnFormSubmit: !!onFormSubmit,
+      hasOnStepChange: !!onStepChange,
+    });
+  }, []);
   
   // Popup state
   const [activePopup, setActivePopup] = useState<string | null>(null);

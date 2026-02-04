@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ButtonContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -64,12 +64,34 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
   const hasCustomBg = shouldApplyCustomBg && (!!backgroundColor || !!backgroundGradient);
   const hasTextGradient = !!textGradient;
 
-  const handleClick = () => {
+  const handleClick = (e?: React.MouseEvent) => {
+    console.log('[ButtonBlock] ====== CLICK EVENT FIRED ======', {
+      hasRuntime: !!runtime,
+      isPreview,
+      blockId,
+      stepId,
+      action,
+      actionValue,
+      event: e,
+      timestamp: new Date().toISOString(),
+    });
+
     if (!runtime) {
       // In editor mode, don't do anything
-      console.log('[ButtonBlock] No runtime available - editor mode');
+      console.warn('[ButtonBlock] No runtime available - editor mode or runtime not initialized', {
+        isPreview,
+        blockId,
+        stepId,
+      });
       return;
     }
+
+    console.log('[ButtonBlock] Runtime available, executing action', {
+      currentStepId: runtime.currentStepId,
+      totalSteps: runtime.totalSteps,
+      action,
+      actionValue,
+    });
 
     try {
       // ALL buttons submit data first (fire-and-forget for speed)
@@ -83,7 +105,9 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
         case 'next-step':
         default:
           try {
+            console.log('[ButtonBlock] Calling goToNextStep');
             runtime.goToNextStep();
+            console.log('[ButtonBlock] goToNextStep called successfully');
           } catch (error) {
             console.error('[ButtonBlock] goToNextStep error:', error);
           }
@@ -165,6 +189,21 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
     }
   };
 
+  // Debug: Log render state
+  useEffect(() => {
+    if (isPreview) {
+      console.log('[ButtonBlock] Rendered in preview mode', {
+        hasRuntime: !!runtime,
+        blockId,
+        stepId,
+        action,
+        actionValue,
+        runtimeCurrentStepId: runtime?.currentStepId,
+        runtimeTotalSteps: runtime?.totalSteps,
+      });
+    }
+  }, [isPreview, runtime, blockId, stepId, action, actionValue]);
+
   const buttonElement = (
     <Button
       variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
@@ -176,6 +215,12 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
       )}
       style={customStyle}
       onClick={handleClick}
+      onMouseDown={(e) => {
+        console.log('[ButtonBlock] onMouseDown fired', { hasRuntime: !!runtime });
+        // Don't prevent default - let click handler work
+      }}
+      type="button"
+      disabled={false}
     >
       {canEdit ? (
         <EditableText

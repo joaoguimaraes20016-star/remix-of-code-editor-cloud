@@ -174,8 +174,20 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
 
   // Handle submit button click - when submit button exists, it OVERRIDES answer actions
   const handleSubmit = () => {
+    console.log('[QuizBlock] ====== handleSubmit CALLED ======', {
+      hasRuntime: !!runtime,
+      isPreview,
+      selectedCount: selected.length,
+      blockId,
+      stepId,
+    });
+
     if (!runtime) {
-      console.log('[QuizBlock] No runtime available - editor mode');
+      console.warn('[QuizBlock] No runtime available - editor mode or runtime not initialized', {
+        isPreview,
+        blockId,
+        stepId,
+      });
       return;
     }
     
@@ -230,11 +242,20 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
         default:
           // Navigate immediately
           try {
+            console.log('[QuizBlock] Attempting navigation', {
+              actionValue,
+              hasActionValue: !!actionValue,
+              isHttp: actionValue?.startsWith('http'),
+              isHash: actionValue?.startsWith('#'),
+            });
             if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
+              console.log('[QuizBlock] Calling goToStep with:', actionValue);
               runtime.goToStep(actionValue);
             } else {
+              console.log('[QuizBlock] Calling goToNextStep');
               runtime.goToNextStep();
             }
+            console.log('[QuizBlock] Navigation call completed');
           } catch (error) {
             console.error('[QuizBlock] Navigation error:', error);
           }
@@ -247,6 +268,12 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
 
   // Handle submit button click in editor/preview modes
   const handleButtonClick = (e: React.MouseEvent) => {
+    console.log('[QuizBlock] ====== handleButtonClick FIRED ======', {
+      isPreview,
+      hasRuntime: !!runtime,
+      selectedCount: selected.length,
+    });
+
     if (!isPreview) {
       // In editor mode: select the button element
       e.stopPropagation();
