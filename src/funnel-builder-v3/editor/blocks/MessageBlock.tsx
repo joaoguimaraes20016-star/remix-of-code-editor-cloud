@@ -342,6 +342,4 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
       </div>
     </div>
   );
-
-  return wrapWithOverlay(messageElement);
 }

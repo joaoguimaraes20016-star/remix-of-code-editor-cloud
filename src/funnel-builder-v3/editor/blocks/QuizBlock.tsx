@@ -95,7 +95,6 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
   // Helper function to execute answer action
   const executeAnswerAction = (option: any) => {
     if (!runtime) {
-      console.log('[QuizBlock] No runtime available - editor mode');
       return;
     }
     
@@ -106,8 +105,9 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
       
       // ALL actions submit data first (fire-and-forget for speed)
       runtime.submitForm().catch((error) => {
-        console.error('[QuizBlock] submitForm error:', error);
-        // Don't block navigation on submission error
+        if (import.meta.env.DEV) {
+          console.error('[QuizBlock] submitForm error:', error);
+        }
       });
       
       // Then perform the action immediately (don't wait for submit)
@@ -117,10 +117,10 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
             try {
               window.open(actionValue, '_blank');
             } catch (error) {
-              console.error('[QuizBlock] window.open error:', error);
+              if (import.meta.env.DEV) {
+                console.error('[QuizBlock] window.open error:', error);
+              }
             }
-          } else {
-            console.warn('[QuizBlock] URL action missing actionValue');
           }
           break;
         case 'submit':
@@ -136,12 +136,16 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
               runtime.goToNextStep();
             }
           } catch (error) {
-            console.error('[QuizBlock] Navigation error:', error);
+            if (import.meta.env.DEV) {
+              console.error('[QuizBlock] Navigation error:', error);
+            }
           }
           break;
       }
     } catch (error) {
-      console.error('[QuizBlock] executeAnswerAction unexpected error:', error);
+      if (import.meta.env.DEV) {
+        console.error('[QuizBlock] executeAnswerAction unexpected error:', error);
+      }
     }
   };
 
@@ -174,25 +178,11 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
 
   // Handle submit button click - when submit button exists, it OVERRIDES answer actions
   const handleSubmit = () => {
-    console.log('[QuizBlock] ====== handleSubmit CALLED ======', {
-      hasRuntime: !!runtime,
-      isPreview,
-      selectedCount: selected.length,
-      blockId,
-      stepId,
-    });
-
     if (!runtime) {
-      console.warn('[QuizBlock] No runtime available - editor mode or runtime not initialized', {
-        isPreview,
-        blockId,
-        stepId,
-      });
       return;
     }
     
     if (selected.length === 0) {
-      console.warn('[QuizBlock] handleSubmit called but no options selected');
       return;
     }
     
@@ -202,8 +192,9 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
       
       // ALL buttons submit data first (fire-and-forget for speed)
       runtime.submitForm().catch((error) => {
-        console.error('[QuizBlock] submitForm error:', error);
-        // Don't block navigation on submission error
+        if (import.meta.env.DEV) {
+          console.error('[QuizBlock] submitForm error:', error);
+        }
       });
       
       // Then perform the action immediately (don't wait for submit)
@@ -213,10 +204,10 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
             try {
               window.open(actionValue, '_blank');
             } catch (error) {
-              console.error('[QuizBlock] window.open error:', error);
+              if (import.meta.env.DEV) {
+                console.error('[QuizBlock] window.open error:', error);
+              }
             }
-          } else {
-            console.warn('[QuizBlock] URL action missing actionValue');
           }
           break;
         case 'scroll':
@@ -225,14 +216,12 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
               const element = document.getElementById(actionValue);
               if (element) {
                 element.scrollIntoView({ behavior: 'smooth' });
-              } else {
-                console.warn(`[QuizBlock] Scroll target not found: ${actionValue}`);
               }
             } catch (error) {
-              console.error('[QuizBlock] scrollIntoView error:', error);
+              if (import.meta.env.DEV) {
+                console.error('[QuizBlock] scrollIntoView error:', error);
+              }
             }
-          } else {
-            console.warn('[QuizBlock] Scroll action missing actionValue');
           }
           break;
         case 'submit':
@@ -242,27 +231,22 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
         default:
           // Navigate immediately
           try {
-            console.log('[QuizBlock] Attempting navigation', {
-              actionValue,
-              hasActionValue: !!actionValue,
-              isHttp: actionValue?.startsWith('http'),
-              isHash: actionValue?.startsWith('#'),
-            });
             if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
-              console.log('[QuizBlock] Calling goToStep with:', actionValue);
               runtime.goToStep(actionValue);
             } else {
-              console.log('[QuizBlock] Calling goToNextStep');
               runtime.goToNextStep();
             }
-            console.log('[QuizBlock] Navigation call completed');
           } catch (error) {
-            console.error('[QuizBlock] Navigation error:', error);
+            if (import.meta.env.DEV) {
+              console.error('[QuizBlock] Navigation error:', error);
+            }
           }
           break;
       }
     } catch (error) {
-      console.error('[QuizBlock] handleSubmit unexpected error:', error);
+      if (import.meta.env.DEV) {
+        console.error('[QuizBlock] handleSubmit unexpected error:', error);
+      }
     }
   };
 
@@ -270,19 +254,9 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
   const handleButtonClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    console.log('[QuizBlock] ====== handleButtonClick FIRED ======', {
-      isPreview,
-      hasRuntime: !!runtime,
-      selectedCount: selected.length,
-      eventType: e.type,
-      target: e.target,
-      currentTarget: e.currentTarget,
-    });
 
     if (!isPreview) {
       // In editor mode: select the button element
-      e.stopPropagation();
       setSelectedChildElement('submit-button');
     } else {
       // In preview mode: submit action

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { ButtonContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -69,41 +69,18 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
       e.preventDefault();
       e.stopPropagation();
     }
-    
-    console.log('[ButtonBlock] ====== CLICK EVENT FIRED ======', {
-      hasRuntime: !!runtime,
-      isPreview,
-      blockId,
-      stepId,
-      action,
-      actionValue,
-      eventType: e?.type,
-      target: e?.target,
-      currentTarget: e?.currentTarget,
-      timestamp: new Date().toISOString(),
-    });
 
     if (!runtime) {
       // In editor mode, don't do anything
-      console.warn('[ButtonBlock] No runtime available - editor mode or runtime not initialized', {
-        isPreview,
-        blockId,
-        stepId,
-      });
       return;
     }
-
-    console.log('[ButtonBlock] Runtime available, executing action', {
-      currentStepId: runtime.currentStepId,
-      totalSteps: runtime.totalSteps,
-      action,
-      actionValue,
-    });
 
     try {
       // ALL buttons submit data first (fire-and-forget for speed)
       runtime.submitForm().catch((error) => {
-        console.error('[ButtonBlock] submitForm error:', error);
+        if (import.meta.env.DEV) {
+          console.error('[ButtonBlock] submitForm error:', error);
+        }
         // Don't block navigation on submission error
       });
 
@@ -112,11 +89,11 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
         case 'next-step':
         default:
           try {
-            console.log('[ButtonBlock] Calling goToNextStep');
             runtime.goToNextStep();
-            console.log('[ButtonBlock] goToNextStep called successfully');
           } catch (error) {
-            console.error('[ButtonBlock] goToNextStep error:', error);
+            if (import.meta.env.DEV) {
+              console.error('[ButtonBlock] goToNextStep error:', error);
+            }
           }
           break;
         case 'url':
@@ -124,10 +101,10 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
             try {
               window.open(actionValue, '_blank');
             } catch (error) {
-              console.error('[ButtonBlock] window.open error:', error);
+              if (import.meta.env.DEV) {
+                console.error('[ButtonBlock] window.open error:', error);
+              }
             }
-          } else {
-            console.warn('[ButtonBlock] URL action missing actionValue');
           }
           break;
         case 'scroll':
@@ -136,14 +113,12 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
               const element = document.getElementById(actionValue);
               if (element) {
                 element.scrollIntoView({ behavior: 'smooth' });
-              } else {
-                console.warn(`[ButtonBlock] Scroll target not found: ${actionValue}`);
               }
             } catch (error) {
-              console.error('[ButtonBlock] scrollIntoView error:', error);
+              if (import.meta.env.DEV) {
+                console.error('[ButtonBlock] scrollIntoView error:', error);
+              }
             }
-          } else {
-            console.warn('[ButtonBlock] Scroll action missing actionValue');
           }
           break;
         case 'submit':
@@ -151,7 +126,9 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
           break;
       }
     } catch (error) {
-      console.error('[ButtonBlock] handleClick unexpected error:', error);
+      if (import.meta.env.DEV) {
+        console.error('[ButtonBlock] handleClick unexpected error:', error);
+      }
     }
   };
 
@@ -196,20 +173,6 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
     }
   };
 
-  // Debug: Log render state
-  useEffect(() => {
-    if (isPreview) {
-      console.log('[ButtonBlock] Rendered in preview mode', {
-        hasRuntime: !!runtime,
-        blockId,
-        stepId,
-        action,
-        actionValue,
-        runtimeCurrentStepId: runtime?.currentStepId,
-        runtimeTotalSteps: runtime?.totalSteps,
-      });
-    }
-  }, [isPreview, runtime, blockId, stepId, action, actionValue]);
 
   const buttonElement = (
     <Button
@@ -222,10 +185,6 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
       )}
       style={customStyle}
       onClick={handleClick}
-      onMouseDown={(e) => {
-        console.log('[ButtonBlock] onMouseDown fired', { hasRuntime: !!runtime });
-        // Don't prevent default - let click handler work
-      }}
       type="button"
       disabled={false}
     >

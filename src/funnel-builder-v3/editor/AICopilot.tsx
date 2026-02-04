@@ -525,7 +525,7 @@ ${userInstructions}`;
     const generatePrompt = buildPromptFromPlan(plan, cloneInstructions);
     
     // Set the generate location based on plan action
-    setGenerateLocation(plan.action === 'replace-funnel' ? 'replace' : 'current');
+    setGenerateLocation(plan.action === 'replace-funnel' ? 'replace' : 'add');
     
     // Store reference context for UI display during generation
     setReferenceContext({

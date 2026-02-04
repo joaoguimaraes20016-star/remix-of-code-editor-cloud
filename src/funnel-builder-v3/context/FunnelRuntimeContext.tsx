@@ -30,8 +30,8 @@ interface FunnelRuntimeContextType {
   setFormField: (fieldId: string, value: string | string[] | File | null) => void;
   setSelection: (blockId: string, optionId: string | string[]) => void;
   
-  // Submission (fire-and-forget, returns immediately)
-  submitForm: (consent?: { agreed: boolean; privacyPolicyUrl?: string }) => void;
+  // Submission (fire-and-forget pattern, but returns Promise for .catch() chaining)
+  submitForm: (consent?: { agreed: boolean; privacyPolicyUrl?: string }) => Promise<void>;
   
   // Step info
   getCurrentStep: () => FunnelStep | undefined;
@@ -255,22 +255,21 @@ export function FunnelRuntimeProvider({
     setSelections(prev => ({ ...prev, [blockId]: optionId }));
   }, []);
 
-  const submitForm = useCallback((consent?: { agreed: boolean; privacyPolicyUrl?: string }) => {
-    // Fire-and-forget pattern: don't await, let submission run in background
+  const submitForm = useCallback((consent?: { agreed: boolean; privacyPolicyUrl?: string }): Promise<void> => {
+    // Fire-and-forget pattern: callers don't need to await, but can use .catch() for error handling
     // The underlying useUnifiedLeadSubmit hook handles deduplication at the API level
     setIsSubmitting(true);
     
     // Use refs to get current state (avoids stale closures)
-    // Fire-and-forget: don't await, return immediately
-    onFormSubmit?.(formDataRef.current, selectionsRef.current, consent)
+    // Return the promise chain so callers can optionally chain .catch()
+    return (onFormSubmit?.(formDataRef.current, selectionsRef.current, consent) ?? Promise.resolve())
       .catch((error) => {
-        // Log error but don't throw - fire-and-forget pattern
+        // Log error but don't rethrow - fire-and-forget pattern
         console.error('[FunnelRuntimeContext] submitForm error:', error);
       })
       .finally(() => {
         setIsSubmitting(false);
       });
-    // Return immediately without waiting for submission to complete
   }, [onFormSubmit]);
 
   // Popup handlers

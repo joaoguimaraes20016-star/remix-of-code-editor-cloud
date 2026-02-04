@@ -137,7 +137,7 @@ export async function streamCopyGeneration(
  */
 export async function streamClonePlan(
   url: string,
-  context: V3Context & { cloneAction?: 'replace-funnel' | 'replace-step' },
+  context: V3Context & { cloneAction?: 'replace-funnel' | 'replace-step' | 'apply-styling' },
   options: StreamOptions
 ): Promise<void> {
   const { onDelta, onDone, onError } = options;
@@ -283,7 +283,7 @@ export async function streamClonePlan(
  */
 export async function streamCloneFromURL(
   url: string,
-  context: V3Context & { cloneAction?: 'replace-funnel' | 'replace-step'; approvedPlan?: any },
+  context: V3Context & { cloneAction?: 'replace-funnel' | 'replace-step' | 'apply-styling'; approvedPlan?: any },
   options: StreamOptions
 ): Promise<void> {
   const { onDelta, onDone, onError } = options;

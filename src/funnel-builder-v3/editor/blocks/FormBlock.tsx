@@ -582,6 +582,4 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
       </Button>
     </form>
   );
-
-  return wrapWithOverlay(formElement);
 }

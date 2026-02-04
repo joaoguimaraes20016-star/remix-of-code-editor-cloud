@@ -7,7 +7,6 @@ import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRunt
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { defaultCountryCodes } from '@/funnel-builder-v3/lib/block-definitions';
 import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 import {
   Select,

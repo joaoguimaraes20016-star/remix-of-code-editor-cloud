@@ -248,6 +248,4 @@ export function ListBlock({ content, blockId, stepId, isPreview }: ListBlockProp
       })}
     </ul>
   );
-
-  return wrapWithOverlay(listElement);
 }

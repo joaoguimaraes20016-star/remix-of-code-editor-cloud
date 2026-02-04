@@ -83,6 +83,14 @@ export function CountdownBlock({ content, blockId, stepId, isPreview }: Countdow
 
   const canEdit = blockId && stepId && !isPreview;
 
+  const { wrapWithOverlay } = useBlockOverlay({
+    blockId,
+    stepId,
+    isPreview,
+    blockType: 'countdown',
+    hintText: 'Click to edit countdown'
+  });
+
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft(endDate));

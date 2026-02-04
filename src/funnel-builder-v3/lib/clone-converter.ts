@@ -11,6 +11,8 @@ export interface ClonedStyle {
   primaryColor: string;
   accentColor: string;
   backgroundColor: string;
+  textColor?: string;
+  headingColor?: string;
   headingFont: string;
   bodyFont: string;
   theme: 'dark' | 'light';
@@ -93,7 +95,6 @@ export function convertSectionsToV3Blocks(
             },
             styles: {
               padding: { top: 16, right: 24, bottom: 16, left: 24 },
-              margin: { top: 0, right: 'auto', bottom: 0, left: 'auto' },
               textAlign: 'center',
             },
             trackingId: `block-${uuid()}`,
@@ -112,6 +113,7 @@ export function convertSectionsToV3Blocks(
                 id: uuid(),
                 text: item.title || item.description || `Feature ${idx + 1}`,
               })),
+              style: 'icon',
             },
             styles: {
               padding: { top: 24, right: 16, bottom: 24, left: 16 },
@@ -132,10 +134,12 @@ export function convertSectionsToV3Blocks(
                 type: 'text',
                 content: {
                   text: `"${item.description}"${item.title ? ` - ${item.title}` : ''}`,
+                  styles: {
+                    fontStyle: 'italic',
+                  },
                 },
                 styles: {
                   padding: { top: 16, right: 16, bottom: 16, left: 16 },
-                  fontStyle: 'italic',
                   textAlign: 'center',
                 },
                 trackingId: `block-${uuid()}`,

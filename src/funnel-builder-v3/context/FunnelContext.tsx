@@ -47,7 +47,7 @@ interface FunnelContextType {
   setEffectiveZoom: (zoom: number) => void;
   
   // Step operations
-  addStep: () => void;
+  addStep: (step?: FunnelStep) => void;
   deleteStep: (stepId: string) => void;
   updateStep: (stepId: string, updates: Partial<FunnelStep>) => void;
   reorderSteps: (fromIndex: number, toIndex: number) => void;
@@ -383,8 +383,8 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   }, [history, historyIndex]);
   
   // Step operations
-  const addStep = useCallback(() => {
-    const newStep: FunnelStep = {
+  const addStep = useCallback((providedStep?: FunnelStep) => {
+    const newStep: FunnelStep = providedStep ?? {
       id: uuid(),
       name: `Step ${funnel.steps.length + 1}`,
       type: 'capture',
