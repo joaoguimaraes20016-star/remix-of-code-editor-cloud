@@ -30,8 +30,8 @@ interface FunnelRuntimeContextType {
   setFormField: (fieldId: string, value: string | string[] | File | null) => void;
   setSelection: (blockId: string, optionId: string | string[]) => void;
   
-  // Submission
-  submitForm: (consent?: { agreed: boolean; privacyPolicyUrl?: string }) => Promise<void>;
+  // Submission (fire-and-forget, returns immediately)
+  submitForm: (consent?: { agreed: boolean; privacyPolicyUrl?: string }) => void;
   
   // Step info
   getCurrentStep: () => FunnelStep | undefined;
@@ -160,9 +160,10 @@ export function FunnelRuntimeProvider({
     // Call onStepChange with current ref values
     onStepChange?.(stepId, currentFormData, currentSelections);
     
-    // Reset guard immediately after state updates using requestAnimationFrame
+    // Reset guard immediately after current task using queueMicrotask
     // This allows React to batch state updates without blocking navigation
-    requestAnimationFrame(() => {
+    // queueMicrotask is faster than requestAnimationFrame (~0ms vs ~16ms)
+    queueMicrotask(() => {
       isNavigatingRef.current = false;
     });
   }, [funnel.steps, onStepChange]);
@@ -238,8 +239,9 @@ export function FunnelRuntimeProvider({
       setCurrentStepId(prevStepId);
       onStepChange?.(prevStepId, currentFormData, currentSelections);
       
-      // Reset guard immediately after state updates using requestAnimationFrame
-      requestAnimationFrame(() => {
+      // Reset guard immediately after current task using queueMicrotask
+      // queueMicrotask is faster than requestAnimationFrame (~0ms vs ~16ms)
+      queueMicrotask(() => {
         isNavigatingRef.current = false;
       });
     }
@@ -253,20 +255,22 @@ export function FunnelRuntimeProvider({
     setSelections(prev => ({ ...prev, [blockId]: optionId }));
   }, []);
 
-  const submitForm = useCallback(async (consent?: { agreed: boolean; privacyPolicyUrl?: string }) => {
-    // Don't block for fire-and-forget pattern - allow multiple submissions to queue
+  const submitForm = useCallback((consent?: { agreed: boolean; privacyPolicyUrl?: string }) => {
+    // Fire-and-forget pattern: don't await, let submission run in background
     // The underlying useUnifiedLeadSubmit hook handles deduplication at the API level
     setIsSubmitting(true);
     
-    try {
-      // Use refs to get current state (avoids stale closures)
-      await onFormSubmit?.(formDataRef.current, selectionsRef.current, consent);
-    } catch (error) {
-      // Log error but don't throw - fire-and-forget pattern
-      console.error('[FunnelRuntimeContext] submitForm error:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Use refs to get current state (avoids stale closures)
+    // Fire-and-forget: don't await, return immediately
+    onFormSubmit?.(formDataRef.current, selectionsRef.current, consent)
+      .catch((error) => {
+        // Log error but don't throw - fire-and-forget pattern
+        console.error('[FunnelRuntimeContext] submitForm error:', error);
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
+    // Return immediately without waiting for submission to complete
   }, [onFormSubmit]);
 
   // Popup handlers

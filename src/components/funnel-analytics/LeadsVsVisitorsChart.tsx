@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card } from '@/components/ui/card';
-import { format, subDays, startOfDay, eachDayOfInterval } from 'date-fns';
+import { format, subDays, startOfDay, eachDayOfInterval, isSameDay } from 'date-fns';
 import { Users, UserCheck, TrendingUp, TrendingDown, ArrowRight, AlertTriangle, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -50,10 +50,6 @@ export function LeadsVsVisitorsChart({ leads, selectedFunnelId, steps, funnelNam
 
     // Always return data for the last 14 days, even if empty
     return days.map(day => {
-      const dayStart = startOfDay(day);
-      const dayEnd = new Date(dayStart);
-      dayEnd.setDate(dayEnd.getDate() + 1);
-
       if (!leads.length) {
         return {
           date: format(day, 'MMM d'),
@@ -63,9 +59,11 @@ export function LeadsVsVisitorsChart({ leads, selectedFunnelId, steps, funnelNam
         };
       }
 
+      // Use isSameDay for timezone-safe date comparison
+      // This compares dates only (year, month, day) regardless of timezone
       const dayEntries = leads.filter(l => {
-        const date = new Date(l.created_at);
-        return date >= dayStart && date < dayEnd;
+        const leadDate = new Date(l.created_at);
+        return isSameDay(leadDate, day);
       });
 
       const visitors = dayEntries.length;
@@ -91,10 +89,10 @@ export function LeadsVsVisitorsChart({ leads, selectedFunnelId, steps, funnelNam
   const bookingRate = totalLeads > 0 ? Math.round((totalBooked / totalLeads) * 100) : 0;
   const overallConversion = totalVisitors > 0 ? Math.round((totalBooked / totalVisitors) * 100) : 0;
 
-  // Week over week comparison
+  // Week over week comparison - use startOfDay for consistent day boundaries
   const now = new Date();
-  const weekAgo = subDays(now, 7);
-  const twoWeeksAgo = subDays(now, 14);
+  const weekAgo = startOfDay(subDays(now, 7));
+  const twoWeeksAgo = startOfDay(subDays(now, 14));
   
   const thisWeekVisitors = leads.filter(l => new Date(l.created_at) >= weekAgo).length;
   const lastWeekVisitors = leads.filter(l => {
