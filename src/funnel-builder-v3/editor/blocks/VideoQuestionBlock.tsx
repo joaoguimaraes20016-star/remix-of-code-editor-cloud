@@ -121,7 +121,7 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
   }, [runtime, blockId]);
 
   // Helper function to execute answer action
-  const executeAnswerAction = (option: any) => {
+  const executeAnswerAction = async (option: any) => {
     if (!runtime) return;
     
     // Get action from new format or legacy nextStepId
@@ -135,14 +135,17 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
         }
         break;
       case 'submit':
-        runtime.submitForm();
+        await runtime.submitForm();
         break;
       case 'next-step':
       default:
+        // Submit form data first, then navigate
+        await runtime.submitForm();
+        // Then navigate after submission
         if (actionValue) {
-          setTimeout(() => runtime.goToStep(actionValue), 300);
+          runtime.goToStep(actionValue);
         } else {
-          setTimeout(() => runtime.goToNextStep(), 300);
+          runtime.goToNextStep();
         }
         break;
     }
@@ -175,7 +178,7 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
   };
 
   // Handle submit button click - when submit button exists, it OVERRIDES answer actions
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (runtime && selected.length > 0) {
       const action = submitButton.action || 'next-step';
       const actionValue = submitButton.actionValue;
@@ -194,10 +197,13 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
           }
           break;
         case 'submit':
-          runtime.submitForm();
+          await runtime.submitForm();
           break;
         case 'next-step':
         default:
+          // Submit form data first, then navigate
+          await runtime.submitForm();
+          // Then navigate after submission
           if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
             runtime.goToStep(actionValue);
           } else {

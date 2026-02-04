@@ -199,7 +199,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
           runtime.goToNextStep();
           break;
         case 'submit':
-          runtime.submitForm(
+          await runtime.submitForm(
             consent.enabled ? {
               agreed: hasConsented,
               privacyPolicyUrl: consent.linkUrl,

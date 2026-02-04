@@ -116,7 +116,7 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
   }, [blockId, stepId, updateBlockContent]);
 
   // Handle submit button click
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!runtime) return;
     
     // Save the message value
@@ -141,10 +141,13 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
         }
         break;
       case 'submit':
-        runtime.submitForm();
+        await runtime.submitForm();
         break;
       case 'next-step':
       default:
+        // Submit form data first, then navigate
+        await runtime.submitForm();
+        // Then navigate after submission
         if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
           runtime.goToStep(actionValue);
         } else {

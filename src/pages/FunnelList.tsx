@@ -1556,6 +1556,7 @@ export default function FunnelList() {
           contact={selectedContact}
           open={!!selectedContact}
           onOpenChange={(open) => !open && setSelectedContact(null)}
+          teamId={teamId}
         />
 
         {/* Domains Tab */}

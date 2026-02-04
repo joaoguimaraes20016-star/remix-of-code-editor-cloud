@@ -173,6 +173,10 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
   const pendingRef = useRef(false);
   // Track lead ID in ref for stable access in callbacks
   const leadIdRef = useRef<string | null>(initialLeadId || null);
+  // Track last submit time to skip draft saves immediately after submit
+  const lastSubmitTimeRef = useRef<number>(0);
+  // Track pending draft save timeout for debouncing
+  const draftTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Sync state to ref
   const updateLeadId = useCallback((id: string | null) => {
@@ -286,6 +290,11 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
         onLeadSaved?.(returnedLeadId, mode);
       }
 
+      // Track submit time for draft save prevention
+      if (mode === 'submit') {
+        lastSubmitTimeRef.current = Date.now();
+      }
+
       return { leadId: returnedLeadId };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -305,7 +314,27 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
   );
 
   const saveDraft = useCallback(
-    (payload: UnifiedSubmitPayload) => doSubmit(payload, 'draft'),
+    (payload: UnifiedSubmitPayload) => {
+      // Skip if we just did a full submit (within 1 second)
+      if (Date.now() - lastSubmitTimeRef.current < 1000) {
+        console.log('[useUnifiedLeadSubmit] Skipping draft save - just submitted');
+        return Promise.resolve({});
+      }
+      
+      // Cancel any pending draft save
+      if (draftTimeoutRef.current) {
+        clearTimeout(draftTimeoutRef.current);
+        draftTimeoutRef.current = null;
+      }
+      
+      // Debounce: wait 500ms before saving
+      return new Promise<{ leadId?: string; error?: any }>((resolve) => {
+        draftTimeoutRef.current = setTimeout(() => {
+          draftTimeoutRef.current = null;
+          doSubmit(payload, 'draft').then(resolve);
+        }, 500);
+      });
+    },
     [doSubmit]
   );
 

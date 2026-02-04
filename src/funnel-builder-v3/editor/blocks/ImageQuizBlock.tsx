@@ -114,9 +114,9 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
         await runtime.submitForm();
         // Then navigate after submission
         if (actionValue) {
-          setTimeout(() => runtime.goToStep(actionValue), 300);
+          runtime.goToStep(actionValue);
         } else {
-          setTimeout(() => runtime.goToNextStep(), 300);
+          runtime.goToNextStep();
         }
         break;
     }

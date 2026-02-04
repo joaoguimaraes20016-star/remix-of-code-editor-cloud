@@ -115,9 +115,9 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
         await runtime.submitForm();
         // Then navigate after submission
         if (actionValue) {
-          setTimeout(() => runtime.goToStep(actionValue), 300);
+          runtime.goToStep(actionValue);
         } else {
-          setTimeout(() => runtime.goToNextStep(), 300);
+          runtime.goToNextStep();
         }
         break;
     }

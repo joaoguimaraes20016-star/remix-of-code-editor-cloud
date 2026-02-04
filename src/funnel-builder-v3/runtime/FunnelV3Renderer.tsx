@@ -139,6 +139,8 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
   // Handle form submission using unified pipeline
   // We'll use a ref to track current step ID since we can't access runtime here
   const currentStepIdRef = useRef<string | undefined>(funnel.steps[0]?.id);
+  // Track last submit step to prevent duplicate draft saves
+  const lastSubmitStepRef = useRef<string | null>(null);
   
   const handleFormSubmit = useCallback(async (
     data: FunnelFormData, 
@@ -206,6 +208,11 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       // Submit through unified pipeline
       const result = await submit(payload);
       
+      // Track this step as just submitted
+      if (!result.error) {
+        lastSubmitStepRef.current = currentStepId;
+      }
+      
       // Only show success toast on final conversion step, not on intermediate steps or drafts
       if (!result.error && stepIntent === 'convert') {
         toast.success('Form submitted successfully!');
@@ -222,7 +229,14 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     formData: FunnelFormData,
     selections: FunnelSelections
   ) => {
+    const previousStepId = currentStepIdRef.current;
     currentStepIdRef.current = stepId;
+    
+    // Skip draft save if navigating away from just-submitted step
+    if (lastSubmitStepRef.current === previousStepId) {
+      lastSubmitStepRef.current = null;
+      return; // Skip draft save, data was just submitted
+    }
     
     // Auto-save current data as draft for drop-off tracking
     // Only save if there's actual data to save

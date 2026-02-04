@@ -15,6 +15,8 @@ import {
   SheetContent,
   SheetHeader,
 } from '@/components/ui/sheet';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Contact {
   id: string;
@@ -34,10 +36,44 @@ interface ContactDetailDrawerProps {
   contact: Contact | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  teamId?: string;
 }
 
-export function ContactDetailDrawer({ contact, open, onOpenChange }: ContactDetailDrawerProps) {
+export function ContactDetailDrawer({ contact, open, onOpenChange, teamId }: ContactDetailDrawerProps) {
   const [activeTab, setActiveTab] = useState('profile');
+
+  // Query all funnel_leads matching this contact's email or phone
+  const { data: activityLeads } = useQuery({
+    queryKey: ['contact-activity', contact?.id, contact?.email, contact?.phone, teamId],
+    queryFn: async () => {
+      if (!contact || !teamId) return [];
+      
+      const orFilters: string[] = [];
+      if (contact.email) {
+        orFilters.push(`email.ilike.${contact.email}`);
+      }
+      if (contact.phone) {
+        orFilters.push(`phone.eq.${contact.phone}`);
+      }
+      
+      if (orFilters.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from('funnel_leads')
+        .select('*, funnel:funnels(id, name)')
+        .or(orFilters.join(','))
+        .eq('team_id', teamId)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching activity leads:', error);
+        return [];
+      }
+      
+      return data || [];
+    },
+    enabled: !!contact && !!teamId && (!!contact.email || !!contact.phone),
+  });
 
   if (!contact) return null;
 
@@ -235,6 +271,31 @@ export function ContactDetailDrawer({ contact, open, onOpenChange }: ContactDeta
 
             <TabsContent value="activity" className="p-6 mt-0">
               <div className="space-y-4">
+                {/* Activity Timeline */}
+                {activityLeads && activityLeads.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">Funnel Submissions</h3>
+                    {activityLeads.map((lead: any) => (
+                      <div key={lead.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                        <div className="w-2 h-2 mt-2 rounded-full bg-primary flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">
+                            Submitted: {lead.funnel?.name || 'Unknown Funnel'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(lead.created_at), 'MMM d, yyyy h:mm a')}
+                          </p>
+                          {lead.status && (
+                            <Badge variant="outline" className="mt-1 text-xs">
+                              {lead.status}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
                 {/* Source info */}
                 <div className="flex items-start gap-3 pb-4 border-b">
                   <div className="p-2 rounded-full bg-blue-500/10">
@@ -274,6 +335,14 @@ export function ContactDetailDrawer({ contact, open, onOpenChange }: ContactDeta
                         {format(new Date(contact.updated_at), 'MMM d, yyyy h:mm a')}
                       </p>
                     </div>
+                  </div>
+                )}
+                
+                {/* Empty state for activity */}
+                {activityLeads && activityLeads.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No funnel submissions yet</p>
                   </div>
                 )}
               </div>
