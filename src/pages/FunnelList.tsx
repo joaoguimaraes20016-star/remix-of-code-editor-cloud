@@ -11,7 +11,7 @@ import {
   LayoutGrid, List, Link2, MoreHorizontal, Star, BarChart3,
   MessageSquare, Calendar, Download, TrendingUp, TrendingDown,
   Phone, Mail, CheckCircle, ArrowLeft, Globe, Settings,
-  ChevronRight, Archive, FolderInput
+  ChevronRight, Archive, FolderInput, Loader2
 } from 'lucide-react';
 import { DomainsSection } from '@/components/funnel-builder/DomainsSection';
 import { FunnelSettingsDialog } from '@/components/funnel-builder/FunnelSettingsDialog';
@@ -230,6 +230,8 @@ export default function FunnelList() {
   // Fetch leads for performance and contacts - lazy loaded only when Performance tab is active
   const {
     data: leads,
+    isLoading: leadsIsLoading,
+    error: leadsError,
     isFetching: leadsIsFetching,
     refetch: refetchLeads,
     dataUpdatedAt: leadsUpdatedAt,
@@ -405,12 +407,6 @@ export default function FunnelList() {
     enabled: !!teamId && activeTab === 'contacts', // Only load when Contacts tab is active
   });
 
-  // Refetch leads when switching to Performance tab to ensure fresh data
-  useEffect(() => {
-    if (activeTab === 'performance' && teamId && refetchLeads) {
-      refetchLeads();
-    }
-  }, [activeTab, teamId, refetchLeads]);
 
  const deleteMutation = useMutation({
   mutationFn: async (funnelId: string) => {
@@ -1279,6 +1275,29 @@ export default function FunnelList() {
               </div>
             </div>
 
+            {/* Loading State */}
+            {leadsIsLoading && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            )}
+
+            {/* Error State */}
+            {leadsError && (
+              <div className="text-center py-12 text-destructive">
+                <p className="font-medium mb-2">Failed to load performance data</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {leadsError instanceof Error ? leadsError.message : 'An unknown error occurred'}
+                </p>
+                <Button variant="outline" onClick={() => refetchLeads()}>
+                  Try Again
+                </Button>
+              </div>
+            )}
+
+            {/* Content - only show when not loading and no error */}
+            {!leadsIsLoading && !leadsError && (
+              <>
             {/* Clean Compact Stats - Conversion Focus */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               {/* Today */}
@@ -1354,6 +1373,8 @@ export default function FunnelList() {
                 }
               />
             </div>
+              </>
+            )}
 
           </>
         )}

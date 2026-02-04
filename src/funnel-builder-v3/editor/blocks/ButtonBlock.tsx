@@ -64,13 +64,16 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
   const hasCustomBg = shouldApplyCustomBg && (!!backgroundColor || !!backgroundGradient);
   const hasTextGradient = !!textGradient;
 
-  const handleClick = async () => {
+  const handleClick = () => {
     if (!runtime) return; // In editor mode, don't do anything
 
+    // ALL buttons submit data first (fire-and-forget for speed)
+    runtime.submitForm();
+
+    // Then perform the action immediately (don't wait for submit)
     switch (action) {
       case 'next-step':
-        // Submit form data first, then navigate
-        await runtime.submitForm();
+      default:
         runtime.goToNextStep();
         break;
       case 'url':
@@ -85,13 +88,8 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
         }
         break;
       case 'submit':
-        await runtime.submitForm();
+        // Just submit, no navigation (already done above)
         break;
-      default:
-        // Default to next step for conversion-focused behavior
-        // Submit form data first, then navigate
-        await runtime.submitForm();
-        runtime.goToNextStep();
     }
   };
 

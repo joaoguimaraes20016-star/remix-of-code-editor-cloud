@@ -116,7 +116,7 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
   }, [blockId, stepId, updateBlockContent]);
 
   // Handle submit button click
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!runtime) return;
     
     // Save the message value
@@ -124,10 +124,14 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
       runtime.setFormField(blockId, text);
     }
     
+    // ALL buttons submit data first (fire-and-forget for speed)
+    runtime.submitForm();
+    
     // Handle action based on submitButton configuration
     const action = submitButton.action || 'next-step';
     const actionValue = submitButton.actionValue;
 
+    // Then perform the action immediately (don't wait for submit)
     switch (action) {
       case 'url':
         if (actionValue) {
@@ -141,13 +145,11 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
         }
         break;
       case 'submit':
-        await runtime.submitForm();
+        // Just submit, no navigation (already done above)
         break;
       case 'next-step':
       default:
-        // Submit form data first, then navigate
-        await runtime.submitForm();
-        // Then navigate after submission
+        // Navigate immediately
         if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
           runtime.goToStep(actionValue);
         } else {

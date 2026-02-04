@@ -121,13 +121,17 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
   }, [runtime, blockId]);
 
   // Helper function to execute answer action
-  const executeAnswerAction = async (option: any) => {
+  const executeAnswerAction = (option: any) => {
     if (!runtime) return;
     
     // Get action from new format or legacy nextStepId
     const action = option.action || (option.nextStepId ? 'next-step' : 'next-step');
     const actionValue = option.actionValue || option.nextStepId;
     
+    // ALL actions submit data first (fire-and-forget for speed)
+    runtime.submitForm();
+    
+    // Then perform the action immediately (don't wait for submit)
     switch (action) {
       case 'url':
         if (actionValue) {
@@ -135,13 +139,11 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
         }
         break;
       case 'submit':
-        await runtime.submitForm();
+        // Just submit, no navigation (already done above)
         break;
       case 'next-step':
       default:
-        // Submit form data first, then navigate
-        await runtime.submitForm();
-        // Then navigate after submission
+        // Navigate immediately
         if (actionValue) {
           runtime.goToStep(actionValue);
         } else {
@@ -178,12 +180,15 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
   };
 
   // Handle submit button click - when submit button exists, it OVERRIDES answer actions
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (runtime && selected.length > 0) {
       const action = submitButton.action || 'next-step';
       const actionValue = submitButton.actionValue;
       
-      // When submit button exists, it OVERRIDES answer actions
+      // ALL buttons submit data first (fire-and-forget for speed)
+      runtime.submitForm();
+      
+      // Then perform the action immediately (don't wait for submit)
       switch (action) {
         case 'url':
           if (actionValue) {
@@ -197,13 +202,11 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
           }
           break;
         case 'submit':
-          await runtime.submitForm();
+          // Just submit, no navigation (already done above)
           break;
         case 'next-step':
         default:
-          // Submit form data first, then navigate
-          await runtime.submitForm();
-          // Then navigate after submission
+          // Navigate immediately
           if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
             runtime.goToStep(actionValue);
           } else {

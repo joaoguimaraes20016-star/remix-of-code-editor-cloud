@@ -158,6 +158,15 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
       const action = submitButton.action || 'next-step';
       const actionValue = submitButton.actionValue;
 
+      // ALL buttons submit data first (fire-and-forget for speed)
+      runtime.submitForm(
+        consent.enabled ? {
+          agreed: hasConsented,
+          privacyPolicyUrl: consent.linkUrl,
+        } : undefined
+      );
+
+      // Then perform the action immediately (don't wait for submit)
       switch (action) {
         case 'url':
           if (actionValue) {
@@ -171,51 +180,29 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
           }
           break;
         case 'webhook':
-          // Submit to unified pipeline first
-          await runtime.submitForm(
-            consent.enabled ? {
-              agreed: hasConsented,
-              privacyPolicyUrl: consent.linkUrl,
-            } : undefined
-          );
-          // Then send to custom webhook
+          // Send to custom webhook (fire-and-forget)
           if (actionValue) {
-            try {
-              await fetch(actionValue, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  fields: localValues,
-                  submittedAt: new Date().toISOString(),
-                }),
-              });
-              toast.success('Form submitted successfully!');
-            } catch (webhookError) {
+            fetch(actionValue, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                fields: localValues,
+                submittedAt: new Date().toISOString(),
+              }),
+            }).catch((webhookError) => {
               // Don't fail if webhook fails, lead is already saved
               console.error('Webhook error:', webhookError);
-            }
+            });
           }
-          // After webhook, navigate to next step
+          // Navigate immediately
           runtime.goToNextStep();
           break;
         case 'submit':
-          await runtime.submitForm(
-            consent.enabled ? {
-              agreed: hasConsented,
-              privacyPolicyUrl: consent.linkUrl,
-            } : undefined
-          );
+          // Just submit, no navigation (already done above)
           break;
         case 'next-step':
         default:
-          // Submit form data first, then navigate
-          await runtime.submitForm(
-            consent.enabled ? {
-              agreed: hasConsented,
-              privacyPolicyUrl: consent.linkUrl,
-            } : undefined
-          );
-          // Then navigate after submission
+          // Navigate immediately
           if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
             runtime.goToStep(actionValue);
           } else {
