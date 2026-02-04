@@ -104,6 +104,11 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
     }
 
     try {
+      // Preserve existing status if funnel is already published
+      // Only set to 'draft' if this is a new funnel or current status is 'draft'
+      const currentStatus = funnelMeta?.status || 'draft';
+      const preserveStatus = currentStatus === 'published' ? 'published' : 'draft';
+
       const saveData = {
         name: funnel.name || 'Untitled Funnel',
         slug: funnel.name?.toLowerCase().replace(/\s+/g, '-') || `funnel-${Date.now().toString(36)}`,
@@ -111,7 +116,7 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
         created_by: user.id,
         builder_document: JSON.parse(JSON.stringify(funnel)) as Json,
         settings: (funnel.settings || {}) as Json,
-        status: 'draft' as const,
+        status: preserveStatus as 'draft' | 'published',
         updated_at: new Date().toISOString(),
       };
 
@@ -154,7 +159,7 @@ export function useFunnelPersistence({ funnel, setFunnel }: UseFunnelPersistence
       toast.error('Failed to save draft');
       return false;
     }
-  }, [funnel, funnelId, teamId, user, navigate]);
+  }, [funnel, funnelId, teamId, user, navigate, funnelMeta]);
 
   // Debounced auto-save
   const debouncedSave = useCallback(() => {
