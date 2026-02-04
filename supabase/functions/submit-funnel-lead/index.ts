@@ -741,18 +741,6 @@ serve(async (req) => {
         last_step_index: last_step_index ?? undefined,
       };
 
-      if (contactId && !existingLead.contact_id) updatePayload.contact_id = contactId;
-
-      if (identityFieldsResolved) {
-        if (existingLead.identity_match_type == null) updatePayload.identity_match_type = identityMatchType;
-        if (existingLead.identity_mismatch == null && typeof identityMismatch === "boolean") {
-          updatePayload.identity_mismatch = identityMismatch;
-        }
-        if (existingLead.identity_mismatch_reason == null && identityMismatchReason) {
-          updatePayload.identity_mismatch_reason = identityMismatchReason;
-        }
-      }
-
       const { data: updatedLead, error: updateError } = await supabase
         .from("funnel_leads")
         .update(updatePayload)
@@ -810,10 +798,6 @@ serve(async (req) => {
             email: email || null,
             phone: phone || null,
             name: name || null,
-            contact_id: contactId,
-            identity_match_type: identityMatchType,
-            identity_mismatch: identityMismatch,
-            identity_mismatch_reason: identityMismatchReason,
             calendly_booking_data: calendlyBookingData || null,
             opt_in_status: optInStatus,
             opt_in_timestamp: optInTimestamp,
