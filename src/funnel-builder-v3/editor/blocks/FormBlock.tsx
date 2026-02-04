@@ -134,7 +134,10 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!runtime) return; // In editor mode, don't submit
+    if (!runtime) {
+      console.log('[FormBlock] No runtime available - editor mode');
+      return; // In editor mode, don't submit
+    }
 
     // Validate required fields
     const missingFields = (fields || []).filter(
@@ -164,19 +167,38 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
           agreed: hasConsented,
           privacyPolicyUrl: consent.linkUrl,
         } : undefined
-      );
+      ).catch((error) => {
+        console.error('[FormBlock] submitForm error:', error);
+        // Don't block navigation on submission error
+      });
 
       // Then perform the action immediately (don't wait for submit)
       switch (action) {
         case 'url':
           if (actionValue) {
-            window.open(actionValue, '_blank');
+            try {
+              window.open(actionValue, '_blank');
+            } catch (error) {
+              console.error('[FormBlock] window.open error:', error);
+            }
+          } else {
+            console.warn('[FormBlock] URL action missing actionValue');
           }
           break;
         case 'scroll':
           if (actionValue) {
-            const element = document.getElementById(actionValue);
-            element?.scrollIntoView({ behavior: 'smooth' });
+            try {
+              const element = document.getElementById(actionValue);
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+              } else {
+                console.warn(`[FormBlock] Scroll target not found: ${actionValue}`);
+              }
+            } catch (error) {
+              console.error('[FormBlock] scrollIntoView error:', error);
+            }
+          } else {
+            console.warn('[FormBlock] Scroll action missing actionValue');
           }
           break;
         case 'webhook':
@@ -191,11 +213,15 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
               }),
             }).catch((webhookError) => {
               // Don't fail if webhook fails, lead is already saved
-              console.error('Webhook error:', webhookError);
+              console.error('[FormBlock] Webhook error:', webhookError);
             });
           }
           // Navigate immediately
-          runtime.goToNextStep();
+          try {
+            runtime.goToNextStep();
+          } catch (error) {
+            console.error('[FormBlock] goToNextStep error after webhook:', error);
+          }
           break;
         case 'submit':
           // Just submit, no navigation (already done above)
@@ -203,14 +229,20 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
         case 'next-step':
         default:
           // Navigate immediately
-          if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
-            runtime.goToStep(actionValue);
-          } else {
-            runtime.goToNextStep();
+          try {
+            if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
+              runtime.goToStep(actionValue);
+            } else {
+              runtime.goToNextStep();
+            }
+          } catch (error) {
+            console.error('[FormBlock] Navigation error:', error);
+            toast.error('Failed to navigate. Please try again.');
           }
           break;
       }
     } catch (error) {
+      console.error('[FormBlock] handleSubmit unexpected error:', error);
       toast.error('Failed to submit form. Please try again.');
     } finally {
       setIsSubmitting(false);

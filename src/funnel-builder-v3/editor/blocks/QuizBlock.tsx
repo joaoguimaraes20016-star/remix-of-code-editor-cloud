@@ -94,34 +94,54 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
 
   // Helper function to execute answer action
   const executeAnswerAction = (option: any) => {
-    if (!runtime) return;
+    if (!runtime) {
+      console.log('[QuizBlock] No runtime available - editor mode');
+      return;
+    }
     
-    // Get action from new format or legacy nextStepId
-    const action = option.action || (option.nextStepId ? 'next-step' : 'next-step');
-    const actionValue = option.actionValue || option.nextStepId;
-    
-    // ALL actions submit data first (fire-and-forget for speed)
-    runtime.submitForm();
-    
-    // Then perform the action immediately (don't wait for submit)
-    switch (action) {
-      case 'url':
-        if (actionValue) {
-          window.open(actionValue, '_blank');
-        }
-        break;
-      case 'submit':
-        // Just submit, no navigation (already done above)
-        break;
-      case 'next-step':
-      default:
-        // Navigate immediately
-        if (actionValue) {
-          runtime.goToStep(actionValue);
-        } else {
-          runtime.goToNextStep();
-        }
-        break;
+    try {
+      // Get action from new format or legacy nextStepId
+      const action = option.action || (option.nextStepId ? 'next-step' : 'next-step');
+      const actionValue = option.actionValue || option.nextStepId;
+      
+      // ALL actions submit data first (fire-and-forget for speed)
+      runtime.submitForm().catch((error) => {
+        console.error('[QuizBlock] submitForm error:', error);
+        // Don't block navigation on submission error
+      });
+      
+      // Then perform the action immediately (don't wait for submit)
+      switch (action) {
+        case 'url':
+          if (actionValue) {
+            try {
+              window.open(actionValue, '_blank');
+            } catch (error) {
+              console.error('[QuizBlock] window.open error:', error);
+            }
+          } else {
+            console.warn('[QuizBlock] URL action missing actionValue');
+          }
+          break;
+        case 'submit':
+          // Just submit, no navigation (already done above)
+          break;
+        case 'next-step':
+        default:
+          // Navigate immediately
+          try {
+            if (actionValue) {
+              runtime.goToStep(actionValue);
+            } else {
+              runtime.goToNextStep();
+            }
+          } catch (error) {
+            console.error('[QuizBlock] Navigation error:', error);
+          }
+          break;
+      }
+    } catch (error) {
+      console.error('[QuizBlock] executeAnswerAction unexpected error:', error);
     }
   };
 
@@ -154,24 +174,53 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
 
   // Handle submit button click - when submit button exists, it OVERRIDES answer actions
   const handleSubmit = () => {
-    if (runtime && selected.length > 0) {
+    if (!runtime) {
+      console.log('[QuizBlock] No runtime available - editor mode');
+      return;
+    }
+    
+    if (selected.length === 0) {
+      console.warn('[QuizBlock] handleSubmit called but no options selected');
+      return;
+    }
+    
+    try {
       const action = submitButton.action || 'next-step';
       const actionValue = submitButton.actionValue;
       
       // ALL buttons submit data first (fire-and-forget for speed)
-      runtime.submitForm();
+      runtime.submitForm().catch((error) => {
+        console.error('[QuizBlock] submitForm error:', error);
+        // Don't block navigation on submission error
+      });
       
       // Then perform the action immediately (don't wait for submit)
       switch (action) {
         case 'url':
           if (actionValue) {
-            window.open(actionValue, '_blank');
+            try {
+              window.open(actionValue, '_blank');
+            } catch (error) {
+              console.error('[QuizBlock] window.open error:', error);
+            }
+          } else {
+            console.warn('[QuizBlock] URL action missing actionValue');
           }
           break;
         case 'scroll':
           if (actionValue) {
-            const element = document.getElementById(actionValue);
-            element?.scrollIntoView({ behavior: 'smooth' });
+            try {
+              const element = document.getElementById(actionValue);
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+              } else {
+                console.warn(`[QuizBlock] Scroll target not found: ${actionValue}`);
+              }
+            } catch (error) {
+              console.error('[QuizBlock] scrollIntoView error:', error);
+            }
+          } else {
+            console.warn('[QuizBlock] Scroll action missing actionValue');
           }
           break;
         case 'submit':
@@ -180,13 +229,19 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
         case 'next-step':
         default:
           // Navigate immediately
-          if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
-            runtime.goToStep(actionValue);
-          } else {
-            runtime.goToNextStep();
+          try {
+            if (actionValue && !actionValue.startsWith('http') && !actionValue.startsWith('#')) {
+              runtime.goToStep(actionValue);
+            } else {
+              runtime.goToNextStep();
+            }
+          } catch (error) {
+            console.error('[QuizBlock] Navigation error:', error);
           }
           break;
       }
+    } catch (error) {
+      console.error('[QuizBlock] handleSubmit unexpected error:', error);
     }
   };
 

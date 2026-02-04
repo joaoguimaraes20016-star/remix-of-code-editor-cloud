@@ -59,6 +59,7 @@ interface FunnelRuntimeProviderProps {
     selections: FunnelSelections, 
     consent?: { agreed: boolean; privacyPolicyUrl?: string }
   ) => Promise<void>;
+  onComplete?: (formData: FunnelFormData, selections: FunnelSelections) => void;
 }
 
 export function FunnelRuntimeProvider({ 
@@ -67,6 +68,7 @@ export function FunnelRuntimeProvider({
   children,
   onStepChange,
   onFormSubmit,
+  onComplete,
 }: FunnelRuntimeProviderProps) {
   const firstStepId = funnel.steps[0]?.id || '';
   const [currentStepId, setCurrentStepId] = useState(initialStepId || firstStepId);
@@ -89,7 +91,18 @@ export function FunnelRuntimeProvider({
 
   const goToStep = useCallback((stepId: string) => {
     const stepExists = funnel.steps.some(s => s.id === stepId);
-    if (!stepExists) return;
+    if (!stepExists) {
+      console.warn(`[FunnelRuntimeContext] goToStep failed - step not found: ${stepId}`, {
+        availableSteps: funnel.steps.map(s => ({ id: s.id, name: s.name })),
+        currentStepId,
+      });
+      return;
+    }
+    
+    console.log(`[FunnelRuntimeContext] Navigating to step: ${stepId}`, {
+      currentStepId,
+      stepName: funnel.steps.find(s => s.id === stepId)?.name,
+    });
     
     // Capture current state before navigation
     const currentFormData = formData;
@@ -98,11 +111,19 @@ export function FunnelRuntimeProvider({
     setCurrentStepId(stepId);
     setStepHistory(prev => [...prev, stepId]);
     onStepChange?.(stepId, currentFormData, currentSelections);
-  }, [funnel.steps, formData, selections, onStepChange]);
+  }, [funnel.steps, formData, selections, onStepChange, currentStepId]);
 
   const goToNextStep = useCallback(() => {
     const currentIndex = getStepIndex();
     const currentStep = getCurrentStep();
+    
+    console.log(`[FunnelRuntimeContext] goToNextStep called`, {
+      currentIndex,
+      totalSteps: funnel.steps.length,
+      currentStepId,
+      currentStepName: currentStep?.name,
+      configuredNextStepId: currentStep?.settings.nextStepId,
+    });
     
     // Check if there's a configured next step
     if (currentStep?.settings.nextStepId) {
@@ -112,9 +133,24 @@ export function FunnelRuntimeProvider({
     
     // Otherwise go to the next sequential step
     if (currentIndex < funnel.steps.length - 1) {
-      goToStep(funnel.steps[currentIndex + 1].id);
+      const nextStepId = funnel.steps[currentIndex + 1].id;
+      goToStep(nextStepId);
+    } else {
+      // On last step - call completion callback if provided
+      console.log(`[FunnelRuntimeContext] goToNextStep called on last step - calling onComplete`, {
+        currentIndex,
+        totalSteps: funnel.steps.length,
+        currentStepId,
+      });
+      if (onComplete) {
+        try {
+          onComplete(formData, selections);
+        } catch (error) {
+          console.error('[FunnelRuntimeContext] onComplete callback error:', error);
+        }
+      }
     }
-  }, [funnel.steps, getStepIndex, getCurrentStep, goToStep]);
+  }, [funnel.steps, getStepIndex, getCurrentStep, goToStep, currentStepId, formData, selections, onComplete]);
 
   const goToPrevStep = useCallback(() => {
     if (stepHistory.length > 1) {
@@ -140,15 +176,19 @@ export function FunnelRuntimeProvider({
   }, []);
 
   const submitForm = useCallback(async (consent?: { agreed: boolean; privacyPolicyUrl?: string }) => {
-    if (isSubmitting) return;
+    // Don't block for fire-and-forget pattern - allow multiple submissions to queue
+    // The underlying useUnifiedLeadSubmit hook handles deduplication at the API level
     setIsSubmitting(true);
     
     try {
       await onFormSubmit?.(formData, selections, consent);
+    } catch (error) {
+      // Log error but don't throw - fire-and-forget pattern
+      console.error('[FunnelRuntimeContext] submitForm error:', error);
     } finally {
       setIsSubmitting(false);
     }
-  }, [formData, selections, isSubmitting, onFormSubmit]);
+  }, [formData, selections, onFormSubmit]);
 
   // Popup handlers
   const openPopup = useCallback((blockId: string) => {

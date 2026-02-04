@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useMemo, memo } from 'react';
 import { FunnelRuntimeProvider, FunnelFormData, FunnelSelections, useFunnelRuntime } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { FunnelProvider } from '@/funnel-builder-v3/context/FunnelContext';
 import { BlockRenderer } from '@/funnel-builder-v3/editor/blocks/BlockRenderer';
@@ -81,8 +81,8 @@ function extractIdentityFromFormData(
   return identity;
 }
 
-// Inner component that uses runtime context
-function FunnelV3Content({ funnel }: { funnel: Funnel }) {
+// Inner component that uses runtime context - memoized to prevent unnecessary re-renders
+const FunnelV3Content = memo(function FunnelV3Content({ funnel }: { funnel: Funnel }) {
   const runtime = useFunnelRuntime();
   const currentStep = runtime.getCurrentStep();
 
@@ -116,12 +116,12 @@ function FunnelV3Content({ funnel }: { funnel: Funnel }) {
       </ScrollArea>
     </div>
   );
-}
+});
 
 
 export function FunnelV3Renderer({ document, settings, funnelId, teamId }: FunnelV3RendererProps) {
-  // Convert document to Funnel format
-  const funnel = convertDocumentToFunnel(document);
+  // Convert document to Funnel format - memoized to prevent recalculation on every render
+  const funnel = useMemo(() => convertDocumentToFunnel(document), [document]);
 
   // Use unified lead submission hook
   const { submit, saveDraft, leadId } = useUnifiedLeadSubmit({

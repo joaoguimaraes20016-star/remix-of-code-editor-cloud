@@ -65,31 +65,62 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
   const hasTextGradient = !!textGradient;
 
   const handleClick = () => {
-    if (!runtime) return; // In editor mode, don't do anything
+    if (!runtime) {
+      // In editor mode, don't do anything
+      console.log('[ButtonBlock] No runtime available - editor mode');
+      return;
+    }
 
-    // ALL buttons submit data first (fire-and-forget for speed)
-    runtime.submitForm();
+    try {
+      // ALL buttons submit data first (fire-and-forget for speed)
+      runtime.submitForm().catch((error) => {
+        console.error('[ButtonBlock] submitForm error:', error);
+        // Don't block navigation on submission error
+      });
 
-    // Then perform the action immediately (don't wait for submit)
-    switch (action) {
-      case 'next-step':
-      default:
-        runtime.goToNextStep();
-        break;
-      case 'url':
-        if (actionValue) {
-          window.open(actionValue, '_blank');
-        }
-        break;
-      case 'scroll':
-        if (actionValue) {
-          const element = document.getElementById(actionValue);
-          element?.scrollIntoView({ behavior: 'smooth' });
-        }
-        break;
-      case 'submit':
-        // Just submit, no navigation (already done above)
-        break;
+      // Then perform the action immediately (don't wait for submit)
+      switch (action) {
+        case 'next-step':
+        default:
+          try {
+            runtime.goToNextStep();
+          } catch (error) {
+            console.error('[ButtonBlock] goToNextStep error:', error);
+          }
+          break;
+        case 'url':
+          if (actionValue) {
+            try {
+              window.open(actionValue, '_blank');
+            } catch (error) {
+              console.error('[ButtonBlock] window.open error:', error);
+            }
+          } else {
+            console.warn('[ButtonBlock] URL action missing actionValue');
+          }
+          break;
+        case 'scroll':
+          if (actionValue) {
+            try {
+              const element = document.getElementById(actionValue);
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+              } else {
+                console.warn(`[ButtonBlock] Scroll target not found: ${actionValue}`);
+              }
+            } catch (error) {
+              console.error('[ButtonBlock] scrollIntoView error:', error);
+            }
+          } else {
+            console.warn('[ButtonBlock] Scroll action missing actionValue');
+          }
+          break;
+        case 'submit':
+          // Just submit, no navigation (already done above)
+          break;
+      }
+    } catch (error) {
+      console.error('[ButtonBlock] handleClick unexpected error:', error);
     }
   };
 
