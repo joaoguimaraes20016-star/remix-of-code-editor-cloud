@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ButtonContent, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,21 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
   const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const selectedChildElement = funnelContext?.selectedChildElement ?? null;
   const { text, variant, size, fullWidth, backgroundColor, backgroundGradient, color, textGradient, action, actionValue, borderColor, borderWidth, fontSize } = content;
+  
+  // Local state to prevent double-clicks - disable button immediately on click
+  const [isNavigating, setIsNavigating] = useState(false);
+  
+  // Reset navigating state when step actually changes (more reliable than timeout)
+  const currentStepId = runtime?.currentStepId;
+  useEffect(() => {
+    if (isNavigating && currentStepId) {
+      // Step changed, reset button state after a brief delay to ensure UI has updated
+      const timer = setTimeout(() => {
+        setIsNavigating(false);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStepId, isNavigating]);
 
   const sizeClasses: Record<string, string> = {
     sm: 'h-9 px-4 text-sm',
@@ -110,11 +125,15 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
           if (actionValue) {
             try {
               window.open(actionValue, '_blank');
+              setTimeout(() => setIsNavigating(false), 100);
             } catch (error) {
               if (import.meta.env.DEV) {
                 console.error('[ButtonBlock] window.open error:', error);
               }
+              setIsNavigating(false);
             }
+          } else {
+            setIsNavigating(false);
           }
           break;
         case 'scroll':
@@ -123,22 +142,30 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
               const element = document.getElementById(actionValue);
               if (element) {
                 element.scrollIntoView({ behavior: 'smooth' });
+                setTimeout(() => setIsNavigating(false), 100);
+              } else {
+                setIsNavigating(false);
               }
             } catch (error) {
               if (import.meta.env.DEV) {
                 console.error('[ButtonBlock] scrollIntoView error:', error);
               }
+              setIsNavigating(false);
             }
+          } else {
+            setIsNavigating(false);
           }
           break;
         case 'submit':
           // Just submit, no navigation (already done above)
+          setTimeout(() => setIsNavigating(false), 100);
           break;
       }
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('[ButtonBlock] handleClick unexpected error:', error);
       }
+      setIsNavigating(false);
     }
   };
 
@@ -196,7 +223,7 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
       style={customStyle}
       onClick={handleClick}
       type="button"
-      disabled={false}
+      disabled={isNavigating || (runtime?.isSubmitting ?? false)}
     >
       {canEdit ? (
         <EditableText
