@@ -229,11 +229,12 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
       pendingDraftRef.current = true;
     }
     
-    // Only set isSubmitting for submit mode (draft saves are background operations)
+    // Only set isSubmitting and clear lastError for submit mode
+    // Draft saves are background operations that shouldn't trigger re-renders
     if (mode === 'submit') {
       setIsSubmitting(true);
+      setLastError(null);
     }
-    setLastError(null);
 
     // Generate stable client request ID for submit mode (idempotency)
     let clientRequestId: string;
@@ -329,7 +330,10 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
           leadId: leadIdRef.current,
           stepId: payload.source.stepId,
         });
-        setLastError(error.message || 'Submission failed');
+        // Only set error state for submit mode (draft errors are silent to avoid re-renders)
+        if (mode === 'submit') {
+          setLastError(error.message || 'Submission failed');
+        }
         onError?.(error);
         return { error };
       }
@@ -393,7 +397,10 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
           hasIdentity: !!(payload.identity?.name || payload.identity?.email || payload.identity?.phone),
         });
       }
-      setLastError(errorMessage);
+      // Only set error state for submit mode (draft errors are silent to avoid re-renders)
+      if (mode === 'submit') {
+        setLastError(errorMessage);
+      }
       onError?.(err);
       return { error: err };
     } finally {

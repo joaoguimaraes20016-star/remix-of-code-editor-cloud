@@ -214,23 +214,16 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     if (hasTrackedViewRef.current || !funnelId || !teamId) return;
     hasTrackedViewRef.current = true;
     
-    // Create initial visitor entry (fire-and-forget)
+    // Track initial step view (fire-and-forget)
     const initialStepId = funnel.steps[0]?.id;
     if (!initialStepId) return;
     
-    const payload = createUnifiedPayload({}, {
-      funnelId,
-      teamId,
-      stepId: initialStepId,
-      stepIntent: 'navigate', // Just viewing, not submitting
-      lastStepIndex: 0,
-    });
-    
-    // Use submit() instead of saveDraft() to ensure immediate tracking without debounce
-    // Note: submit() uses submitMode: 'submit' which may trigger automations, but automations
-    // typically require contact info to be useful, so this should be safe for initial visitor tracking
-    
-    // Track initial step view event
+    // Track initial step view event via recordEvent only
+    // NOTE: We intentionally do NOT call submit() here anymore.
+    // Calling submit() on page load held a "submit lock" (pendingSubmitRef) that blocked
+    // the user's first button click for 2-3 seconds while the Edge Function processed.
+    // The first actual button click will create the funnel_leads entry with real data.
+    // recordEvent() is sufficient for initial step view analytics.
     const sessionId = getOrCreateSessionId();
     recordEvent({
       funnel_id: funnelId,
@@ -254,20 +247,7 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         });
       }
     });
-    
-    // Create funnel_leads entry immediately (no debounce)
-    submit(payload).catch((error) => {
-      // Log errors (dev only - verbose logging blocks main thread in production)
-      if (import.meta.env.DEV) {
-        console.error('[FunnelV3Renderer] Failed to track initial view:', {
-          error,
-          funnelId,
-          teamId,
-          stepId: initialStepId,
-        });
-      }
-    });
-  }, [funnelId, teamId, funnel.steps, submit]);
+  }, [funnelId, teamId, funnel.steps, getOrCreateSessionId]);
   
   // Helper to get or create session ID
   const getOrCreateSessionId = useCallback(() => {
