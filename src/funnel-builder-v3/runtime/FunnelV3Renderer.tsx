@@ -323,13 +323,16 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         payload.identity = identity;
       }
       
+      // Set flag BEFORE submit so handleStepChange sees it and skips redundant saveDraft
+      // This prevents the race condition where handleStepChange runs before submit completes
+      lastSubmitStepRef.current = currentStepId;
+      
       // Submit through unified pipeline
       const result = await submit(payload);
       
-      // Track this step as just submitted
-      if (!result.error) {
-        lastSubmitStepRef.current = currentStepId;
-      } else {
+      // Clear flag if submit failed so subsequent attempts work correctly
+      if (result.error) {
+        lastSubmitStepRef.current = null;
         // Always log errors (not just in DEV) for production debugging
         console.error('[FunnelV3Renderer] Submission failed', {
           error: result.error,
