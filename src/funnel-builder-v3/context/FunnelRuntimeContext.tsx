@@ -182,14 +182,11 @@ export function FunnelRuntimeProvider({
     // Call onStepChange with current ref values
     onStepChange?.(stepId, currentFormData, currentSelections);
     
-    // Reset guard after React has had time to process state updates
-    // Use requestAnimationFrame to ensure React has rendered before allowing next navigation
-    // This prevents the "double-click" issue where rapid clicks seem to not register
-    requestAnimationFrame(() => {
-      // Use setTimeout to give React one more frame to process
-      setTimeout(() => {
-        isNavigatingRef.current = false;
-      }, 0);
+    // Reset guard immediately after current task using queueMicrotask
+    // queueMicrotask is faster than requestAnimationFrame (~0ms vs ~16ms)
+    // This ensures consistent behavior with goToPrevStep
+    queueMicrotask(() => {
+      isNavigatingRef.current = false;
     });
   }, [funnel.steps, onStepChange]);
 

@@ -172,13 +172,6 @@ const FunnelV3Content = memo(function FunnelV3Content({
 
 
 export function FunnelV3Renderer({ document, settings, funnelId, teamId }: FunnelV3RendererProps) {
-  // DIAGNOSTIC: Version log to verify new code is running
-  console.log('[FunnelV3Renderer] VERSION: LOCAL-FIRST-ARCHITECTURE-V3', {
-    funnelId,
-    teamId,
-    timestamp: Date.now(),
-  });
-  
   // Convert document to Funnel format - memoized to prevent recalculation on every render
   const funnel = useMemo(() => {
     return convertDocumentToFunnel(document);
@@ -294,6 +287,18 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [funnelId, teamId, funnel.steps]);
   
+  // Helper to get or create session ID
+  // CRITICAL: Must be defined BEFORE useEffect that uses it (fixes build error)
+  const getOrCreateSessionId = useCallback(() => {
+    const storageKey = `funnel_session_${funnelId}`;
+    let sessionId = sessionStorage.getItem(storageKey);
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      sessionStorage.setItem(storageKey, sessionId);
+    }
+    return sessionId;
+  }, [funnelId]);
+  
   // Track initial funnel view (create visitor entry)
   const hasTrackedViewRef = useRef(false);
   
@@ -337,32 +342,11 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     });
   }, [funnelId, teamId, funnel.steps, getOrCreateSessionId]);
   
-  // Helper to get or create session ID
-  const getOrCreateSessionId = useCallback(() => {
-    const storageKey = `funnel_session_${funnelId}`;
-    let sessionId = sessionStorage.getItem(storageKey);
-    if (!sessionId) {
-      sessionId = crypto.randomUUID();
-      sessionStorage.setItem(storageKey, sessionId);
-    }
-    return sessionId;
-  }, [funnelId]);
-  
   const handleFormSubmit = useCallback(async (
     data: FunnelFormData, 
     selections: FunnelSelections,
     consent?: { agreed: boolean; privacyPolicyUrl?: string }
   ) => {
-    // DIAGNOSTIC: Log at the very start to trace execution
-    console.log('[handleFormSubmit] CALLED', {
-      currentStepId: currentStepIdRef.current,
-      totalSteps: funnel.steps.length,
-      stepIds: funnel.steps.map(s => s.id),
-      timestamp: Date.now(),
-      hasData: Object.keys(data).length > 0,
-      hasSelections: Object.keys(selections).length > 0,
-    });
-    
     // LOCAL-FIRST ARCHITECTURE: Navigation happens instantly, data accumulates locally.
     // We only submit to the server on the FINAL step (or when user leaves via beforeunload).
     // This eliminates all API-related delays during intermediate step navigation.
@@ -374,7 +358,6 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     // Use ref value, but validate it exists
     const currentStepId = currentStepIdRef.current || funnel.steps[0]?.id;
     if (!currentStepId) {
-      console.log('[handleFormSubmit] NO STEP ID - returning early');
       return;
     }
     
@@ -382,26 +365,14 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     const stepIndex = funnel.steps.findIndex(s => s.id === currentStepId);
     const isLastStep = stepIndex === funnel.steps.length - 1;
     
-    // DIAGNOSTIC: Log step check details
-    console.log('[handleFormSubmit] Step check', {
-      stepIndex,
-      isLastStep,
-      currentStepId,
-      stepCount: funnel.steps.length,
-      stepName: funnel.steps[stepIndex]?.name,
-    });
-    
     // Track that we've "submitted" from this step (for handleStepChange to know)
     lastSubmitStepRef.current = currentStepId;
     
     // On intermediate steps: data is already accumulated in FunnelRuntimeContext
     // Just return immediately - no API calls, no delays
     if (!isLastStep) {
-      console.log('[handleFormSubmit] INTERMEDIATE STEP - NO API CALL (returning early)');
       return;
     }
-    
-    console.log('[handleFormSubmit] FINAL STEP - WILL SUBMIT TO API');
     
     // Mark that we've submitted final data (prevent duplicate beforeunload submission)
     hasSubmittedFinalRef.current = true;

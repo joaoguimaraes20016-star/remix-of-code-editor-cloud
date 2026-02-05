@@ -194,18 +194,6 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
     payload: UnifiedSubmitPayload,
     mode: 'draft' | 'submit'
   ): Promise<{ leadId?: string; error?: any }> => {
-    // DIAGNOSTIC: Log to see who's calling submit
-    const stackTrace = new Error().stack;
-    const callerLine = stackTrace?.split('\n')[2]?.trim() || 'unknown';
-    console.log('[useUnifiedLeadSubmit] doSubmit CALLED', {
-      mode,
-      stepId: payload.source.stepId,
-      stepIntent: payload.source.stepIntent,
-      funnelId: payload.source.funnelId,
-      caller: callerLine,
-      timestamp: Date.now(),
-    });
-    
     // Prevent duplicate submissions of the same mode
     // Submit mode can interrupt draft saves (submit is higher priority)
     if (mode === 'submit') {
