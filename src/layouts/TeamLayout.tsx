@@ -13,19 +13,36 @@ export function TeamLayout() {
 
   useEffect(() => {
     const fetchTeam = async () => {
-      if (!teamId) return;
-      
-      const { data, error } = await supabase
-        .from("teams")
-        .select("name, logo_url")
-        .eq("id", teamId)
-        .single();
-      
-      if (data && !error) {
-        setTeamName(data.name);
-        setTeamLogo(data.logo_url);
+      if (!teamId) {
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+      
+      try {
+        const { data, error } = await supabase
+          .from("teams")
+          .select("name, logo_url")
+          .eq("id", teamId)
+          .maybeSingle();
+        
+        if (error) {
+          console.error('Error loading team:', error);
+          // Still set loading to false so UI can render
+        }
+        
+        if (data) {
+          setTeamName(data.name || 'Workspace');
+          setTeamLogo(data.logo_url);
+        } else {
+          // Team not found - set default name
+          setTeamName('Workspace');
+        }
+      } catch (error) {
+        console.error('Error fetching team:', error);
+        setTeamName('Workspace');
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchTeam();

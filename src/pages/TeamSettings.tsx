@@ -10,13 +10,15 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Settings, DollarSign, Trash2, Loader2, Upload, UserPlus, Mail, AlertTriangle, Type } from "lucide-react";
+import { Users, Settings, DollarSign, Trash2, Loader2, Upload, UserPlus, Mail, AlertTriangle, Type, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { CommissionSettings } from "@/components/CommissionSettings";
 import { ClearTeamData } from "@/components/ClearTeamData";
 import { TerminologySettings } from "@/components/settings/TerminologySettings";
 import { useTeamLabels } from "@/contexts/TeamLabelsContext";
 import { cn } from "@/lib/utils";
+import { SubaccountsList } from "@/components/workspace/SubaccountsList";
+import { checkParentAccountIdExists } from "@/lib/db/checkColumnExists";
 
 interface TeamMember {
   id: string;
@@ -34,7 +36,7 @@ export default function TeamSettings() {
   const { teamId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isAdmin, loading: roleLoading } = useTeamRole(teamId);
+  const { isAdmin, loading: roleLoading, isMainAccount, canCreateSubaccounts } = useTeamRole(teamId);
   const { getRoleLabel } = useTeamLabels();
 
   const [teamName, setTeamName] = useState("");
@@ -43,11 +45,17 @@ export default function TeamSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [columnExists, setColumnExists] = useState<boolean | null>(null);
 
   // Invite state
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("closer");
   const [inviting, setInviting] = useState(false);
+
+  // Check if column exists for feature detection
+  useEffect(() => {
+    checkParentAccountIdExists().then(setColumnExists);
+  }, []);
 
   useEffect(() => {
     if (teamId) {
@@ -456,6 +464,13 @@ export default function TeamSettings() {
         <TabsContent value="commissions">
           <CommissionSettings teamId={teamId!} />
         </TabsContent>
+
+        {/* Subaccounts Tab - Only visible for main accounts when column exists */}
+        {isMainAccount && columnExists && (
+          <TabsContent value="subaccounts">
+            <SubaccountsList parentAccountId={teamId!} canCreate={canCreateSubaccounts} />
+          </TabsContent>
+        )}
 
         {/* Danger Zone Tab */}
         <TabsContent value="danger">

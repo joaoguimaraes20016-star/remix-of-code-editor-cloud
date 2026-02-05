@@ -75,6 +75,12 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
       return;
     }
 
+    // Performance tracking: measure button click to navigation time
+    const clickStartTime = performance.now();
+    if (import.meta.env.DEV) {
+      console.log('[ButtonBlock] Click started', { action, actionValue });
+    }
+
     try {
       // ALL buttons submit data first (fire-and-forget for speed)
       runtime.submitForm().catch((error) => {
@@ -90,6 +96,10 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
         default:
           try {
             runtime.goToNextStep();
+            const navTime = performance.now() - clickStartTime;
+            if (import.meta.env.DEV) {
+              console.log(`[ButtonBlock] Navigation triggered in ${navTime.toFixed(2)}ms`);
+            }
           } catch (error) {
             if (import.meta.env.DEV) {
               console.error('[ButtonBlock] goToNextStep error:', error);

@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUnifiedLeadSubmit, createUnifiedPayload, extractIdentityFromAnswers } from '@/flow-canvas/shared/hooks/useUnifiedLeadSubmit';
 import { recordEvent } from '@/lib/events/recordEvent';
+import { supabase } from '@/integrations/supabase/client';
 
 interface FunnelV3RendererProps {
   document: {
@@ -159,6 +160,19 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     }
   }, [funnel.steps]);
   
+  // Warmup Edge Functions on funnel load to prevent cold start delay on first button click
+  useEffect(() => {
+    if (!funnelId || !teamId) return;
+    
+    // Fire-and-forget warmup call to pre-initialize Edge Functions
+    // This prevents the 2-4 second cold start penalty on first button click
+    supabase.functions.invoke('submit-funnel-lead', {
+      body: { warmup: true, funnel_id: funnelId, team_id: teamId },
+    }).catch(() => {
+      // Silently ignore warmup errors - this is just optimization
+    });
+  }, [funnelId, teamId]);
+  
   // Track initial funnel view (create visitor entry)
   const hasTrackedViewRef = useRef(false);
   
@@ -234,7 +248,18 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     selections: FunnelSelections,
     consent?: { agreed: boolean; privacyPolicyUrl?: string }
   ) => {
+    const submitStartTime = performance.now();
     try {
+      // IMMEDIATELY yield to let navigation happen first
+      // This ensures button clicks feel instant while submission happens in background
+      await new Promise<void>(resolve => queueMicrotask(() => resolve()));
+      
+      const yieldTime = performance.now() - submitStartTime;
+      if (import.meta.env.DEV) {
+        console.log(`[FunnelV3Renderer] handleFormSubmit yielded in ${yieldTime.toFixed(2)}ms`);
+      }
+      
+      // Now do the heavy work (no longer blocking navigation)
       // Build answers object from form data and selections
       const answers: Record<string, any> = { ...data, ...selections };
       
@@ -340,44 +365,54 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     formData: FunnelFormData,
     selections: FunnelSelections
   ) => {
+    const stepChangeStartTime = performance.now();
     const previousStepId = currentStepIdRef.current;
     // Update ref immediately to keep it in sync
     currentStepIdRef.current = stepId;
     
+    if (import.meta.env.DEV) {
+      console.log('[FunnelV3Renderer] Step change initiated', {
+        from: previousStepId,
+        to: stepId,
+      });
+    }
+    
     // Defer ALL heavy work to next microtask to prevent blocking navigation
     // This ensures the UI updates instantly while background work happens after
     queueMicrotask(() => {
+      const deferTime = performance.now() - stepChangeStartTime;
+      if (import.meta.env.DEV) {
+        console.log(`[FunnelV3Renderer] handleStepChange deferred work started after ${deferTime.toFixed(2)}ms`);
+      }
       // Calculate step index for tracking
       const stepIndex = funnel.steps.findIndex(s => s.id === stepId);
       const currentStep = funnel.steps.find(s => s.id === stepId);
       
-      // Track step view event (always track, even if no data)
-      const sessionId = getOrCreateSessionId();
-      recordEvent({
-        funnel_id: funnelId,
-        step_id: stepId,
-        event_type: 'step_viewed',
-        session_id: sessionId,
-        dedupe_key: `step_viewed:${funnelId}:${stepId}:${sessionId}:${Date.now()}`,
-        payload: {
-          stepIndex,
-          stepName: currentStep?.name,
-          previousStepId,
-        },
-      }).catch((error) => {
-        // Always log errors (not just in DEV) for production debugging
-        console.error('[FunnelV3Renderer] Failed to record step_viewed event:', {
-          error,
-          funnelId,
-          teamId,
-          stepId,
-          sessionId: getOrCreateSessionId(),
-        });
-      });
-      
       // Skip draft save if navigating away from just-submitted step
       if (lastSubmitStepRef.current === previousStepId) {
         lastSubmitStepRef.current = null;
+        // Still record step view event even if skipping draft save
+        const sessionId = getOrCreateSessionId();
+        recordEvent({
+          funnel_id: funnelId,
+          step_id: stepId,
+          event_type: 'step_viewed',
+          session_id: sessionId,
+          dedupe_key: `step_viewed:${funnelId}:${stepId}:${sessionId}:${Date.now()}`,
+          payload: {
+            stepIndex,
+            stepName: currentStep?.name,
+            previousStepId,
+          },
+        }).catch((error) => {
+          console.error('[FunnelV3Renderer] Failed to record step_viewed event:', {
+            error,
+            funnelId,
+            teamId,
+            stepId,
+            sessionId: getOrCreateSessionId(),
+          });
+        });
         return; // Skip draft save, data was just submitted
       }
       
@@ -395,6 +430,7 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         });
         
         // Update lead with new step index (fire-and-forget)
+        // Skip separate recordEvent call - step view is tracked via lead update
         saveDraft(emptyPayload).catch((error) => {
           if (import.meta.env.DEV) {
             console.error('[FunnelV3Renderer] Failed to update step index:', error);
@@ -402,6 +438,10 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         });
         return;
       }
+      
+      // Skip separate recordEvent() call when saveDraft() will be called
+      // The step view is already tracked via the lead's last_step_index update
+      // This reduces API calls from 2 to 1 per step change
       
       // Fire-and-forget: build payload and save draft
       (async () => {

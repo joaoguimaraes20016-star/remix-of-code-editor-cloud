@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { WorkspaceSwitcher } from "@/components/workspace/WorkspaceSwitcher";
 
 interface TeamSidebarProps {
   teamName: string;
@@ -112,23 +113,13 @@ export function TeamSidebar({ teamName, teamLogo }: TeamSidebarProps) {
         collapsed ? "w-16" : "w-64"
       )}
     >
-      {/* Team Header */}
-      <div className={cn(
-        "p-4 border-b border-sidebar-border flex items-center gap-3",
-        collapsed && "justify-center"
-      )}>
-        <Avatar className="h-10 w-10 shrink-0 rounded-xl">
-          <AvatarImage src={teamLogo || undefined} alt={teamName} className="rounded-xl" />
-          <AvatarFallback className="rounded-xl bg-primary text-primary-foreground text-sm font-semibold">
-            {getInitials(teamName)}
-          </AvatarFallback>
-        </Avatar>
-        {!collapsed && (
-          <div className="flex-1 min-w-0">
-            <h2 className="font-semibold text-sidebar-foreground truncate">{teamName}</h2>
-            <p className="text-xs text-sidebar-foreground/60">Team Workspace</p>
-          </div>
-        )}
+      {/* Workspace Switcher Header */}
+      <div className="p-4 border-b border-sidebar-border">
+        <WorkspaceSwitcher
+          currentTeamName={teamName || 'Workspace'}
+          currentTeamLogo={teamLogo}
+          collapsed={collapsed}
+        />
       </div>
 
       {/* Main Navigation */}

@@ -337,12 +337,22 @@ const Auth = () => {
           .maybeSingle();
 
         if (invitation) {
-          // Add user to team
-          await supabase.from('team_members').insert({
-            team_id: invitation.team_id,
-            user_id: session.user.id,
-            role: invitation.role,
-          });
+          // Check if already a member before inserting
+          const { data: existingMember } = await supabase
+            .from('team_members')
+            .select('id')
+            .eq('team_id', invitation.team_id)
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+
+          if (!existingMember) {
+            // Add user to team
+            await supabase.from('team_members').insert({
+              team_id: invitation.team_id,
+              user_id: session.user.id,
+              role: invitation.role,
+            });
+          }
 
           // Mark invitation as accepted
           await supabase

@@ -185,37 +185,78 @@ async function resolveContact(
   let contactByPhone: any = null;
 
   try {
-    if (emailNorm) {
-      // Use case-insensitive email lookup (normalize for comparison)
+    // Optimize: Use single query with OR when both email and phone exist, otherwise parallel queries
+    if (emailNorm && phoneNorm) {
+      // Single query with OR condition - faster than two separate queries
       const { data, error } = await supabase
         .from("contacts")
         .select("*")
         .eq("team_id", team_id)
-        .ilike("email", emailNorm) // Case-insensitive match
-        .limit(1)
-        .maybeSingle();
+        .or(`email.ilike.${emailNorm},phone.eq.${phoneNorm}`)
+        .limit(2); // Get up to 2 results (one for email, one for phone)
 
       if (error) {
-        console.error("[submit-funnel-lead] Error looking up contact by email:", error);
-      } else {
-        contactByEmail = data;
+        console.error("[submit-funnel-lead] Error looking up contact by email/phone:", error);
+      } else if (data && data.length > 0) {
+        // Separate results by match type
+        for (const contact of data) {
+          const contactEmailNorm = normalizeEmail(contact.email ?? null);
+          const contactPhoneNorm = normalizePhone(contact.phone ?? null);
+          if (contactEmailNorm === emailNorm) {
+            contactByEmail = contact;
+          }
+          if (contactPhoneNorm === phoneNorm) {
+            contactByPhone = contact;
+          }
+        }
       }
-    }
+    } else {
+      // Parallel queries when only one field exists
+      const queries: Promise<any>[] = [];
+      
+      if (emailNorm) {
+        queries.push(
+          supabase
+            .from("contacts")
+            .select("*")
+            .eq("team_id", team_id)
+            .ilike("email", emailNorm)
+            .limit(1)
+            .maybeSingle()
+        );
+      }
+      
+      if (phoneNorm) {
+        queries.push(
+          supabase
+            .from("contacts")
+            .select("*")
+            .eq("team_id", team_id)
+            .eq("phone", phoneNorm)
+            .limit(1)
+            .maybeSingle()
+        );
+      }
 
-    if (phoneNorm) {
-      // Phone lookup - use exact match (phone numbers are typically normalized)
-      const { data, error } = await supabase
-        .from("contacts")
-        .select("*")
-        .eq("team_id", team_id)
-        .eq("phone", phoneNorm)
-        .limit(1)
-        .maybeSingle();
-
-      if (error) {
-        console.error("[submit-funnel-lead] Error looking up contact by phone:", error);
-      } else {
-        contactByPhone = data;
+      const results = await Promise.all(queries);
+      let resultIndex = 0;
+      
+      if (emailNorm) {
+        const { data, error } = results[resultIndex++];
+        if (error) {
+          console.error("[submit-funnel-lead] Error looking up contact by email:", error);
+        } else {
+          contactByEmail = data;
+        }
+      }
+      
+      if (phoneNorm) {
+        const { data, error } = results[resultIndex++];
+        if (error) {
+          console.error("[submit-funnel-lead] Error looking up contact by phone:", error);
+        } else {
+          contactByPhone = data;
+        }
       }
     }
   } catch (lookupErr) {
@@ -385,6 +426,14 @@ serve(async (req) => {
 
     const body = await req.json();
 
+    // Handle warmup ping - return immediately to pre-initialize function without DB work
+    if (body.warmup === true) {
+      return new Response(JSON.stringify({ ok: true, warmup: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const normalizeString = (value: unknown): string | null => {
       if (typeof value !== "string") return null;
       const trimmed = value.trim();
@@ -537,12 +586,25 @@ serve(async (req) => {
       });
     }
 
-    const { data: funnel, error: funnelErr } = await supabase
-      .from("funnels")
-      .select("*")
-      .eq("id", funnel_id)
-      .single();
+    // Parallelize independent queries: fetch funnel and step simultaneously
+    // Team fetch depends on funnel.team_id, so it comes after
+    const [funnelResult, stepResult] = await Promise.all([
+      supabase
+        .from("funnels")
+        .select("*")
+        .eq("id", funnel_id)
+        .single(),
+      step_id
+        ? supabase
+            .from("funnel_steps")
+            .select("id, step_type, content")
+            .eq("id", step_id)
+            .eq("funnel_id", funnel_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
 
+    const { data: funnel, error: funnelErr } = funnelResult;
     if (funnelErr || !funnel) {
       console.error("Error loading funnel:", funnelErr);
       return new Response(JSON.stringify({ error: "Funnel not found" }), {
@@ -551,35 +613,49 @@ serve(async (req) => {
       });
     }
 
-    // Load the step (for consent evaluation)
+    // Extract step data from parallel query result
     let consentStep: ConsentStep | null = null;
-    if (step_id) {
-      const { data: stepData, error: stepError } = await supabase
-        .from("funnel_steps")
-        .select("id, step_type, content")
-        .eq("id", step_id)
-        .eq("funnel_id", funnel_id)
-        .maybeSingle();
-
-      if (stepError) {
-        console.error("[submit-funnel-lead] Error loading funnel_step:", stepError);
-      } else if (stepData) {
-        consentStep = stepData as ConsentStep;
-      }
+    if (stepResult.data) {
+      consentStep = stepResult.data as ConsentStep;
+    } else if (stepResult.error) {
+      console.error("[submit-funnel-lead] Error loading funnel_step:", stepResult.error);
     }
 
-    // Load team settings (for fallback privacy URL)
-    let team: any | null = null;
-    const { data: teamData, error: teamErr } = await supabase
-      .from("teams")
-      .select("id, settings")
-      .eq("id", funnel.team_id)
-      .maybeSingle();
+    // Load team settings and existing lead in parallel (both depend on funnel but are independent)
+    const [teamResult, existingLeadResult] = await Promise.all([
+      supabase
+        .from("teams")
+        .select("id, settings")
+        .eq("id", funnel.team_id)
+        .maybeSingle(),
+      lead_id
+        ? supabase
+            .from("funnel_leads")
+            .select("*")
+            .eq("id", lead_id)
+            .eq("team_id", funnel.team_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
 
+    let team: any | null = null;
+    const { data: teamData, error: teamErr } = teamResult;
     if (teamErr) {
       console.error("[submit-funnel-lead] Error loading team:", teamErr);
     } else {
       team = teamData;
+    }
+
+    let existingLead: any = null;
+    const { data: existing, error: existingError } = existingLeadResult;
+    if (existingError) {
+      console.error(
+        "[submit-funnel-lead] Error loading existing funnel_lead for lead_id",
+        lead_id,
+        existingError,
+      );
+    } else {
+      existingLead = existing;
     }
 
     const { termsUrl, consentMode, requireConsent } = computeConsentRequirement({
@@ -684,33 +760,18 @@ serve(async (req) => {
     let identityMismatchReason: string | null = null;
     let identityFieldsResolved = false;
 
-    let existingLead: any = null;
-    if (lead_id) {
-      const { data: existing, error: existingError } = await supabase
-        .from("funnel_leads")
-        .select("*")
-        .eq("id", lead_id)
-        .eq("team_id", funnel.team_id)
-        .maybeSingle();
-
-      if (existingError) {
-        console.error(
-          "[submit-funnel-lead] Error loading existing funnel_lead for lead_id",
-          lead_id,
-          existingError,
-        );
-      } else {
-        existingLead = existing;
-      }
-    }
+    // existingLead is now loaded in parallel with team above
 
     const hasIdentityInput = !!(emailNormalized || phoneNormalized || nameNormalized);
     const autoCreateAllowed = funnel.auto_create_contact !== false;
 
+    // Skip contact creation on draft saves - only create contacts on explicit submit
+    // This reduces DB load and improves performance for draft saves
     const shouldAttemptContactResolution =
       autoCreateAllowed &&
       hasIdentityInput &&
-      (!existingLead || !existingLead.contact_id);
+      (!existingLead || !existingLead.contact_id) &&
+      effectiveSubmitMode === "submit"; // Only create contacts on explicit submit, not drafts
 
     let contactCreationError: string | null = null;
     

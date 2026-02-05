@@ -316,6 +316,7 @@ export default function FunnelList() {
     isLoading: contactsLoading,
     isFetching: contactsFetching,
     error: contactsError,
+    refetch: refetchContacts,
   } = useQuery({
     queryKey: ['contacts', teamId, selectedFunnelId],
     queryFn: async () => {
