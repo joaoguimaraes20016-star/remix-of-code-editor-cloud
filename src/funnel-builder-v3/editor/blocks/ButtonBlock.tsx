@@ -220,7 +220,7 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
         hasCustomBg && 'hover:opacity-90',
         runtime && 'cursor-pointer' // Only show pointer in runtime mode
       )}
-      style={customStyle}
+      style={{ ...customStyle, touchAction: 'manipulation' as const }}
       onClick={handleClick}
       type="button"
       disabled={isNavigating || (runtime?.isSubmitting ?? false)}
