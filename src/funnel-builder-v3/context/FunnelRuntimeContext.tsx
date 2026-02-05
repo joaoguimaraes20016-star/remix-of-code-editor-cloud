@@ -11,6 +11,15 @@ export interface FunnelSelections {
   [blockId: string]: string | string[]; // Selected option IDs
 }
 
+// Accumulated data for final submission (local-first pattern)
+export interface AccumulatedFunnelData {
+  formData: FunnelFormData;
+  selections: FunnelSelections;
+  consent?: { agreed: boolean; privacyPolicyUrl?: string };
+  visitedStepIds: string[];
+  lastStepIndex: number;
+}
+
 interface FunnelRuntimeContextType {
   // Current state
   currentStepId: string;
@@ -32,6 +41,10 @@ interface FunnelRuntimeContextType {
   
   // Submission (fire-and-forget pattern, but returns Promise for .catch() chaining)
   submitForm: (consent?: { agreed: boolean; privacyPolicyUrl?: string }) => Promise<void>;
+  
+  // Accumulated data for final submission (local-first pattern)
+  getAccumulatedData: () => AccumulatedFunnelData;
+  setConsent: (consent: { agreed: boolean; privacyPolicyUrl?: string }) => void;
   
   // Step info
   getCurrentStep: () => FunnelStep | undefined;
@@ -81,6 +94,11 @@ export function FunnelRuntimeProvider({
   const formDataRef = useRef<FunnelFormData>({});
   const selectionsRef = useRef<FunnelSelections>({});
   const currentStepIdRef = useRef<string>(initialStepId || firstStepId);
+  
+  // Accumulated data for local-first submission pattern
+  // Tracks consent and visited steps for final submission or beforeunload
+  const consentRef = useRef<{ agreed: boolean; privacyPolicyUrl?: string } | undefined>(undefined);
+  const visitedStepIdsRef = useRef<Set<string>>(new Set([initialStepId || firstStepId]));
   
   // Sync refs with state
   useEffect(() => {
@@ -149,6 +167,9 @@ export function FunnelRuntimeProvider({
     
     // Set guard immediately
     isNavigatingRef.current = true;
+    
+    // Track visited step for accumulated data
+    visitedStepIdsRef.current.add(stepId);
     
     // Use refs to get current state (avoids stale closures)
     const currentFormData = formDataRef.current;
@@ -251,6 +272,23 @@ export function FunnelRuntimeProvider({
     setSelections(prev => ({ ...prev, [blockId]: optionId }));
   }, []);
 
+  // Local-first: Get all accumulated data for final submission
+  const getAccumulatedData = useCallback((): AccumulatedFunnelData => {
+    const stepIndex = funnel.steps.findIndex(s => s.id === currentStepIdRef.current);
+    return {
+      formData: formDataRef.current,
+      selections: selectionsRef.current,
+      consent: consentRef.current,
+      visitedStepIds: Array.from(visitedStepIdsRef.current),
+      lastStepIndex: stepIndex >= 0 ? stepIndex : 0,
+    };
+  }, [funnel.steps]);
+
+  // Local-first: Set consent data (stored locally until final submission)
+  const setConsent = useCallback((consent: { agreed: boolean; privacyPolicyUrl?: string }) => {
+    consentRef.current = consent;
+  }, []);
+
   const submitForm = useCallback((consent?: { agreed: boolean; privacyPolicyUrl?: string }): Promise<void> => {
     // Fire-and-forget pattern: callers don't need to await, but can use .catch() for error handling
     // The underlying useUnifiedLeadSubmit hook handles deduplication at the API level
@@ -314,6 +352,8 @@ export function FunnelRuntimeProvider({
       setFormField,
       setSelection,
       submitForm,
+      getAccumulatedData,
+      setConsent,
       getCurrentStep,
       getStepIndex,
       totalSteps: funnel.steps.length,
