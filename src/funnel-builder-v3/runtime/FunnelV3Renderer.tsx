@@ -110,7 +110,7 @@ const MemoizedStep = memo(function MemoizedStep({
           ? "relative opacity-100 pointer-events-auto z-10"
           : "absolute inset-0 opacity-0 pointer-events-none z-0"
       )}
-      style={{ backgroundColor: stepBgColor || undefined }}
+      style={{ backgroundColor: stepBgColor || undefined, touchAction: 'manipulation' }}
     >
       {/* Native overflow-y-auto is GPU-accelerated and zero-overhead vs Radix ScrollArea */}
       <div 

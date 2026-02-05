@@ -46,8 +46,21 @@ function getInjectedFunnelData(): { funnel: Funnel; domain: string; queryParams:
 export default function PublicFunnel() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
-  const [customDomainFunnel, setCustomDomainFunnel] = useState<Funnel | null>(null);
-  const [customDomainSteps, setCustomDomainSteps] = useState<FunnelStep[] | null>(null);
+
+  // Check for injected funnel data (served inline by serve-funnel)
+  // Computed once via useMemo - available on the very first render
+  const injectedData = useMemo(() => getInjectedFunnelData(), []);
+
+  // CRITICAL FIX: Initialize state directly from injectedData so the funnel
+  // renders on the FIRST render cycle. Previously this was done in a useEffect,
+  // which caused an extra render (showing "Funnel Not Found" briefly) on custom
+  // domains and created timing conditions unique to custom domain loading.
+  const [customDomainFunnel, setCustomDomainFunnel] = useState<Funnel | null>(
+    injectedData ? (injectedData.funnel as Funnel) : null
+  );
+  const [customDomainSteps, setCustomDomainSteps] = useState<FunnelStep[] | null>(
+    injectedData ? [] : null
+  );
   const [customDomainLoading, setCustomDomainLoading] = useState(false);
   const [customDomainError, setCustomDomainError] = useState<string | null>(null);
   
@@ -55,18 +68,6 @@ export default function PublicFunnel() {
   const utmMedium = searchParams.get('utm_medium');
   const utmCampaign = searchParams.get('utm_campaign');
   const debug = searchParams.get('debug') === '1';
-
-  // Check for injected funnel data (served inline by serve-funnel)
-  const injectedData = useMemo(() => getInjectedFunnelData(), []);
-
-  // If we have injected data, use it immediately (custom domain inline serving)
-  useEffect(() => {
-    if (injectedData) {
-      setCustomDomainFunnel(injectedData.funnel);
-      // No steps for new format - they come from snapshot
-      setCustomDomainSteps([]);
-    }
-  }, [injectedData]);
 
   // Fallback: Check for custom domain resolution via edge function
   useEffect(() => {

@@ -80,7 +80,11 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
   const hasTextGradient = !!textGradient;
 
   const handleClick = (e?: React.MouseEvent) => {
-    if (e) {
+    // In editor mode, prevent default and stop propagation to avoid
+    // unwanted text selection and event bubbling to parent click handlers.
+    // In runtime/preview mode, these are unnecessary for type="button" and
+    // can interfere with touch event chains on cross-origin custom domains.
+    if (e && !isPreview) {
       e.preventDefault();
       e.stopPropagation();
     }

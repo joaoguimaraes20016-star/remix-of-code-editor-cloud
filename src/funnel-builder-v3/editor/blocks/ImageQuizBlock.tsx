@@ -469,7 +469,7 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
               isPreview && selected.length === 0 && 'opacity-50 cursor-not-allowed',
               isButtonSelected && 'ring-2 ring-primary ring-offset-2'
             )}
-            style={customStyle}
+            style={{ ...customStyle, touchAction: 'manipulation' as const }}
           >
             {hasTextGradient ? (
               <span

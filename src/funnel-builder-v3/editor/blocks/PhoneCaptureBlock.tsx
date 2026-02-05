@@ -338,7 +338,7 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
           'font-medium transition-all rounded-xl',
           isButtonSelected && 'ring-2 ring-primary ring-offset-2'
         )}
-        style={customStyle}
+        style={{ ...customStyle, touchAction: 'manipulation' as const }}
         disabled={isSubmitting}
       >
         {hasTextGradient ? (

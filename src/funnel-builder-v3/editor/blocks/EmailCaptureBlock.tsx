@@ -284,7 +284,7 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
             hasCustomBg && "hover:opacity-90",
             isButtonSelected && "ring-2 ring-primary ring-offset-2"
           )}
-          style={customStyle}
+          style={{ ...customStyle, touchAction: 'manipulation' as const }}
           disabled={isSubmitting}
         >
           <span 

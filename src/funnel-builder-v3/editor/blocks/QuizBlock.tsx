@@ -252,14 +252,16 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
 
   // Handle submit button click in editor/preview modes
   const handleButtonClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
     if (!isPreview) {
-      // In editor mode: select the button element
+      // In editor mode: prevent default and stop propagation to avoid
+      // unwanted behavior, then select the button element
+      e.preventDefault();
+      e.stopPropagation();
       setSelectedChildElement('submit-button');
     } else {
-      // In preview mode: submit action
+      // In preview/runtime mode: submit action
+      // Don't call preventDefault/stopPropagation - unnecessary for
+      // type="button" and can interfere with touch events on custom domains
       handleSubmit();
     }
   };
@@ -505,7 +507,7 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
               isPreview && selected.length === 0 && 'opacity-50 cursor-not-allowed',
               isButtonSelected && 'ring-2 ring-primary ring-offset-2'
             )}
-            style={customStyle}
+            style={{ ...customStyle, touchAction: 'manipulation' as const }}
           >
             {hasTextGradient ? (
               <span
