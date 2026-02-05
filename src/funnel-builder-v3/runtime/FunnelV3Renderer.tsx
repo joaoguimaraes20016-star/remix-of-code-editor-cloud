@@ -4,6 +4,7 @@ import { FunnelProvider } from '@/funnel-builder-v3/context/FunnelContext';
 import { BlockRenderer } from '@/funnel-builder-v3/editor/blocks/BlockRenderer';
 import { Funnel, FunnelStep } from '@/funnel-builder-v3/types/funnel';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUnifiedLeadSubmit, createUnifiedPayload, extractIdentityFromAnswers } from '@/flow-canvas/shared/hooks/useUnifiedLeadSubmit';
@@ -85,11 +86,36 @@ function extractIdentityFromFormData(
 }
 
 // Inner component that uses runtime context - memoized to prevent unnecessary re-renders
+// Pre-renders ALL steps for instant transitions (CSS toggle instead of React mount/unmount)
 const FunnelV3Content = memo(function FunnelV3Content({ funnel }: { funnel: Funnel }) {
   const runtime = useFunnelRuntime();
-  const currentStep = runtime.getCurrentStep();
+  const currentStepId = runtime.currentStepId;
+  const scrollAreaRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
-  if (!currentStep) {
+  // Scroll to top when step changes
+  useEffect(() => {
+    if (!currentStepId) return;
+    
+    // Small delay to ensure the step is visible before scrolling
+    const timer = setTimeout(() => {
+      const scrollArea = scrollAreaRefs.current.get(currentStepId);
+      if (scrollArea) {
+        // Find the viewport element inside ScrollArea and scroll it to top
+        // Radix ScrollArea viewport is the direct child with the viewport class
+        const viewport = scrollArea.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
+        if (viewport) {
+          viewport.scrollTo({ top: 0, behavior: 'instant' });
+        } else {
+          // Fallback: scroll the root element if viewport not found
+          scrollArea.scrollTo({ top: 0, behavior: 'instant' });
+        }
+      }
+    }, 50); // Small delay to ensure CSS transition has started
+    
+    return () => clearTimeout(timer);
+  }, [currentStepId]);
+
+  if (!funnel.steps || funnel.steps.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-muted-foreground">No steps available</p>
@@ -97,26 +123,46 @@ const FunnelV3Content = memo(function FunnelV3Content({ funnel }: { funnel: Funn
     );
   }
 
-  // Get step background color
-  const stepBgColor = currentStep.settings?.backgroundColor;
-
   return (
-    <div 
-      className="min-h-screen w-full"
-      style={{ backgroundColor: stepBgColor || undefined }}
-    >
-      <ScrollArea className="h-screen">
-        <div 
-          className="min-h-screen py-8 px-4 max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto"
-          style={{ backgroundColor: stepBgColor || undefined }}
-        >
-          {currentStep.blocks.map((block) => (
-            <div key={block.id} className="mb-4">
-              <BlockRenderer block={block} stepId={currentStep.id} isPreview={true} />
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
+    <div className="min-h-screen w-full relative">
+      {funnel.steps.map((step) => {
+        const isActive = step.id === currentStepId;
+        const stepBgColor = step.settings?.backgroundColor;
+        return (
+          <div
+            key={step.id}
+            className={cn(
+              "min-h-screen w-full transition-opacity duration-300 ease-out",
+              isActive
+                ? "relative opacity-100 pointer-events-auto z-10"
+                : "absolute inset-0 opacity-0 pointer-events-none z-0"
+            )}
+            style={{ backgroundColor: stepBgColor || undefined }}
+          >
+            <ScrollArea 
+              className="h-screen"
+              ref={(el) => {
+                if (el) {
+                  scrollAreaRefs.current.set(step.id, el);
+                } else {
+                  scrollAreaRefs.current.delete(step.id);
+                }
+              }}
+            >
+              <div 
+                className="min-h-screen py-8 px-4 max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto"
+                style={{ backgroundColor: stepBgColor || undefined }}
+              >
+                {step.blocks.map((block) => (
+                  <div key={block.id} className="mb-4">
+                    <BlockRenderer block={block} stepId={step.id} isPreview={true} isStepActive={isActive} />
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        );
+      })}
     </div>
   );
 });

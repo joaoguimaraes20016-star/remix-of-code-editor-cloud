@@ -42,6 +42,7 @@ export interface BlockRendererProps {
   block: Block;
   stepId: string;
   isPreview?: boolean;
+  isStepActive?: boolean; // Only animate blocks in active steps (for pre-rendered steps)
 }
 
 // Shadow definitions with offset/blur/spread values (color applied separately)
@@ -310,12 +311,17 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
   const popupSupportedTypes = ['form', 'popup-form', 'quiz', 'multiple-choice', 'choice', 'email-capture', 'phone-capture', 'message', 'image-quiz', 'video-question'];
   const supportsPopup = popupSupportedTypes.includes(block.type);
 
+  // Only apply animations if step is active (prevents all pre-rendered steps from animating at once)
+  const animationClass = isStepActive && styles.animation && styles.animation !== 'none'
+    ? animationClasses[styles.animation]
+    : '';
+
   // Wrap with PopupWrapper if popup is enabled
   if (hasPopupEnabled && supportsPopup) {
     return (
       <div
         style={wrapperStyle}
-        className={cn(animationClasses[styles.animation || 'none'])}
+        className={cn(animationClass)}
       >
         <PopupWrapper
           settings={popupSettings}
@@ -331,7 +337,7 @@ export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) 
   return (
     <div
       style={wrapperStyle}
-      className={cn(animationClasses[styles.animation || 'none'])}
+      className={cn(animationClass)}
     >
       {renderBlock()}
     </div>
