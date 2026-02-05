@@ -198,7 +198,9 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
     // Submit mode can interrupt draft saves (submit is higher priority)
     if (mode === 'submit') {
       if (pendingSubmitRef.current) {
-        console.log('[useUnifiedLeadSubmit] Ignoring duplicate submit - submit already in progress');
+        if (import.meta.env.DEV) {
+          console.log('[useUnifiedLeadSubmit] Ignoring duplicate submit - submit already in progress');
+        }
         return { error: 'Submit already in progress' };
       }
       // Cancel any pending draft save when submit is called
@@ -254,18 +256,20 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
     };
 
     try {
-      // Always log submission start (not just in DEV) for production debugging
-      console.log(`[useUnifiedLeadSubmit] ====== SUBMISSION STARTED ======`, {
-        mode,
-        funnelId,
-        teamId,
-        leadId: leadIdRef.current,
-        hasIdentity: !!(payload.identity?.name || payload.identity?.email || payload.identity?.phone),
-        answersCount: Object.keys(payload.answers).length,
-        stepId: payload.source.stepId,
-        stepIntent: payload.source.stepIntent,
-        clientRequestId: mode === 'submit' ? 'will-be-generated' : 'n/a',
-      });
+      // Log submission start (dev only - verbose logging blocks main thread in production)
+      if (import.meta.env.DEV) {
+        console.log(`[useUnifiedLeadSubmit] ====== SUBMISSION STARTED ======`, {
+          mode,
+          funnelId,
+          teamId,
+          leadId: leadIdRef.current,
+          hasIdentity: !!(payload.identity?.name || payload.identity?.email || payload.identity?.phone),
+          answersCount: Object.keys(payload.answers).length,
+          stepId: payload.source.stepId,
+          stepIntent: payload.source.stepIntent,
+          clientRequestId: mode === 'submit' ? 'will-be-generated' : 'n/a',
+        });
+      }
 
       // Invoke Edge Function - this is the critical call that must succeed
       const { data, error } = await supabase.functions.invoke('submit-funnel-lead', {
@@ -333,32 +337,37 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
       // Extract lead ID from response (handle various response shapes)
       const returnedLeadId = data?.lead_id || data?.lead?.id || data?.leadId || data?.id;
       
-      // Always log response (not just in DEV) for production debugging
-      console.log('[useUnifiedLeadSubmit] ====== SUBMISSION RESPONSE ======', {
-        success: !!returnedLeadId,
-        returnedLeadId,
-        mode,
-        funnelId,
-        teamId,
-        stepId: payload.source.stepId,
-        stepIntent: payload.source.stepIntent,
-        hasResponseData: !!data,
-        responseKeys: data ? Object.keys(data) : [],
-        // Log full response in DEV, summary in PROD
-        ...(import.meta.env.DEV ? { responseData: data } : {}),
-      });
-      
-      if (returnedLeadId) {
-        updateLeadId(returnedLeadId);
-        console.log(`[useUnifiedLeadSubmit] Success: leadId=${returnedLeadId}, mode=${mode}`);
-        onLeadSaved?.(returnedLeadId, mode);
-      } else {
-        console.warn('[useUnifiedLeadSubmit] No lead ID in response', {
-          data,
+      // Log response (dev only - verbose logging blocks main thread in production)
+      if (import.meta.env.DEV) {
+        console.log('[useUnifiedLeadSubmit] ====== SUBMISSION RESPONSE ======', {
+          success: !!returnedLeadId,
+          returnedLeadId,
           mode,
           funnelId,
           teamId,
+          stepId: payload.source.stepId,
+          stepIntent: payload.source.stepIntent,
+          hasResponseData: !!data,
+          responseKeys: data ? Object.keys(data) : [],
+          responseData: data,
         });
+      }
+      
+      if (returnedLeadId) {
+        updateLeadId(returnedLeadId);
+        if (import.meta.env.DEV) {
+          console.log(`[useUnifiedLeadSubmit] Success: leadId=${returnedLeadId}, mode=${mode}`);
+        }
+        onLeadSaved?.(returnedLeadId, mode);
+      } else {
+        if (import.meta.env.DEV) {
+          console.warn('[useUnifiedLeadSubmit] No lead ID in response', {
+            data,
+            mode,
+            funnelId,
+            teamId,
+          });
+        }
       }
 
       // Track submit time for draft save prevention
@@ -369,18 +378,21 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
       return { leadId: returnedLeadId };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      // Always log errors (not just in DEV) for production debugging
-      console.error('[useUnifiedLeadSubmit] ====== EXCEPTION ======', {
-        error: err,
-        errorMessage,
-        mode,
-        funnelId,
-        teamId,
-        leadId: leadIdRef.current,
-        stepId: payload.source.stepId,
-        stepIntent: payload.source.stepIntent,
-        hasIdentity: !!(payload.identity?.name || payload.identity?.email || payload.identity?.phone),
-      });
+      // Log errors (dev only - verbose logging blocks main thread in production)
+      // Errors are still handled via onError callback for production monitoring
+      if (import.meta.env.DEV) {
+        console.error('[useUnifiedLeadSubmit] ====== EXCEPTION ======', {
+          error: err,
+          errorMessage,
+          mode,
+          funnelId,
+          teamId,
+          leadId: leadIdRef.current,
+          stepId: payload.source.stepId,
+          stepIntent: payload.source.stepIntent,
+          hasIdentity: !!(payload.identity?.name || payload.identity?.email || payload.identity?.phone),
+        });
+      }
       setLastError(errorMessage);
       onError?.(err);
       return { error: err };
@@ -404,13 +416,17 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
     (payload: UnifiedSubmitPayload) => {
       // Skip if we just did a full submit (within 1 second)
       if (Date.now() - lastSubmitTimeRef.current < 1000) {
-        console.log('[useUnifiedLeadSubmit] Skipping draft save - just submitted');
+        if (import.meta.env.DEV) {
+          console.log('[useUnifiedLeadSubmit] Skipping draft save - just submitted');
+        }
         return Promise.resolve({});
       }
       
       // Skip if submit is in progress (submit takes priority)
       if (pendingSubmitRef.current) {
-        console.log('[useUnifiedLeadSubmit] Skipping draft save - submit in progress');
+        if (import.meta.env.DEV) {
+          console.log('[useUnifiedLeadSubmit] Skipping draft save - submit in progress');
+        }
         return Promise.resolve({});
       }
       

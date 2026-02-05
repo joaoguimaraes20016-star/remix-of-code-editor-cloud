@@ -113,7 +113,7 @@ const easingStyles: Record<AnimationEasing, string> = {
   spring: 'cubic-bezier(0.16, 1, 0.3, 1)',
 };
 
-export function BlockRenderer({ block, stepId, isPreview }: BlockRendererProps) {
+export function BlockRenderer({ block, stepId, isPreview, isStepActive = true }: BlockRendererProps) {
   // Use context directly to gracefully handle cases where provider might not be available
   const context = useContext(FunnelContext);
   const currentViewport: ViewportType = context?.currentViewport ?? 'mobile';

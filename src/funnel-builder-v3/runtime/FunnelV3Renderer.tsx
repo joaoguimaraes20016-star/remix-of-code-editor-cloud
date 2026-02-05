@@ -3,10 +3,8 @@ import { FunnelRuntimeProvider, FunnelFormData, FunnelSelections, useFunnelRunti
 import { FunnelProvider } from '@/funnel-builder-v3/context/FunnelContext';
 import { BlockRenderer } from '@/funnel-builder-v3/editor/blocks/BlockRenderer';
 import { Funnel, FunnelStep } from '@/funnel-builder-v3/types/funnel';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { useQueryClient } from '@tanstack/react-query';
 import { useUnifiedLeadSubmit, createUnifiedPayload, extractIdentityFromAnswers } from '@/flow-canvas/shared/hooks/useUnifiedLeadSubmit';
 import { recordEvent } from '@/lib/events/recordEvent';
 import { supabase } from '@/integrations/supabase/client';
@@ -85,35 +83,60 @@ function extractIdentityFromFormData(
   return identity;
 }
 
+// Memoized step component - only re-renders when isActive changes
+// This prevents cascade re-renders of all steps when only one step's visibility changes
+const MemoizedStep = memo(function MemoizedStep({ 
+  step, 
+  isActive 
+}: { 
+  step: FunnelStep; 
+  isActive: boolean;
+}) {
+  const stepBgColor = step.settings?.backgroundColor;
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to top when step becomes active
+  useEffect(() => {
+    if (isActive && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, [isActive]);
+
+  return (
+    <div
+      className={cn(
+        "min-h-screen w-full transition-opacity duration-300 ease-out",
+        isActive
+          ? "relative opacity-100 pointer-events-auto z-10"
+          : "absolute inset-0 opacity-0 pointer-events-none z-0"
+      )}
+      style={{ backgroundColor: stepBgColor || undefined }}
+    >
+      {/* Native overflow-y-auto is GPU-accelerated and zero-overhead vs Radix ScrollArea */}
+      <div 
+        ref={scrollContainerRef}
+        className="h-screen overflow-y-auto"
+      >
+        <div 
+          className="min-h-screen py-8 px-4 max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto"
+          style={{ backgroundColor: stepBgColor || undefined }}
+        >
+          {step.blocks.map((block) => (
+            <div key={block.id} className="mb-4">
+              <BlockRenderer block={block} stepId={step.id} isPreview={true} isStepActive={isActive} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+});
+
 // Inner component that uses runtime context - memoized to prevent unnecessary re-renders
 // Pre-renders ALL steps for instant transitions (CSS toggle instead of React mount/unmount)
 const FunnelV3Content = memo(function FunnelV3Content({ funnel }: { funnel: Funnel }) {
   const runtime = useFunnelRuntime();
   const currentStepId = runtime.currentStepId;
-  const scrollAreaRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-
-  // Scroll to top when step changes
-  useEffect(() => {
-    if (!currentStepId) return;
-    
-    // Small delay to ensure the step is visible before scrolling
-    const timer = setTimeout(() => {
-      const scrollArea = scrollAreaRefs.current.get(currentStepId);
-      if (scrollArea) {
-        // Find the viewport element inside ScrollArea and scroll it to top
-        // Radix ScrollArea viewport is the direct child with the viewport class
-        const viewport = scrollArea.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
-        if (viewport) {
-          viewport.scrollTo({ top: 0, behavior: 'instant' });
-        } else {
-          // Fallback: scroll the root element if viewport not found
-          scrollArea.scrollTo({ top: 0, behavior: 'instant' });
-        }
-      }
-    }, 50); // Small delay to ensure CSS transition has started
-    
-    return () => clearTimeout(timer);
-  }, [currentStepId]);
 
   if (!funnel.steps || funnel.steps.length === 0) {
     return (
@@ -125,44 +148,13 @@ const FunnelV3Content = memo(function FunnelV3Content({ funnel }: { funnel: Funn
 
   return (
     <div className="min-h-screen w-full relative">
-      {funnel.steps.map((step) => {
-        const isActive = step.id === currentStepId;
-        const stepBgColor = step.settings?.backgroundColor;
-        return (
-          <div
-            key={step.id}
-            className={cn(
-              "min-h-screen w-full transition-opacity duration-300 ease-out",
-              isActive
-                ? "relative opacity-100 pointer-events-auto z-10"
-                : "absolute inset-0 opacity-0 pointer-events-none z-0"
-            )}
-            style={{ backgroundColor: stepBgColor || undefined }}
-          >
-            <ScrollArea 
-              className="h-screen"
-              ref={(el) => {
-                if (el) {
-                  scrollAreaRefs.current.set(step.id, el);
-                } else {
-                  scrollAreaRefs.current.delete(step.id);
-                }
-              }}
-            >
-              <div 
-                className="min-h-screen py-8 px-4 max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto"
-                style={{ backgroundColor: stepBgColor || undefined }}
-              >
-                {step.blocks.map((block) => (
-                  <div key={block.id} className="mb-4">
-                    <BlockRenderer block={block} stepId={step.id} isPreview={true} isStepActive={isActive} />
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-        );
-      })}
+      {funnel.steps.map((step) => (
+        <MemoizedStep 
+          key={step.id} 
+          step={step} 
+          isActive={step.id === currentStepId}
+        />
+      ))}
     </div>
   );
 });
@@ -174,17 +166,12 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     return convertDocumentToFunnel(document);
   }, [document]);
 
-  // Get query client for cache invalidation
-  const queryClient = useQueryClient();
-  
   // Use unified lead submission hook
+  // Note: No onLeadSaved callback - published funnels don't have Performance tab
+  // Query invalidation removed to eliminate unnecessary re-renders
   const { submit, saveDraft, leadId } = useUnifiedLeadSubmit({
     funnelId,
     teamId,
-    onLeadSaved: (id, mode) => {
-      // Invalidate Performance tab query to refresh data immediately
-      queryClient.invalidateQueries({ queryKey: ['funnel-leads', teamId] });
-    },
     onError: (error) => {
       if (import.meta.env.DEV) {
         console.error('[FunnelV3Renderer] Submission error callback:', error);
@@ -256,25 +243,29 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         stepName: funnel.steps[0]?.name,
       },
     }).catch((error) => {
-      // Always log errors (not just in DEV) for production debugging
-      console.error('[FunnelV3Renderer] Failed to record step_viewed event:', {
-        error,
-        funnelId,
-        teamId,
-        stepId: initialStepId,
-        sessionId: getOrCreateSessionId(),
-      });
+      // Log errors (dev only - verbose logging blocks main thread in production)
+      if (import.meta.env.DEV) {
+        console.error('[FunnelV3Renderer] Failed to record step_viewed event:', {
+          error,
+          funnelId,
+          teamId,
+          stepId: initialStepId,
+          sessionId: getOrCreateSessionId(),
+        });
+      }
     });
     
     // Create funnel_leads entry immediately (no debounce)
     submit(payload).catch((error) => {
-      // Always log errors (not just in DEV) for production debugging
-      console.error('[FunnelV3Renderer] Failed to track initial view:', {
-        error,
-        funnelId,
-        teamId,
-        stepId: initialStepId,
-      });
+      // Log errors (dev only - verbose logging blocks main thread in production)
+      if (import.meta.env.DEV) {
+        console.error('[FunnelV3Renderer] Failed to track initial view:', {
+          error,
+          funnelId,
+          teamId,
+          stepId: initialStepId,
+        });
+      }
     });
   }, [funnelId, teamId, funnel.steps, submit]);
   
@@ -379,15 +370,17 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       // Clear flag if submit failed so subsequent attempts work correctly
       if (result.error) {
         lastSubmitStepRef.current = null;
-        // Always log errors (not just in DEV) for production debugging
-        console.error('[FunnelV3Renderer] Submission failed', {
-          error: result.error,
-          funnelId,
-          teamId,
-          stepId: currentStepId,
-          stepIntent,
-          hasIdentity: !!(identity.name || identity.email || identity.phone),
-        });
+        // Log errors (dev only - verbose logging blocks main thread in production)
+        if (import.meta.env.DEV) {
+          console.error('[FunnelV3Renderer] Submission failed', {
+            error: result.error,
+            funnelId,
+            teamId,
+            stepId: currentStepId,
+            stepIntent,
+            hasIdentity: !!(identity.name || identity.email || identity.phone),
+          });
+        }
         toast.error('Failed to submit form');
       }
       
@@ -396,13 +389,15 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
         toast.success('Form submitted successfully!');
       }
     } catch (error) {
-      // Always log errors (not just in DEV) for production debugging
-      console.error('[FunnelV3Renderer] Submission exception:', {
-        error,
-        funnelId,
-        teamId,
-        stepId: currentStepIdRef.current,
-      });
+      // Log errors (dev only - verbose logging blocks main thread in production)
+      if (import.meta.env.DEV) {
+        console.error('[FunnelV3Renderer] Submission exception:', {
+          error,
+          funnelId,
+          teamId,
+          stepId: currentStepIdRef.current,
+        });
+      }
       toast.error('Failed to submit form');
     }
   }, [funnelId, teamId, submit, funnel.steps]);
@@ -454,13 +449,15 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
             previousStepId,
           },
         }).catch((error) => {
-          console.error('[FunnelV3Renderer] Failed to record step_viewed event:', {
-            error,
-            funnelId,
-            teamId,
-            stepId,
-            sessionId: getOrCreateSessionId(),
-          });
+          if (import.meta.env.DEV) {
+            console.error('[FunnelV3Renderer] Failed to record step_viewed event:', {
+              error,
+              funnelId,
+              teamId,
+              stepId,
+              sessionId: getOrCreateSessionId(),
+            });
+          }
         });
         return; // Skip draft save, data was just submitted
       }
@@ -546,15 +543,8 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
           
           await saveDraft(payload);
         } catch (error) {
-          // Don't block navigation if draft save fails, but always log errors
-          console.error('[FunnelV3Renderer] Draft save error:', {
-            error,
-            funnelId,
-            teamId,
-            stepId,
-            stepIndex,
-            hasIdentity: !!(identity.name || identity.email || identity.phone),
-          });
+          // Silent fail - draft saves are best-effort and shouldn't block navigation
+          // Logging removed to eliminate main thread blocking
         }
       })();
     });
