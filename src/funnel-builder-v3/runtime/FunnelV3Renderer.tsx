@@ -105,7 +105,7 @@ const MemoizedStep = memo(function MemoizedStep({
   return (
     <div
       className={cn(
-        "min-h-screen w-full transition-opacity duration-300 ease-out",
+        "min-h-screen w-full",
         isActive
           ? "relative opacity-100 pointer-events-auto z-10"
           : "absolute inset-0 opacity-0 pointer-events-none z-0"
@@ -132,12 +132,23 @@ const MemoizedStep = memo(function MemoizedStep({
   );
 });
 
-// Inner component that uses runtime context - memoized to prevent unnecessary re-renders
-// Pre-renders ALL steps for instant transitions (CSS toggle instead of React mount/unmount)
-const FunnelV3Content = memo(function FunnelV3Content({ funnel }: { funnel: Funnel }) {
+// Wrapper component that uses runtime context - extracts only currentStepId
+// This prevents FunnelV3Content from re-rendering on every context update
+function FunnelV3ContentWrapper({ funnel }: { funnel: Funnel }) {
   const runtime = useFunnelRuntime();
-  const currentStepId = runtime.currentStepId;
+  return <FunnelV3Content funnel={funnel} currentStepId={runtime.currentStepId} />;
+}
 
+// Memoized content component - Pre-renders ALL steps for instant transitions
+// CRITICAL FIX: Now properly memoized - only re-renders when currentStepId changes
+// Previous issue: useFunnelRuntime() inside memo caused re-renders on every context update
+const FunnelV3Content = memo(function FunnelV3Content({ 
+  funnel, 
+  currentStepId 
+}: { 
+  funnel: Funnel; 
+  currentStepId: string;
+}) {
   if (!funnel.steps || funnel.steps.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -489,28 +500,31 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       });
     }
     
-    // Fire lightweight analytics event (fire-and-forget, doesn't block navigation)
-    // This is the ONLY network call during step transitions
-    const stepIndex = funnel.steps.findIndex(s => s.id === stepId);
-    const currentStep = funnel.steps.find(s => s.id === stepId);
-    const sessionId = getOrCreateSessionId();
-    
-    recordEvent({
-      funnel_id: funnelId,
-      step_id: stepId,
-      event_type: 'step_viewed',
-      session_id: sessionId,
-      dedupe_key: `step_viewed:${funnelId}:${stepId}:${sessionId}:${Date.now()}`,
-      payload: {
-        stepIndex,
-        stepName: currentStep?.name,
-        previousStepId,
-      },
-    }).catch((error) => {
-      // Silent fail - analytics are best-effort
-      if (import.meta.env.DEV) {
-        console.error('[FunnelV3Renderer] Failed to record step_viewed event:', error);
-      }
+    // CRITICAL FIX: Defer recordEvent() to next animation frame
+    // This ensures navigation completes FIRST, then analytics fire after React finishes rendering
+    // Without this, the synchronous call to recordEvent() blocks the main thread
+    requestAnimationFrame(() => {
+      const stepIndex = funnel.steps.findIndex(s => s.id === stepId);
+      const currentStep = funnel.steps.find(s => s.id === stepId);
+      const sessionId = getOrCreateSessionId();
+      
+      recordEvent({
+        funnel_id: funnelId,
+        step_id: stepId,
+        event_type: 'step_viewed',
+        session_id: sessionId,
+        dedupe_key: `step_viewed:${funnelId}:${stepId}:${sessionId}:${Date.now()}`,
+        payload: {
+          stepIndex,
+          stepName: currentStep?.name,
+          previousStepId,
+        },
+      }).catch((error) => {
+        // Silent fail - analytics are best-effort
+        if (import.meta.env.DEV) {
+          console.error('[FunnelV3Renderer] Failed to record step_viewed event:', error);
+        }
+      });
     });
   }, [funnelId, funnel.steps, getOrCreateSessionId]);
 
@@ -522,7 +536,7 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       onStepChange={handleStepChange}
     >
       <FunnelProvider initialFunnel={funnel}>
-        <FunnelV3Content funnel={funnel} />
+        <FunnelV3ContentWrapper funnel={funnel} />
       </FunnelProvider>
     </FunnelRuntimeProvider>
   );
