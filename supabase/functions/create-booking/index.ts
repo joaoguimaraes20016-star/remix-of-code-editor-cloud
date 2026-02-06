@@ -53,6 +53,7 @@ serve(async (req) => {
       .single();
 
     if (etError || !eventType) {
+      console.error("[create-booking] Event type lookup failed:", { event_type_id, etError });
       return new Response(
         JSON.stringify({ error: "Event type not found or inactive" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -227,18 +228,17 @@ serve(async (req) => {
       }
     }
 
-    // Get assigned user details
+    // Get assigned user details from profiles (team_members doesn't have name/email)
     if (assignedUserId) {
-      const { data: member } = await supabase
-        .from("team_members")
-        .select("display_name, email")
-        .eq("user_id", assignedUserId)
-        .eq("team_id", team_id)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", assignedUserId)
         .single();
 
-      if (member) {
-        assignedUserName = member.display_name || member.email;
-        assignedUserEmail = member.email;
+      if (profile) {
+        assignedUserName = profile.full_name || profile.email;
+        assignedUserEmail = profile.email;
       }
     }
 

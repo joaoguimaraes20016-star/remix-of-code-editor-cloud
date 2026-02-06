@@ -173,7 +173,21 @@ export default function PublicBookingPage() {
       });
 
       if (error) {
-        throw new Error(error.message || "Failed to create booking");
+        // supabase.functions.invoke wraps non-2xx responses as FunctionsHttpError.
+        // The actual error body from the edge function is in error.context.
+        let errorMsg = "Failed to create booking";
+        try {
+          // Try to extract the JSON error body from the edge function response
+          if (error.context && typeof error.context.json === "function") {
+            const body = await error.context.json();
+            errorMsg = body?.error || body?.details || error.message || errorMsg;
+          } else {
+            errorMsg = error.message || errorMsg;
+          }
+        } catch {
+          errorMsg = error.message || errorMsg;
+        }
+        throw new Error(errorMsg);
       }
 
       if (data?.error) {
