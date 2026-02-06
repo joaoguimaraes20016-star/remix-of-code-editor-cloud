@@ -12,11 +12,8 @@ const corsHeaders = {
 const DEFAULT_APP_BASE_URL = 'https://code-hug-hub.lovable.app';
 const APP_BASE_URL = Deno.env.get('APP_BASE_URL') ?? DEFAULT_APP_BASE_URL;
 
-// Build timestamp for cache-busting
-const BUILD_TIMESTAMP = Date.now().toString();
-
 // Log on cold start
-console.log(`[serve-funnel] Cold start - APP_BASE_URL: ${APP_BASE_URL}, BUILD: ${BUILD_TIMESTAMP}`);
+console.log(`[serve-funnel] Cold start - APP_BASE_URL: ${APP_BASE_URL}`);
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -158,13 +155,11 @@ serve(async (req) => {
     const appIndexLastModified = appIndexResponse.headers.get('last-modified') || '';
     console.log(`[serve-funnel] Fetched index.html (${appHtml.length} bytes) etag=${appIndexEtag} lastModified=${appIndexLastModified}`);
     
-    // Cache-bust ALL asset URLs to ensure latest bundle is loaded
-    // Vite produces hashed filenames like index-DaBc123.js, so we must match those too
-    // This prevents stale JS/CSS from being served on custom domains
-    appHtml = appHtml.replace(
-      /\/assets\/([a-zA-Z0-9_-]+)(-[a-zA-Z0-9]+)?\.(js|css)(?!\?)/g,
-      `/assets/$1$2.$3?v=${BUILD_TIMESTAMP}`
-    );
+    // NOTE: No cache-busting needed on asset URLs. Vite produces content-hashed
+    // filenames (e.g. index-DaBc123.js) that change when code changes, so
+    // browser caching works correctly without extra ?v= params. The previous
+    // Date.now()-based cache-buster forced re-downloads on every Edge Function
+    // cold start, adding 1-3 seconds to custom domain page loads.
 
     // 5. Inject funnel data into the HTML
     const snapshot = funnel.published_document_snapshot as any;
@@ -185,7 +180,6 @@ serve(async (req) => {
 
     const shellData = JSON.stringify({
       appBaseUrl: APP_BASE_URL,
-      edgeBuild: BUILD_TIMESTAMP,
       appIndexEtag,
       appIndexLastModified,
       domain: cleanDomain,
@@ -204,7 +198,7 @@ serve(async (req) => {
     // Inject at the very start of <body> — before any other scripts
     appHtml = appHtml.replace(/<body[^>]*>/, (match) => {
       const debugComment = debugMode
-        ? `\n<!-- serve-funnel: app_base_url=${APP_BASE_URL} edge_build=${BUILD_TIMESTAMP} etag=${appIndexEtag} -->`
+        ? `\n<!-- serve-funnel: app_base_url=${APP_BASE_URL} etag=${appIndexEtag} -->`
         : '';
       return `${match}\n${injectionScript}${debugComment}`;
     });
@@ -241,7 +235,6 @@ serve(async (req) => {
         'X-Frame-Options': 'SAMEORIGIN',
         // Debug/tracing headers
         'X-Infostack-App-Base-Url': APP_BASE_URL,
-        'X-Infostack-Edge-Build': BUILD_TIMESTAMP,
         'X-Infostack-App-Index-Etag': appIndexEtag,
         'X-Infostack-App-Index-Last-Modified': appIndexLastModified,
         'X-Infostack-Domain': cleanDomain,

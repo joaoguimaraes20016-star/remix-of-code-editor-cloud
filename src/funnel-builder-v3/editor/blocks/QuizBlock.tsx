@@ -46,7 +46,19 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
     questionStyles,
   } = content;
   const [selected, setSelected] = useState<string[]>([]);
+  const [isNavigating, setIsNavigating] = useState(false);
   
+  // Reset navigating state when step changes (matches ButtonBlock pattern)
+  const currentStepId = runtime?.currentStepId;
+  useEffect(() => {
+    if (isNavigating && currentStepId) {
+      const timer = setTimeout(() => {
+        setIsNavigating(false);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStepId, isNavigating]);
+
   // Default to true if not specified
   const shouldShowSubmitButton = showSubmitButton !== false;
 
@@ -94,9 +106,12 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
 
   // Helper function to execute answer action
   const executeAnswerAction = (option: any) => {
-    if (!runtime) {
+    if (!runtime || isNavigating) {
       return;
     }
+    
+    // Immediate visual feedback
+    setIsNavigating(true);
     
     try {
       // Get action from new format or legacy nextStepId
@@ -178,13 +193,16 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
 
   // Handle submit button click - when submit button exists, it OVERRIDES answer actions
   const handleSubmit = () => {
-    if (!runtime) {
+    if (!runtime || isNavigating) {
       return;
     }
     
     if (selected.length === 0) {
       return;
     }
+    
+    // Immediate visual feedback - show navigating state before any async work
+    setIsNavigating(true);
     
     try {
       const action = submitButton.action || 'next-step';
@@ -500,18 +518,21 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
             type="button"
             variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
             onClick={handleButtonClick}
-            disabled={isPreview && selected.length === 0}
+            disabled={(isPreview && selected.length === 0) || isNavigating}
             className={cn(
               sizeClasses[size],
               fullWidth && 'w-full',
               hasCustomBg && 'hover:opacity-90',
               'mt-4 font-medium rounded-xl',
-              isPreview && selected.length === 0 && 'opacity-50 cursor-not-allowed',
+              isPreview && selected.length === 0 && !isNavigating && 'opacity-50 cursor-not-allowed',
+              isNavigating && 'opacity-70 cursor-wait',
               isButtonSelected && 'ring-2 ring-primary ring-offset-2'
             )}
             style={{ ...customStyle, touchAction: 'manipulation' as const }}
           >
-            {hasTextGradient ? (
+            {isNavigating ? (
+              'Loading...'
+            ) : hasTextGradient ? (
               <span
                 className="text-gradient-clip"
                 style={{ '--text-gradient': textGradient } as React.CSSProperties}
