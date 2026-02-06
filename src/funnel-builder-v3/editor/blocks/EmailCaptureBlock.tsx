@@ -45,6 +45,7 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
   const currentViewport = funnelContext?.currentViewport ?? 'mobile';
   const selectedChildElement = funnelContext?.selectedChildElement ?? null;
   const setSelectedChildElement = funnelContext?.setSelectedChildElement ?? (() => {});
+  const setSelectedBlockId = funnelContext?.setSelectedBlockId ?? (() => {});
   const { 
     placeholder, 
     subtitle,
@@ -73,6 +74,7 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
     })() : '#6b7280');
   const [email, setEmail] = useState('');
   const [hasConsented, setHasConsented] = useState(false);
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
 
   const canEdit = blockId && stepId && !isPreview;
   const isMobile = currentViewport === 'mobile';
@@ -205,11 +207,17 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
     }
   }, [blockId, stepId, updateBlockContent]);
 
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
+
   // Handle button click - select in editor, submit directly in preview
   const handleButtonClick = (e: React.MouseEvent) => {
     if (!isPreview) {
       e.preventDefault();
       e.stopPropagation();
+      // Select parent block AND child element in one action
+      if (blockId) {
+        setSelectedBlockId(blockId);
+      }
       setSelectedChildElement('submit-button');
     } else {
       doSubmit();
@@ -280,11 +288,14 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
           type="button"
           variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
           onClick={handleButtonClick}
+          onMouseEnter={() => canEdit && setIsButtonHovered(true)}
+          onMouseLeave={() => setIsButtonHovered(false)}
           className={cn(
             "shrink-0 whitespace-nowrap",
             isMobile ? "h-9 px-3" : "h-12 px-6",
             hasCustomBg && "hover:opacity-90",
-            isButtonSelected && "ring-2 ring-primary ring-offset-2"
+            (isButtonHovered || isButtonSelected) && "ring-2 ring-primary ring-offset-2",
+            isButtonHovered && !isButtonSelected && "ring-primary/50"
           )}
           style={{ ...customStyle, touchAction: 'manipulation' as const }}
         >

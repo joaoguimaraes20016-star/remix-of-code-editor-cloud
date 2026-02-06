@@ -58,7 +58,9 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
   const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const selectedChildElement = funnelContext?.selectedChildElement ?? null;
   const setSelectedChildElement = funnelContext?.setSelectedChildElement ?? (() => {});
+  const setSelectedBlockId = funnelContext?.setSelectedBlockId ?? (() => {});
   const [selected, setSelected] = useState<string[]>([]);
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
   
   // Backwards compatibility: map legacy videoSrc/videoType to new src/type
   const effectiveVideoSrc = src || videoSrc || '';
@@ -220,7 +222,12 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
   // Handle button click in editor/preview modes
   const handleButtonClick = (e: React.MouseEvent) => {
     if (!isPreview) {
+      e.preventDefault();
       e.stopPropagation();
+      // Select parent block AND child element in one action
+      if (blockId) {
+        setSelectedBlockId(blockId);
+      }
       setSelectedChildElement('submit-button');
     } else {
       handleSubmit();
@@ -474,14 +481,17 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
             type="button"
             variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
             onClick={handleButtonClick}
+            onMouseEnter={() => canEdit && setIsButtonHovered(true)}
+            onMouseLeave={() => setIsButtonHovered(false)}
             disabled={isPreview && selected.length === 0}
             className={cn(
               sizeClasses[size],
               fullWidth && 'w-full',
               hasCustomBg && 'hover:opacity-90',
               'mt-4 font-medium rounded-xl',
-              isPreview && selected.length === 0 && 'opacity-50 cursor-not-allowed',
-              isButtonSelected && 'ring-2 ring-primary ring-offset-2'
+              (isButtonHovered || isButtonSelected) && 'ring-2 ring-primary ring-offset-2',
+              isButtonHovered && !isButtonSelected && 'ring-primary/50',
+              isPreview && selected.length === 0 && 'opacity-50 cursor-not-allowed'
             )}
             style={{ ...customStyle, touchAction: 'manipulation' as const }}
           >

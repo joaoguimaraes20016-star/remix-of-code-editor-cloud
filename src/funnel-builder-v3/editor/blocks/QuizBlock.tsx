@@ -33,6 +33,7 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
   const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const selectedChildElement = funnelContext?.selectedChildElement ?? null;
   const setSelectedChildElement = funnelContext?.setSelectedChildElement ?? (() => {});
+  const setSelectedBlockId = funnelContext?.setSelectedBlockId ?? (() => {});
   const { 
     question, 
     options, 

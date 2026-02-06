@@ -55,8 +55,10 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
   const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const selectedChildElement = funnelContext?.selectedChildElement ?? null;
   const setSelectedChildElement = funnelContext?.setSelectedChildElement ?? (() => {});
+  const setSelectedBlockId = funnelContext?.setSelectedBlockId ?? (() => {});
   const [text, setText] = useState('');
   const [hasConsented, setHasConsented] = useState(false);
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
 
   const canEdit = blockId && stepId && !isPreview;
   const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
@@ -162,7 +164,12 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
   // Handle button click in editor (for child element selection)
   const handleButtonClick = (e: React.MouseEvent) => {
     if (!isPreview && setSelectedChildElement) {
+      e.preventDefault();
       e.stopPropagation();
+      // Select parent block AND child element in one action
+      if (blockId) {
+        setSelectedBlockId(blockId);
+      }
       setSelectedChildElement('submit-button');
     }
   };
@@ -317,14 +324,15 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
               handleSubmit();
             }
           }}
+          onMouseEnter={() => canEdit && setIsButtonHovered(true)}
+          onMouseLeave={() => setIsButtonHovered(false)}
           className={cn(
             sizeClasses[size],
             fullWidth && 'w-full',
             hasCustomBg && 'hover:opacity-90',
             'font-medium rounded-xl',
-            isButtonSelected && 'ring-2 ring-primary ring-offset-2',
-            // In editor mode, add subtle hover effect to indicate it's clickable
-            !isPreview && !isButtonSelected && 'group-hover:ring-1 group-hover:ring-primary/30'
+            (isButtonHovered || isButtonSelected) && 'ring-2 ring-primary ring-offset-2',
+            isButtonHovered && !isButtonSelected && 'ring-primary/50'
           )}
           style={buttonStyle}
         >

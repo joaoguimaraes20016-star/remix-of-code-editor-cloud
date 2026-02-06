@@ -45,7 +45,9 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
   const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const selectedChildElement = funnelContext?.selectedChildElement ?? null;
   const setSelectedChildElement = funnelContext?.setSelectedChildElement ?? (() => {});
+  const setSelectedBlockId = funnelContext?.setSelectedBlockId ?? (() => {});
   const [selected, setSelected] = useState<string[]>([]);
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
 
   const canEdit = blockId && stepId && !isPreview;
   const shouldShowSubmitButton = showSubmitButton || multiSelect;
@@ -462,14 +464,17 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
             type="button"
             variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
             onClick={handleButtonClick}
+            onMouseEnter={() => canEdit && setIsButtonHovered(true)}
+            onMouseLeave={() => setIsButtonHovered(false)}
             disabled={isPreview && selected.length === 0}
             className={cn(
               sizeClasses[size],
               fullWidth && 'w-full',
               hasCustomBg && 'hover:opacity-90',
+              (isButtonHovered || isButtonSelected) && 'ring-2 ring-primary ring-offset-2',
+              isButtonHovered && !isButtonSelected && 'ring-primary/50',
               'mt-4 font-medium rounded-xl',
-              isPreview && selected.length === 0 && 'opacity-50 cursor-not-allowed',
-              isButtonSelected && 'ring-2 ring-primary ring-offset-2'
+              isPreview && selected.length === 0 && 'opacity-50 cursor-not-allowed'
             )}
             style={{ ...customStyle, touchAction: 'manipulation' as const }}
           >

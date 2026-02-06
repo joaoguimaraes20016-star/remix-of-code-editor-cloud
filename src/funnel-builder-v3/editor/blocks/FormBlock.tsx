@@ -55,6 +55,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
   const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const selectedChildElement = funnelContext?.selectedChildElement ?? null;
   const setSelectedChildElement = funnelContext?.setSelectedChildElement ?? (() => {});
+  const setSelectedBlockId = funnelContext?.setSelectedBlockId ?? (() => {});
   const countryCodes = funnelContext?.countryCodes ?? defaultCountryCodes;
   const defaultCountryId = funnelContext?.defaultCountryId ?? 'us';
   const { 
@@ -306,6 +307,10 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
     if (!isPreview) {
       e.preventDefault();
       e.stopPropagation();
+      // Select parent block AND child element in one action
+      if (blockId) {
+        setSelectedBlockId(blockId);
+      }
       setSelectedChildElement('submit-button');
     } else {
       // In runtime/preview mode: call doSubmit() directly

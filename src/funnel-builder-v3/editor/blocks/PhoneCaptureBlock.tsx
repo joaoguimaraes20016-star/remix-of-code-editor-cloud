@@ -54,6 +54,7 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
   const funnelContext = useFunnelOptional();
   const selectedChildElement = funnelContext?.selectedChildElement ?? null;
   const setSelectedChildElement = funnelContext?.setSelectedChildElement ?? (() => {});
+  const setSelectedBlockId = funnelContext?.setSelectedBlockId ?? (() => {});
   const globalCountryCodes = funnelContext?.countryCodes ?? defaultCountryCodes;
   const globalDefaultCountryId = funnelContext?.defaultCountryId ?? 'us';
   const { 
@@ -69,9 +70,12 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
   
   const [phone, setPhone] = useState('');
   const [hasConsented, setHasConsented] = useState(false);
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
   const [selectedCountryId, setSelectedCountryId] = useState(
     globalDefaultCountryId || countryCodes[0]?.id || '1'
   );
+  const canEdit = blockId && stepId && !isPreview;
+  const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
 
   const selectedCountry = countryCodes.find(c => c.id === selectedCountryId) || countryCodes[0];
   const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
@@ -184,11 +188,17 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
     doSubmit();
   };
 
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
+
   // Handle button click - select in editor, submit directly in preview
   const handleButtonClick = (e: React.MouseEvent) => {
     if (!isPreview) {
       e.preventDefault();
       e.stopPropagation();
+      // Select parent block AND child element in one action
+      if (blockId) {
+        setSelectedBlockId(blockId);
+      }
       setSelectedChildElement('submit-button');
     } else {
       doSubmit();
@@ -351,11 +361,15 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
         type="button"
         variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
         onClick={handleButtonClick}
+        onMouseEnter={() => canEdit && setIsButtonHovered(true)}
+        onMouseLeave={() => setIsButtonHovered(false)}
         className={cn(
           sizeClasses[size],
           fullWidth && 'w-full',
           hasCustomBg && 'hover:opacity-90',
           'font-medium rounded-xl',
+          (isButtonHovered || isButtonSelected) && 'ring-2 ring-primary ring-offset-2',
+          isButtonHovered && !isButtonSelected && 'ring-primary/50',
           isButtonSelected && 'ring-2 ring-primary ring-offset-2'
         )}
         style={{ ...customStyle, touchAction: 'manipulation' as const }}
