@@ -187,6 +187,50 @@ export default function FunnelList() {
   const [renameFunnel, setRenameFunnel] = useState<Funnel | null>(null);
   const [renameValue, setRenameValue] = useState('');
 
+  // === DIAGNOSTIC: Log tab state, teamId, and auth ===
+  useEffect(() => {
+    const runDiagnostic = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[DIAG] FunnelList mounted:', {
+        teamId,
+        activeTab,
+        authUserId: session?.user?.id ?? 'NOT_AUTHENTICATED',
+        authEmail: session?.user?.email ?? 'N/A',
+      });
+
+      // Quick check: can we read team_members for this team?
+      if (teamId && session?.user?.id) {
+        const { data: membership, error: membershipError } = await supabase
+          .from('team_members')
+          .select('id, role')
+          .eq('team_id', teamId)
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        console.log('[DIAG] Team membership check:', { membership, membershipError });
+
+        // Quick check: count funnel_leads for this team
+        const { count: leadCount, error: leadCountError } = await supabase
+          .from('funnel_leads')
+          .select('id', { count: 'exact', head: true })
+          .eq('team_id', teamId);
+        console.log('[DIAG] funnel_leads count:', { leadCount, leadCountError });
+
+        // Quick check: count contacts for this team
+        const { count: contactCount, error: contactCountError } = await supabase
+          .from('contacts')
+          .select('id', { count: 'exact', head: true })
+          .eq('team_id', teamId);
+        console.log('[DIAG] contacts count:', { contactCount, contactCountError });
+
+        // Quick check: can_access_workspace via RPC (if it exists)
+        const { data: canAccess, error: canAccessError } = await supabase
+          .rpc('can_access_workspace', { _user_id: session.user.id, _team_id: teamId });
+        console.log('[DIAG] can_access_workspace:', { canAccess, canAccessError });
+      }
+    };
+    runDiagnostic();
+  }, [teamId, activeTab]);
+
   // Fetch funnels with lead counts - optimized to avoid N+1 queries
   const { data: funnels, isLoading: funnelsLoading } = useQuery({
     queryKey: ['funnels', teamId],
@@ -239,11 +283,19 @@ export default function FunnelList() {
   } = useQuery({
     queryKey: ['funnel-leads', teamId],
     queryFn: async () => {
+      console.log('[Performance] Fetching leads for teamId:', teamId);
       const { data, error } = await supabase
         .from('funnel_leads')
         .select('*, funnel:funnels(name, id)')
         .eq('team_id', teamId)
         .order('created_at', { ascending: false });
+
+      console.log('[Performance] Result:', {
+        teamId,
+        count: data?.length ?? 0,
+        error: error ? { message: error.message, code: (error as any).code, details: (error as any).details, hint: (error as any).hint } : null,
+        sample: data?.[0],
+      });
 
       if (error) throw error;
       return data as FunnelLead[];
