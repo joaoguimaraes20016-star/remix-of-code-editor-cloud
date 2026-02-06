@@ -207,8 +207,6 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
     }
   }, [blockId, stepId, updateBlockContent]);
 
-  const [isButtonHovered, setIsButtonHovered] = useState(false);
-
   // Handle button click - select in editor, submit directly in preview
   const handleButtonClick = (e: React.MouseEvent) => {
     if (!isPreview) {
