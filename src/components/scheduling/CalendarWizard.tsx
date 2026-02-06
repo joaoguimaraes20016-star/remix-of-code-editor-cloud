@@ -9,9 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useCreateEventType } from "@/hooks/useEventTypes";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { EventType } from "@/hooks/useEventTypes";
 
 const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120];
@@ -23,6 +27,40 @@ const LOCATION_TYPES = [
   { value: "custom", label: "Custom URL" },
 ];
 
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+const TIME_OPTIONS: string[] = [];
+for (let h = 0; h < 24; h++) {
+  for (let m = 0; m < 60; m += 30) {
+    const hh = String(h).padStart(2, "0");
+    const mm = String(m).padStart(2, "0");
+    TIME_OPTIONS.push(`${hh}:${mm}`);
+  }
+}
+
+function formatTime12(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const hour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${hour}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+interface DayAvailability {
+  enabled: boolean;
+  start: string;
+  end: string;
+}
+
+const DEFAULT_AVAILABILITY: DayAvailability[] = [
+  { enabled: false, start: "09:00", end: "17:00" }, // Sunday
+  { enabled: true, start: "09:00", end: "17:00" },  // Monday
+  { enabled: true, start: "09:00", end: "17:00" },  // Tuesday
+  { enabled: true, start: "09:00", end: "17:00" },  // Wednesday
+  { enabled: true, start: "09:00", end: "17:00" },  // Thursday
+  { enabled: true, start: "09:00", end: "17:00" },  // Friday
+  { enabled: false, start: "09:00", end: "17:00" }, // Saturday
+];
+
 interface CalendarWizardProps {
   onComplete: () => void;
   onCancel: () => void;
@@ -30,6 +68,7 @@ interface CalendarWizardProps {
 
 export default function CalendarWizard({ onComplete, onCancel }: CalendarWizardProps) {
   const { teamId } = useParams();
+  const { user } = useAuth();
   const createCalendar = useCreateEventType(teamId);
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
@@ -37,39 +76,98 @@ export default function CalendarWizard({ onComplete, onCancel }: CalendarWizardP
   const [description, setDescription] = useState("");
   const [locationType, setLocationType] = useState("zoom");
   const [locationValue, setLocationValue] = useState("");
+  const [availability, setAvailability] = useState<DayAvailability[]>(() =>
+    DEFAULT_AVAILABILITY.map((d) => ({ ...d }))
+  );
+  const [creating, setCreating] = useState(false);
+
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const totalSteps = 3;
   const progress = (step / totalSteps) * 100;
 
-  const handleNext = () => {
+  const updateDay = (index: number, updates: Partial<DayAvailability>) => {
+    setAvailability((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], ...updates };
+      return next;
+    });
+  };
+
+  const handleNext = async () => {
     if (step < totalSteps) {
       setStep(step + 1);
     } else {
-      // Final step - create calendar
-      if (!name || !teamId) return;
-      
-      const calendar: Partial<EventType> = {
-        name,
-        slug: name
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, ""),
-        description: description || undefined,
-        duration_minutes: duration,
-        location_type: locationType,
-        location_value: locationValue || undefined,
-        is_active: true,
-        reminder_config: [
-          { type: "email", template: "24h_before", offset_hours: 24 },
-          { type: "email", template: "1h_before", offset_hours: 1 },
-        ],
-      };
-      
-      createCalendar.mutate({ ...calendar, team_id: teamId } as any, {
-        onSuccess: () => {
-          onComplete();
-        },
-      });
+      // Final step - create calendar and seed availability
+      if (!name || !teamId || !user?.id) return;
+
+      setCreating(true);
+      try {
+        const calendar: Partial<EventType> = {
+          name,
+          slug: name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, ""),
+          description: description || undefined,
+          duration_minutes: duration,
+          location_type: locationType,
+          location_value: locationValue || undefined,
+          is_active: true,
+          reminder_config: [
+            { type: "email", template: "24h_before", offset_hours: 24 },
+            { type: "email", template: "1h_before", offset_hours: 1 },
+          ],
+        };
+
+        // Create the calendar
+        createCalendar.mutate({ ...calendar, team_id: teamId } as any, {
+          onSuccess: async () => {
+            // Seed availability schedules
+            try {
+              const schedules = availability.map((day, index) => ({
+                team_id: teamId,
+                user_id: user.id,
+                day_of_week: index,
+                start_time: day.start,
+                end_time: day.end,
+                is_available: day.enabled,
+                timezone: userTimezone,
+              }));
+
+              // Check if user already has availability
+              const { data: existing } = await supabase
+                .from("availability_schedules")
+                .select("id")
+                .eq("team_id", teamId)
+                .eq("user_id", user.id)
+                .limit(1);
+
+              if (!existing || existing.length === 0) {
+                const { error: seedError } = await supabase
+                  .from("availability_schedules")
+                  .insert(schedules);
+
+                if (seedError) {
+                  console.error("Failed to seed availability:", seedError);
+                  toast.error("Calendar created but availability setup failed. You can configure it later.");
+                }
+              }
+            } catch (err) {
+              console.error("Error seeding availability:", err);
+            }
+
+            onComplete();
+          },
+          onError: (err: any) => {
+            toast.error("Failed to create calendar: " + err.message);
+            setCreating(false);
+          },
+        });
+      } catch (err: any) {
+        toast.error("Failed to create calendar: " + err.message);
+        setCreating(false);
+      }
     }
   };
 
@@ -177,24 +275,59 @@ export default function CalendarWizard({ onComplete, onCancel }: CalendarWizardP
                 When are you available?
               </h2>
               <p className="text-muted-foreground">
-                You can set your weekly hours and specific date overrides in the calendar settings
-                after creation. For now, we'll use default business hours (Mon-Fri, 9am-5pm).
+                Set your weekly hours. You can always change these later.
               </p>
             </div>
 
-            <Card className="bg-muted/50">
-              <CardContent className="p-4">
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">Default Hours</span>
-                    <span className="text-muted-foreground">Mon-Fri, 9:00 AM - 5:00 PM</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    You can customize this in the calendar settings after creation.
-                  </p>
+            <div className="space-y-2">
+              {availability.map((day, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border"
+                >
+                  <Switch
+                    checked={day.enabled}
+                    onCheckedChange={(checked) => updateDay(index, { enabled: checked })}
+                  />
+                  <span className="w-24 text-sm font-medium">{DAY_NAMES[index]}</span>
+                  {day.enabled ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <Select value={day.start} onValueChange={(v) => updateDay(index, { start: v })}>
+                        <SelectTrigger className="h-8 text-xs w-28">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TIME_OPTIONS.map((t) => (
+                            <SelectItem key={t} value={t}>
+                              {formatTime12(t)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <span className="text-xs text-muted-foreground">to</span>
+                      <Select value={day.end} onValueChange={(v) => updateDay(index, { end: v })}>
+                        <SelectTrigger className="h-8 text-xs w-28">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TIME_OPTIONS.map((t) => (
+                            <SelectItem key={t} value={t}>
+                              {formatTime12(t)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Unavailable</span>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              ))}
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Timezone: {userTimezone.replace(/_/g, " ")}
+            </p>
           </div>
         )}
 
@@ -265,12 +398,16 @@ export default function CalendarWizard({ onComplete, onCancel }: CalendarWizardP
             {step === 1 ? "Cancel" : <ChevronLeft className="h-4 w-4 mr-1" />}
             {step === 1 ? "" : "Back"}
           </Button>
-          <Button onClick={handleNext} disabled={!canProceed()}>
+          <Button onClick={handleNext} disabled={!canProceed() || creating}>
             {step === totalSteps ? (
-              <>
-                <Check className="h-4 w-4 mr-1" />
-                Create Calendar
-              </>
+              creating ? (
+                <>Creating...</>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 mr-1" />
+                  Create Calendar
+                </>
+              )
             ) : (
               <>
                 Next

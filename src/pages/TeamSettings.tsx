@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Settings, DollarSign, Trash2, Loader2, Upload, UserPlus, Mail, AlertTriangle, Type, Layers } from "lucide-react";
+import { Users, Settings, DollarSign, Trash2, Loader2, Upload, UserPlus, Mail, AlertTriangle, Type, Layers, Link2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { CommissionSettings } from "@/components/CommissionSettings";
 import { ClearTeamData } from "@/components/ClearTeamData";
@@ -41,6 +41,10 @@ export default function TeamSettings() {
 
   const [teamName, setTeamName] = useState("");
   const [teamLogo, setTeamLogo] = useState<string | null>(null);
+  const [bookingSlug, setBookingSlug] = useState("");
+  const [slugSaved, setSlugSaved] = useState(false);
+  const [savingSlug, setSavingSlug] = useState(false);
+  const [slugError, setSlugError] = useState<string | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -76,17 +80,73 @@ export default function TeamSettings() {
     try {
       const { data, error } = await supabase
         .from("teams")
-        .select("name, logo_url")
+        .select("name, logo_url, booking_slug")
         .eq("id", teamId)
         .single();
 
       if (error) throw error;
       setTeamName(data?.name || "");
       setTeamLogo(data?.logo_url || null);
+      setBookingSlug(data?.booking_slug || "");
     } catch (error) {
       console.error("Error loading team:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+  };
+
+  const handleSaveBookingSlug = async () => {
+    const slug = bookingSlug.trim();
+    if (!slug) {
+      setSlugError("Booking URL is required");
+      return;
+    }
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+      setSlugError("Only lowercase letters, numbers, and hyphens allowed");
+      return;
+    }
+    if (slug.length < 3) {
+      setSlugError("Must be at least 3 characters");
+      return;
+    }
+
+    setSavingSlug(true);
+    setSlugError(null);
+    try {
+      // Check uniqueness
+      const { data: existing } = await supabase
+        .from("teams")
+        .select("id")
+        .eq("booking_slug", slug)
+        .neq("id", teamId!)
+        .maybeSingle();
+
+      if (existing) {
+        setSlugError("This URL is already taken. Try another.");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("teams")
+        .update({ booking_slug: slug })
+        .eq("id", teamId);
+
+      if (error) throw error;
+      toast.success("Booking URL saved");
+      setSlugSaved(true);
+      setTimeout(() => setSlugSaved(false), 3000);
+    } catch (error) {
+      console.error("Error saving booking slug:", error);
+      toast.error("Failed to save booking URL");
+    } finally {
+      setSavingSlug(false);
     }
   };
 
@@ -260,6 +320,10 @@ export default function TeamSettings() {
           <TabsTrigger value="branding" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/10 data-[state=active]:to-indigo-500/10">
             Branding
           </TabsTrigger>
+          <TabsTrigger value="booking" className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500/10 data-[state=active]:to-cyan-500/10">
+            <Link2 className="h-4 w-4" />
+            Booking URL
+          </TabsTrigger>
           <TabsTrigger value="terminology" className="gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500/10 data-[state=active]:to-purple-500/10">
             <Type className="h-4 w-4" />
             Terminology
@@ -341,6 +405,73 @@ export default function TeamSettings() {
                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Save Changes
               </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Booking URL Tab */}
+        <TabsContent value="booking" className="space-y-4">
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
+              <CardTitle className="text-lg text-white flex items-center gap-2">
+                <Link2 className="h-5 w-5" />
+                Public Booking URL
+              </CardTitle>
+              <CardDescription className="text-white/70">
+                Set a custom URL for your public booking page. Share this with clients so they can book meetings with your team.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+              <div className="space-y-2">
+                <Label htmlFor="booking-slug" className="text-sm font-medium">Booking URL</Label>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center bg-muted rounded-l-md px-3 h-10 text-sm text-muted-foreground border border-r-0 shrink-0">
+                    {window.location.origin}/book/
+                  </div>
+                  <Input
+                    id="booking-slug"
+                    value={bookingSlug}
+                    onChange={(e) => {
+                      setBookingSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
+                      setSlugError(null);
+                      setSlugSaved(false);
+                    }}
+                    placeholder="your-team-name"
+                    className="rounded-l-none"
+                  />
+                </div>
+                {slugError && <p className="text-xs text-destructive">{slugError}</p>}
+                {!bookingSlug && teamName && (
+                  <button
+                    className="text-xs text-blue-600 hover:underline"
+                    onClick={() => setBookingSlug(generateSlug(teamName))}
+                  >
+                    Suggest: {generateSlug(teamName)}
+                  </button>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  This is the base URL for all your booking calendars. Each calendar will be available at{" "}
+                  <code className="bg-muted px-1 rounded">{window.location.origin}/book/{bookingSlug || "your-slug"}/calendar-name</code>
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleSaveBookingSlug}
+                  disabled={savingSlug || !bookingSlug.trim()}
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+                >
+                  {savingSlug && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {slugSaved ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Saved
+                    </>
+                  ) : (
+                    "Save Booking URL"
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

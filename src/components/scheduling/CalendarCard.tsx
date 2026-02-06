@@ -1,7 +1,8 @@
 // src/components/scheduling/CalendarCard.tsx
 // Individual calendar card component (clean design, no gradients)
 
-import { Clock, MapPin, Copy, MoreHorizontal, CheckCircle2, XCircle } from "lucide-react";
+import { useState } from "react";
+import { Clock, MapPin, Copy, MoreHorizontal, CheckCircle2, XCircle, ExternalLink, Code, QrCode } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,8 +10,15 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { EventType } from "@/hooks/useEventTypes";
 import { toast } from "sonner";
@@ -26,6 +34,7 @@ const LOCATION_LABELS: Record<string, string> = {
 interface CalendarCardProps {
   calendar: EventType;
   teamId: string;
+  bookingSlug?: string | null;
   onEdit: (calendar: EventType) => void;
   onToggleActive: (calendar: EventType) => void;
   onDelete: (calendarId: string) => void;
@@ -34,15 +43,31 @@ interface CalendarCardProps {
 export default function CalendarCard({
   calendar,
   teamId,
+  bookingSlug,
   onEdit,
   onToggleActive,
   onDelete,
 }: CalendarCardProps) {
-  const bookingLink = `${window.location.origin}/book/${teamId}/${calendar.slug}`;
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const teamSlugOrId = bookingSlug || teamId;
+  const bookingLink = `${window.location.origin}/book/${teamSlugOrId}/${calendar.slug}`;
+
+  const embedCode = `<iframe src="${bookingLink}" width="100%" height="700" frameborder="0" style="border:none; border-radius:8px;"></iframe>`;
+
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(bookingLink)}`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(bookingLink);
     toast.success("Calendar link copied to clipboard");
+  };
+
+  const copyEmbed = () => {
+    navigator.clipboard.writeText(embedCode);
+    toast.success("Embed code copied to clipboard");
+  };
+
+  const openTestBooking = () => {
+    window.open(bookingLink, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -109,6 +134,15 @@ export default function CalendarCard({
               >
                 <Copy className="h-3.5 w-3.5" />
               </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={openTestBooking}
+                title="Test booking page"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Button>
             </div>
           </div>
 
@@ -129,6 +163,19 @@ export default function CalendarCard({
               <DropdownMenuItem onClick={copyLink}>
                 Copy Link
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={openTestBooking}>
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Test Booking
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={copyEmbed}>
+                <Code className="h-4 w-4 mr-2" />
+                Copy Embed Code
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setPreviewOpen(true)}>
+                <QrCode className="h-4 w-4 mr-2" />
+                Share / QR Code
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
                 onClick={() => onDelete(calendar.id)}
@@ -139,6 +186,61 @@ export default function CalendarCard({
           </DropdownMenu>
         </div>
       </CardContent>
+
+      {/* Share / QR Code Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share {calendar.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* QR Code */}
+            <div className="flex justify-center">
+              <img
+                src={qrCodeUrl}
+                alt="QR Code for booking link"
+                className="rounded-lg border p-2"
+                width={200}
+                height={200}
+              />
+            </div>
+
+            {/* Booking Link */}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Booking Link</p>
+              <div className="flex items-center gap-2">
+                <code className="text-xs bg-muted px-3 py-2 rounded font-mono text-foreground flex-1 break-all">
+                  {bookingLink}
+                </code>
+                <Button variant="outline" size="sm" onClick={copyLink}>
+                  <Copy className="h-3.5 w-3.5 mr-1" />
+                  Copy
+                </Button>
+              </div>
+            </div>
+
+            {/* Embed Code */}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Embed Code</p>
+              <div className="flex items-center gap-2">
+                <code className="text-xs bg-muted px-3 py-2 rounded font-mono text-foreground flex-1 break-all max-h-20 overflow-auto">
+                  {embedCode}
+                </code>
+                <Button variant="outline" size="sm" onClick={copyEmbed}>
+                  <Copy className="h-3.5 w-3.5 mr-1" />
+                  Copy
+                </Button>
+              </div>
+            </div>
+
+            {/* Test Button */}
+            <Button onClick={openTestBooking} className="w-full">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Open Booking Page
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

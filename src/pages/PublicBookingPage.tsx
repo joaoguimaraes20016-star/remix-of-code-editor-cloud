@@ -5,7 +5,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowLeft, Clock, MapPin, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Loader2, AlertCircle, CalendarX2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -209,12 +209,29 @@ export default function PublicBookingPage() {
 
   // Error state
   if (error || !eventType) {
+    const errorTitle =
+      error === "Team not found"
+        ? "Page Not Found"
+        : error === "Event type not found or inactive"
+          ? "Booking Not Available"
+          : "Booking Unavailable";
+
+    const errorDescription =
+      error === "Team not found"
+        ? "This booking page doesn't exist. The link may be incorrect or the team may have changed their URL."
+        : error === "Event type not found or inactive"
+          ? "This calendar is currently inactive or has been removed. Please contact the team for an updated link."
+          : error || "This event type is not available right now.";
+
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="text-center py-12">
-            <h2 className="text-xl font-bold text-foreground mb-2">Booking Unavailable</h2>
-            <p className="text-muted-foreground">{error || "This event type is not available."}</p>
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full shadow-lg">
+          <CardContent className="text-center py-12 px-6">
+            <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+              <CalendarX2 className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground mb-2">{errorTitle}</h2>
+            <p className="text-muted-foreground text-sm">{errorDescription}</p>
           </CardContent>
         </Card>
       </div>
@@ -268,6 +285,16 @@ export default function PublicBookingPage() {
               </div>
             )}
           </div>
+
+          {/* Booking Error Alert */}
+          {bookingError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                {bookingError}
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Step Content */}
           {step === "date" && (
