@@ -136,20 +136,42 @@ export default function Calendars() {
 
       // Check that at least one host has availability configured
       if (teamId && hostIds.length > 0) {
+        // Get host names for better error messages
+        const { data: hostProfiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", hostIds);
+
         const { data: avail } = await supabase
           .from("availability_schedules")
-          .select("id")
+          .select("id, user_id")
           .eq("team_id", teamId)
           .in("user_id", hostIds)
-          .eq("is_available", true)
-          .limit(1);
+          .eq("is_available", true);
 
         if (!avail || avail.length === 0) {
+          const hostNames = (hostProfiles || [])
+            .map((p) => p.full_name || "Unknown")
+            .join(", ");
           toast.error(
-            "None of the hosts assigned to this calendar have availability hours configured. Configure availability in the calendar editor's When tab.",
-            { duration: 5000 }
+            `None of the hosts (${hostNames}) have availability hours configured. Edit the calendar and configure availability in the When tab.`,
+            { duration: 6000 }
           );
           return;
+        }
+
+        // Check which hosts don't have availability (for warning)
+        const hostsWithAvail = new Set(avail.map((a) => a.user_id));
+        const hostsWithoutAvail = hostIds.filter((id) => !hostsWithAvail.has(id));
+        if (hostsWithoutAvail.length > 0 && hostsWithoutAvail.length < hostIds.length) {
+          const missingNames = (hostProfiles || [])
+            .filter((p) => hostsWithoutAvail.includes(p.id))
+            .map((p) => p.full_name || "Unknown")
+            .join(", ");
+          toast.warning(
+            `Some hosts (${missingNames}) don't have availability configured. They won't receive bookings until availability is set.`,
+            { duration: 5000 }
+          );
         }
       }
     }

@@ -1,9 +1,9 @@
 // src/components/scheduling/AvailabilitySettings.tsx
 // Weekly availability grid with time pickers, timezone selector, and date overrides
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Clock, Plus, Trash2, CalendarOff, CalendarCheck } from "lucide-react";
+import { Clock, Plus, Trash2, CalendarOff, CalendarCheck, Link2, CheckCircle2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,8 @@ import {
   DAY_NAMES,
 } from "@/hooks/useAvailability";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const TIMEZONES = [
   "America/New_York",
@@ -59,12 +61,34 @@ export default function AvailabilitySettings() {
   const [overrideStart, setOverrideStart] = useState("09:00");
   const [overrideEnd, setOverrideEnd] = useState("17:00");
   const [overrideReason, setOverrideReason] = useState("");
+  const [gcalConnected, setGcalConnected] = useState<boolean | null>(null);
+  const [gcalConnecting, setGcalConnecting] = useState(false);
+  const [busyCalendars, setBusyCalendars] = useState<string[]>([]);
 
   const { data: schedules, isLoading: schedulesLoading } = useAvailabilitySchedules(teamId);
   const { data: overrides, isLoading: overridesLoading } = useAvailabilityOverrides(teamId);
   const updateAvailability = useUpdateAvailability(teamId);
   const createOverride = useCreateOverride(teamId);
   const deleteOverride = useDeleteOverride(teamId);
+
+  // Check Google Calendar connection status
+  useEffect(() => {
+    if (!teamId || !user?.id) return;
+
+    const checkGcalConnection = async () => {
+      const { data } = await supabase
+        .from("google_calendar_connections")
+        .select("sync_enabled, busy_calendars")
+        .eq("team_id", teamId)
+        .eq("user_id", user.id)
+        .single();
+
+      setGcalConnected(!!data && data.sync_enabled);
+      setBusyCalendars(data?.busy_calendars || ["primary"]);
+    };
+
+    checkGcalConnection();
+  }, [teamId, user?.id]);
 
   const handleToggleDay = (schedule: any) => {
     updateAvailability.mutate({
@@ -106,6 +130,113 @@ export default function AvailabilitySettings() {
     setOverrideReason("");
   };
 
+  const handleConnectGoogleCalendar = async () => {
+    if (!teamId) return;
+
+    setGcalConnecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("google-connect-feature", {
+        body: { teamId, feature: "calendar" },
+      });
+
+      if (error || !data?.authUrl) {
+        toast.error("Failed to start Google Calendar connection");
+        setGcalConnecting(false);
+        return;
+      }
+
+      // Open popup for OAuth
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+
+      const popup = window.open(
+        data.authUrl,
+        "google-calendar-oauth",
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+      );
+
+      if (!popup) {
+        toast.error("Please allow popups for this site");
+        setGcalConnecting(false);
+        return;
+      }
+
+      // Listen for OAuth completion
+      const handleMessage = async (event: MessageEvent) => {
+        if (event.data?.type === "google-oauth-success") {
+          window.removeEventListener("message", handleMessage);
+          popup.close();
+          
+          // Create or update google_calendar_connections record
+          if (teamId && user?.id) {
+            const { data: teamIntegration } = await supabase
+              .from("team_integrations")
+              .select("config")
+              .eq("team_id", teamId)
+              .eq("integration_type", "google")
+              .single();
+
+            if (teamIntegration?.config) {
+              const config = teamIntegration.config as any;
+              await supabase
+                .from("google_calendar_connections")
+                .upsert({
+                  team_id: teamId,
+                  user_id: user.id,
+                  access_token: config.access_token,
+                  refresh_token: config.refresh_token,
+                  token_expires_at: config.expires_at,
+                  sync_enabled: true,
+                  busy_calendars: ["primary"],
+                }, {
+                  onConflict: "team_id,user_id",
+                });
+            }
+          }
+
+          toast.success("Google Calendar connected successfully");
+          setGcalConnected(true);
+          setGcalConnecting(false);
+          // Refresh connection status
+          setTimeout(() => {
+            const checkGcalConnection = async () => {
+              const { data } = await supabase
+                .from("google_calendar_connections")
+                .select("sync_enabled, busy_calendars")
+                .eq("team_id", teamId)
+                .eq("user_id", user?.id)
+                .single();
+              setGcalConnected(!!data && data.sync_enabled);
+              setBusyCalendars(data?.busy_calendars || ["primary"]);
+            };
+            checkGcalConnection();
+          }, 1000);
+        } else if (event.data?.type === "google-oauth-error") {
+          window.removeEventListener("message", handleMessage);
+          popup.close();
+          toast.error(event.data.error || "Google Calendar connection failed");
+          setGcalConnecting(false);
+        }
+      };
+
+      window.addEventListener("message", handleMessage);
+
+      // Fallback: check if popup closed without message
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          window.removeEventListener("message", handleMessage);
+          setGcalConnecting(false);
+        }
+      }, 1000);
+    } catch (err: any) {
+      toast.error("Failed to connect Google Calendar: " + err.message);
+      setGcalConnecting(false);
+    }
+  };
+
   const currentTimezone = schedules?.[0]?.timezone || "America/New_York";
 
   if (schedulesLoading) {
@@ -120,6 +251,53 @@ export default function AvailabilitySettings() {
 
   return (
     <div className="space-y-6">
+      {/* Google Calendar Connection */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Link2 className="h-4 w-4" />
+            Google Calendar Integration
+          </CardTitle>
+          <CardDescription>
+            Connect your Google Calendar to automatically block busy times from showing as available
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {gcalConnected ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="text-sm font-medium">Google Calendar Connected</p>
+                  <p className="text-xs text-muted-foreground">
+                    Busy times from your calendar will automatically block booking slots
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-yellow-600" />
+                <div>
+                  <p className="text-sm font-medium">Not Connected</p>
+                  <p className="text-xs text-muted-foreground">
+                    Connect to automatically block busy times from your Google Calendar
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleConnectGoogleCalendar}
+                disabled={gcalConnecting}
+              >
+                {gcalConnecting ? "Connecting..." : "Connect Google Calendar"}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Timezone Selector */}
       <Card>
         <CardHeader className="pb-3">

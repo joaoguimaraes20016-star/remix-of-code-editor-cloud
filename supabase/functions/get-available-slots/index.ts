@@ -170,6 +170,12 @@ serve(async (req) => {
 
     // 8. Calculate available slots for each host, then take the union
     const allAvailableSlots = new Map<string, TimeSlot>();
+    const debugInfo: any = {
+      hostsChecked: hostUserIds,
+      availabilityFound: false,
+      reason: null,
+      hostDetails: [],
+    };
 
     for (const userId of hostUserIds) {
       // Get this user's schedule for the day
@@ -182,6 +188,7 @@ serve(async (req) => {
 
       // Determine availability windows
       let windows: AvailabilityWindow[] = [];
+      let usingDefaults = false;
 
       if (userOverride) {
         // Override takes precedence
@@ -193,15 +200,52 @@ serve(async (req) => {
         if (userSchedule.is_available) {
           windows = [{ start: userSchedule.start_time, end: userSchedule.end_time }];
         }
+      } else {
+        // No schedule exists - use default availability (9am-5pm Mon-Fri)
+        // Only apply defaults for weekdays (Mon-Fri = 1-5)
+        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+          windows = [{ start: "09:00", end: "17:00" }];
+          usingDefaults = true;
+          console.warn(`[get-available-slots] No availability schedule for user ${userId} on day ${dayOfWeek}, using default 9am-5pm`);
+        }
       }
-      // If no schedule exists, no availability
 
-      if (windows.length === 0) continue;
+      if (windows.length === 0) {
+        debugInfo.hostDetails.push({
+          userId,
+          hasSchedule: !!userSchedule,
+          hasOverride: !!userOverride,
+          dayOfWeek,
+          reason: dayOfWeek === 0 || dayOfWeek === 6 ? "Weekend (no default)" : "No availability configured",
+        });
+        continue;
+      }
+
+      debugInfo.availabilityFound = true;
 
       // Get this user's existing appointments
       const userAppointments = (existingAppointments || []).filter(
         a => a.closer_id === userId || a.assigned_user_id === userId
       );
+
+      // Load Google Calendar busy times for this user
+      let googleBusyTimes: Array<{ start: Date; end: Date }> = [];
+      try {
+        const { data: gcalConn } = await supabase
+          .from("google_calendar_connections")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("team_id", team_id)
+          .eq("sync_enabled", true)
+          .single();
+
+        if (gcalConn) {
+          const busyTimes = await fetchGoogleBusyTimes(supabase, gcalConn, dayStart, dayEnd);
+          googleBusyTimes = busyTimes || [];
+        }
+      } catch (err) {
+        console.error(`[get-available-slots] Error fetching Google Calendar busy times for user ${userId}:`, err);
+      }
 
       // Determine the user's timezone
       const userTimezone = userSchedule?.timezone || userOverride?.timezone || "America/New_York";
@@ -243,6 +287,8 @@ serve(async (req) => {
           const bufferAfterMs = (buffer_after_minutes || 0) * 60 * 1000;
 
           let conflicted = false;
+          
+          // Check database appointments
           for (const appt of userAppointments) {
             const apptStart = new Date(appt.start_at_utc).getTime();
             const apptDuration = (appt.duration_minutes || 30) * 60 * 1000;
@@ -255,6 +301,21 @@ serve(async (req) => {
             if (slotEffectiveStart < apptEnd && slotEffectiveEnd > apptStart) {
               conflicted = true;
               break;
+            }
+          }
+
+          // Check Google Calendar busy times
+          if (!conflicted && googleBusyTimes.length > 0) {
+            for (const busy of googleBusyTimes) {
+              const busyStart = busy.start.getTime();
+              const busyEnd = busy.end.getTime();
+              const slotEffectiveStart = slotStartMs - bufferBeforeMs;
+              const slotEffectiveEnd = slotEndMs + bufferAfterMs;
+
+              if (slotEffectiveStart < busyEnd && slotEffectiveEnd > busyStart) {
+                conflicted = true;
+                break;
+              }
             }
           }
 
@@ -280,6 +341,15 @@ serve(async (req) => {
       (a, b) => new Date(a.utc).getTime() - new Date(b.utc).getTime()
     );
 
+    // Add debug info if no slots found
+    if (slots.length === 0 && !debugInfo.reason) {
+      if (!debugInfo.availabilityFound) {
+        debugInfo.reason = "No availability schedules configured for hosts";
+      } else {
+        debugInfo.reason = "All slots are booked or blocked";
+      }
+    }
+
     return new Response(
       JSON.stringify({
         date: dateStr,
@@ -294,6 +364,7 @@ serve(async (req) => {
           location_type: eventType.location_type,
           color: eventType.color,
         },
+        ...(slots.length === 0 ? { debug: debugInfo } : {}),
       }),
       {
         status: 200,
@@ -378,5 +449,118 @@ function convertToTimezone(utcDate: Date, timezone: string): string {
   } catch {
     // Fallback to UTC
     return utcDate.toISOString().slice(11, 16);
+  }
+}
+
+/**
+ * Fetch Google Calendar busy times using FreeBusy API
+ */
+async function fetchGoogleBusyTimes(
+  supabase: any,
+  gcalConn: any,
+  timeMin: string,
+  timeMax: string
+): Promise<Array<{ start: Date; end: Date }> | null> {
+  try {
+    let accessToken = gcalConn.access_token;
+
+    // Refresh token if expired
+    if (gcalConn.token_expires_at && new Date(gcalConn.token_expires_at) < new Date()) {
+      const refreshed = await refreshGoogleToken(supabase, gcalConn);
+      if (refreshed) {
+        accessToken = refreshed;
+      } else {
+        console.error("[get-available-slots] Failed to refresh Google token");
+        return null;
+      }
+    }
+
+    // Use busy_calendars array, or default to primary
+    const calendarsToCheck = gcalConn.busy_calendars && gcalConn.busy_calendars.length > 0
+      ? gcalConn.busy_calendars
+      : ["primary"];
+
+    const freeBusyItems = calendarsToCheck.map((calId: string) => ({ id: calId }));
+
+    const response = await fetch("https://www.googleapis.com/calendar/v3/freeBusy", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        timeMin,
+        timeMax,
+        items: freeBusyItems,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[get-available-slots] FreeBusy API error:", errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    const busyTimes: Array<{ start: Date; end: Date }> = [];
+
+    // Aggregate busy times from all calendars
+    for (const calId of calendarsToCheck) {
+      const cal = data.calendars?.[calId];
+      if (cal?.busy) {
+        for (const busy of cal.busy) {
+          busyTimes.push({
+            start: new Date(busy.start),
+            end: new Date(busy.end),
+          });
+        }
+      }
+    }
+
+    return busyTimes;
+  } catch (err) {
+    console.error("[get-available-slots] Error fetching FreeBusy:", err);
+    return null;
+  }
+}
+
+/**
+ * Refresh Google OAuth token
+ */
+async function refreshGoogleToken(supabase: any, gcalConn: any): Promise<string | null> {
+  try {
+    const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
+    const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET");
+
+    if (!clientId || !clientSecret || !gcalConn.refresh_token) return null;
+
+    const response = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: gcalConn.refresh_token,
+        grant_type: "refresh_token",
+      }),
+    });
+
+    if (response.ok) {
+      const tokens = await response.json();
+      // Update stored tokens
+      await supabase
+        .from("google_calendar_connections")
+        .update({
+          access_token: tokens.access_token,
+          token_expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+        })
+        .eq("id", gcalConn.id);
+
+      return tokens.access_token;
+    }
+
+    return null;
+  } catch {
+    return null;
   }
 }

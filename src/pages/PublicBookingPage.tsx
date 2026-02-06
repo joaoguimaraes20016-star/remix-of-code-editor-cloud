@@ -47,6 +47,7 @@ export default function PublicBookingPage() {
   const [selectedTimezone, setSelectedTimezone] = useState<string>(
     Intl.DateTimeFormat().resolvedOptions().timeZone
   );
+  const [slotsDebugInfo, setSlotsDebugInfo] = useState<any>(null);
 
   const timezone = selectedTimezone;
 
@@ -124,6 +125,11 @@ export default function PublicBookingPage() {
         if (response.ok) {
           const data: SlotsResponse = await response.json();
           setSlots(data.slots || []);
+          
+          // Store debug info if no slots
+          if ((data.slots || []).length === 0 && (data as any).debug) {
+            // Debug info will be used in the UI below
+          }
         } else {
           setSlots([]);
         }
@@ -402,6 +408,7 @@ export default function PublicBookingPage() {
                 onTimeSelect={handleTimeSelect}
                 isLoading={slotsLoading}
                 accentColor={eventType.color}
+                debugInfo={slotsDebugInfo}
               />
             </div>
           )}

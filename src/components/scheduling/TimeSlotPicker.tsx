@@ -12,6 +12,7 @@ interface TimeSlotPickerProps {
   onTimeSelect: (slot: TimeSlot) => void;
   isLoading?: boolean;
   accentColor?: string;
+  debugInfo?: any;
 }
 
 export default function TimeSlotPicker({
@@ -32,10 +33,27 @@ export default function TimeSlotPicker({
   }
 
   if (slots.length === 0) {
+    // Show helpful message based on debug info
+    let message = "No available times for this date.";
+    let subMessage = "Try selecting a different date.";
+
+    if (debugInfo) {
+      if (debugInfo.reason === "No availability schedules configured for hosts") {
+        message = "No availability configured";
+        subMessage = "The host hasn't set their availability hours yet. Please contact them directly.";
+      } else if (debugInfo.reason === "All slots are booked or blocked") {
+        message = "All slots are booked";
+        subMessage = "This date is fully booked. Try selecting another date.";
+      } else if (debugInfo.hostDetails?.some((h: any) => h.reason === "Weekend (no default)")) {
+        message = "No availability on weekends";
+        subMessage = "This calendar doesn't accept bookings on weekends. Try selecting a weekday.";
+      }
+    }
+
     return (
       <div className="text-center py-8 text-muted-foreground">
-        <p className="text-sm">No available times for this date.</p>
-        <p className="text-xs mt-1">Try selecting a different date.</p>
+        <p className="text-sm font-medium">{message}</p>
+        <p className="text-xs mt-1">{subMessage}</p>
       </div>
     );
   }

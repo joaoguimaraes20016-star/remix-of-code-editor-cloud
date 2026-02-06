@@ -99,6 +99,7 @@ export default function CalendarEditor({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; role: string }>>([]);
   const [memberAvailability, setMemberAvailability] = useState<Record<string, boolean>>({});
+  const [memberGcalStatus, setMemberGcalStatus] = useState<Record<string, boolean>>({});
   const isEditing = !!calendar;
 
   // Update editingCalendar when calendar prop changes
@@ -136,9 +137,11 @@ export default function CalendarEditor({
 
         setTeamMembers(members);
 
-        // Check availability for each member
+        // Check availability and Google Calendar connection for each member
         const availMap: Record<string, boolean> = {};
+        const gcalMap: Record<string, boolean> = {};
         for (const member of members) {
+          // Check availability
           const { data: avail } = await supabase
             .from("availability_schedules")
             .select("id")
@@ -147,8 +150,19 @@ export default function CalendarEditor({
             .eq("is_available", true)
             .limit(1);
           availMap[member.id] = !!avail && avail.length > 0;
+
+          // Check Google Calendar connection
+          const { data: gcal } = await supabase
+            .from("google_calendar_connections")
+            .select("id")
+            .eq("team_id", teamId)
+            .eq("user_id", member.id)
+            .eq("sync_enabled", true)
+            .limit(1);
+          gcalMap[member.id] = !!gcal && gcal.length > 0;
         }
         setMemberAvailability(availMap);
+        setMemberGcalStatus(gcalMap);
       } catch (err) {
         console.error("Failed to load team members:", err);
       }
@@ -329,6 +343,23 @@ export default function CalendarEditor({
                       editingCalendar.round_robin_members || []
                     ).includes(member.id);
                     const hasAvail = memberAvailability[member.id];
+                    const hasGcal = memberGcalStatus[member.id];
+                    
+                    // Determine badge color: green (both), yellow (availability only), red (neither)
+                    let badgeVariant: "default" | "secondary" | "destructive" = "destructive";
+                    let badgeText = "No availability";
+                    let badgeClass = "bg-red-50 text-red-600 border-red-200";
+                    
+                    if (hasAvail && hasGcal) {
+                      badgeVariant = "default";
+                      badgeText = "Ready";
+                      badgeClass = "bg-green-50 text-green-700 border-green-200";
+                    } else if (hasAvail) {
+                      badgeVariant = "secondary";
+                      badgeText = "No Google Calendar";
+                      badgeClass = "bg-yellow-50 text-yellow-700 border-yellow-200";
+                    }
+                    
                     return (
                       <div
                         key={member.id}
@@ -359,15 +390,9 @@ export default function CalendarEditor({
                           </Label>
                         </div>
                         <div className="flex items-center gap-2">
-                          {hasAvail ? (
-                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                              Availability set
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs bg-red-50 text-red-600 border-red-200">
-                              No availability
-                            </Badge>
-                          )}
+                          <Badge variant="outline" className={`text-xs ${badgeClass}`}>
+                            {badgeText}
+                          </Badge>
                         </div>
                       </div>
                     );
