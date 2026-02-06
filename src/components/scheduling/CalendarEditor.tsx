@@ -13,7 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Users, UserPlus, AlertCircle } from "lucide-react";
+import { Users, UserPlus, AlertCircle, Link2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Sheet,
   SheetContent,
@@ -168,6 +169,25 @@ export default function CalendarEditor({
         });
         setMemberAvailability(availMap);
         setMemberGcalStatus(gcalMap);
+
+        // Check current user's connections
+        if (user?.id) {
+          const { data: gcal } = await supabase
+            .from("google_calendar_connections")
+            .select("sync_enabled")
+            .eq("team_id", teamId)
+            .eq("user_id", user.id)
+            .single();
+          setHasGoogleCalendar(!!gcal && gcal.sync_enabled);
+
+          const { data: zoom } = await supabase
+            .from("team_integrations")
+            .select("is_connected")
+            .eq("team_id", teamId)
+            .eq("integration_type", "zoom")
+            .single();
+          setHasZoom(!!zoom && zoom.is_connected);
+        }
       } catch (err) {
         console.error("Failed to load team members:", err);
       }
@@ -445,6 +465,18 @@ export default function CalendarEditor({
 
             {/* Where Tab */}
             <TabsContent value="where" className="space-y-4 mt-6">
+              {/* Prerequisites Warning */}
+              {(!hasGoogleCalendar || (editingCalendar.location_type === "zoom" && !hasZoom)) && (
+                <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20">
+                  <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                  <AlertDescription className="text-sm">
+                    <strong>Recommended:</strong> Connect your integrations for the best experience.
+                    {!hasGoogleCalendar && " Connect Google Calendar to block busy times. "}
+                    {editingCalendar.location_type === "zoom" && !hasZoom && " Connect Zoom to generate meeting links automatically. "}
+                    Go to the Connections tab to set these up.
+                  </AlertDescription>
+                </Alert>
+              )}
               <div>
                 <Label className="text-sm font-medium">Meeting Location</Label>
                 <Select

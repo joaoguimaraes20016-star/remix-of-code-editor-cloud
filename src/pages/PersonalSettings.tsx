@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { 
   Camera, Loader2, Save, Phone, User, Mail, Bell, 
-  Link2, CheckCircle2, Settings, Sun
+  Link2, CheckCircle2, Settings, Sun, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -24,6 +24,7 @@ import googleMeetLogo from "@/assets/integrations/google-meet.svg";
 
 export default function PersonalSettings() {
   const { teamId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [fullName, setFullName] = useState("");
@@ -250,41 +251,23 @@ export default function PersonalSettings() {
               <Link2 className="h-5 w-5 text-white" />
               <CardTitle className="text-lg text-white">Connected Apps</CardTitle>
             </div>
-            <CardDescription className="text-white/70">Connect your personal accounts</CardDescription>
+            <CardDescription className="text-white/70">Connect your personal accounts for scheduling</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 pt-6">
-            {personalApps.map((app) => (
-              <div
-                key={app.id}
-                className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors"
+            <div className="p-4 rounded-xl border border-border bg-muted/50">
+              <p className="text-sm text-muted-foreground mb-3">
+                Connect your Google Calendar, Zoom, and other integrations in the Schedule section to enable scheduling features.
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate(`/team/${teamId}/calendars`)}
+                className="w-full sm:w-auto"
               >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-background flex items-center justify-center border border-border/50">
-                    <img src={app.logo} alt={app.name} className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{app.name}</p>
-                    <p className="text-xs text-muted-foreground">{app.description}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {app.comingSoon ? (
-                    <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-full">Coming Soon</span>
-                  ) : app.connected ? (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      <Button variant="ghost" size="sm" className="text-destructive">
-                        Disconnect
-                      </Button>
-                    </>
-                  ) : (
-                    <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white">
-                      Connect
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
+                Go to Connections
+                <ExternalLink className="h-3 w-3 ml-2" />
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

@@ -1,9 +1,9 @@
 // src/components/scheduling/CalendarWizard.tsx
 // First-time setup wizard for creating a calendar
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { ChevronRight, ChevronLeft, Check } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCreateEventType } from "@/hooks/useEventTypes";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -80,8 +81,37 @@ export default function CalendarWizard({ onComplete, onCancel }: CalendarWizardP
     DEFAULT_AVAILABILITY.map((d) => ({ ...d }))
   );
   const [creating, setCreating] = useState(false);
+  const [hasGoogleCalendar, setHasGoogleCalendar] = useState<boolean>(false);
+  const [hasZoom, setHasZoom] = useState<boolean>(false);
 
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Check connection status
+  useEffect(() => {
+    if (!teamId || !user?.id) return;
+
+    // Check Google Calendar
+    supabase
+      .from("google_calendar_connections")
+      .select("sync_enabled")
+      .eq("team_id", teamId)
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        setHasGoogleCalendar(!!data && data.sync_enabled);
+      });
+
+    // Check Zoom
+    supabase
+      .from("team_integrations")
+      .select("is_connected")
+      .eq("team_id", teamId)
+      .eq("integration_type", "zoom")
+      .single()
+      .then(({ data }) => {
+        setHasZoom(!!data && data.is_connected);
+      });
+  }, [teamId, user?.id]);
 
   const totalSteps = 3;
   const progress = (step / totalSteps) * 100;
@@ -202,6 +232,19 @@ export default function CalendarWizard({ onComplete, onCancel }: CalendarWizardP
           </div>
           <Progress value={progress} className="h-2" />
         </div>
+
+        {/* Prerequisites Warning */}
+        {step === 1 && (!hasGoogleCalendar || (locationType === "zoom" && !hasZoom)) && (
+          <Alert className="mb-4 border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20">
+            <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+            <AlertDescription className="text-sm">
+              <strong>Recommended:</strong> Connect your integrations before creating a calendar.
+              {!hasGoogleCalendar && " Connect Google Calendar to block busy times. "}
+              {locationType === "zoom" && !hasZoom && " Connect Zoom to generate meeting links automatically. "}
+              You can set these up in the Connections tab.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Step 1: Name & Duration */}
         {step === 1 && (
@@ -337,6 +380,16 @@ export default function CalendarWizard({ onComplete, onCancel }: CalendarWizardP
         {/* Step 3: Location */}
         {step === 3 && (
           <div className="space-y-6">
+            {/* Zoom Warning */}
+            {locationType === "zoom" && !hasZoom && (
+              <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20">
+                <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                <AlertDescription className="text-sm">
+                  <strong>Recommended:</strong> Connect Zoom in the Connections tab to automatically generate meeting links for each booking.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div>
               <h2 className="text-2xl font-bold text-foreground mb-2">
                 Where will this meeting happen?

@@ -79,7 +79,7 @@ JOIN public.team_members tm ON tm.user_id = a.user_id AND tm.team_id = a.team_id
 WHERE tm.role IN ('owner', 'admin')
   AND a.user_id IS NOT NULL  -- Only migrate existing per-user schedules
 ORDER BY a.team_id, a.day_of_week, tm.created_at
-ON CONFLICT DO NOTHING;
+ON CONFLICT (team_id, day_of_week) WHERE user_id IS NULL DO NOTHING;
 
 -- Step 8: Update availability_overrides to also support team-wide (make user_id nullable)
 ALTER TABLE public.availability_overrides 

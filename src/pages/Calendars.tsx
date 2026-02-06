@@ -7,9 +7,12 @@ import { Plus, CheckCircle2, Circle, Link2, Calendar, Clock, ExternalLink } from
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import ConnectionsSettings from "@/components/scheduling/ConnectionsSettings";
+import AvailabilitySettings from "@/components/scheduling/AvailabilitySettings";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +45,7 @@ export default function Calendars() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bookingSlug, setBookingSlug] = useState<string | null>(null);
   const [hasAvailability, setHasAvailability] = useState<boolean | null>(null);
+  const [activeTab, setActiveTab] = useState("calendars");
 
   const { data: calendars, isLoading } = useEventTypes(teamId);
 
@@ -73,7 +77,6 @@ export default function Calendars() {
 
   const hasCalendars = calendars && calendars.length > 0;
   const hasActiveCalendar = calendars?.some((c) => c.is_active) ?? false;
-  const setupComplete = !!bookingSlug && hasCalendars && hasActiveCalendar && hasAvailability;
   const updateCalendar = useUpdateEventType(teamId);
   const deleteCalendar = useDeleteEventType(teamId);
 
@@ -192,97 +195,182 @@ export default function Calendars() {
     }
   };
 
+  // Check connection status for checklist
+  const [hasGoogleCalendar, setHasGoogleCalendar] = useState<boolean>(false);
+  const [hasZoom, setHasZoom] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!teamId || !user?.id) return;
+
+    // Check Google Calendar
+    supabase
+      .from("google_calendar_connections")
+      .select("sync_enabled")
+      .eq("team_id", teamId)
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        setHasGoogleCalendar(!!data && data.sync_enabled);
+      });
+
+    // Check Zoom
+    supabase
+      .from("team_integrations")
+      .select("is_connected")
+      .eq("team_id", teamId)
+      .eq("integration_type", "zoom")
+      .single()
+      .then(({ data }) => {
+        setHasZoom(!!data && data.is_connected);
+      });
+  }, [teamId, user?.id]);
+
+  const hasConnections = hasGoogleCalendar || hasZoom;
+  const setupCompleteWithConnections = !!bookingSlug && hasConnections && hasCalendars && hasActiveCalendar && hasAvailability;
+
   return (
     <div className="flex-1 p-6 space-y-6 overflow-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Calendars</h1>
+          <h1 className="text-2xl font-bold text-foreground">Schedule</h1>
           <p className="text-muted-foreground">
-            Manage your booking calendars
+            Manage your booking calendars, availability, and integrations
           </p>
         </div>
-        <Button onClick={handleCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Calendar
-        </Button>
+        {activeTab === "calendars" && (
+          <Button onClick={handleCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Calendar
+          </Button>
+        )}
       </div>
 
-      {/* Setup Checklist - shows when setup is incomplete */}
-      {!isLoading && !setupComplete && (
-        <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20">
-          <CardContent className="p-4">
-            <h3 className="font-semibold text-sm mb-3 text-foreground">Setup Checklist</h3>
-            <div className="space-y-2">
-              <ChecklistItem
-                done={!!bookingSlug}
-                label="Set your booking URL"
-                action={
-                  !bookingSlug ? (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-xs"
-                      onClick={() => navigate(`/team/${teamId}/settings`)}
-                    >
-                      Team Settings → Booking URL
-                    </Button>
-                  ) : undefined
-                }
-              />
-              <ChecklistItem
-                done={!!hasCalendars}
-                label="Create your first calendar"
-                action={
-                  !hasCalendars ? (
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-xs"
-                      onClick={handleCreate}
-                    >
-                      Create now
-                    </Button>
-                  ) : undefined
-                }
-              />
-              <ChecklistItem
-                done={hasAvailability === true}
-                label="Configure availability hours"
-              />
-              <ChecklistItem
-                done={hasActiveCalendar}
-                label="Activate a calendar"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList>
+          <TabsTrigger value="calendars">Calendars</TabsTrigger>
+          <TabsTrigger value="availability">Availability</TabsTrigger>
+          <TabsTrigger value="connections">Connections</TabsTrigger>
+        </TabsList>
 
-      {/* Content */}
-      {isLoading ? (
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-32 w-full rounded-xl" />
-          ))}
-        </div>
-      ) : !calendars || calendars.length === 0 ? (
-        <EmptyCalendarsState onCreateClick={handleCreate} />
-      ) : (
-        <div className="space-y-3">
-          {calendars.map((calendar) => (
-            <CalendarCard
-              key={calendar.id}
-              calendar={calendar}
-              teamId={teamId || ""}
-              bookingSlug={bookingSlug}
-              onEdit={handleEdit}
-              onToggleActive={handleToggleActive}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
-      )}
+        {/* Calendars Tab */}
+        <TabsContent value="calendars" className="mt-6">
+          {/* Setup Checklist - shows when setup is incomplete */}
+          {!isLoading && !setupCompleteWithConnections && (
+            <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20">
+              <CardContent className="p-4">
+                <h3 className="font-semibold text-sm mb-3 text-foreground">Setup Checklist</h3>
+                <div className="space-y-2">
+                  <ChecklistItem
+                    done={!!bookingSlug}
+                    label="Set your booking URL"
+                    action={
+                      !bookingSlug ? (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => navigate(`/team/${teamId}/settings`)}
+                        >
+                          Team Settings → Booking URL
+                        </Button>
+                      ) : undefined
+                    }
+                  />
+                  <ChecklistItem
+                    done={hasConnections}
+                    label="Connect your integrations"
+                    action={
+                      !hasConnections ? (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => setActiveTab("connections")}
+                        >
+                          Go to Connections
+                        </Button>
+                      ) : undefined
+                    }
+                  />
+                  <ChecklistItem
+                    done={hasAvailability === true}
+                    label="Configure team availability hours"
+                    action={
+                      hasAvailability !== true ? (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => setActiveTab("availability")}
+                        >
+                          Go to Availability
+                        </Button>
+                      ) : undefined
+                    }
+                  />
+                  <ChecklistItem
+                    done={!!hasCalendars}
+                    label="Create your first calendar"
+                    action={
+                      !hasCalendars ? (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs"
+                          onClick={handleCreate}
+                        >
+                          Create now
+                        </Button>
+                      ) : undefined
+                    }
+                  />
+                  <ChecklistItem
+                    done={hasActiveCalendar}
+                    label="Activate a calendar"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Content */}
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-32 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : !calendars || calendars.length === 0 ? (
+            <EmptyCalendarsState onCreateClick={handleCreate} />
+          ) : (
+            <div className="space-y-3">
+              {calendars.map((calendar) => (
+                <CalendarCard
+                  key={calendar.id}
+                  calendar={calendar}
+                  teamId={teamId || ""}
+                  bookingSlug={bookingSlug}
+                  onEdit={handleEdit}
+                  onToggleActive={handleToggleActive}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Availability Tab */}
+        <TabsContent value="availability" className="mt-6">
+          <AvailabilitySettings />
+        </TabsContent>
+
+        {/* Connections Tab */}
+        <TabsContent value="connections" className="mt-6">
+          <ConnectionsSettings />
+        </TabsContent>
+      </Tabs>
 
       {/* Calendar Editor */}
       <CalendarEditor
