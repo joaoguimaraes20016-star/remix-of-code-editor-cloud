@@ -103,6 +103,20 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
     }
   }, [runtime]);
 
+  // Report validation state to runtime
+  useEffect(() => {
+    if (!runtime?.setBlockValidation || !blockId || !stepId) return;
+    if (!phone.trim()) {
+      runtime.setBlockValidation(blockId, stepId, true, []);
+      return;
+    }
+    const cc = getCountryCodeForValidation(selectedCountryId);
+    const result = validatePhone(phone, cc);
+    runtime.setBlockValidation(blockId, stepId, result.valid,
+      result.valid ? [] : [result.error || 'Please enter a valid phone number']
+    );
+  }, [runtime, phone, blockId, stepId, selectedCountryId, getCountryCodeForValidation]);
+
   // Helper function to map country ID to ISO country code for validation
   const getCountryCodeForValidation = useCallback((countryId: string): string => {
     if (countryId === '1' || selectedCountry?.code === '+1') {
@@ -381,6 +395,7 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
             onChange={(e) => {
               const newValue = e.target.value;
               setPhone(newValue);
+              runtime?.setFormField('phone', newValue);
               // Mark as touched on first interaction
               if (!touchedFields.phone) {
                 setTouchedFields(prev => ({ ...prev, phone: true }));

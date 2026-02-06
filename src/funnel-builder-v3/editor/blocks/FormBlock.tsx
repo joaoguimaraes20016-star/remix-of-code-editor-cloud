@@ -263,6 +263,26 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
     };
   }, []);
 
+  // Report validation state to runtime
+  useEffect(() => {
+    if (!runtime?.setBlockValidation || !blockId || !stepId) return;
+    const errors: string[] = [];
+    for (const field of fields || []) {
+      const value = localValues[field.id];
+      if (!value || !value.trim()) continue; // Empty is valid at this layer
+      if (field.type === 'email') {
+        const r = validateEmail(value);
+        if (!r.valid) errors.push(r.error || 'Invalid email');
+      }
+      if (field.type === 'phone') {
+        const cc = getCountryCodeForValidation(phoneCountryIds[field.id] || defaultCountryId || countryCodes[0]?.id || '1');
+        const r = validatePhone(value, cc);
+        if (!r.valid) errors.push(r.error || 'Invalid phone number');
+      }
+    }
+    runtime.setBlockValidation(blockId, stepId, errors.length === 0, errors);
+  }, [runtime, blockId, stepId, localValues, fields, phoneCountryIds, defaultCountryId, countryCodes, getCountryCodeForValidation]);
+
   // Shared submission logic - called by both button click (direct) and Enter key (form submit)
   const doSubmit = () => {
     if (!runtime) {

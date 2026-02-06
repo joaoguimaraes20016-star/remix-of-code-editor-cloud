@@ -6,6 +6,7 @@ import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRunt
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
+import { toast } from 'sonner';
 
 interface ButtonBlockProps {
   content: ButtonContent;
@@ -92,6 +93,18 @@ export function ButtonBlock({ content, blockId, stepId, isPreview }: ButtonBlock
     if (!runtime) {
       // In editor mode, don't do anything
       return;
+    }
+
+    // Check step validation before any action
+    if (runtime.getStepValidation) {
+      const validation = runtime.getStepValidation();
+      if (!validation.valid) {
+        toast.error(validation.errors[0] || 'Please complete all fields correctly', {
+          duration: 5000,
+        });
+        setIsNavigating(false);
+        return;
+      }
     }
 
     // Performance tracking: measure button click to navigation time

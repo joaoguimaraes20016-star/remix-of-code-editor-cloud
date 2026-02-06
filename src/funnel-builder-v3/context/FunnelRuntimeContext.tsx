@@ -20,6 +20,13 @@ export interface AccumulatedFunnelData {
   lastStepIndex: number;
 }
 
+// Validation state reported by form blocks
+interface BlockValidationState {
+  stepId: string;
+  isValid: boolean;
+  errors: string[];
+}
+
 interface FunnelRuntimeContextType {
   // Current state
   currentStepId: string;
@@ -58,6 +65,10 @@ interface FunnelRuntimeContextType {
   closePopup: () => void;
   markPopupCompleted: (blockId: string) => void;
   isPopupCompleted: (blockId: string) => boolean;
+  
+  // Validation state management
+  setBlockValidation: (blockId: string, stepId: string, isValid: boolean, errors: string[]) => void;
+  getStepValidation: () => { valid: boolean; errors: string[] };
 }
 
 const FunnelRuntimeContext = createContext<FunnelRuntimeContextType | null>(null);
@@ -115,6 +126,9 @@ export function FunnelRuntimeProvider({
   
   // Navigation guard: prevent concurrent navigation calls
   const isNavigatingRef = useRef(false);
+  
+  // Validation state ref - never triggers re-renders
+  const blockValidationsRef = useRef<Map<string, BlockValidationState>>(new Map());
   
   // Debug: Log provider initialization
   useEffect(() => {
@@ -331,6 +345,21 @@ export function FunnelRuntimeProvider({
     return completedPopups.includes(blockId);
   }, [completedPopups]);
 
+  // Validation state management
+  const setBlockValidation = useCallback((blockId: string, stepId: string, isValid: boolean, errors: string[]) => {
+    blockValidationsRef.current.set(blockId, { stepId, isValid, errors });
+  }, []);
+
+  const getStepValidation = useCallback((): { valid: boolean; errors: string[] } => {
+    const allErrors: string[] = [];
+    for (const [, state] of blockValidationsRef.current) {
+      if (state.stepId === currentStepIdRef.current && !state.isValid) {
+        allErrors.push(...state.errors);
+      }
+    }
+    return { valid: allErrors.length === 0, errors: allErrors };
+  }, []);
+
   const canGoBack = stepHistory.length > 1;
   const canGoForward = getStepIndex() < funnel.steps.length - 1;
   const totalSteps = funnel.steps.length;
@@ -365,6 +394,9 @@ export function FunnelRuntimeProvider({
     closePopup,
     markPopupCompleted,
     isPopupCompleted,
+    // Validation state
+    setBlockValidation,
+    getStepValidation,
   }), [
     currentStepId,
     stepHistory,
@@ -390,6 +422,8 @@ export function FunnelRuntimeProvider({
     closePopup,
     markPopupCompleted,
     isPopupCompleted,
+    setBlockValidation,
+    getStepValidation,
   ]);
 
   return (

@@ -127,6 +127,20 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
     }
   }, [runtime]);
 
+  // Report validation state to runtime
+  useEffect(() => {
+    if (!runtime?.setBlockValidation || !blockId || !stepId) return;
+    if (!email.trim()) {
+      // Empty field: valid (ButtonBlock doesn't enforce required-ness)
+      runtime.setBlockValidation(blockId, stepId, true, []);
+      return;
+    }
+    const result = validateEmail(email);
+    runtime.setBlockValidation(blockId, stepId, result.valid, 
+      result.valid ? [] : [result.error || 'Please enter a valid email address']
+    );
+  }, [runtime, email, blockId, stepId]);
+
   // Shared submission logic - called by both button click (direct) and Enter key (form submit)
   const doSubmit = () => {
     if (!runtime) return; // Editor mode
@@ -344,6 +358,7 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
             onChange={(e) => {
               const newValue = e.target.value;
               setEmail(newValue);
+              runtime?.setFormField('email', newValue);
               // Mark as touched on first interaction
               if (!touchedFields.email) {
                 setTouchedFields(prev => ({ ...prev, email: true }));
