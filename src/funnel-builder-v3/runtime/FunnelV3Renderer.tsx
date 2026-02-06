@@ -177,18 +177,23 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     return convertDocumentToFunnel(document);
   }, [document]);
 
+  // Stable error handler - prevents useUnifiedLeadSubmit from recreating
+  // doSubmit/submit on every render, which would cascade to handleFormSubmit
+  // → onFormSubmit → submitForm → context value → all consumer re-renders
+  const handleSubmitError = useCallback((error: any) => {
+    if (import.meta.env.DEV) {
+      console.error('[FunnelV3Renderer] Submission error callback:', error);
+    }
+    toast.error('Failed to submit form');
+  }, []);
+
   // Use unified lead submission hook
   // Note: Only submit() is used - saveDraft() removed for local-first architecture
   // Final submission happens on last step or via beforeunload
   const { submit } = useUnifiedLeadSubmit({
     funnelId,
     teamId,
-    onError: (error) => {
-      if (import.meta.env.DEV) {
-        console.error('[FunnelV3Renderer] Submission error callback:', error);
-      }
-      toast.error('Failed to submit form');
-    },
+    onError: handleSubmitError,
   });
 
   // Handle form submission using unified pipeline

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode, useEffect, useRef } from 'react';
 import { Funnel, FunnelStep } from '@/funnel-builder-v3/types/funnel';
 
 // Form data collected during funnel execution
@@ -333,35 +333,67 @@ export function FunnelRuntimeProvider({
 
   const canGoBack = stepHistory.length > 1;
   const canGoForward = getStepIndex() < funnel.steps.length - 1;
+  const totalSteps = funnel.steps.length;
+
+  // Memoize context value to prevent unnecessary re-renders of all consumers.
+  // Without this, every parent re-render (e.g. from useUnifiedLeadSubmit's
+  // isSubmitting state change) creates a new context object, causing every
+  // block component in every pre-rendered step to re-render.
+  const contextValue = useMemo<FunnelRuntimeContextType>(() => ({
+    currentStepId,
+    stepHistory,
+    formData,
+    selections,
+    isSubmitting,
+    goToStep,
+    goToNextStep,
+    goToPrevStep,
+    canGoBack,
+    canGoForward,
+    setFormField,
+    setSelection,
+    submitForm,
+    getAccumulatedData,
+    setConsent,
+    getCurrentStep,
+    getStepIndex,
+    totalSteps,
+    // Popup state
+    activePopup,
+    completedPopups,
+    openPopup,
+    closePopup,
+    markPopupCompleted,
+    isPopupCompleted,
+  }), [
+    currentStepId,
+    stepHistory,
+    formData,
+    selections,
+    isSubmitting,
+    goToStep,
+    goToNextStep,
+    goToPrevStep,
+    canGoBack,
+    canGoForward,
+    setFormField,
+    setSelection,
+    submitForm,
+    getAccumulatedData,
+    setConsent,
+    getCurrentStep,
+    getStepIndex,
+    totalSteps,
+    activePopup,
+    completedPopups,
+    openPopup,
+    closePopup,
+    markPopupCompleted,
+    isPopupCompleted,
+  ]);
 
   return (
-    <FunnelRuntimeContext.Provider value={{
-      currentStepId,
-      stepHistory,
-      formData,
-      selections,
-      isSubmitting,
-      goToStep,
-      goToNextStep,
-      goToPrevStep,
-      canGoBack,
-      canGoForward,
-      setFormField,
-      setSelection,
-      submitForm,
-      getAccumulatedData,
-      setConsent,
-      getCurrentStep,
-      getStepIndex,
-      totalSteps: funnel.steps.length,
-      // Popup state
-      activePopup,
-      completedPopups,
-      openPopup,
-      closePopup,
-      markPopupCompleted,
-      isPopupCompleted,
-    }}>
+    <FunnelRuntimeContext.Provider value={contextValue}>
       {children}
     </FunnelRuntimeContext.Provider>
   );
