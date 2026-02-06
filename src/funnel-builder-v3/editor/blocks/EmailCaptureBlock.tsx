@@ -354,7 +354,7 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
             onBlur={handleEmailBlur}
             onFocus={handleEmailFocus}
           />
-          {emailError && (
+          {emailError && touchedFields.email && (
             <div className="flex items-center gap-1 text-xs text-destructive mt-1">
               <AlertCircle className="h-3 w-3" />
               <span>{emailError}</span>
@@ -368,10 +368,10 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
           onMouseEnter={() => canEdit && setIsButtonHovered(true)}
           onMouseLeave={() => setIsButtonHovered(false)}
           disabled={
-            // Only disable for touched fields with errors or empty required fields
-            (touchedFields.email && !!emailError) || 
-            (touchedFields.email && !email.trim()) ||
-            (consent.enabled && consent.required && touchedFields.consent && !hasConsented)
+            // Synchronous validation - no delay, no race conditions
+            !email.trim() || 
+            !validateEmail(email).valid ||
+            (consent.enabled && consent.required && !hasConsented)
           }
           className={cn(
             "shrink-0 whitespace-nowrap",

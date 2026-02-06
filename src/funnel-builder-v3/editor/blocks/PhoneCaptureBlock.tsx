@@ -103,23 +103,25 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
     }
   }, [runtime]);
 
+  // Helper function to map country ID to ISO country code for validation
+  const getCountryCodeForValidation = useCallback((countryId: string): string => {
+    if (countryId === '1' || selectedCountry?.code === '+1') {
+      return 'US';
+    } else if (countryId.length === 2) {
+      // Assume it's already an ISO code like 'us', 'uk', etc.
+      return countryId.toUpperCase();
+    } else {
+      // Fallback to US if we can't determine
+      return 'US';
+    }
+  }, [selectedCountry]);
+
   // Shared submission logic - called by both button click (direct) and Enter key (form submit)
   const doSubmit = () => {
     if (!runtime) return; // Editor mode
 
     // Validate phone number format
-    // Map country ID to ISO country code (e.g., 'us' -> 'US', '1' -> 'US')
-    // If selectedCountryId is numeric, try to map it to ISO code
-    let countryCodeForValidation = selectedCountryId;
-    if (selectedCountryId === '1' || selectedCountry?.code === '+1') {
-      countryCodeForValidation = 'US';
-    } else if (selectedCountryId.length === 2) {
-      // Assume it's already an ISO code like 'us', 'uk', etc.
-      countryCodeForValidation = selectedCountryId.toUpperCase();
-    } else {
-      // Fallback to US if we can't determine
-      countryCodeForValidation = 'US';
-    }
+    const countryCodeForValidation = getCountryCodeForValidation(selectedCountryId);
     
     const validation = validatePhone(phone, countryCodeForValidation);
     if (!validation.valid) {
@@ -211,37 +213,19 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
       return;
     }
     
-    // Debounce validation by 500ms
-    validateTimeoutRef.current = setTimeout(() => {
-      // Map country ID to ISO country code for validation (same logic as doSubmit)
-      let countryCodeForValidation = selectedCountryId;
-      if (selectedCountryId === '1' || selectedCountry?.code === '+1') {
-        countryCodeForValidation = 'US';
-      } else if (selectedCountryId.length === 2) {
-        countryCodeForValidation = selectedCountryId.toUpperCase();
-      } else {
-        countryCodeForValidation = 'US';
-      }
-      
-      const validation = validatePhone(value, countryCodeForValidation);
-      setPhoneError(validation.valid ? null : validation.error || null);
-    }, 500);
-  }, [touchedFields.phone, selectedCountryId, selectedCountry]);
+      // Debounce validation by 500ms
+      validateTimeoutRef.current = setTimeout(() => {
+        const countryCodeForValidation = getCountryCodeForValidation(selectedCountryId);
+        const validation = validatePhone(value, countryCodeForValidation);
+        setPhoneError(validation.valid ? null : validation.error || null);
+      }, 500);
+  }, [touchedFields.phone, selectedCountryId, selectedCountry, getCountryCodeForValidation]);
 
   // Validate phone on blur
   const handlePhoneBlur = () => {
     setTouchedFields(prev => ({ ...prev, phone: true }));
     if (phone.trim().length > 0) {
-      // Map country ID to ISO country code for validation (same logic as doSubmit)
-      let countryCodeForValidation = selectedCountryId;
-      if (selectedCountryId === '1' || selectedCountry?.code === '+1') {
-        countryCodeForValidation = 'US';
-      } else if (selectedCountryId.length === 2) {
-        countryCodeForValidation = selectedCountryId.toUpperCase();
-      } else {
-        countryCodeForValidation = 'US';
-      }
-      
+      const countryCodeForValidation = getCountryCodeForValidation(selectedCountryId);
       const validation = validatePhone(phone, countryCodeForValidation);
       setPhoneError(validation.valid ? null : validation.error || null);
     } else {
@@ -423,7 +407,7 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
             readOnly={canEdit}
           />
         </div>
-        {phoneError && (
+        {phoneError && touchedFields.phone && (
           <div className="flex items-center gap-1 text-xs text-destructive mt-1 px-1">
             <AlertCircle className="h-3 w-3" />
             <span>{phoneError}</span>
@@ -483,10 +467,10 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
         onMouseEnter={() => canEdit && setIsButtonHovered(true)}
         onMouseLeave={() => setIsButtonHovered(false)}
         disabled={
-          // Only disable for touched fields with errors or empty required fields
-          (touchedFields.phone && !!phoneError) || 
-          (touchedFields.phone && !phone.trim()) ||
-          (consent.enabled && consent.required && touchedFields.consent && !hasConsented)
+          // Synchronous validation - no delay, no race conditions
+          !phone.trim() ||
+          !validatePhone(phone, getCountryCodeForValidation(selectedCountryId)).valid ||
+          (consent.enabled && consent.required && !hasConsented)
         }
         className={cn(
           sizeClasses[size],

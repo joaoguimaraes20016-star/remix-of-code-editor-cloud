@@ -133,6 +133,17 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
     }
   }, [runtime, fields, defaultCountryId, countryCodes]);
 
+  // Helper function to map country ID to ISO country code for validation
+  const getCountryCodeForValidation = useCallback((fieldCountryId: string): string => {
+    if (fieldCountryId === '1' || countryCodes.find(c => c.id === fieldCountryId)?.code === '+1') {
+      return 'US';
+    } else if (fieldCountryId.length === 2) {
+      return fieldCountryId.toUpperCase();
+    } else {
+      return 'US';
+    }
+  }, [countryCodes]);
+
   // Real-time debounced validation (500ms after user stops typing)
   const validateFieldRealtime = useCallback((field: typeof fields[0], value: string) => {
     // Clear existing timeout for this field
@@ -172,16 +183,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
         error = validation.valid ? null : validation.error || null;
       } else if (field.type === 'phone') {
         const fieldCountryId = phoneCountryIds[field.id] || defaultCountryId || countryCodes[0]?.id || '1';
-        
-        let countryCodeForValidation = fieldCountryId;
-        if (fieldCountryId === '1' || countryCodes.find(c => c.id === fieldCountryId)?.code === '+1') {
-          countryCodeForValidation = 'US';
-        } else if (fieldCountryId.length === 2) {
-          countryCodeForValidation = fieldCountryId.toUpperCase();
-        } else {
-          countryCodeForValidation = 'US';
-        }
-        
+        const countryCodeForValidation = getCountryCodeForValidation(fieldCountryId);
         const validation = validatePhone(value, countryCodeForValidation);
         error = validation.valid ? null : validation.error || null;
       }
@@ -196,7 +198,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
         });
       }
     }, 500);
-  }, [touchedFields, phoneCountryIds, defaultCountryId, countryCodes]);
+  }, [touchedFields, phoneCountryIds, defaultCountryId, countryCodes, getCountryCodeForValidation]);
 
   const handleFieldChange = (fieldId: string, value: string, field?: typeof fields[0]) => {
     setLocalValues(prev => ({ ...prev, [fieldId]: value }));
@@ -236,17 +238,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
       error = validation.valid ? null : validation.error || null;
     } else if (field.type === 'phone') {
       const fieldCountryId = phoneCountryIds[field.id] || defaultCountryId || countryCodes[0]?.id || '1';
-      
-      // Map country ID to ISO country code
-      let countryCodeForValidation = fieldCountryId;
-      if (fieldCountryId === '1' || countryCodes.find(c => c.id === fieldCountryId)?.code === '+1') {
-        countryCodeForValidation = 'US';
-      } else if (fieldCountryId.length === 2) {
-        countryCodeForValidation = fieldCountryId.toUpperCase();
-      } else {
-        countryCodeForValidation = 'US';
-      }
-      
+      const countryCodeForValidation = getCountryCodeForValidation(fieldCountryId);
       const validation = validatePhone(value, countryCodeForValidation);
       error = validation.valid ? null : validation.error || null;
     }
@@ -303,17 +295,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
       if (field.type === 'phone' && value) {
         // Get country code for this field
         const fieldCountryId = phoneCountryIds[field.id] || defaultCountryId || countryCodes[0]?.id || '1';
-        
-        // Map country ID to ISO country code
-        let countryCodeForValidation = fieldCountryId;
-        if (fieldCountryId === '1' || countryCodes.find(c => c.id === fieldCountryId)?.code === '+1') {
-          countryCodeForValidation = 'US';
-        } else if (fieldCountryId.length === 2) {
-          countryCodeForValidation = fieldCountryId.toUpperCase();
-        } else {
-          countryCodeForValidation = 'US';
-        }
-        
+        const countryCodeForValidation = getCountryCodeForValidation(fieldCountryId);
         const validation = validatePhone(value, countryCodeForValidation);
         if (!validation.valid) {
           validationErrors[field.id] = validation.error || 'Please enter a valid phone number';
@@ -758,7 +740,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
               />
             )}
             </div>
-            {fieldErrors[field.id] && (
+            {fieldErrors[field.id] && touchedFields[field.id] && (
               <div className="flex items-center gap-1 text-xs text-destructive mt-1 px-1">
                 <AlertCircle className="h-3 w-3" />
                 <span>{fieldErrors[field.id]}</span>
@@ -807,16 +789,23 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
         onMouseEnter={() => canEdit && setIsButtonHovered(true)}
         onMouseLeave={() => setIsButtonHovered(false)}
         disabled={
-          // Only disable for touched fields with errors
-          Object.entries(fieldErrors).some(([fieldId, _]) => touchedFields[fieldId]) ||
-          // Required fields are empty AND touched
-          (fields || []).some(f => 
-            f.required && 
-            touchedFields[f.id] && 
-            !localValues[f.id]?.trim()
-          ) ||
-          // Consent required but not given AND touched
-          (consent.enabled && consent.required && touchedFields.consent && !hasConsented)
+          // Synchronous validation - no delay, no race conditions
+          // Required fields are empty
+          (fields || []).some(f => f.required && !localValues[f.id]?.trim()) ||
+          // Validate email/phone fields synchronously
+          (fields || []).some(f => {
+            const val = localValues[f.id];
+            if (!val || !val.trim()) return false;
+            if (f.type === 'email') return !validateEmail(val).valid;
+            if (f.type === 'phone') {
+              const fieldCountryId = phoneCountryIds[f.id] || defaultCountryId || countryCodes[0]?.id || '1';
+              const countryCodeForValidation = getCountryCodeForValidation(fieldCountryId);
+              return !validatePhone(val, countryCodeForValidation).valid;
+            }
+            return false;
+          }) ||
+          // Consent required but not given
+          (consent.enabled && consent.required && !hasConsented)
         }
         className={cn(
           sizeClasses[size],
@@ -840,16 +829,20 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
         )}
       </Button>
 
-      {/* Helper text when button is disabled */}
+      {/* Helper text when button is disabled - only show after user has interacted */}
       {!isPreview && (
-        Object.entries(fieldErrors).some(([fieldId, _]) => touchedFields[fieldId]) ||
-        (fields || []).some(f => f.required && touchedFields[f.id] && !localValues[f.id]?.trim()) ||
-        (consent.enabled && consent.required && touchedFields.consent && !hasConsented)
+        // Check if any field has been touched
+        Object.keys(touchedFields).some(key => key !== 'consent' && touchedFields[key]) ||
+        touchedFields.consent
+      ) && (
+        (Object.keys(fieldErrors).length > 0 ||
+         (fields || []).some(f => f.required && !localValues[f.id]?.trim()) ||
+         (consent.enabled && consent.required && !hasConsented))
       ) && (
         <div className="text-xs text-muted-foreground text-center mt-2">
-          {Object.entries(fieldErrors).some(([fieldId, _]) => touchedFields[fieldId])
+          {Object.keys(fieldErrors).length > 0
             ? "Please fix the errors above to continue"
-            : (fields || []).some(f => f.required && touchedFields[f.id] && !localValues[f.id]?.trim())
+            : (fields || []).some(f => f.required && !localValues[f.id]?.trim())
             ? "Please fill in all required fields"
             : "Please accept the privacy policy to continue"}
         </div>
