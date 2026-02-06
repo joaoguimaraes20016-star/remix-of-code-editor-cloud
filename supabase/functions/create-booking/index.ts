@@ -342,14 +342,28 @@ serve(async (req) => {
       .single();
 
     if (insertError) {
-      console.error("[create-booking] Insert error:", insertError);
+      console.error("[create-booking] Insert error:", {
+        error: insertError,
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        appointmentData: JSON.stringify(appointmentData, null, 2),
+      });
+      // Return the actual database error message so users can see what's wrong
+      const errorMessage = insertError.message || "Failed to create appointment";
+      const errorDetails = insertError.details || insertError.hint || insertError.code;
       return new Response(
-        JSON.stringify({ error: "Failed to create appointment", details: insertError.message }),
+        JSON.stringify({ 
+          error: errorMessage,
+          details: errorDetails,
+          code: insertError.code,
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 10. Schedule reminders
+    // 11. Schedule reminders
     if (reminder_config && Array.isArray(reminder_config)) {
       const reminderRows = reminder_config
         .map((rc: { type: string; template: string; offset_hours: number }) => {
@@ -376,7 +390,7 @@ serve(async (req) => {
       }
     }
 
-    // 11. Upsert contact
+    // 12. Upsert contact
     const { data: existingContact } = await supabase
       .from("contacts")
       .select("id")
@@ -411,7 +425,7 @@ serve(async (req) => {
         .eq("id", funnel_lead_id);
     }
 
-    // 13. Fire automation trigger (appointment_booked)
+    // 14. Fire automation trigger (appointment_booked)
     try {
       await supabase.functions.invoke("automation-trigger", {
         body: {

@@ -176,18 +176,35 @@ export default function PublicBookingPage() {
         // supabase.functions.invoke wraps non-2xx responses as FunctionsHttpError.
         // The actual error body from the edge function is in error.context.
         let errorMsg = "Failed to create booking";
+        let errorDetails = null;
         try {
           // Try to extract the JSON error body from the edge function response
-          if (error.context && typeof error.context.json === "function") {
-            const body = await error.context.json();
-            errorMsg = body?.error || body?.details || error.message || errorMsg;
-          } else {
+          if (error.context) {
+            // For FunctionsHttpError, the response body is accessible via error.context
+            const response = error.context.response;
+            if (response && typeof response.json === "function") {
+              const body = await response.json();
+              errorMsg = body?.error || error.message || errorMsg;
+              errorDetails = body?.details || body?.hint || body?.code || null;
+            } else if (error.context.body) {
+              // Sometimes the body is directly accessible
+              const body = typeof error.context.body === "string" 
+                ? JSON.parse(error.context.body) 
+                : error.context.body;
+              errorMsg = body?.error || error.message || errorMsg;
+              errorDetails = body?.details || body?.hint || body?.code || null;
+            }
+          }
+          if (!errorMsg || errorMsg === "Failed to create booking") {
             errorMsg = error.message || errorMsg;
           }
-        } catch {
+        } catch (parseErr) {
+          console.error("[PublicBookingPage] Error parsing error response:", parseErr);
           errorMsg = error.message || errorMsg;
         }
-        throw new Error(errorMsg);
+        // Include details in the error message if available
+        const fullErrorMsg = errorDetails ? `${errorMsg} (${errorDetails})` : errorMsg;
+        throw new Error(fullErrorMsg);
       }
 
       if (data?.error) {
