@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { isParentAccountIdColumnError } from "@/lib/db/checkColumnExists";
 
 interface Team {
   id: string;
@@ -189,7 +190,7 @@ const Dashboard = () => {
           try {
             await supabase
               .from('teams')
-              .update({ parent_account_id: null })
+              .update({ parent_account_id: null } as any)
               .eq('id', mainAccount.id);
           } catch (e: any) {
             // Column doesn't exist yet - that's fine
@@ -210,7 +211,7 @@ const Dashboard = () => {
           try {
             await supabase
               .from('teams')
-              .update({ parent_account_id: null })
+              .update({ parent_account_id: null } as any)
               .eq('id', mainAccount.id);
           } catch (e) {
             // Column doesn't exist yet - that's fine, team is already a main account
@@ -267,8 +268,7 @@ const Dashboard = () => {
         .insert({ 
           name: defaultTeamName, 
           created_by: currentUser.id,
-          parent_account_id: null // Main account has no parent
-        })
+        } as any)
         .select()
         .single();
 
@@ -333,9 +333,9 @@ const Dashboard = () => {
       if (mainAccountData?.teams?.id) {
         try {
           // Try to check if column exists by attempting a select
-          const { error: testError } = await supabase
+          const { error: testError } = await (supabase
             .from('teams')
-            .select('parent_account_id')
+            .select('parent_account_id') as any)
             .limit(1);
           
           if (!testError) {

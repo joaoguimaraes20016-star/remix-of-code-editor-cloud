@@ -18,6 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { checkParentAccountIdExists, isParentAccountIdColumnError } from "@/lib/db/checkColumnExists";
 
 interface Subaccount {
   id: string;
@@ -54,9 +55,9 @@ export function SubaccountsList({ parentAccountId, canCreate }: SubaccountsListP
   const loadSubaccounts = async () => {
     try {
       // Try to load subaccounts (only works if parent_account_id column exists)
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('teams')
-        .select('id, name, logo_url, created_at')
+        .select('id, name, logo_url, created_at') as any)
         .eq('parent_account_id', parentAccountId)
         .order('created_at', { ascending: false });
 

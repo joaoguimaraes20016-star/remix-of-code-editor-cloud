@@ -30,9 +30,9 @@ export function useTeamRole(teamId: string | undefined) {
 
         // Try to check if it's a main account (parent_account_id column might not exist yet)
         try {
-          const { data: teamData, error: teamError } = await supabase
+          const { data: teamData, error: teamError } = await (supabase
             .from('teams')
-            .select('parent_account_id')
+            .select('parent_account_id') as any)
             .eq('id', teamId)
             .maybeSingle();
 
@@ -45,7 +45,7 @@ export function useTeamRole(teamId: string | undefined) {
               setIsMainAccount(true);
             }
           } else if (teamData) {
-            setIsMainAccount(!teamData.parent_account_id); // Main account has null parent_account_id
+            setIsMainAccount(!(teamData as any).parent_account_id); // Main account has null parent_account_id
           } else {
             // No data - treat as main account
             setIsMainAccount(true);

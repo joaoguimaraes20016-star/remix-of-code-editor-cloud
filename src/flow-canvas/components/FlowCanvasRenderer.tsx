@@ -728,6 +728,7 @@ function ButtonRenderer({ element, onClick, isSubmitting }: ButtonRendererProps)
           background: gradientBackground,
           color: customTextColor,
           borderRadius: customBorderRadius,
+          touchAction: 'manipulation', // Eliminate 300ms mobile tap delay
           // Handle outline mode border - respect user's border settings
           ...(isOutlineMode ? {
             borderWidth: element.styles?.borderWidth || '2px',
