@@ -52,6 +52,60 @@ function convertDocumentToFunnel(document: FunnelV3RendererProps['document']): F
   };
 }
 
+// Helper to extract identity by matching form data keys to field types in blocks
+function extractIdentityFromFormBlocks(
+  formData: Record<string, any>,
+  steps: FunnelStep[]
+): { name?: string; email?: string; phone?: string } {
+  const identity: { name?: string; email?: string; phone?: string } = {};
+  
+  // Build a map of field ID -> field type by scanning all form blocks
+  const fieldTypeMap: Record<string, string> = {};
+  
+  for (const step of steps) {
+    for (const block of step.blocks || []) {
+      if (block.type === 'form' && block.content?.fields) {
+        for (const field of block.content.fields) {
+          if (field.id && field.type) {
+            fieldTypeMap[field.id] = field.type;
+          }
+        }
+      }
+      // Also check EmailCaptureBlock and PhoneCaptureBlock
+      if (block.type === 'email-capture') {
+        // EmailCaptureBlock stores with key 'email'
+        fieldTypeMap['email'] = 'email';
+      }
+      if (block.type === 'phone-capture') {
+        // PhoneCaptureBlock stores with key 'phone'
+        fieldTypeMap['phone'] = 'phone';
+      }
+    }
+  }
+  
+  // Now match form data keys to field types
+  for (const [fieldId, value] of Object.entries(formData)) {
+    if (typeof value !== 'string' || !value.trim()) continue;
+    
+    const fieldType = fieldTypeMap[fieldId];
+    if (!fieldType) continue;
+    
+    if (fieldType === 'email' && !identity.email) {
+      identity.email = value;
+    } else if (fieldType === 'phone' && !identity.phone) {
+      identity.phone = value;
+    } else if (fieldType === 'text') {
+      // For text fields, check if it looks like a name (no @ or numbers)
+      const looksLikeName = !value.includes('@') && !/^\d+$/.test(value);
+      if (looksLikeName && !identity.name) {
+        identity.name = value;
+      }
+    }
+  }
+  
+  return identity;
+}
+
 // Memoized step component - only re-renders when isActive changes
 // This prevents cascade re-renders of all steps when only one step's visibility changes
 const MemoizedStep = memo(function MemoizedStep({ 
@@ -288,13 +342,27 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     // Track that we've "submitted" from this step (for handleStepChange to know)
     lastSubmitStepRef.current = currentStepId;
     
-    // Extract identity from all accumulated data
-    const { identity } = extractIdentityFromAnswers(allData);
+    // Extract identity using TWO methods:
+    // 1. Semantic keys (for EmailCaptureBlock, PhoneCaptureBlock, etc.)
+    const { identity: identityFromKeys } = extractIdentityFromAnswers(allData);
+    
+    // 2. Field type matching (for FormBlock with numeric IDs)
+    const identityFromBlocks = extractIdentityFromFormBlocks(allData, funnel.steps);
+    
+    // Merge both sources (field types take precedence for FormBlock data)
+    const identity = {
+      name: identityFromBlocks.name || identityFromKeys.name,
+      email: identityFromBlocks.email || identityFromKeys.email,
+      phone: identityFromBlocks.phone || identityFromKeys.phone,
+    };
     
     console.log('[FunnelV3Renderer] Submitting step data', {
       stepIndex,
       isLastStep,
       hasIdentity: !!(identity.name || identity.email || identity.phone),
+      identityFromKeys: !!(identityFromKeys.name || identityFromKeys.email || identityFromKeys.phone),
+      identityFromBlocks: !!(identityFromBlocks.name || identityFromBlocks.email || identityFromBlocks.phone),
+      identity,
     });
     
     // Build payload for this step
