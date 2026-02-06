@@ -244,7 +244,7 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
 
   // Build option classes based on style (without custom colors - those are inline)
   const getOptionClasses = (isSelected: boolean, hasCustomBg: boolean) => {
-    const baseClasses = 'w-full p-4 rounded-xl text-left transition-all flex items-center justify-between gap-3';
+    const baseClasses = 'w-full p-4 rounded-xl text-left flex items-center justify-between gap-3';
     
     // If option has custom background, use minimal styling
     if (hasCustomBg) {
@@ -363,9 +363,10 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
           return (
             <button
               key={option.id}
+              type="button"
               onClick={() => handleSelect(option.id)}
               className={getOptionClasses(isSelected, hasCustomBg)}
-              style={optionInlineStyle}
+              style={{ ...optionInlineStyle, touchAction: 'manipulation' as const }}
             >
               <span 
                 className={cn(
@@ -470,6 +471,7 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
         
         return (
           <Button
+            type="button"
             variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
             onClick={handleButtonClick}
             disabled={isPreview && selected.length === 0}
@@ -477,11 +479,11 @@ export function VideoQuestionBlock({ content, blockId, stepId, isPreview }: Vide
               sizeClasses[size],
               fullWidth && 'w-full',
               hasCustomBg && 'hover:opacity-90',
-              'mt-4 font-medium transition-all rounded-xl',
+              'mt-4 font-medium rounded-xl',
               isPreview && selected.length === 0 && 'opacity-50 cursor-not-allowed',
               isButtonSelected && 'ring-2 ring-primary ring-offset-2'
             )}
-            style={customStyle}
+            style={{ ...customStyle, touchAction: 'manipulation' as const }}
           >
             {hasTextGradient ? (
               <span

@@ -67,7 +67,6 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
     : defaultCountryCodes;
   
   const [phone, setPhone] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
   const [selectedCountryId, setSelectedCountryId] = useState(
     globalDefaultCountryId || countryCodes[0]?.id || '1'
@@ -97,9 +96,8 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
     }
   }, [runtime]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  // Shared submission logic - called by both button click (direct) and Enter key (form submit)
+  const doSubmit = () => {
     if (!runtime) return; // Editor mode
 
     if (!phone.trim()) {
@@ -111,8 +109,6 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
     const fullPhoneNumber = selectedCountry ? `${selectedCountry.code}${phone}` : phone;
     runtime.setFormField('phone', fullPhoneNumber);
     runtime.setFormField('phoneCountryCode', selectedCountry?.code || '');
-    
-    setIsSubmitting(true);
     
     try {
       // Handle action based on submitButton configuration
@@ -161,17 +157,25 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
           }
           break;
       }
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      console.error('[PhoneCaptureBlock] doSubmit unexpected error:', error);
     }
   };
 
-  // Handle button click - select in editor, normal behavior in preview
+  // Form onSubmit handler - only fires on Enter key since button is type="button"
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    doSubmit();
+  };
+
+  // Handle button click - select in editor, submit directly in preview
   const handleButtonClick = (e: React.MouseEvent) => {
     if (!isPreview) {
       e.preventDefault();
       e.stopPropagation();
       setSelectedChildElement('submit-button');
+    } else {
+      doSubmit();
     }
   };
 
@@ -231,7 +235,7 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
   const canEdit = blockId && stepId && !isPreview;
 
   const formElement = (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} noValidate className="space-y-3">
       <div 
         className={cn(
           "flex gap-2 relative p-1 -m-1 rounded-lg transition-all",
@@ -328,28 +332,27 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
       )}
 
       <Button 
-        type="submit"
+        type="button"
         variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
         onClick={handleButtonClick}
         className={cn(
           sizeClasses[size],
           fullWidth && 'w-full',
           hasCustomBg && 'hover:opacity-90',
-          'font-medium transition-all rounded-xl',
+          'font-medium rounded-xl',
           isButtonSelected && 'ring-2 ring-primary ring-offset-2'
         )}
         style={{ ...customStyle, touchAction: 'manipulation' as const }}
-        disabled={isSubmitting}
       >
         {hasTextGradient ? (
           <span
             className="text-gradient-clip"
             style={{ '--text-gradient': textGradient } as React.CSSProperties}
           >
-            {isSubmitting ? 'Submitting...' : (text || 'Call Me')}
+            {text || 'Call Me'}
           </span>
         ) : (
-          isSubmitting ? 'Submitting...' : (text || 'Call Me')
+          text || 'Call Me'
         )}
       </Button>
     </form>

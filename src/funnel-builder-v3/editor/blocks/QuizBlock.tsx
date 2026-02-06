@@ -285,7 +285,7 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
 
   // Build option classes based on style (without custom colors - those are inline)
   const getOptionClasses = (isSelected: boolean, hasCustomBg: boolean) => {
-    const baseClasses = 'w-full p-4 rounded-xl text-left transition-all flex items-center justify-between gap-3';
+    const baseClasses = 'w-full p-4 rounded-xl text-left flex items-center justify-between gap-3';
     
     // If option has custom background, use minimal styling
     if (hasCustomBg) {
@@ -389,9 +389,10 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
           return (
             <button
               key={option.id}
+              type="button"
               onClick={() => handleSelect(option.id)}
               className={getOptionClasses(isSelected, hasCustomBg)}
-              style={optionInlineStyle}
+              style={{ ...optionInlineStyle, touchAction: 'manipulation' as const }}
             >
               <span 
                 className="font-medium flex-1"
@@ -496,6 +497,7 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
         
         return (
           <Button
+            type="button"
             variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
             onClick={handleButtonClick}
             disabled={isPreview && selected.length === 0}
@@ -503,7 +505,7 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
               sizeClasses[size],
               fullWidth && 'w-full',
               hasCustomBg && 'hover:opacity-90',
-              'mt-4 font-medium transition-all rounded-xl',
+              'mt-4 font-medium rounded-xl',
               isPreview && selected.length === 0 && 'opacity-50 cursor-not-allowed',
               isButtonSelected && 'ring-2 ring-primary ring-offset-2'
             )}

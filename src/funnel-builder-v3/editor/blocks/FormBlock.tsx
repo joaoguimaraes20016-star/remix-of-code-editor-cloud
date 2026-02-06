@@ -66,7 +66,6 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
   } = content;
   const [localValues, setLocalValues] = useState<Record<string, string>>({});
   const [phoneCountryIds, setPhoneCountryIds] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
 
   const canEdit = blockId && stepId && !isPreview;
@@ -131,11 +130,9 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
     runtime?.setFormField(fieldId, value);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  // Shared submission logic - called by both button click (direct) and Enter key (form submit)
+  const doSubmit = () => {
     if (!runtime) {
-      console.log('[FormBlock] No runtime available - editor mode');
       return; // In editor mode, don't submit
     }
 
@@ -153,8 +150,6 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
       toast.error('Please accept the privacy policy to continue');
       return;
     }
-
-    setIsSubmitting(true);
 
     try {
       // Handle action based on submitButton configuration
@@ -242,11 +237,15 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
           break;
       }
     } catch (error) {
-      console.error('[FormBlock] handleSubmit unexpected error:', error);
+      console.error('[FormBlock] doSubmit unexpected error:', error);
       toast.error('Failed to submit form. Please try again.');
-    } finally {
-      setIsSubmitting(false);
     }
+  };
+
+  // Form onSubmit handler - only fires on Enter key since button is type="button"
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    doSubmit();
   };
 
   const handleFieldLabelChange = (fieldId: string, newLabel: string) => {
@@ -258,14 +257,18 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
     }
   };
 
-  // Handle button click - select in editor, submit in preview
+  // Handle button click - select in editor, submit directly in preview
   const handleButtonClick = (e: React.MouseEvent) => {
     if (!isPreview) {
       e.preventDefault();
       e.stopPropagation();
       setSelectedChildElement('submit-button');
+    } else {
+      // In runtime/preview mode: call doSubmit() directly
+      // This bypasses the form submission event chain entirely,
+      // matching the ButtonBlock pattern for instant response
+      doSubmit();
     }
-    // In preview mode, normal form submit happens
   };
 
   // Button styling from ButtonContent
@@ -322,7 +325,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
   const hasTextGradient = !!textGradient;
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <form className="space-y-4" onSubmit={handleSubmit} noValidate>
       {/* Optional Title */}
       {title && (
         <div className="mb-4">
@@ -556,28 +559,27 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
       )}
       
       <Button 
-        type="submit"
+        type="button"
         variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
         onClick={handleButtonClick}
         className={cn(
           sizeClasses[size],
           fullWidth && 'w-full',
           hasCustomBg && 'hover:opacity-90',
-          'font-medium transition-all rounded-xl',
+          'font-medium rounded-xl',
           isButtonSelected && 'ring-2 ring-primary ring-offset-2'
         )}
         style={{ ...customStyle, touchAction: 'manipulation' as const }}
-        disabled={isSubmitting}
       >
         {hasTextGradient ? (
           <span
             className="text-gradient-clip"
             style={{ '--text-gradient': textGradient } as React.CSSProperties}
           >
-            {isSubmitting ? 'Submitting...' : (text || 'Submit')}
+            {text || 'Submit'}
           </span>
         ) : (
-          isSubmitting ? 'Submitting...' : (text || 'Submit')
+          text || 'Submit'
         )}
       </Button>
     </form>

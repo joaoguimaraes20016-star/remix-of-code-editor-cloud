@@ -71,7 +71,6 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
       return '#6b7280'; // Default muted color
     })() : '#6b7280');
   const [email, setEmail] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
 
   const canEdit = blockId && stepId && !isPreview;
@@ -121,9 +120,8 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
     }
   }, [runtime]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  // Shared submission logic - called by both button click (direct) and Enter key (form submit)
+  const doSubmit = () => {
     if (!runtime) return; // Editor mode
 
     if (!email.trim()) {
@@ -144,8 +142,6 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
 
     // Save to runtime
     runtime.setFormField('email', email);
-    
-    setIsSubmitting(true);
     
     try {
       // Handle action based on submitButton configuration
@@ -194,9 +190,15 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
           }
           break;
       }
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      console.error('[EmailCaptureBlock] doSubmit unexpected error:', error);
     }
+  };
+
+  // Form onSubmit handler - only fires on Enter key since button is type="button"
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    doSubmit();
   };
 
   const handleSubtitleChange = useCallback((newText: string) => {
@@ -205,12 +207,14 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
     }
   }, [blockId, stepId, updateBlockContent]);
 
-  // Handle button click - select in editor, normal behavior in preview
+  // Handle button click - select in editor, submit directly in preview
   const handleButtonClick = (e: React.MouseEvent) => {
     if (!isPreview) {
       e.preventDefault();
       e.stopPropagation();
       setSelectedChildElement('submit-button');
+    } else {
+      doSubmit();
     }
   };
 
@@ -261,7 +265,7 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
   const hasTextGradient = !!textGradient;
 
   const formElement = (
-    <form onSubmit={handleSubmit} className="space-y-2">
+    <form onSubmit={handleSubmit} noValidate className="space-y-2">
       <div className="flex gap-1.5">
         <Input
           type="email"
@@ -275,7 +279,7 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
           onChange={(e) => setEmail(e.target.value)}
         />
         <Button 
-          type="submit"
+          type="button"
           variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
           onClick={handleButtonClick}
           className={cn(
@@ -285,7 +289,6 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
             isButtonSelected && "ring-2 ring-primary ring-offset-2"
           )}
           style={{ ...customStyle, touchAction: 'manipulation' as const }}
-          disabled={isSubmitting}
         >
           <span 
             className={cn(
@@ -294,7 +297,7 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
             )}
             style={hasTextGradient ? { '--text-gradient': textGradient } as React.CSSProperties : undefined}
           >
-            {isSubmitting ? '...' : (text || 'Subscribe')}
+            {text || 'Subscribe'}
           </span>
         </Button>
       </div>

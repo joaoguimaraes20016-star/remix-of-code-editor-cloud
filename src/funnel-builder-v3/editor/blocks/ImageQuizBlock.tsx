@@ -345,9 +345,10 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
           return (
             <button
               key={option.id}
+              type="button"
               onClick={() => handleSelect(option.id)}
               className={getCardClasses(isSelected, hasCustomBorder)}
-              style={cardStyle}
+              style={{ ...cardStyle, touchAction: 'manipulation' as const }}
             >
               <div className="aspect-square bg-muted">
                 <img
@@ -458,6 +459,7 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
         
         return (
           <Button
+            type="button"
             variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
             onClick={handleButtonClick}
             disabled={isPreview && selected.length === 0}
@@ -465,7 +467,7 @@ export function ImageQuizBlock({ content, blockId, stepId, isPreview }: ImageQui
               sizeClasses[size],
               fullWidth && 'w-full',
               hasCustomBg && 'hover:opacity-90',
-              'mt-4 font-medium transition-all rounded-xl',
+              'mt-4 font-medium rounded-xl',
               isPreview && selected.length === 0 && 'opacity-50 cursor-not-allowed',
               isButtonSelected && 'ring-2 ring-primary ring-offset-2'
             )}

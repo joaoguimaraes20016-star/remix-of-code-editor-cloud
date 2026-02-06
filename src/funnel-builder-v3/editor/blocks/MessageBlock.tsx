@@ -321,7 +321,7 @@ export function MessageBlock({ content, blockId, stepId, isPreview }: MessageBlo
             sizeClasses[size],
             fullWidth && 'w-full',
             hasCustomBg && 'hover:opacity-90',
-            'font-medium transition-all rounded-xl',
+            'font-medium rounded-xl',
             isButtonSelected && 'ring-2 ring-primary ring-offset-2',
             // In editor mode, add subtle hover effect to indicate it's clickable
             !isPreview && !isButtonSelected && 'group-hover:ring-1 group-hover:ring-primary/30'
