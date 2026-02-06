@@ -194,7 +194,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
           return next;
         });
       }
-    }, 500);
+    }, 300);
   }, [touchedFields, phoneCountryIds, defaultCountryId, countryCodes, getCountryCodeForValidation]);
 
   const handleFieldChange = (fieldId: string, value: string, field?: typeof fields[0]) => {

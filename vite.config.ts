@@ -46,13 +46,13 @@ const baseBuild = {
     rollupOptions: {
       output: {
         inlineDynamicImports: true,
-        // Fixed filenames for custom domain serving (serve-funnel expects these exact paths)
-        entryFileNames: 'assets/index.js',
+        // Content-hashed filenames for proper cache busting on deployments
+        entryFileNames: 'assets/index-[hash].js',
         assetFileNames: (assetInfo: { name?: string }) => {
           if (assetInfo.name?.endsWith('.css')) {
-            return 'assets/index.css';
+            return 'assets/index-[hash].css';
           }
-          return 'assets/[name][extname]';
+          return 'assets/[name]-[hash][extname]';
         },
       },
     },
