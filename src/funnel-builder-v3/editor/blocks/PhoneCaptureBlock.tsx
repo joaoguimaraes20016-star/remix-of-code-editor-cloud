@@ -254,7 +254,6 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
   const hasCustomBg = shouldApplyCustomBg && (!!backgroundColor || !!backgroundGradient);
   const hasTextGradient = !!textGradient;
 
-  const canEdit = blockId && stepId && !isPreview;
 
   const formElement = (
     <form onSubmit={handleSubmit} noValidate className="space-y-3">
