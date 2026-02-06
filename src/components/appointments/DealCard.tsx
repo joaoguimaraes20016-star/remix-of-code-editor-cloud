@@ -406,6 +406,42 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
             <p className="text-[10px] sm:text-sm text-muted-foreground truncate">{appointment.lead_email}</p>
           </div>
 
+          {/* Answers Section */}
+          {rawAnswers && Object.keys(rawAnswers).length > 0 && (
+            <div className="pt-2 border-t space-y-1">
+              <p className="text-[9px] sm:text-xs font-medium text-muted-foreground">Responses:</p>
+              {Object.entries(rawAnswers)
+                .filter(([key, value]) => 
+                  value && 
+                  key !== 'undefined' && 
+                  key !== 'opt_in' && 
+                  key !== 'privacy'
+                )
+                .slice(0, 3)
+                .map(([question, answer], idx) => (
+                  <div key={idx} className="text-[9px] sm:text-xs">
+                    <span className="text-muted-foreground truncate block sm:inline">{question}:</span>{' '}
+                    <span className="font-medium truncate block sm:inline">{String(answer)}</span>
+                  </div>
+                ))}
+              {Object.entries(rawAnswers).filter(([key, value]) => 
+                value && 
+                key !== 'undefined' && 
+                key !== 'opt_in' && 
+                key !== 'privacy'
+              ).length > 3 && (
+                <p className="text-[9px] sm:text-xs text-muted-foreground italic">
+                  +{Object.entries(rawAnswers).filter(([key, value]) => 
+                    value && 
+                    key !== 'undefined' && 
+                    key !== 'opt_in' && 
+                    key !== 'privacy'
+                  ).length - 3} more
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Reschedule Badges */}
           {mode === "appointment" && (appointment.original_appointment_id || appointment.rescheduled_to_appointment_id) && (
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">

@@ -275,24 +275,52 @@ export function ContactDetailDrawer({ contact, open, onOpenChange, teamId }: Con
                 {activityLeads && activityLeads.length > 0 && (
                   <div className="space-y-3">
                     <h3 className="text-sm font-medium text-muted-foreground mb-3">Funnel Submissions</h3>
-                    {activityLeads.map((lead: any) => (
-                      <div key={lead.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                        <div className="w-2 h-2 mt-2 rounded-full bg-primary flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">
-                            Submitted: {lead.funnel?.name || 'Unknown Funnel'}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(lead.created_at), 'MMM d, yyyy h:mm a')}
-                          </p>
-                          {lead.status && (
-                            <Badge variant="outline" className="mt-1 text-xs">
-                              {lead.status}
-                            </Badge>
-                          )}
+                    {activityLeads.map((lead: any) => {
+                      // Parse answers from the lead
+                      const leadAnswers = lead.answers && typeof lead.answers === 'object'
+                        ? Object.entries(lead.answers).filter(([key, value]) => 
+                            value && 
+                            key !== 'undefined' && 
+                            key !== 'opt_in' && 
+                            key !== 'privacy'
+                          )
+                        : [];
+
+                      return (
+                        <div key={lead.id} className="flex items-start gap-3 p-4 rounded-lg bg-muted/50 border">
+                          <div className="w-2 h-2 mt-2 rounded-full bg-primary flex-shrink-0" />
+                          <div className="flex-1 min-w-0 space-y-3">
+                            {/* Header */}
+                            <div>
+                              <p className="text-sm font-medium">
+                                Submitted: {lead.funnel?.name || 'Unknown Funnel'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(lead.created_at), 'MMM d, yyyy h:mm a')}
+                              </p>
+                              {lead.status && (
+                                <Badge variant="outline" className="mt-1 text-xs">
+                                  {lead.status}
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            {/* Answers */}
+                            {leadAnswers.length > 0 && (
+                              <div className="space-y-2 pt-2 border-t">
+                                <p className="text-xs font-medium text-muted-foreground">Responses:</p>
+                                {leadAnswers.map(([question, answer], idx) => (
+                                  <div key={idx} className="text-xs">
+                                    <span className="text-muted-foreground">{question}:</span>{' '}
+                                    <span className="font-medium">{String(answer)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
                 
