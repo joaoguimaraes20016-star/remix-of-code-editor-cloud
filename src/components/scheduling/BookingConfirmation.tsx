@@ -62,6 +62,66 @@ export default function BookingConfirmation({
     return `https://calendar.google.com/calendar/render?${params}`;
   })();
 
+  // Generate iCalendar (.ics) file
+  const generateICal = () => {
+    // Format dates for iCal (YYYYMMDDTHHmmssZ)
+    const formatICalDate = (date: Date): string => {
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(date.getUTCDate()).padStart(2, "0");
+      const hours = String(date.getUTCHours()).padStart(2, "0");
+      const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+      const seconds = String(date.getUTCSeconds()).padStart(2, "0");
+      return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
+    };
+
+    // Escape text for iCal format
+    const escapeICalText = (text: string): string => {
+      return text
+        .replace(/\\/g, "\\\\")
+        .replace(/;/g, "\\;")
+        .replace(/,/g, "\\,")
+        .replace(/\n/g, "\\n");
+    };
+
+    const startStr = formatICalDate(startDate);
+    const endStr = formatICalDate(endDate);
+    const nowStr = formatICalDate(new Date());
+
+    // Build iCal content
+    const icsContent = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Booking System//EN",
+      "CALSCALE:GREGORIAN",
+      "METHOD:REQUEST",
+      "BEGIN:VEVENT",
+      `UID:${startDate.getTime()}@booking`,
+      `DTSTAMP:${nowStr}`,
+      `DTSTART:${startStr}`,
+      `DTEND:${endStr}`,
+      `SUMMARY:${escapeICalText(eventTypeName)}`,
+      ...(hostName ? [`ORGANIZER;CN=${escapeICalText(hostName)}:mailto:${hostName.toLowerCase().replace(/\s+/g, ".")}@example.com`] : []),
+      ...(meetingLink ? [`DESCRIPTION:${escapeICalText(`Meeting link: ${meetingLink}`)}`] : []),
+      ...(meetingLink ? [`LOCATION:${escapeICalText(meetingLink)}`] : []),
+      "STATUS:CONFIRMED",
+      "SEQUENCE:0",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+
+    // Create blob and download
+    const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${eventTypeName.replace(/[^a-z0-9]/gi, "_")}_${startStr}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="text-center space-y-6">
       {/* Success Icon */}

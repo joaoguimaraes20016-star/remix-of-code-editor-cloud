@@ -59,6 +59,15 @@ serve(async (req) => {
     let dueAt: Date;
     let usedFallback = false;
 
+    // Validate appointment time
+    if (!appointment.start_at_utc || isNaN(appointmentTime.getTime())) {
+      console.error('Invalid appointment time:', appointment.start_at_utc);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid appointment time' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Check if this is a last-minute booking
     if (hoursUntilAppointment < minimumBookingNoticeHours) {
       console.log(`Last-minute booking detected (${hoursUntilAppointment.toFixed(1)}h notice < ${minimumBookingNoticeHours}h minimum)`);
@@ -79,9 +88,29 @@ serve(async (req) => {
       }
     } else {
       // Normal schedule: use first confirmation window
-      const firstWindow = schedule[0];
-      dueAt = new Date(appointmentTime.getTime() - (firstWindow.hours_before * 60 * 60 * 1000));
-      console.log(`Using normal schedule: task due at ${dueAt.toISOString()}`);
+      if (!schedule || schedule.length === 0) {
+        console.error('No confirmation schedule found, using fallback');
+        // Fallback to 1 hour before appointment
+        dueAt = new Date(appointmentTime.getTime() - (60 * 60 * 1000));
+        usedFallback = true;
+      } else {
+        const firstWindow = schedule[0];
+        if (!firstWindow || typeof firstWindow.hours_before !== 'number') {
+          console.error('Invalid first window in schedule:', firstWindow);
+          // Fallback to 1 hour before appointment
+          dueAt = new Date(appointmentTime.getTime() - (60 * 60 * 1000));
+          usedFallback = true;
+        } else {
+          dueAt = new Date(appointmentTime.getTime() - (firstWindow.hours_before * 60 * 60 * 1000));
+          console.log(`Using normal schedule: task due at ${dueAt.toISOString()}`);
+        }
+      }
+    }
+
+    // Final safety check - ensure dueAt is valid
+    if (!dueAt || isNaN(dueAt.getTime())) {
+      console.error('Failed to determine due_at, using appointment time as fallback');
+      dueAt = appointmentTime;
     }
 
     // Determine assignment based on confirmation flow config
@@ -171,9 +200,9 @@ serve(async (req) => {
     team_id: appointment.team_id,
     appointment_id: appointment.id,
     status: 'pending',
-    required_confirmations: usedFallback ? 1 : schedule.length, // Only 1 confirmation for fallback
+    required_confirmations: usedFallback ? 1 : (schedule?.length || 1), // Only 1 confirmation for fallback
     confirmation_sequence: 1,
-    due_at: dueAt.toISOString(),
+    due_at: dueAt.toISOString(), // This is now guaranteed to be valid
     confirmation_attempts: [],
     completed_confirmations: 0,
     is_overdue: false

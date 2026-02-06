@@ -173,35 +173,69 @@ export default function PublicBookingPage() {
       });
 
       if (error) {
-        // supabase.functions.invoke wraps non-2xx responses as FunctionsHttpError.
-        // The actual error body from the edge function is in error.context.
+        // Log the full error structure for debugging
+        console.error("[PublicBookingPage] Full error object:", {
+          error,
+          message: error.message,
+          context: error.context,
+          name: error.name,
+          stack: error.stack,
+        });
+
+        // Try multiple ways to extract the actual error message
         let errorMsg = "Failed to create booking";
         let errorDetails = null;
+
         try {
-          // Try to extract the JSON error body from the edge function response
-          if (error.context) {
-            // For FunctionsHttpError, the response body is accessible via error.context
-            const response = error.context.response;
-            if (response && typeof response.json === "function") {
-              const body = await response.json();
-              errorMsg = body?.error || error.message || errorMsg;
+          // Method 1: Check if error.context has a body property
+          if (error.context?.body) {
+            const body = typeof error.context.body === "string" 
+              ? JSON.parse(error.context.body) 
+              : error.context.body;
+            errorMsg = body?.error || body?.message || errorMsg;
+            errorDetails = body?.details || body?.hint || body?.code || null;
+          }
+          
+          // Method 2: Try to read from response if available
+          if ((!errorMsg || errorMsg === "Failed to create booking") && error.context?.response) {
+            try {
+              // Clone the response to read it (responses can only be read once)
+              const clonedResponse = error.context.response.clone();
+              const body = await clonedResponse.json();
+              errorMsg = body?.error || body?.message || errorMsg;
               errorDetails = body?.details || body?.hint || body?.code || null;
-            } else if (error.context.body) {
-              // Sometimes the body is directly accessible
-              const body = typeof error.context.body === "string" 
-                ? JSON.parse(error.context.body) 
-                : error.context.body;
-              errorMsg = body?.error || error.message || errorMsg;
-              errorDetails = body?.details || body?.hint || body?.code || null;
+            } catch (readErr) {
+              console.error("[PublicBookingPage] Failed to read response body:", readErr);
             }
           }
-          if (!errorMsg || errorMsg === "Failed to create booking") {
-            errorMsg = error.message || errorMsg;
+
+          // Method 3: Check error.message for useful info
+          if ((!errorMsg || errorMsg === "Failed to create booking") && error.message) {
+            // If message contains JSON-like structure, try to parse it
+            if (error.message.includes("{") || error.message.includes("error")) {
+              try {
+                const parsed = JSON.parse(error.message);
+                errorMsg = parsed.error || parsed.message || errorMsg;
+                errorDetails = parsed.details || parsed.hint || parsed.code || null;
+              } catch {
+                // Not JSON, use as-is but check if it's more descriptive
+                if (error.message !== "Edge Function returned a non-2xx status code") {
+                  errorMsg = error.message;
+                }
+              }
+            } else if (error.message !== "Edge Function returned a non-2xx status code") {
+              errorMsg = error.message;
+            }
           }
         } catch (parseErr) {
           console.error("[PublicBookingPage] Error parsing error response:", parseErr);
-          errorMsg = error.message || errorMsg;
         }
+
+        // Final fallback
+        if (!errorMsg || errorMsg === "Failed to create booking") {
+          errorMsg = error.message || "Failed to create booking. Please check the console for details.";
+        }
+
         // Include details in the error message if available
         const fullErrorMsg = errorDetails ? `${errorMsg} (${errorDetails})` : errorMsg;
         throw new Error(fullErrorMsg);
