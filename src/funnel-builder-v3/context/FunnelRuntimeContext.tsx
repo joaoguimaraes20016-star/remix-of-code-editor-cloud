@@ -276,10 +276,16 @@ export function FunnelRuntimeProvider({
   }, [stepHistory, onStepChange]);
 
   const setFormField = useCallback((fieldId: string, value: string | string[] | File | null) => {
+    // Update ref synchronously FIRST so submitForm() reads correct data
+    formDataRef.current = { ...formDataRef.current, [fieldId]: value };
+    // Then update state for UI reactivity
     setFormData(prev => ({ ...prev, [fieldId]: value }));
   }, []);
 
   const setSelection = useCallback((blockId: string, optionId: string | string[]) => {
+    // Update ref synchronously FIRST so submitForm() reads correct data
+    selectionsRef.current = { ...selectionsRef.current, [blockId]: optionId };
+    // Then update state for UI reactivity
     setSelections(prev => ({ ...prev, [blockId]: optionId }));
   }, []);
 

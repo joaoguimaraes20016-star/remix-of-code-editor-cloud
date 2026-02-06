@@ -356,6 +356,14 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     // We only submit to the server on the FINAL step (or when user leaves via beforeunload).
     // This eliminates all API-related delays during intermediate step navigation.
     
+    console.log('[FunnelV3Renderer] handleFormSubmit called', {
+      dataKeys: Object.keys(data),
+      dataValues: data,
+      selectionsKeys: Object.keys(selections),
+      isLastStep: funnel.steps.findIndex(s => s.id === (currentStepIdRef.current || funnel.steps[0]?.id)) === funnel.steps.length - 1,
+      currentStepId: currentStepIdRef.current || funnel.steps[0]?.id,
+    });
+    
     // Accumulate data in refs for beforeunload handler
     accumulatedFormDataRef.current = { ...accumulatedFormDataRef.current, ...data };
     accumulatedSelectionsRef.current = { ...accumulatedSelectionsRef.current, ...selections };
@@ -379,6 +387,14 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     if (!isLastStep) {
       // Check if accumulated data contains any identity/contact info worth saving
       const allData = { ...accumulatedFormDataRef.current, ...data };
+      
+      console.log('[FunnelV3Renderer] Checking identity', {
+        allDataKeys: Object.keys(allData),
+        email: allData.email,
+        phone: allData.phone,
+        name: allData.name,
+      });
+      
       const { identity } = extractIdentityFromAnswers(allData);
       const hasIdentity = !!(identity.name || identity.email || identity.phone);
       
