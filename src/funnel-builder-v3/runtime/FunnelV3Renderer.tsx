@@ -52,37 +52,6 @@ function convertDocumentToFunnel(document: FunnelV3RendererProps['document']): F
   };
 }
 
-// Helper function to extract identity from form fields based on field type and label
-function extractIdentityFromFormData(
-  formData: FunnelFormData,
-  blocks: any[]
-): { name?: string; email?: string; phone?: string } {
-  const identity: { name?: string; email?: string; phone?: string } = {};
-  
-  // Find form blocks and extract identity from their fields
-  for (const block of blocks) {
-    if (block.type === 'form' && block.content?.fields) {
-      for (const field of block.content.fields) {
-        const value = formData[field.id];
-        if (typeof value !== 'string' || !value.trim()) continue;
-        
-        const fieldType = field.type?.toLowerCase() || '';
-        const fieldLabel = (field.label || '').toLowerCase();
-        
-        if (fieldType === 'email' || fieldLabel.includes('email')) {
-          identity.email = value;
-        } else if (fieldType === 'phone' || fieldLabel.includes('phone')) {
-          identity.phone = value;
-        } else if (fieldType === 'text' && (fieldLabel.includes('name') || fieldLabel.includes('full name'))) {
-          identity.name = value;
-        }
-      }
-    }
-  }
-  
-  return identity;
-}
-
 // Memoized step component - only re-renders when isActive changes
 // This prevents cascade re-renders of all steps when only one step's visibility changes
 const MemoizedStep = memo(function MemoizedStep({ 
@@ -188,8 +157,8 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
   }, []);
 
   // Use unified lead submission hook
-  // Note: Only submit() is used - saveDraft() removed for local-first architecture
-  // Final submission happens on last step or via beforeunload
+  // Note: submit() is called on every step transition for real-time data capture
+  // This ensures leads appear in analytics immediately and data isn't lost on abandonment
   const { submit } = useUnifiedLeadSubmit({
     funnelId,
     teamId,
@@ -227,70 +196,8 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     });
   }, [funnelId, teamId]);
   
-  // BEFOREUNLOAD HANDLER: Submit accumulated data when user leaves (drop-off tracking)
-  // Uses navigator.sendBeacon() for reliable submission even during page unload
-  useEffect(() => {
-    if (!funnelId || !teamId) return;
-    
-    const handleBeforeUnload = () => {
-      // Skip if we've already submitted final data
-      if (hasSubmittedFinalRef.current) {
-        return;
-      }
-      
-      // Skip if no data has been accumulated
-      const hasFormData = Object.keys(accumulatedFormDataRef.current).length > 0;
-      const hasSelections = Object.keys(accumulatedSelectionsRef.current).length > 0;
-      if (!hasFormData && !hasSelections) {
-        return;
-      }
-      
-      // Build payload for drop-off submission
-      const answers = { ...accumulatedFormDataRef.current, ...accumulatedSelectionsRef.current };
-      const stepIndex = funnel.steps.findIndex(s => s.id === currentStepIdRef.current);
-      
-      // Extract identity from accumulated data
-      const { identity } = extractIdentityFromAnswers(answers);
-      
-      const payload = {
-        funnel_id: funnelId,
-        funnelId: funnelId,
-        team_id: teamId,
-        teamId: teamId,
-        answers,
-        name: identity.name,
-        email: identity.email,
-        phone: identity.phone,
-        submitMode: 'draft',
-        step_id: currentStepIdRef.current,
-        step_intent: 'navigate',
-        last_step_index: stepIndex >= 0 ? stepIndex : 0,
-      };
-      
-      // Use sendBeacon for reliable submission during page unload
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://kqfyevdblvgxaycdvfxe.supabase.co';
-      const url = `${supabaseUrl}/functions/v1/submit-funnel-lead`;
-      
-      try {
-        navigator.sendBeacon(url, JSON.stringify(payload));
-        if (import.meta.env.DEV) {
-          console.log('[FunnelV3Renderer] beforeunload - sent drop-off data via sendBeacon', {
-            stepIndex,
-            hasFormData,
-            hasSelections,
-          });
-        }
-      } catch (error) {
-        // Silent fail - best effort
-        if (import.meta.env.DEV) {
-          console.error('[FunnelV3Renderer] beforeunload sendBeacon failed:', error);
-        }
-      }
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [funnelId, teamId, funnel.steps]);
+  // beforeunload handler removed: submit-as-you-go architecture means data is
+  // already submitted on every step transition, so no need for last-ditch unload saves.
   
   // Helper to get or create session ID
   // CRITICAL: Must be defined BEFORE useEffect that uses it (fixes build error)
@@ -352,184 +259,93 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     selections: FunnelSelections,
     consent?: { agreed: boolean; privacyPolicyUrl?: string }
   ) => {
-    // LOCAL-FIRST ARCHITECTURE: Navigation happens instantly, data accumulates locally.
-    // We only submit to the server on the FINAL step (or when user leaves via beforeunload).
-    // This eliminates all API-related delays during intermediate step navigation.
+    // SUBMIT-AS-YOU-GO: Submit data on every step transition for real-time analytics.
+    // Navigation is never blocked - submit is fire-and-forget.
+    // This matches industry standard (Perspective, ClickFunnels).
     
     console.log('[FunnelV3Renderer] handleFormSubmit called', {
       dataKeys: Object.keys(data),
       dataValues: data,
       selectionsKeys: Object.keys(selections),
-      isLastStep: funnel.steps.findIndex(s => s.id === (currentStepIdRef.current || funnel.steps[0]?.id)) === funnel.steps.length - 1,
       currentStepId: currentStepIdRef.current || funnel.steps[0]?.id,
     });
     
-    // Accumulate data in refs for beforeunload handler
-    accumulatedFormDataRef.current = { ...accumulatedFormDataRef.current, ...data };
-    accumulatedSelectionsRef.current = { ...accumulatedSelectionsRef.current, ...selections };
-    
-    // Use ref value, but validate it exists
+    // Get current step info
     const currentStepId = currentStepIdRef.current || funnel.steps[0]?.id;
-    if (!currentStepId) {
-      return;
-    }
+    if (!currentStepId) return;
     
-    // Determine if this is the final step
     const stepIndex = funnel.steps.findIndex(s => s.id === currentStepId);
     const isLastStep = stepIndex === funnel.steps.length - 1;
+    
+    // Merge with accumulated data for complete lead profile
+    const allData = { ...accumulatedFormDataRef.current, ...data };
+    const allSelections = { ...accumulatedSelectionsRef.current, ...selections };
+    
+    // Accumulate for next step
+    accumulatedFormDataRef.current = allData;
+    accumulatedSelectionsRef.current = allSelections;
     
     // Track that we've "submitted" from this step (for handleStepChange to know)
     lastSubmitStepRef.current = currentStepId;
     
-    // On intermediate steps: check if form data contains identity info (email/phone/name)
-    // If it does, submit as a draft so leads appear in the Performance tab immediately.
-    // Navigation is NOT blocked - submit is fire-and-forget.
-    if (!isLastStep) {
-      // Check if accumulated data contains any identity/contact info worth saving
-      const allData = { ...accumulatedFormDataRef.current, ...data };
-      
-      console.log('[FunnelV3Renderer] Checking identity', {
-        allDataKeys: Object.keys(allData),
-        email: allData.email,
-        phone: allData.phone,
-        name: allData.name,
-      });
-      
-      const { identity } = extractIdentityFromAnswers(allData);
-      const hasIdentity = !!(identity.name || identity.email || identity.phone);
-      
-      if (hasIdentity) {
-        // Fire-and-forget: submit draft with identity data so it appears in Performance tab
-        const stepIndex = funnel.steps.findIndex(s => s.id === currentStepId);
-        const payload = createUnifiedPayload({ ...allData, ...selections }, {
-          funnelId,
-          teamId,
-          stepId: currentStepId,
-          stepIntent: 'navigate',
-          lastStepIndex: stepIndex >= 0 ? stepIndex : 0,
-        }, {
-          consent: consent ? {
-            agreed: consent.agreed,
-            privacyPolicyUrl: consent.privacyPolicyUrl,
-            timestamp: new Date().toISOString(),
-          } : undefined,
-        });
-        
-        // Override identity from form fields
-        if (identity.name || identity.email || identity.phone) {
-          payload.identity = identity;
-        }
-        
-        // Submit as draft (fire-and-forget, does NOT block navigation)
-        submit(payload).catch((error) => {
-          if (import.meta.env.DEV) {
-            console.error('[FunnelV3Renderer] Draft submission failed:', error);
-          }
-        });
-      }
-      
-      return;
+    // Extract identity from all accumulated data
+    const { identity } = extractIdentityFromAnswers(allData);
+    
+    console.log('[FunnelV3Renderer] Submitting step data', {
+      stepIndex,
+      isLastStep,
+      hasIdentity: !!(identity.name || identity.email || identity.phone),
+    });
+    
+    // Build payload for this step
+    const payload = createUnifiedPayload({ ...allData, ...allSelections }, {
+      funnelId,
+      teamId,
+      stepId: currentStepId,
+      stepIntent: isLastStep ? 'complete' : 'navigate',
+      lastStepIndex: stepIndex >= 0 ? stepIndex : 0,
+    }, {
+      consent: consent ? {
+        agreed: consent.agreed,
+        privacyPolicyUrl: consent.privacyPolicyUrl,
+        timestamp: new Date().toISOString(),
+      } : undefined,
+    });
+    
+    // Override identity from form fields if present
+    if (identity.name || identity.email || identity.phone) {
+      payload.identity = identity;
     }
     
-    // Mark that we've submitted final data (prevent duplicate beforeunload submission)
-    hasSubmittedFinalRef.current = true;
-    
-    // FINAL STEP: Submit all accumulated data to the server
-    if (import.meta.env.DEV) {
-      console.log('[FunnelV3Renderer] Final step - submitting all accumulated data', {
-        stepId: currentStepId,
-        stepIndex,
-      });
-    }
-    
-    try {
-      // Build answers object from form data and selections
-      const answers: Record<string, any> = { ...data, ...selections };
-      
-      // Extract identity from form fields (check current step first, then all steps)
-      const currentStep = funnel.steps.find(s => s.id === currentStepId);
-      let identityFromFields: { name?: string; email?: string; phone?: string } = {};
-      
-      if (currentStep) {
-        identityFromFields = extractIdentityFromFormData(data, currentStep.blocks || []);
-      }
-      
-      // Fallback: check all steps if not found in current step
-      if (!identityFromFields.name && !identityFromFields.email && !identityFromFields.phone) {
-        for (const step of funnel.steps) {
-          const extracted = extractIdentityFromFormData(data, step.blocks || []);
-          if (extracted.name) identityFromFields.name = extracted.name;
-          if (extracted.email) identityFromFields.email = extracted.email;
-          if (extracted.phone) identityFromFields.phone = extracted.phone;
-        }
-      }
-      
-      // Also use extractIdentityFromAnswers as fallback
-      const { identity: identityFromAnswers } = extractIdentityFromAnswers(answers);
-      
-      // Merge identity sources (form fields take precedence)
-      const identity = {
-        name: identityFromFields.name || identityFromAnswers.name,
-        email: identityFromFields.email || identityFromAnswers.email,
-        phone: identityFromFields.phone || identityFromAnswers.phone,
-      };
-      
-      // Create unified payload for final submission
-      const payload = createUnifiedPayload(answers, {
-        funnelId,
-        teamId,
-        stepId: currentStepId,
-        stepIntent: 'convert',
-        lastStepIndex: stepIndex,
-      }, {
-        consent: consent ? {
-          agreed: consent.agreed,
-          privacyPolicyUrl: consent.privacyPolicyUrl,
-          timestamp: new Date().toISOString(),
-        } : undefined,
-      });
-      
-      // Override identity if we extracted it from form fields
-      if (identity.name || identity.email || identity.phone) {
-        payload.identity = identity;
-      }
-      
-      // Submit through unified pipeline (fire-and-forget for instant UX)
-      submit(payload).then((result) => {
+    // Submit (fire-and-forget, does NOT block navigation)
+    submit(payload).then((result) => {
+      if (isLastStep) {
         if (result.error) {
           if (import.meta.env.DEV) {
-            console.error('[FunnelV3Renderer] Final submission failed', {
-              error: result.error,
-              funnelId,
-              teamId,
-              stepId: currentStepId,
-            });
+            console.error('[FunnelV3Renderer] Final submission failed', { error: result.error });
           }
           toast.error('Failed to submit form');
         } else {
           toast.success('Form submitted successfully!');
         }
-      }).catch((error) => {
-        if (import.meta.env.DEV) {
-          console.error('[FunnelV3Renderer] Final submission exception:', error);
-        }
-        toast.error('Failed to submit form');
-      });
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('[FunnelV3Renderer] Submission exception:', {
-          error,
-          funnelId,
-          teamId,
-          stepId: currentStepIdRef.current,
-        });
       }
-      toast.error('Failed to submit form');
+    }).catch((error) => {
+      if (import.meta.env.DEV) {
+        console.error('[FunnelV3Renderer] Step submission failed:', error);
+      }
+      if (isLastStep) {
+        toast.error('Failed to submit form');
+      }
+    });
+    
+    // Mark final submission to prevent duplicate
+    if (isLastStep) {
+      hasSubmittedFinalRef.current = true;
     }
   }, [funnelId, teamId, submit, funnel.steps]);
   
-  // Track step changes - LOCAL-FIRST: Only fire lightweight recordEvent() for analytics
-  // No API calls to saveDraft() - data is accumulated locally and submitted on final step or beforeunload
+  // Track step changes - fire recordEvent() for analytics (page views, time on step, etc.)
+  // Form data submissions happen via handleFormSubmit on every step transition
   const handleStepChange = useCallback((
     stepId: string,
     formData: FunnelFormData,

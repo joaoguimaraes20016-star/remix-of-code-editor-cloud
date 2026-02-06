@@ -11,7 +11,7 @@ export interface FunnelSelections {
   [blockId: string]: string | string[]; // Selected option IDs
 }
 
-// Accumulated data for final submission (local-first pattern)
+// Accumulated data for progressive submission
 export interface AccumulatedFunnelData {
   formData: FunnelFormData;
   selections: FunnelSelections;
@@ -49,7 +49,7 @@ interface FunnelRuntimeContextType {
   // Submission (fire-and-forget pattern, but returns Promise for .catch() chaining)
   submitForm: (consent?: { agreed: boolean; privacyPolicyUrl?: string }) => Promise<void>;
   
-  // Accumulated data for final submission (local-first pattern)
+  // Get accumulated data for current submission
   getAccumulatedData: () => AccumulatedFunnelData;
   setConsent: (consent: { agreed: boolean; privacyPolicyUrl?: string }) => void;
   
@@ -106,8 +106,8 @@ export function FunnelRuntimeProvider({
   const selectionsRef = useRef<FunnelSelections>({});
   const currentStepIdRef = useRef<string>(initialStepId || firstStepId);
   
-  // Accumulated data for local-first submission pattern
-  // Tracks consent and visited steps for final submission or beforeunload
+  // Accumulated data for progressive submission
+  // Tracks consent and visited steps throughout funnel journey
   const consentRef = useRef<{ agreed: boolean; privacyPolicyUrl?: string } | undefined>(undefined);
   const visitedStepIdsRef = useRef<Set<string>>(new Set([initialStepId || firstStepId]));
   
