@@ -123,6 +123,7 @@ serve(async (req) => {
         events: [
           'invitee.created',
           'invitee.canceled',
+          'invitee.rescheduled',
         ],
       }),
     });

@@ -11,15 +11,19 @@ interface TimeDelayConfig {
 }
 
 interface WaitUntilConfig {
-  waitType?: 'specific_date' | 'field_date' | 'event';
+  waitType?: 'specific_date' | 'field_date' | 'event' | 'before_appointment';
   specificDate?: string;
   specificTime?: string;
   dateField?: string;
   offsetDays?: number;
+  offsetHours?: number; // For before_appointment mode
   offsetDirection?: 'before' | 'after';
   eventType?: string;
   timeoutHours?: number;
   timeoutAction?: 'continue' | 'stop' | 'branch';
+  mode?: 'before_appointment'; // Alternative config format
+  hours_before?: number; // For before_appointment mode
+  appointment_field?: string; // Field path to appointment start time
   [key: string]: unknown;
 }
 
@@ -214,7 +218,10 @@ export async function executeWaitUntil(
   let resumeAt: Date;
   let waitingForEvent: string | undefined;
 
-  switch (config.waitType) {
+  // Support both waitType and mode config formats
+  const waitType = config.waitType || (config.mode === 'before_appointment' ? 'before_appointment' : config.waitType);
+  
+  switch (waitType) {
     case 'specific_date': {
       // Wait until a specific date/time
       const dateStr = config.specificDate || new Date().toISOString().split('T')[0];

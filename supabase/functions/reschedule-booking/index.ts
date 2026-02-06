@@ -1,7 +1,8 @@
 // supabase/functions/reschedule-booking/index.ts
 // Reschedules a native booking by booking_token.
-// Creates a new appointment linked to the original, updates reminders,
+// Creates a new appointment linked to the original, updates
 // Google Calendar, Zoom, and fires automation trigger.
+// Note: Reminders are handled via the automation system (GHL-style).
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -130,48 +131,15 @@ serve(async (req) => {
       })
       .eq("id", original.id);
 
-    // 6. Cancel old reminders
+    // 6. Cancel any scheduled automation jobs for the old appointment
+    // (prevents stale reminders from firing via the automation system)
     await supabase
-      .from("booking_reminders")
+      .from("scheduled_automation_jobs")
       .update({ status: "cancelled" })
-      .eq("appointment_id", original.id)
-      .eq("status", "pending");
+      .eq("status", "pending")
+      .contains("context_snapshot", { appointment: { id: original.id } });
 
-    // 7. Schedule new reminders
-    if (original.appointment_type_id) {
-      const { data: eventType } = await supabase
-        .from("event_types")
-        .select("reminder_config")
-        .eq("id", original.appointment_type_id)
-        .single();
-
-      if (eventType?.reminder_config && Array.isArray(eventType.reminder_config)) {
-        const reminderRows = eventType.reminder_config
-          .map((rc: { type: string; template: string; offset_hours: number }) => {
-            const scheduledFor = new Date(
-              newStartUtc.getTime() - (rc.offset_hours || 1) * 60 * 60 * 1000
-            );
-            if (scheduledFor.getTime() > Date.now()) {
-              return {
-                appointment_id: newAppointment.id,
-                team_id: original.team_id,
-                type: rc.type || "email",
-                scheduled_for: scheduledFor.toISOString(),
-                template: rc.template,
-                status: "pending",
-              };
-            }
-            return null;
-          })
-          .filter(Boolean);
-
-        if (reminderRows.length > 0) {
-          await supabase.from("booking_reminders").insert(reminderRows);
-        }
-      }
-    }
-
-    // 8. Update Google Calendar event if exists
+    // 7. Update Google Calendar event if exists
     if (original.google_calendar_event_id && original.assigned_user_id) {
       try {
         const { data: gcalConn } = await supabase

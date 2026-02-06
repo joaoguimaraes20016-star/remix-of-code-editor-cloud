@@ -26,7 +26,6 @@ export interface EventType {
   round_robin_members: string[];
   last_assigned_index: number;
   questions: IntakeQuestion[];
-  reminder_config: ReminderConfig[];
   created_at: string;
   updated_at: string;
 }
@@ -37,12 +36,6 @@ export interface IntakeQuestion {
   type: "text" | "textarea" | "select" | "checkbox";
   required: boolean;
   options?: string[];
-}
-
-export interface ReminderConfig {
-  type: "email" | "sms";
-  template: string;
-  offset_hours: number;
 }
 
 export function useEventTypes(teamId?: string) {

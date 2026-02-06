@@ -73,10 +73,6 @@ const DEFAULT_CALENDAR: Partial<EventType> = {
   round_robin_mode: "none",
   round_robin_members: [],
   questions: [],
-  reminder_config: [
-    { type: "email", template: "24h_before", offset_hours: 24 },
-    { type: "email", template: "1h_before", offset_hours: 1 },
-  ],
 };
 
 interface CalendarEditorProps {
@@ -101,6 +97,8 @@ export default function CalendarEditor({
   const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; role: string }>>([]);
   const [memberAvailability, setMemberAvailability] = useState<Record<string, boolean>>({});
   const [memberGcalStatus, setMemberGcalStatus] = useState<Record<string, boolean>>({});
+  const [hasGoogleCalendar, setHasGoogleCalendar] = useState<boolean>(false);
+  const [hasZoom, setHasZoom] = useState<boolean>(false);
   const isEditing = !!calendar;
 
   // Update editingCalendar when calendar prop changes
@@ -177,16 +175,19 @@ export default function CalendarEditor({
             .select("sync_enabled")
             .eq("team_id", teamId)
             .eq("user_id", user.id)
-            .single();
-          setHasGoogleCalendar(!!gcal && gcal.sync_enabled);
+            .maybeSingle();
+          setHasGoogleCalendar(!!gcal && !!gcal.sync_enabled);
 
           const { data: zoom } = await supabase
             .from("team_integrations")
             .select("is_connected")
             .eq("team_id", teamId)
             .eq("integration_type", "zoom")
-            .single();
-          setHasZoom(!!zoom && zoom.is_connected);
+            .maybeSingle();
+          setHasZoom(!!zoom && !!zoom.is_connected);
+        } else {
+          setHasGoogleCalendar(false);
+          setHasZoom(false);
         }
       } catch (err) {
         console.error("Failed to load team members:", err);
@@ -260,7 +261,6 @@ export default function CalendarEditor({
               <TabsTrigger value="hosts">Hosts</TabsTrigger>
               <TabsTrigger value="when">When</TabsTrigger>
               <TabsTrigger value="where">Where</TabsTrigger>
-              <TabsTrigger value="notifications">Alerts</TabsTrigger>
               <TabsTrigger value="advanced">Advanced</TabsTrigger>
             </TabsList>
 
@@ -521,86 +521,6 @@ export default function CalendarEditor({
                   />
                 </div>
               )}
-            </TabsContent>
-
-            {/* Notifications Tab */}
-            <TabsContent value="notifications" className="space-y-4 mt-6">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={
-                      editingCalendar.reminder_config?.some(
-                        (r: any) => r.template === "24h_before"
-                      ) || false
-                    }
-                    onCheckedChange={(checked) => {
-                      const config = [...(editingCalendar.reminder_config || [])];
-                      if (checked) {
-                        config.push({
-                          type: "email",
-                          template: "24h_before",
-                          offset_hours: 24,
-                        });
-                      } else {
-                        const idx = config.findIndex((r: any) => r.template === "24h_before");
-                        if (idx >= 0) config.splice(idx, 1);
-                      }
-                      updateField("reminder_config", config);
-                    }}
-                  />
-                  <Label className="text-sm">Email 24 hours before</Label>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={
-                      editingCalendar.reminder_config?.some(
-                        (r: any) => r.template === "1h_before"
-                      ) || false
-                    }
-                    onCheckedChange={(checked) => {
-                      const config = [...(editingCalendar.reminder_config || [])];
-                      if (checked) {
-                        config.push({
-                          type: "email",
-                          template: "1h_before",
-                          offset_hours: 1,
-                        });
-                      } else {
-                        const idx = config.findIndex((r: any) => r.template === "1h_before");
-                        if (idx >= 0) config.splice(idx, 1);
-                      }
-                      updateField("reminder_config", config);
-                    }}
-                  />
-                  <Label className="text-sm">Email 1 hour before</Label>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={
-                      editingCalendar.reminder_config?.some(
-                        (r: any) => r.template === "15m_before"
-                      ) || false
-                    }
-                    onCheckedChange={(checked) => {
-                      const config = [...(editingCalendar.reminder_config || [])];
-                      if (checked) {
-                        config.push({
-                          type: "sms",
-                          template: "15m_before",
-                          offset_hours: 0.25,
-                        });
-                      } else {
-                        const idx = config.findIndex((r: any) => r.template === "15m_before");
-                        if (idx >= 0) config.splice(idx, 1);
-                      }
-                      updateField("reminder_config", config);
-                    }}
-                  />
-                  <Label className="text-sm">SMS 15 minutes before</Label>
-                </div>
-              </div>
             </TabsContent>
 
             {/* Advanced Tab */}

@@ -777,10 +777,10 @@ async function runAutomation(
         }
 
         case "wait_until": {
-          const resumeAt = calculateWaitUntilTime(step.config);
-          const result = await executeTimeDelay(
-            { duration: 0, unit: "minutes" },
-            { ...context, meta: { ...context.meta, waitUntilTime: resumeAt.toISOString() } },
+          // Use executeWaitUntil for full support of before_appointment mode and other wait types
+          const result = await executeWaitUntil(
+            step.config as any,
+            context,
             supabase,
             automation.id,
             runId,
@@ -790,8 +790,15 @@ async function runAutomation(
           
           if (result.scheduled) {
             log.status = "success";
-            log.output = { resumeAt: resumeAt.toISOString() };
+            log.output = { resumeAt: result.resumeAt, jobId: result.jobId };
             shouldStop = true;
+          } else if (result.error) {
+            log.status = "failed";
+            log.error = result.error;
+          } else {
+            // Already past the wait time, continue immediately
+            log.status = "success";
+            log.output = { resumeAt: result.resumeAt, immediate: true };
           }
           break;
         }

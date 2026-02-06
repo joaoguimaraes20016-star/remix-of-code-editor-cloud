@@ -263,11 +263,37 @@ const Dashboard = () => {
         ? `${profile.full_name.split(' ')[0]}'s Workspace`
         : 'My Workspace';
 
+      // Generate unique booking slug
+      const generateSlug = (text: string) => {
+        return text
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+      };
+
+      let bookingSlug = generateSlug(defaultTeamName);
+      if (bookingSlug.length < 3) {
+        bookingSlug = `${bookingSlug}-team`;
+      }
+
+      // Check uniqueness and append suffix if needed
+      const { data: existing } = await supabase
+        .from('teams')
+        .select('id')
+        .eq('booking_slug', bookingSlug)
+        .maybeSingle();
+
+      if (existing) {
+        const suffix = Math.random().toString(36).slice(2, 6);
+        bookingSlug = `${bookingSlug}-${suffix}`;
+      }
+
       const { data: team, error: teamError } = await supabase
         .from('teams')
         .insert({ 
           name: defaultTeamName, 
           created_by: currentUser.id,
+          booking_slug: bookingSlug,
         } as any)
         .select()
         .single();
@@ -322,10 +348,36 @@ const Dashboard = () => {
         return !team?.parent_account_id; // null or undefined = main account
       });
 
+      // Generate unique booking slug
+      const generateSlug = (text: string) => {
+        return text
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+      };
+
+      let bookingSlug = generateSlug(newTeamName);
+      if (bookingSlug.length < 3) {
+        bookingSlug = `${bookingSlug}-team`;
+      }
+
+      // Check uniqueness and append suffix if needed
+      const { data: existing } = await supabase
+        .from('teams')
+        .select('id')
+        .eq('booking_slug', bookingSlug)
+        .maybeSingle();
+
+      if (existing) {
+        const suffix = Math.random().toString(36).slice(2, 6);
+        bookingSlug = `${bookingSlug}-${suffix}`;
+      }
+
       // Prepare insert data
       const insertData: any = {
         name: newTeamName,
         created_by: currentUser.id,
+        booking_slug: bookingSlug,
       };
 
       // Only add parent_account_id if column exists and we have a main account

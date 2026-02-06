@@ -5,44 +5,66 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, AlertCircle, Calendar, Video, VideoIcon, Mic, Link2, Loader2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { ZoomConfig } from "@/components/ZoomConfig";
 import { FathomConfig } from "@/components/FathomConfig";
 
-interface ConnectionStatus {
-  googleCalendar: boolean;
-  zoom: boolean;
-  googleMeet: boolean;
-  fathom: boolean;
-}
+// Brand logos
+import googleCalendarLogo from "@/assets/integrations/google-calendar.svg";
+import zoomLogo from "@/assets/integrations/zoom.svg";
+import googleMeetLogo from "@/assets/integrations/google-meet.svg";
+import fathomLogo from "@/assets/integrations/fathom.svg";
 
 export default function ConnectionsSettings() {
   const { teamId } = useParams();
   const { user } = useAuth();
   const [gcalConnected, setGcalConnected] = useState<boolean>(false);
   const [gcalConnecting, setGcalConnecting] = useState(false);
+  const [zoomConnected, setZoomConnected] = useState<boolean>(false);
+  const [fathomConnected, setFathomConnected] = useState<boolean>(false);
   const [showZoomConfig, setShowZoomConfig] = useState(false);
   const [showFathomConfig, setShowFathomConfig] = useState(false);
 
-  // Check Google Calendar connection status
+  // Check connection statuses
   useEffect(() => {
     if (!teamId || !user?.id) return;
 
-    const checkGcalConnection = async () => {
-      const { data } = await supabase
+    const checkConnections = async () => {
+      // Google Calendar — per-user table
+      const { data: gcalData } = await supabase
         .from("google_calendar_connections")
         .select("sync_enabled")
         .eq("team_id", teamId)
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      setGcalConnected(!!data && data.sync_enabled);
+      setGcalConnected(!!gcalData && !!gcalData.sync_enabled);
+
+      // Zoom — team_integrations table
+      const { data: zoomData } = await supabase
+        .from("team_integrations")
+        .select("is_connected")
+        .eq("team_id", teamId)
+        .eq("integration_type", "zoom")
+        .maybeSingle();
+
+      setZoomConnected(!!zoomData?.is_connected);
+
+      // Fathom — team_integrations table
+      const { data: fathomData } = await supabase
+        .from("team_integrations")
+        .select("is_connected")
+        .eq("team_id", teamId)
+        .eq("integration_type", "fathom")
+        .maybeSingle();
+
+      setFathomConnected(!!fathomData?.is_connected);
     };
 
-    checkGcalConnection();
+    checkConnections();
   }, [teamId, user?.id]);
 
   const handleConnectGoogleCalendar = async () => {
@@ -128,8 +150,8 @@ export default function ConnectionsSettings() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                    <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <div className="p-2 rounded-lg bg-white dark:bg-gray-800 border">
+                    <img src={googleCalendarLogo} alt="Google Calendar" className="h-6 w-6" />
                   </div>
                   <div>
                     <h3 className="font-medium">Google Calendar</h3>
@@ -140,12 +162,10 @@ export default function ConnectionsSettings() {
                 </div>
                 <div className="flex items-center gap-3">
                   {gcalConnected ? (
-                    <>
-                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                        <CheckCircle2 className="h-4 w-4" />
-                        <span className="text-sm font-medium">Connected</span>
-                      </div>
-                    </>
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="text-sm font-medium">Connected</span>
+                    </div>
                   ) : (
                     <>
                       <div className="flex items-center gap-2 text-muted-foreground">
@@ -178,8 +198,8 @@ export default function ConnectionsSettings() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                    <Video className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <div className="p-2 rounded-lg bg-white dark:bg-gray-800 border">
+                    <img src={zoomLogo} alt="Zoom" className="h-6 w-6" />
                   </div>
                   <div>
                     <h3 className="font-medium">Zoom</h3>
@@ -189,12 +209,23 @@ export default function ConnectionsSettings() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
+                  {zoomConnected ? (
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="text-sm font-medium">Connected</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-sm">Not Connected</span>
+                    </div>
+                  )}
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => setShowZoomConfig(true)}
                   >
-                    Configure
+                    {zoomConnected ? "Configure" : "Connect"}
                   </Button>
                 </div>
               </div>
@@ -206,8 +237,8 @@ export default function ConnectionsSettings() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                    <VideoIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  <div className="p-2 rounded-lg bg-white dark:bg-gray-800 border">
+                    <img src={googleMeetLogo} alt="Google Meet" className="h-6 w-6" />
                   </div>
                   <div>
                     <h3 className="font-medium">Google Meet</h3>
@@ -241,8 +272,8 @@ export default function ConnectionsSettings() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                    <Mic className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  <div className="p-2 rounded-lg bg-white dark:bg-gray-800 border">
+                    <img src={fathomLogo} alt="Fathom" className="h-6 w-6" />
                   </div>
                   <div>
                     <h3 className="font-medium">Fathom</h3>
@@ -252,12 +283,23 @@ export default function ConnectionsSettings() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
+                  {fathomConnected ? (
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="text-sm font-medium">Connected</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-sm">Not Connected</span>
+                    </div>
+                  )}
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => setShowFathomConfig(true)}
                   >
-                    Configure
+                    {fathomConnected ? "Configure" : "Connect"}
                   </Button>
                 </div>
               </div>
@@ -283,7 +325,17 @@ export default function ConnectionsSettings() {
               </div>
             </CardHeader>
             <CardContent>
-              <ZoomConfig teamId={teamId} onUpdate={() => setShowZoomConfig(false)} />
+              <ZoomConfig teamId={teamId} onUpdate={() => {
+                setShowZoomConfig(false);
+                // Refresh Zoom connection status
+                supabase
+                  .from("team_integrations")
+                  .select("is_connected")
+                  .eq("team_id", teamId)
+                  .eq("integration_type", "zoom")
+                  .maybeSingle()
+                  .then(({ data }) => setZoomConnected(!!data?.is_connected));
+              }} />
             </CardContent>
           </Card>
         </div>
@@ -306,7 +358,17 @@ export default function ConnectionsSettings() {
               </div>
             </CardHeader>
             <CardContent>
-              <FathomConfig teamId={teamId} onUpdate={() => setShowFathomConfig(false)} />
+              <FathomConfig teamId={teamId} onUpdate={() => {
+                setShowFathomConfig(false);
+                // Refresh Fathom connection status
+                supabase
+                  .from("team_integrations")
+                  .select("is_connected")
+                  .eq("team_id", teamId)
+                  .eq("integration_type", "fathom")
+                  .maybeSingle()
+                  .then(({ data }) => setFathomConnected(!!data?.is_connected));
+              }} />
             </CardContent>
           </Card>
         </div>

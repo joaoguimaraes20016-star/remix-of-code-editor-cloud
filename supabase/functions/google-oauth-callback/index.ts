@@ -31,8 +31,8 @@ Deno.serve(async (req) => {
   const error = url.searchParams.get("error");
 
   // Default redirect for errors
-  const siteUrl = Deno.env.get("SITE_URL") || "https://code-hug-hub.lovable.app";
-  const callbackPage = `${siteUrl}/google-callback`;
+  const siteUrl = Deno.env.get("SITE_URL") || "https://usestackit.co";
+  const callbackPage = `${siteUrl}/google-callback.html`;
 
   // Handle OAuth errors from Google
   if (error) {
@@ -214,6 +214,35 @@ Deno.serve(async (req) => {
         buildRedirectUrl(callbackPage, { success: "false", error: "storage_failed" }),
         302
       );
+    }
+
+    // If the requested feature is "calendar", also upsert google_calendar_connections
+    // so the scheduling Connections UI detects the connection (it queries this table).
+    if (requestedFeature === "calendar") {
+      const initiatedBy = config.initiated_by; // user_id who started the OAuth flow
+      if (initiatedBy) {
+        const { error: gcalConnError } = await supabase
+          .from("google_calendar_connections")
+          .upsert({
+            team_id: teamId,
+            user_id: initiatedBy,
+            access_token,
+            refresh_token: refresh_token || config.refresh_token || null,
+            token_expires_at: expiresAt,
+            calendar_id: "primary",
+            sync_enabled: true,
+            busy_calendars: ["primary"],
+          }, {
+            onConflict: "team_id,user_id",
+          });
+
+        if (gcalConnError) {
+          console.error("[Google OAuth Callback] Failed to upsert google_calendar_connections:", gcalConnError);
+          // Non-fatal: tokens are already stored in team_integrations
+        } else {
+          console.log(`[Google OAuth Callback] google_calendar_connections upserted for user ${initiatedBy}`);
+        }
+      }
     }
 
     console.log(`[Google OAuth Callback] Successfully connected Google for team ${teamId}, feature: ${requestedFeature}`);

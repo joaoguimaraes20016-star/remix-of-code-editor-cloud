@@ -169,6 +169,31 @@ serve(async (req) => {
       teamId = existingMembership.team_id;
       console.log('Using existing team:', teamId);
     } else {
+      // Generate unique booking slug
+      const generateSlug = (text: string) => {
+        return text
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+      };
+
+      let bookingSlug = generateSlug(teamName.trim());
+      if (bookingSlug.length < 3) {
+        bookingSlug = `${bookingSlug}-team`;
+      }
+
+      // Check uniqueness and append suffix if needed
+      const { data: existing } = await supabase
+        .from('teams')
+        .select('id')
+        .eq('booking_slug', bookingSlug)
+        .maybeSingle();
+
+      if (existing) {
+        const suffix = Math.random().toString(36).slice(2, 6);
+        bookingSlug = `${bookingSlug}-${suffix}`;
+      }
+
       // Create a new team with the provided name
       console.log('Creating new team with name:', teamName.trim());
       const { data: teamData, error: teamError } = await supabase
@@ -176,6 +201,7 @@ serve(async (req) => {
         .insert({
           name: teamName.trim(),
           created_by: userId,
+          booking_slug: bookingSlug,
         })
         .select()
         .single();

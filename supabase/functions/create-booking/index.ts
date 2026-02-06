@@ -1,7 +1,8 @@
 // supabase/functions/create-booking/index.ts
 // Creates a native booking appointment.
 // Handles: slot validation, round-robin assignment, Zoom meeting creation,
-// Google Calendar sync, reminder scheduling, contact upsert, automation triggers.
+// Google Calendar sync, contact upsert, automation triggers.
+// Note: Confirmations and reminders are handled via the automation system (GHL-style).
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -68,7 +69,6 @@ serve(async (req) => {
       last_assigned_index,
       location_type,
       location_value,
-      reminder_config,
     } = eventType;
 
     // 2. Convert selected time to UTC (needed for conflict checking)
@@ -363,34 +363,7 @@ serve(async (req) => {
       );
     }
 
-    // 11. Schedule reminders
-    if (reminder_config && Array.isArray(reminder_config)) {
-      const reminderRows = reminder_config
-        .map((rc: { type: string; template: string; offset_hours: number }) => {
-          const scheduledFor = new Date(
-            startAtUtc.getTime() - (rc.offset_hours || 1) * 60 * 60 * 1000
-          );
-          // Only schedule if it's in the future
-          if (scheduledFor.getTime() > Date.now()) {
-            return {
-              appointment_id: appointment.id,
-              team_id,
-              type: rc.type || "email",
-              scheduled_for: scheduledFor.toISOString(),
-              template: rc.template,
-              status: "pending",
-            };
-          }
-          return null;
-        })
-        .filter(Boolean);
-
-      if (reminderRows.length > 0) {
-        await supabase.from("booking_reminders").insert(reminderRows);
-      }
-    }
-
-    // 12. Upsert contact
+    // 11. Upsert contact
     const { data: existingContact } = await supabase
       .from("contacts")
       .select("id")

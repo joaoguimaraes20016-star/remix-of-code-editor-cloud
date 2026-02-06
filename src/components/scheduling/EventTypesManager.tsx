@@ -77,10 +77,6 @@ const DEFAULT_EVENT_TYPE: Partial<EventType> = {
   round_robin_mode: "none",
   round_robin_members: [],
   questions: [],
-  reminder_config: [
-    { type: "email", template: "24h_before", offset_hours: 24 },
-    { type: "email", template: "1h_before", offset_hours: 1 },
-  ],
 };
 
 export default function EventTypesManager() {
@@ -455,75 +451,6 @@ export default function EventTypesManager() {
                   }
                 />
               )}
-            </div>
-
-            {/* Reminders */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-foreground">Reminders</h4>
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={
-                      editingType.reminder_config?.some(
-                        (r: any) => r.template === "24h_before"
-                      ) || false
-                    }
-                    onCheckedChange={(checked) => {
-                      const config = [...(editingType.reminder_config || [])];
-                      if (checked) {
-                        config.push({ type: "email", template: "24h_before", offset_hours: 24 });
-                      } else {
-                        const idx = config.findIndex((r: any) => r.template === "24h_before");
-                        if (idx >= 0) config.splice(idx, 1);
-                      }
-                      updateField("reminder_config", config);
-                    }}
-                  />
-                  <Label className="text-sm">Email 24 hours before</Label>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={
-                      editingType.reminder_config?.some(
-                        (r: any) => r.template === "1h_before"
-                      ) || false
-                    }
-                    onCheckedChange={(checked) => {
-                      const config = [...(editingType.reminder_config || [])];
-                      if (checked) {
-                        config.push({ type: "email", template: "1h_before", offset_hours: 1 });
-                      } else {
-                        const idx = config.findIndex((r: any) => r.template === "1h_before");
-                        if (idx >= 0) config.splice(idx, 1);
-                      }
-                      updateField("reminder_config", config);
-                    }}
-                  />
-                  <Label className="text-sm">Email 1 hour before</Label>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={
-                      editingType.reminder_config?.some(
-                        (r: any) => r.template === "15m_before"
-                      ) || false
-                    }
-                    onCheckedChange={(checked) => {
-                      const config = [...(editingType.reminder_config || [])];
-                      if (checked) {
-                        config.push({ type: "sms", template: "15m_before", offset_hours: 0.25 });
-                      } else {
-                        const idx = config.findIndex((r: any) => r.template === "15m_before");
-                        if (idx >= 0) config.splice(idx, 1);
-                      }
-                      updateField("reminder_config", config);
-                    }}
-                  />
-                  <Label className="text-sm">SMS 15 minutes before</Label>
-                </div>
-              </div>
             </div>
 
             {/* Confirmation Type */}

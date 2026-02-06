@@ -1,12 +1,12 @@
 // src/pages/Calendars.tsx
-// Main calendars management page (GoHighLevel style)
+// Main calendars management page (Calendly/GHL style)
+// First calendar: guided wizard. Additional calendars: simple dialog.
 
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Plus, CheckCircle2, Circle, Link2, Calendar, Clock, ExternalLink } from "lucide-react";
+import { useParams } from "react-router-dom";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,25 +31,27 @@ import {
 } from "@/hooks/useEventTypes";
 import CalendarCard from "@/components/scheduling/CalendarCard";
 import CalendarEditor from "@/components/scheduling/CalendarEditor";
-import CalendarWizard from "@/components/scheduling/CalendarWizard";
+import CreateCalendarDialog from "@/components/scheduling/CalendarWizard";
+import FirstCalendarWizard from "@/components/scheduling/FirstCalendarWizard";
 import EmptyCalendarsState from "@/components/scheduling/EmptyCalendarsState";
 
 export default function Calendars() {
   const { teamId } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [editorOpen, setEditorOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [editingCalendar, setEditingCalendar] = useState<EventType | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bookingSlug, setBookingSlug] = useState<string | null>(null);
-  const [hasAvailability, setHasAvailability] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState("calendars");
 
   const { data: calendars, isLoading } = useEventTypes(teamId);
 
-  // Fetch team booking slug and availability status
+  const hasCalendars = calendars && calendars.length > 0;
+
+  // Fetch team booking slug
   useEffect(() => {
     if (!teamId) return;
     supabase
@@ -60,33 +62,17 @@ export default function Calendars() {
       .then(({ data }) => {
         setBookingSlug(data?.booking_slug || null);
       });
+  }, [teamId]);
 
-    if (user?.id) {
-      supabase
-        .from("availability_schedules")
-        .select("id")
-        .eq("team_id", teamId)
-        .eq("user_id", user.id)
-        .eq("is_available", true)
-        .limit(1)
-        .then(({ data }) => {
-          setHasAvailability(!!data && data.length > 0);
-        });
-    }
-  }, [teamId, user?.id]);
-
-  const hasCalendars = calendars && calendars.length > 0;
-  const hasActiveCalendar = calendars?.some((c) => c.is_active) ?? false;
   const updateCalendar = useUpdateEventType(teamId);
   const deleteCalendar = useDeleteEventType(teamId);
 
   const handleCreate = () => {
-    // If no calendars exist, show wizard; otherwise show editor
-    if (!calendars || calendars.length === 0) {
-      setWizardOpen(true);
+    // First calendar -> wizard; additional calendars -> simple dialog
+    if (hasCalendars) {
+      setCreateOpen(true);
     } else {
-      setEditingCalendar(null);
-      setEditorOpen(true);
+      setWizardOpen(true);
     }
   };
 
@@ -95,87 +81,104 @@ export default function Calendars() {
     setEditorOpen(true);
   };
 
-  const handleWizardComplete = () => {
-    // Wizard creates the calendar via the hook
-    setWizardOpen(false);
-    // The hook will refetch automatically
+  const handleCreated = () => {
+    // Refresh booking slug in case it was auto-generated
+    if (teamId) {
+      supabase
+        .from("teams")
+        .select("booking_slug")
+        .eq("id", teamId)
+        .single()
+        .then(({ data }) => {
+          setBookingSlug(data?.booking_slug || null);
+        });
+    }
   };
 
   const handleToggleActive = async (calendar: EventType) => {
-    // If activating, validate prerequisites
-    if (!calendar.is_active) {
-      // Check booking slug
+    if (!calendar.is_active && teamId) {
+      // Auto-fix missing prerequisites silently
+
+      // 1. Auto-generate booking slug if missing
       if (!bookingSlug) {
-        toast.error(
-          "Set your team's Booking URL first in Team Settings → Booking URL tab before activating a calendar.",
-          { duration: 5000 }
-        );
-        return;
-      }
+        try {
+          const { data: teamData } = await supabase
+            .from("teams")
+            .select("name")
+            .eq("id", teamId)
+            .single();
 
-      // Check that calendar has hosts assigned
-      const hostIds = calendar.round_robin_members || [];
-      if (hostIds.length === 0) {
-        // Check if there's at least a team owner/admin as fallback
-        if (teamId) {
-          const { data: admins } = await supabase
-            .from("team_members")
-            .select("user_id")
-            .eq("team_id", teamId)
-            .in("role", ["owner", "admin"])
-            .limit(1);
+          if (teamData?.name) {
+            let newSlug = teamData.name
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/^-|-$/g, "");
+            if (newSlug.length < 3) newSlug = `${newSlug}-team`;
 
-          if (!admins || admins.length === 0) {
-            toast.error(
-              "No hosts assigned to this calendar. Edit the calendar and add at least one host in the Hosts tab.",
-              { duration: 5000 }
-            );
-            return;
+            const { data: existing } = await supabase
+              .from("teams")
+              .select("id")
+              .eq("booking_slug", newSlug)
+              .neq("id", teamId)
+              .maybeSingle();
+
+            if (existing) {
+              newSlug = `${newSlug}-${Math.random().toString(36).slice(2, 6)}`;
+            }
+
+            await supabase
+              .from("teams")
+              .update({ booking_slug: newSlug })
+              .eq("id", teamId);
+
+            setBookingSlug(newSlug);
           }
-          // Use admin as implicit host for availability check
-          hostIds.push(admins[0].user_id);
+        } catch (error) {
+          console.error("Error auto-generating booking slug:", error);
         }
       }
 
-      // Check that at least one host has availability configured
-      if (teamId && hostIds.length > 0) {
-        // Get host names for better error messages
-        const { data: hostProfiles } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .in("id", hostIds);
+      // 2. Auto-assign current user as host if no hosts
+      const hostIds = calendar.round_robin_members || [];
+      if (hostIds.length === 0 && user?.id) {
+        await supabase
+          .from("event_types")
+          .update({ round_robin_members: [user.id] })
+          .eq("id", calendar.id);
+      }
 
-        const { data: avail } = await supabase
-          .from("availability_schedules")
-          .select("id, user_id")
-          .eq("team_id", teamId)
-          .in("user_id", hostIds)
-          .eq("is_available", true);
+      // 3. Seed default availability if none exists
+      const { data: avail } = await supabase
+        .from("availability_schedules")
+        .select("id")
+        .eq("team_id", teamId)
+        .is("user_id", null)
+        .eq("is_available", true)
+        .limit(1);
 
-        if (!avail || avail.length === 0) {
-          const hostNames = (hostProfiles || [])
-            .map((p) => p.full_name || "Unknown")
-            .join(", ");
-          toast.error(
-            `None of the hosts (${hostNames}) have availability hours configured. Edit the calendar and configure availability in the When tab.`,
-            { duration: 6000 }
-          );
-          return;
-        }
+      if (!avail || avail.length === 0) {
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const defaultDays = [
+          { day: 0, enabled: false },
+          { day: 1, enabled: true },
+          { day: 2, enabled: true },
+          { day: 3, enabled: true },
+          { day: 4, enabled: true },
+          { day: 5, enabled: true },
+          { day: 6, enabled: false },
+        ];
 
-        // Check which hosts don't have availability (for warning)
-        const hostsWithAvail = new Set(avail.map((a) => a.user_id));
-        const hostsWithoutAvail = hostIds.filter((id) => !hostsWithAvail.has(id));
-        if (hostsWithoutAvail.length > 0 && hostsWithoutAvail.length < hostIds.length) {
-          const missingNames = (hostProfiles || [])
-            .filter((p) => hostsWithoutAvail.includes(p.id))
-            .map((p) => p.full_name || "Unknown")
-            .join(", ");
-          toast.warning(
-            `Some hosts (${missingNames}) don't have availability configured. They won't receive bookings until availability is set.`,
-            { duration: 5000 }
-          );
-        }
+        await supabase.from("availability_schedules").insert(
+          defaultDays.map((d) => ({
+            team_id: teamId,
+            user_id: null,
+            day_of_week: d.day,
+            start_time: "09:00",
+            end_time: "17:00",
+            is_available: d.enabled,
+            timezone: userTimezone,
+          }))
+        );
       }
     }
 
@@ -195,50 +198,14 @@ export default function Calendars() {
     }
   };
 
-  // Check connection status for checklist
-  const [hasGoogleCalendar, setHasGoogleCalendar] = useState<boolean>(false);
-  const [hasZoom, setHasZoom] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (!teamId || !user?.id) return;
-
-    // Check Google Calendar
-    supabase
-      .from("google_calendar_connections")
-      .select("sync_enabled")
-      .eq("team_id", teamId)
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => {
-        setHasGoogleCalendar(!!data && data.sync_enabled);
-      });
-
-    // Check Zoom
-    supabase
-      .from("team_integrations")
-      .select("is_connected")
-      .eq("team_id", teamId)
-      .eq("integration_type", "zoom")
-      .single()
-      .then(({ data }) => {
-        setHasZoom(!!data && data.is_connected);
-      });
-  }, [teamId, user?.id]);
-
-  const hasConnections = hasGoogleCalendar || hasZoom;
-  const setupCompleteWithConnections = !!bookingSlug && hasConnections && hasCalendars && hasActiveCalendar && hasAvailability;
-
   return (
     <div className="flex-1 p-6 space-y-6 overflow-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Schedule</h1>
-          <p className="text-muted-foreground">
-            Manage your booking calendars, availability, and integrations
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">Scheduling</h1>
         </div>
-        {activeTab === "calendars" && (
+        {activeTab === "calendars" && !wizardOpen && hasCalendars && (
           <Button onClick={handleCreate}>
             <Plus className="h-4 w-4 mr-2" />
             New Calendar
@@ -249,100 +216,28 @@ export default function Calendars() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
-          <TabsTrigger value="calendars">Calendars</TabsTrigger>
+          <TabsTrigger value="calendars">Event</TabsTrigger>
           <TabsTrigger value="availability">Availability</TabsTrigger>
           <TabsTrigger value="connections">Connections</TabsTrigger>
         </TabsList>
 
         {/* Calendars Tab */}
         <TabsContent value="calendars" className="mt-6">
-          {/* Setup Checklist - shows when setup is incomplete */}
-          {!isLoading && !setupCompleteWithConnections && (
-            <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20">
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-sm mb-3 text-foreground">Setup Checklist</h3>
-                <div className="space-y-2">
-                  <ChecklistItem
-                    done={!!bookingSlug}
-                    label="Set your booking URL"
-                    action={
-                      !bookingSlug ? (
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-xs"
-                          onClick={() => navigate(`/team/${teamId}/settings`)}
-                        >
-                          Team Settings → Booking URL
-                        </Button>
-                      ) : undefined
-                    }
-                  />
-                  <ChecklistItem
-                    done={hasConnections}
-                    label="Connect your integrations"
-                    action={
-                      !hasConnections ? (
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-xs"
-                          onClick={() => setActiveTab("connections")}
-                        >
-                          Go to Connections
-                        </Button>
-                      ) : undefined
-                    }
-                  />
-                  <ChecklistItem
-                    done={hasAvailability === true}
-                    label="Configure team availability hours"
-                    action={
-                      hasAvailability !== true ? (
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-xs"
-                          onClick={() => setActiveTab("availability")}
-                        >
-                          Go to Availability
-                        </Button>
-                      ) : undefined
-                    }
-                  />
-                  <ChecklistItem
-                    done={!!hasCalendars}
-                    label="Create your first calendar"
-                    action={
-                      !hasCalendars ? (
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-xs"
-                          onClick={handleCreate}
-                        >
-                          Create now
-                        </Button>
-                      ) : undefined
-                    }
-                  />
-                  <ChecklistItem
-                    done={hasActiveCalendar}
-                    label="Activate a calendar"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Content */}
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
                 <Skeleton key={i} className="h-32 w-full rounded-xl" />
               ))}
             </div>
-          ) : !calendars || calendars.length === 0 ? (
+          ) : wizardOpen && !hasCalendars ? (
+            <FirstCalendarWizard
+              onComplete={() => {
+                setWizardOpen(false);
+                handleCreated();
+              }}
+              onCancel={() => setWizardOpen(false)}
+            />
+          ) : !hasCalendars ? (
             <EmptyCalendarsState onCreateClick={handleCreate} />
           ) : (
             <div className="space-y-3">
@@ -372,6 +267,13 @@ export default function Calendars() {
         </TabsContent>
       </Tabs>
 
+      {/* Create Calendar Dialog */}
+      <CreateCalendarDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={handleCreated}
+      />
+
       {/* Calendar Editor */}
       <CalendarEditor
         calendar={editingCalendar}
@@ -382,18 +284,6 @@ export default function Calendars() {
         }}
         onDelete={handleDelete}
       />
-
-      {/* Wizard (for first-time users) */}
-      {wizardOpen && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl">
-            <CalendarWizard
-              onComplete={handleWizardComplete}
-              onCancel={() => setWizardOpen(false)}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
@@ -415,30 +305,6 @@ export default function Calendars() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
-}
-
-function ChecklistItem({
-  done,
-  label,
-  action,
-}: {
-  done: boolean;
-  label: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      {done ? (
-        <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-      ) : (
-        <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
-      )}
-      <span className={`text-sm ${done ? "text-muted-foreground line-through" : "text-foreground"}`}>
-        {label}
-      </span>
-      {!done && action && <span className="ml-auto">{action}</span>}
     </div>
   );
 }

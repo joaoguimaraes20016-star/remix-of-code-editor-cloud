@@ -1,6 +1,7 @@
 // supabase/functions/cancel-booking/index.ts
 // Cancels a native booking by booking_token.
-// Handles: status update, reminder cancellation, Google Calendar deletion, automation trigger.
+// Handles: status update, Google Calendar deletion, automation trigger.
+// Note: Reminders are handled via the automation system (GHL-style).
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -72,12 +73,12 @@ serve(async (req) => {
       );
     }
 
-    // 3. Cancel pending reminders
+    // 3. Cancel any scheduled automation jobs for this appointment
     await supabase
-      .from("booking_reminders")
+      .from("scheduled_automation_jobs")
       .update({ status: "cancelled" })
-      .eq("appointment_id", appointment.id)
-      .eq("status", "pending");
+      .eq("status", "pending")
+      .contains("context_snapshot", { appointment: { id: appointment.id } });
 
     // 4. Delete Zoom meeting if exists
     if (appointment.meeting_link && appointment.meeting_link.includes("zoom.us")) {
