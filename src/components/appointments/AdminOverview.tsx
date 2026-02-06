@@ -7,11 +7,13 @@ import { EODReportsHub } from "./EODReportsHub";
 import { MonthlyCommissionReport } from "./MonthlyCommissionReport";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
-import { CalendarClock, AlertCircle, TrendingUp, DollarSign, Users, RefreshCw, ChevronDown, Calendar } from "lucide-react";
+import { CalendarClock, AlertCircle, TrendingUp, DollarSign, Users, RefreshCw, ChevronDown, Calendar, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { AppointmentsBookedBreakdown } from "@/components/AppointmentsBookedBreakdown";
+import { CreateAppointmentDialog } from "./CreateAppointmentDialog";
 
 interface AdminOverviewProps {
   teamId: string;
@@ -39,6 +41,7 @@ interface PerformanceMetrics {
 export function AdminOverview({ teamId }: AdminOverviewProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [currentUserName, setCurrentUserName] = useState<string>('');
   const [taskSummary, setTaskSummary] = useState<TaskSummary>({
     overdue: 0,
@@ -309,6 +312,16 @@ export function AdminOverview({ teamId }: AdminOverviewProps) {
           </CollapsibleContent>
         </Card>
       </Collapsible>
+
+      {/* Create Appointment Dialog */}
+      <CreateAppointmentDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        teamId={teamId}
+        onSuccess={() => {
+          loadOverviewData();
+        }}
+      />
     </div>
   );
 }

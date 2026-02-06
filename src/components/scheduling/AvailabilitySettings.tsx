@@ -65,10 +65,10 @@ export default function AvailabilitySettings() {
   const [gcalConnecting, setGcalConnecting] = useState(false);
   const [busyCalendars, setBusyCalendars] = useState<string[]>([]);
 
-  const { data: schedules, isLoading: schedulesLoading } = useAvailabilitySchedules(teamId);
-  const { data: overrides, isLoading: overridesLoading } = useAvailabilityOverrides(teamId);
-  const updateAvailability = useUpdateAvailability(teamId);
-  const createOverride = useCreateOverride(teamId);
+  const { data: schedules, isLoading: schedulesLoading } = useAvailabilitySchedules(teamId, true); // teamWide = true
+  const { data: overrides, isLoading: overridesLoading } = useAvailabilityOverrides(teamId, true); // teamWide = true
+  const updateAvailability = useUpdateAvailability(teamId, true); // teamWide = true
+  const createOverride = useCreateOverride(teamId, true); // teamWide = true
   const deleteOverride = useDeleteOverride(teamId);
 
   // Check Google Calendar connection status
@@ -113,11 +113,11 @@ export default function AvailabilitySettings() {
   };
 
   const handleAddOverride = () => {
-    if (!overrideDate || !teamId || !user?.id) return;
+    if (!overrideDate || !teamId) return;
 
     createOverride.mutate({
       team_id: teamId,
-      user_id: user.id,
+      user_id: null, // Team-wide override
       date: format(overrideDate, "yyyy-MM-dd"),
       is_available: overrideAvailable,
       start_time: overrideAvailable ? overrideStart : null,
@@ -133,6 +133,26 @@ export default function AvailabilitySettings() {
   const handleConnectGoogleCalendar = async () => {
     if (!teamId) return;
 
+    // Open popup BEFORE async call (prevents popup blocker)
+    const width = 600;
+    const height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+
+    const popup = window.open(
+      "about:blank",
+      "google-calendar-oauth",
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+
+    if (!popup) {
+      toast.error("Please allow popups for this site");
+      return;
+    }
+
+    // Show loading state in popup
+    popup.document.write("<html><head><title>Connecting...</title></head><body style='font-family: system-ui; display: flex; align-items: center; justify-content: center; height: 100vh;'><div>Loading Google Calendar connection...</div></body></html>");
+
     setGcalConnecting(true);
     try {
       const { data, error } = await supabase.functions.invoke("google-connect-feature", {
@@ -140,22 +160,14 @@ export default function AvailabilitySettings() {
       });
 
       if (error || !data?.authUrl) {
+        popup.close();
         toast.error("Failed to start Google Calendar connection");
         setGcalConnecting(false);
         return;
       }
 
-      // Open popup for OAuth
-      const width = 600;
-      const height = 700;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-
-      const popup = window.open(
-        data.authUrl,
-        "google-calendar-oauth",
-        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-      );
+      // Navigate popup to OAuth URL
+      popup.location.href = data.authUrl;
 
       if (!popup) {
         toast.error("Please allow popups for this site");
@@ -325,8 +337,8 @@ export default function AvailabilitySettings() {
       {/* Weekly Schedule */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Weekly Hours</CardTitle>
-          <CardDescription>Set your regular working hours for each day of the week</CardDescription>
+          <CardTitle className="text-base">Team Weekly Hours</CardTitle>
+          <CardDescription>Set the team's regular working hours for each day of the week. These hours apply to all calendars.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {(schedules || [])
@@ -373,8 +385,8 @@ export default function AvailabilitySettings() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-base">Date Overrides</CardTitle>
-              <CardDescription>Set custom hours or time off for specific dates</CardDescription>
+              <CardTitle className="text-base">Team Date Overrides</CardTitle>
+              <CardDescription>Set custom hours or time off for specific dates (applies to all calendars)</CardDescription>
             </div>
             <Button
               size="sm"

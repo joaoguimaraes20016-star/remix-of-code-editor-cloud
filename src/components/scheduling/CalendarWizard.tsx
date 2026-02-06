@@ -114,6 +114,7 @@ export default function CalendarWizard({ onComplete, onCancel }: CalendarWizardP
           location_type: locationType,
           location_value: locationValue || undefined,
           is_active: true,
+          availability_mode: "team_wide", // Use team-wide availability
           // Auto-assign current user as host so slot calculation works
           round_robin_members: [user.id],
           reminder_config: [
@@ -125,11 +126,11 @@ export default function CalendarWizard({ onComplete, onCancel }: CalendarWizardP
         // Create the calendar
         createCalendar.mutate({ ...calendar, team_id: teamId } as any, {
           onSuccess: async () => {
-            // Seed availability schedules
+            // Seed team-wide availability schedules
             try {
               const schedules = availability.map((day, index) => ({
                 team_id: teamId,
-                user_id: user.id,
+                user_id: null, // Team-wide schedule
                 day_of_week: index,
                 start_time: day.start,
                 end_time: day.end,
@@ -137,12 +138,12 @@ export default function CalendarWizard({ onComplete, onCancel }: CalendarWizardP
                 timezone: userTimezone,
               }));
 
-              // Check if user already has availability
+              // Check if team already has team-wide availability
               const { data: existing } = await supabase
                 .from("availability_schedules")
                 .select("id")
                 .eq("team_id", teamId)
-                .eq("user_id", user.id)
+                .is("user_id", null)
                 .limit(1);
 
               if (!existing || existing.length === 0) {
@@ -274,10 +275,10 @@ export default function CalendarWizard({ onComplete, onCancel }: CalendarWizardP
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-foreground mb-2">
-                When are you available?
+                When is your team available?
               </h2>
               <p className="text-muted-foreground">
-                Set your weekly hours. You can always change these later.
+                Set the team's weekly hours. These will apply to all calendars. You can always change these later.
               </p>
             </div>
 

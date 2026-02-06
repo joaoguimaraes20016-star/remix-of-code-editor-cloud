@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
-import { Search, CalendarIcon, Trash2, Clock, Mail, User, Hand } from "lucide-react";
+import { Search, CalendarIcon, Trash2, Clock, Mail, User, Hand, Plus } from "lucide-react";
+import { CreateAppointmentDialog } from "./appointments/CreateAppointmentDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -132,6 +133,7 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
   const [teamData, setTeamData] = useState<{ calendly_access_token: string | null; calendly_organization_uri: string | null } | null>(null);
   const [closeDealOpen, setCloseDealOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const pageSize = 50;
@@ -587,6 +589,10 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
           </div>
           
           <div className="flex gap-2 items-center flex-shrink-0">
+            <Button onClick={() => setCreateDialogOpen(true)} variant="default" size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Appointment
+            </Button>
             <Select value={dateFilter} onValueChange={(value) => {
               setDateFilter(value);
               if (value === "custom") {
@@ -1042,6 +1048,16 @@ export function AllNewAppointments({ teamId, closerCommissionPct, setterCommissi
           </PaginationContent>
         </Pagination>
       )}
+
+      {/* Create Appointment Dialog */}
+      <CreateAppointmentDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        teamId={teamId}
+        onSuccess={() => {
+          loadAppointments();
+        }}
+      />
     </div>
   );
 }

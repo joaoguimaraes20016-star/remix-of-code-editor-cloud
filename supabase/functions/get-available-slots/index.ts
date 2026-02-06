@@ -81,6 +81,7 @@ serve(async (req) => {
       max_bookings_per_day,
       round_robin_mode,
       round_robin_members,
+      availability_mode,
     } = eventType;
 
     // 2. Determine which hosts to check
@@ -127,21 +128,53 @@ serve(async (req) => {
     // Get day of week for the requested date (0=Sun, 6=Sat)
     const dayOfWeek = requestedDate.getUTCDay();
 
-    // 4. Load availability schedules for all hosts on this day
-    const { data: schedules } = await supabase
-      .from("availability_schedules")
-      .select("*")
-      .eq("team_id", team_id)
-      .in("user_id", hostUserIds)
-      .eq("day_of_week", dayOfWeek);
-
-    // 5. Load availability overrides for this date
-    const { data: overrides } = await supabase
-      .from("availability_overrides")
-      .select("*")
-      .eq("team_id", team_id)
-      .in("user_id", hostUserIds)
-      .eq("date", dateStr);
+    // 4. Load availability schedules based on availability_mode
+    let schedules: any[] = [];
+    let overrides: any[] = [];
+    
+    const useTeamWide = availability_mode === 'team_wide' || !availability_mode; // Default to team_wide
+    
+    if (useTeamWide) {
+      // Team-wide: Load schedule with user_id IS NULL
+      const { data: teamSchedules } = await supabase
+        .from("availability_schedules")
+        .select("*")
+        .eq("team_id", team_id)
+        .is("user_id", null)
+        .eq("day_of_week", dayOfWeek);
+      
+      schedules = teamSchedules || [];
+      
+      // Load team-wide overrides
+      const { data: teamOverrides } = await supabase
+        .from("availability_overrides")
+        .select("*")
+        .eq("team_id", team_id)
+        .is("user_id", null)
+        .eq("date", dateStr);
+      
+      overrides = teamOverrides || [];
+    } else {
+      // Per-user: Load schedules for each host
+      const { data: userSchedules } = await supabase
+        .from("availability_schedules")
+        .select("*")
+        .eq("team_id", team_id)
+        .in("user_id", hostUserIds)
+        .eq("day_of_week", dayOfWeek);
+      
+      schedules = userSchedules || [];
+      
+      // Load per-user overrides
+      const { data: userOverrides } = await supabase
+        .from("availability_overrides")
+        .select("*")
+        .eq("team_id", team_id)
+        .in("user_id", hostUserIds)
+        .eq("date", dateStr);
+      
+      overrides = userOverrides || [];
+    }
 
     // 6. Load existing appointments for this date (to subtract booked slots)
     const dayStart = dateStr + "T00:00:00Z";
@@ -168,60 +201,106 @@ serve(async (req) => {
       }
     }
 
-    // 8. Calculate available slots for each host, then take the union
+    // 8. Calculate available slots
     const allAvailableSlots = new Map<string, TimeSlot>();
     const debugInfo: any = {
       hostsChecked: hostUserIds,
       availabilityFound: false,
       reason: null,
       hostDetails: [],
+      availabilityMode: useTeamWide ? 'team_wide' : 'per_user',
     };
 
-    for (const userId of hostUserIds) {
-      // Get this user's schedule for the day
-      const userSchedule = (schedules || []).find(
-        s => s.user_id === userId
-      );
-      const userOverride = (overrides || []).find(
-        o => o.user_id === userId
-      );
+    // Determine availability windows (same for all hosts if team-wide)
+    let windows: AvailabilityWindow[] = [];
+    let usingDefaults = false;
+    let teamTimezone = "America/New_York";
 
-      // Determine availability windows
-      let windows: AvailabilityWindow[] = [];
-      let usingDefaults = false;
+    if (useTeamWide) {
+      // Team-wide: Use single schedule for all hosts
+      const teamSchedule = schedules?.[0];
+      const teamOverride = overrides?.[0];
 
-      if (userOverride) {
-        // Override takes precedence
-        if (userOverride.is_available && userOverride.start_time && userOverride.end_time) {
-          windows = [{ start: userOverride.start_time, end: userOverride.end_time }];
+      if (teamOverride) {
+        if (teamOverride.is_available && teamOverride.start_time && teamOverride.end_time) {
+          windows = [{ start: teamOverride.start_time, end: teamOverride.end_time }];
+          teamTimezone = teamOverride.timezone || teamTimezone;
         }
-        // If is_available is false, windows stays empty (day off)
-      } else if (userSchedule) {
-        if (userSchedule.is_available) {
-          windows = [{ start: userSchedule.start_time, end: userSchedule.end_time }];
+      } else if (teamSchedule) {
+        if (teamSchedule.is_available) {
+          windows = [{ start: teamSchedule.start_time, end: teamSchedule.end_time }];
+          teamTimezone = teamSchedule.timezone || teamTimezone;
         }
       } else {
-        // No schedule exists - use default availability (9am-5pm Mon-Fri)
-        // Only apply defaults for weekdays (Mon-Fri = 1-5)
+        // Default: 9am-5pm Mon-Fri
         if (dayOfWeek >= 1 && dayOfWeek <= 5) {
           windows = [{ start: "09:00", end: "17:00" }];
           usingDefaults = true;
-          console.warn(`[get-available-slots] No availability schedule for user ${userId} on day ${dayOfWeek}, using default 9am-5pm`);
+          console.warn(`[get-available-slots] No team-wide availability schedule for team ${team_id} on day ${dayOfWeek}, using default 9am-5pm`);
         }
       }
 
       if (windows.length === 0) {
-        debugInfo.hostDetails.push({
-          userId,
-          hasSchedule: !!userSchedule,
-          hasOverride: !!userOverride,
-          dayOfWeek,
-          reason: dayOfWeek === 0 || dayOfWeek === 6 ? "Weekend (no default)" : "No availability configured",
-        });
-        continue;
+        debugInfo.reason = dayOfWeek === 0 || dayOfWeek === 6 ? "Weekend (no default)" : "No team availability configured";
+        return new Response(
+          JSON.stringify({
+            date: dateStr,
+            slots: [],
+            event_type: eventType,
+            debug: debugInfo,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
       debugInfo.availabilityFound = true;
+    }
+
+    // Generate slots for each host (using same windows if team-wide, or individual if per-user)
+    for (const userId of hostUserIds) {
+      let hostWindows: AvailabilityWindow[] = [];
+      let hostTimezone = teamTimezone;
+
+      if (!useTeamWide) {
+        // Per-user mode: Get this user's schedule
+        const userSchedule = schedules.find((s: any) => s.user_id === userId);
+        const userOverride = overrides.find((o: any) => o.user_id === userId);
+
+        if (userOverride) {
+          if (userOverride.is_available && userOverride.start_time && userOverride.end_time) {
+            hostWindows = [{ start: userOverride.start_time, end: userOverride.end_time }];
+            hostTimezone = userOverride.timezone || hostTimezone;
+          }
+        } else if (userSchedule) {
+          if (userSchedule.is_available) {
+            hostWindows = [{ start: userSchedule.start_time, end: userSchedule.end_time }];
+            hostTimezone = userSchedule.timezone || hostTimezone;
+          }
+        } else {
+          if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+            hostWindows = [{ start: "09:00", end: "17:00" }];
+            usingDefaults = true;
+          }
+        }
+
+        if (hostWindows.length === 0) {
+          debugInfo.hostDetails.push({
+            userId,
+            hasSchedule: !!userSchedule,
+            hasOverride: !!userOverride,
+            dayOfWeek,
+            reason: dayOfWeek === 0 || dayOfWeek === 6 ? "Weekend (no default)" : "No availability configured",
+          });
+          continue;
+        }
+      } else {
+        // Team-wide: Use the same windows for all hosts
+        hostWindows = windows;
+      }
+
+      if (!debugInfo.availabilityFound) {
+        debugInfo.availabilityFound = true;
+      }
 
       // Get this user's existing appointments
       const userAppointments = (existingAppointments || []).filter(
@@ -247,11 +326,11 @@ serve(async (req) => {
         console.error(`[get-available-slots] Error fetching Google Calendar busy times for user ${userId}:`, err);
       }
 
-      // Determine the user's timezone
-      const userTimezone = userSchedule?.timezone || userOverride?.timezone || "America/New_York";
+      // Use host-specific timezone (or team timezone for team-wide)
+      const userTimezone = hostTimezone;
 
       // Generate candidate slots
-      for (const window of windows) {
+      for (const window of hostWindows) {
         const [startHour, startMin] = window.start.split(":").map(Number);
         const [endHour, endMin] = window.end.split(":").map(Number);
 

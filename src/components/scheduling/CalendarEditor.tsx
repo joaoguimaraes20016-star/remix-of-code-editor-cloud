@@ -137,21 +137,20 @@ export default function CalendarEditor({
 
         setTeamMembers(members);
 
-        // Check availability and Google Calendar connection for each member
-        const availMap: Record<string, boolean> = {};
+        // Check team-wide availability (one check for all)
+        const { data: teamAvail } = await supabase
+          .from("availability_schedules")
+          .select("id")
+          .eq("team_id", teamId)
+          .is("user_id", null)
+          .eq("is_available", true)
+          .limit(1);
+        
+        const hasTeamAvailability = !!teamAvail && teamAvail.length > 0;
+
+        // Check Google Calendar connection for each member (per-user for busy time blocking)
         const gcalMap: Record<string, boolean> = {};
         for (const member of members) {
-          // Check availability
-          const { data: avail } = await supabase
-            .from("availability_schedules")
-            .select("id")
-            .eq("team_id", teamId)
-            .eq("user_id", member.id)
-            .eq("is_available", true)
-            .limit(1);
-          availMap[member.id] = !!avail && avail.length > 0;
-
-          // Check Google Calendar connection
           const { data: gcal } = await supabase
             .from("google_calendar_connections")
             .select("id")
@@ -161,6 +160,12 @@ export default function CalendarEditor({
             .limit(1);
           gcalMap[member.id] = !!gcal && gcal.length > 0;
         }
+        
+        // Set availability status for all members (same since it's team-wide)
+        const availMap: Record<string, boolean> = {};
+        members.forEach((m) => {
+          availMap[m.id] = hasTeamAvailability;
+        });
         setMemberAvailability(availMap);
         setMemberGcalStatus(gcalMap);
       } catch (err) {
@@ -345,19 +350,15 @@ export default function CalendarEditor({
                     const hasAvail = memberAvailability[member.id];
                     const hasGcal = memberGcalStatus[member.id];
                     
-                    // Determine badge color: green (both), yellow (availability only), red (neither)
-                    let badgeVariant: "default" | "secondary" | "destructive" = "destructive";
-                    let badgeText = "No availability";
-                    let badgeClass = "bg-red-50 text-red-600 border-red-200";
+                    // Badge shows Google Calendar status (availability is team-wide, shown separately)
+                    let badgeVariant: "default" | "secondary" | "destructive" = "secondary";
+                    let badgeText = "No Google Calendar";
+                    let badgeClass = "bg-yellow-50 text-yellow-700 border-yellow-200";
                     
-                    if (hasAvail && hasGcal) {
+                    if (hasGcal) {
                       badgeVariant = "default";
-                      badgeText = "Ready";
+                      badgeText = "Google Calendar Connected";
                       badgeClass = "bg-green-50 text-green-700 border-green-200";
-                    } else if (hasAvail) {
-                      badgeVariant = "secondary";
-                      badgeText = "No Google Calendar";
-                      badgeClass = "bg-yellow-50 text-yellow-700 border-yellow-200";
                     }
                     
                     return (
@@ -434,6 +435,11 @@ export default function CalendarEditor({
 
             {/* When Tab - Availability */}
             <TabsContent value="when" className="mt-6">
+              <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-800">
+                <p className="text-sm text-blue-800 dark:text-blue-400">
+                  <strong>Team-Wide Availability:</strong> The availability hours you set here apply to all calendars and all hosts. Individual hosts can connect their Google Calendar to block their personal busy times.
+                </p>
+              </div>
               <AvailabilitySettings />
             </TabsContent>
 
