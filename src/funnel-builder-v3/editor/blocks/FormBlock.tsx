@@ -161,20 +161,17 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
       return;
     }
     
-    // Don't validate if too short
-    const minLength = field.type === 'email' ? 3 : 5;
-    if (value.length < minLength) {
-      if (value.length === 0 && touchedFields[field.id]) {
-        setFieldErrors(prev => {
-          const next = { ...prev };
-          delete next[field.id];
-          return next;
-        });
-      }
+    // Clear error when empty
+    if (value.length === 0 && touchedFields[field.id]) {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next[field.id];
+        return next;
+      });
       return;
     }
     
-    // Debounce validation by 500ms
+    // Debounce validation by 300ms
     validateTimeoutRefs.current[field.id] = setTimeout(() => {
       let error: string | null = null;
 
@@ -710,7 +707,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
                   placeholder={field.placeholder}
                   className={cn(
                     "h-12 flex-1 rounded-l-none",
-                    fieldErrors[field.id] && "border-destructive focus-visible:ring-destructive"
+                    (fieldErrors[field.id] || (touchedFields[field.id] && localValues[field.id]?.trim() && !validatePhone(localValues[field.id], getCountryCodeForValidation(phoneCountryIds[field.id] || defaultCountryId || countryCodes[0]?.id || '1')).valid)) && "border-destructive focus-visible:ring-destructive"
                   )}
                   value={localValues[field.id] || ''}
                   onChange={(e) => handleFieldChange(field.id, e.target.value, field)}
@@ -738,7 +735,10 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
                 placeholder={field.placeholder}
                 className={cn(
                   "h-12",
-                  fieldErrors[field.id] && "border-destructive focus-visible:ring-destructive"
+                  (fieldErrors[field.id] || (touchedFields[field.id] && localValues[field.id]?.trim() && (
+                    (field.type === 'email' && !validateEmail(localValues[field.id]).valid) ||
+                    (field.type === 'phone' && !validatePhone(localValues[field.id], getCountryCodeForValidation(phoneCountryIds[field.id] || defaultCountryId || countryCodes[0]?.id || '1')).valid)
+                  ))) && "border-destructive focus-visible:ring-destructive"
                 )}
                 value={localValues[field.id] || ''}
                 onChange={(e) => handleFieldChange(field.id, e.target.value, field)}
@@ -850,7 +850,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
       </Button>
 
       {/* Helper text when button is disabled - only show after user has interacted */}
-      {!isPreview && (
+      {isPreview && (
         // Check if any field has been touched
         Object.keys(touchedFields).some(key => key !== 'consent' && touchedFields[key]) ||
         touchedFields.consent

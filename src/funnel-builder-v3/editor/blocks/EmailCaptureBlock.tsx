@@ -238,19 +238,18 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
       clearTimeout(validateTimeoutRef.current);
     }
     
-    // Don't validate if field hasn't been touched or too short
-    if (!touchedFields.email || value.length < 3) {
-      if (value.length === 0 && touchedFields.email) {
-        setEmailError(null); // Clear error when empty
-      }
+    // Don't validate if field hasn't been touched
+    if (!touchedFields.email) return;
+    if (value.length === 0) {
+      setEmailError(null); // Clear error when empty
       return;
     }
     
-    // Debounce validation by 500ms
+    // Debounce validation by 300ms
     validateTimeoutRef.current = setTimeout(() => {
       const validation = validateEmail(value);
       setEmailError(validation.valid ? null : validation.error || null);
-    }, 500);
+    }, 300);
   }, [touchedFields.email]);
 
   // Validate email on blur
@@ -352,7 +351,7 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
               "w-full",
               isMobile ? "h-9 px-2.5" : "h-12",
               placeholderTextSize,
-              emailError && "border-destructive focus-visible:ring-destructive"
+              (emailError || (touchedFields.email && email.trim() && !validateEmail(email).valid)) && "border-destructive focus-visible:ring-destructive"
             )}
             value={email}
             onChange={(e) => {
@@ -446,7 +445,7 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
       )}
 
       {/* Helper text when button is disabled */}
-      {!isPreview && touchedFields.email && (
+      {isPreview && touchedFields.email && (
         (emailError || !email.trim() || (consent.enabled && consent.required && !hasConsented)) && (
           <div className="text-xs text-muted-foreground text-center mt-2">
             {emailError 

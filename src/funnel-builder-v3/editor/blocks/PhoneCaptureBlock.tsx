@@ -219,20 +219,19 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
       clearTimeout(validateTimeoutRef.current);
     }
     
-    // Don't validate if field hasn't been touched or too short
-    if (!touchedFields.phone || value.length < 5) {
-      if (value.length === 0 && touchedFields.phone) {
-        setPhoneError(null); // Clear error when empty
-      }
+    // Don't validate if field hasn't been touched
+    if (!touchedFields.phone) return;
+    if (value.length === 0) {
+      setPhoneError(null); // Clear error when empty
       return;
     }
     
-      // Debounce validation by 500ms
+      // Debounce validation by 300ms
       validateTimeoutRef.current = setTimeout(() => {
         const countryCodeForValidation = getCountryCodeForValidation(selectedCountryId);
         const validation = validatePhone(value, countryCodeForValidation);
         setPhoneError(validation.valid ? null : validation.error || null);
-      }, 500);
+      }, 300);
   }, [touchedFields.phone, selectedCountryId, selectedCountry, getCountryCodeForValidation]);
 
   // Validate phone on blur
@@ -389,7 +388,7 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
             placeholder={placeholder || 'Enter your phone number'}
             className={cn(
               "flex-1 rounded-l-none",
-              phoneError && "border-destructive focus-visible:ring-destructive"
+              (phoneError || (touchedFields.phone && phone.trim() && !validatePhone(phone, getCountryCodeForValidation(selectedCountryId)).valid)) && "border-destructive focus-visible:ring-destructive"
             )}
             value={phone}
             onChange={(e) => {
@@ -463,7 +462,7 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
       )}
 
       {/* Helper text when button is disabled */}
-      {!isPreview && touchedFields.phone && (
+      {isPreview && touchedFields.phone && (
         (phoneError || !phone.trim() || (consent.enabled && consent.required && !hasConsented)) && (
           <div className="text-xs text-muted-foreground text-center mt-2">
             {phoneError 
