@@ -212,12 +212,16 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
     } else {
       // Draft mode: block if submit is in progress (submit takes priority)
       if (pendingSubmitRef.current) {
-        console.log('[useUnifiedLeadSubmit] Ignoring draft - submit in progress (submit takes priority)');
+        if (import.meta.env.DEV) {
+          console.log('[useUnifiedLeadSubmit] Ignoring draft - submit in progress (submit takes priority)');
+        }
         return { error: 'Submit in progress, draft skipped' };
       }
       // Block if draft is already pending
       if (pendingDraftRef.current) {
-        console.log('[useUnifiedLeadSubmit] Ignoring duplicate draft - draft already pending');
+        if (import.meta.env.DEV) {
+          console.log('[useUnifiedLeadSubmit] Ignoring duplicate draft - draft already pending');
+        }
         return { error: 'Draft already in progress' };
       }
     }
@@ -322,14 +326,16 @@ export function useUnifiedLeadSubmit(options: UnifiedLeadSubmitOptions): Unified
       });
 
       if (error) {
-        console.error('[useUnifiedLeadSubmit] ====== SUBMISSION ERROR ======', {
-          error,
-          mode,
-          funnelId,
-          teamId,
-          leadId: leadIdRef.current,
-          stepId: payload.source.stepId,
-        });
+        if (import.meta.env.DEV) {
+          console.error('[useUnifiedLeadSubmit] ====== SUBMISSION ERROR ======', {
+            error,
+            mode,
+            funnelId,
+            teamId,
+            leadId: leadIdRef.current,
+            stepId: payload.source.stepId,
+          });
+        }
         // Only set error state for submit mode (draft errors are silent to avoid re-renders)
         if (mode === 'submit') {
           setLastError(error.message || 'Submission failed');

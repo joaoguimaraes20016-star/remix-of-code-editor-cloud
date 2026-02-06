@@ -534,7 +534,7 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
       onFormSubmit={handleFormSubmit}
       onStepChange={handleStepChange}
     >
-      <FunnelProvider initialFunnel={funnel}>
+      <FunnelProvider initialFunnel={funnel} runtimeMode>
         <FunnelV3ContentWrapper funnel={funnel} />
       </FunnelProvider>
     </FunnelRuntimeProvider>

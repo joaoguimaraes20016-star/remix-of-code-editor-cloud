@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode, useEffect } from 'react';
 import { Funnel, FunnelStep, Block, ViewportType, CountryCode, BlockContent } from '@/funnel-builder-v3/types/funnel';
 import { createEmptyFunnel } from '@/funnel-builder-v3/lib/templates';
 import { v4 as uuid } from 'uuid';
@@ -177,12 +177,16 @@ interface FunnelProviderProps {
   children: ReactNode;
   initialFunnel?: Funnel;
   onFunnelChange?: (funnel: Funnel) => void;
+  /** When true, skip editor-only features (localStorage, history, media, escape key).
+   *  Used in FunnelV3Renderer runtime to eliminate unnecessary overhead. */
+  runtimeMode?: boolean;
 }
 
-export function FunnelProvider({ children, initialFunnel, onFunnelChange }: FunnelProviderProps) {
+export function FunnelProvider({ children, initialFunnel, onFunnelChange, runtimeMode }: FunnelProviderProps) {
   // Initialize from prop, localStorage, or create new
+  // In runtime mode, skip localStorage lookup to avoid unnecessary overhead
   const [funnel, setFunnelState] = useState<Funnel>(() => {
-    const raw = initialFunnel ?? loadFunnelFromStorage() ?? createEmptyFunnel();
+    const raw = initialFunnel ?? (runtimeMode ? null : loadFunnelFromStorage()) ?? createEmptyFunnel();
     return normalizeFunnel(raw);
   });
   const [currentStepId, setCurrentStepIdState] = useState<string | null>(null);
@@ -209,14 +213,18 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   const [mediaFolders, setMediaFolders] = useState<MediaFolder[]>([]);
 
   // Auto-save funnel to localStorage whenever it changes (only if no external handler)
+  // Skip in runtime mode - runtime never modifies the funnel
   useEffect(() => {
+    if (runtimeMode) return;
     if (!onFunnelChange) {
       saveFunnelToStorage(funnel);
     }
-  }, [funnel, onFunnelChange]);
+  }, [funnel, onFunnelChange, runtimeMode]);
 
   // Load media gallery from localStorage on mount
+  // Skip in runtime mode - media gallery is editor-only
   useEffect(() => {
+    if (runtimeMode) return;
     const saved = localStorage.getItem('funnel-media-gallery');
     if (saved) {
       try {
@@ -225,12 +233,13 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
         // Invalid JSON, ignore
       }
     }
-  }, []);
+  }, [runtimeMode]);
 
   // Save media gallery to localStorage on change
   useEffect(() => {
+    if (runtimeMode) return;
     localStorage.setItem('funnel-media-gallery', JSON.stringify(mediaGallery));
-  }, [mediaGallery]);
+  }, [mediaGallery, runtimeMode]);
 
   // Add to gallery
   const addToGallery = useCallback((url: string) => {
@@ -247,7 +256,9 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
   }, []);
 
   // Load media items from localStorage on mount
+  // Skip in runtime mode - media library is editor-only
   useEffect(() => {
+    if (runtimeMode) return;
     const saved = localStorage.getItem('funnel-media-items');
     if (saved) {
       try {
@@ -256,15 +267,17 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
         // Invalid JSON, ignore
       }
     }
-  }, []);
+  }, [runtimeMode]);
 
   // Save media items to localStorage on change
   useEffect(() => {
+    if (runtimeMode) return;
     localStorage.setItem('funnel-media-items', JSON.stringify(mediaItems));
-  }, [mediaItems]);
+  }, [mediaItems, runtimeMode]);
 
   // Load media folders from localStorage on mount
   useEffect(() => {
+    if (runtimeMode) return;
     const saved = localStorage.getItem('funnel-media-folders');
     if (saved) {
       try {
@@ -273,12 +286,13 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
         // Invalid JSON, ignore
       }
     }
-  }, []);
+  }, [runtimeMode]);
 
   // Save media folders to localStorage on change
   useEffect(() => {
+    if (runtimeMode) return;
     localStorage.setItem('funnel-media-folders', JSON.stringify(mediaFolders));
-  }, [mediaFolders]);
+  }, [mediaFolders, runtimeMode]);
 
   // Add media item
   const addMediaItem = useCallback((item: Omit<MediaItem, 'id' | 'createdAt'>) => {
@@ -343,8 +357,9 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
     }
   }, [funnel, currentStepId, setCurrentStepId]);
   
-  // Handle escape key for preview mode
+  // Handle escape key for preview mode (editor-only)
   React.useEffect(() => {
+    if (runtimeMode) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isPreviewMode) {
         setPreviewMode(false);
@@ -352,7 +367,7 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPreviewMode]);
+  }, [isPreviewMode, runtimeMode]);
   
   const pushToHistory = useCallback((currentFunnel: Funnel) => {
     setHistory(prev => {
@@ -748,57 +763,114 @@ export function FunnelProvider({ children, initialFunnel, onFunnelChange }: Funn
     });
   }, [funnel, setFunnel]);
   
+  // CRITICAL FIX: Memoize the context value to prevent cascade re-renders.
+  // Without this, every render of FunnelProvider creates a new context object,
+  // which triggers re-renders of ALL consumers (every BlockRenderer in every step).
+  // This was causing ALL blocks to re-render whenever FunnelV3Renderer re-rendered
+  // (e.g., from useUnifiedLeadSubmit state changes), creating jank during navigation.
+  const canUndo = historyIndex >= 0;
+  const canRedo = historyIndex < history.length - 1;
+  
+  const contextValue = useMemo<FunnelContextType>(() => ({
+    funnel,
+    currentStepId,
+    selectedBlockId,
+    selectedChildElement,
+    isPreviewMode,
+    currentViewport,
+    canvasZoom,
+    effectiveZoom,
+    mediaGallery,
+    setFunnel,
+    setCurrentStepId,
+    setSelectedBlockId,
+    setSelectedChildElement,
+    setPreviewMode,
+    setCurrentViewport,
+    setCanvasZoom,
+    setEffectiveZoom,
+    addStep,
+    deleteStep,
+    updateStep,
+    reorderSteps,
+    addBlock,
+    addBlocks,
+    deleteBlock,
+    updateBlock,
+    updateBlockContent,
+    reorderBlocks,
+    duplicateBlock,
+    exportFunnel,
+    importFunnel,
+    addToGallery,
+    removeFromGallery,
+    mediaItems,
+    mediaFolders,
+    addMediaItem,
+    removeMediaItem,
+    createMediaFolder,
+    deleteMediaFolder,
+    moveMediaToFolder,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    countryCodes,
+    defaultCountryId,
+    updateCountryCodes,
+    setDefaultCountryId,
+  }), [
+    funnel,
+    currentStepId,
+    selectedBlockId,
+    selectedChildElement,
+    isPreviewMode,
+    currentViewport,
+    canvasZoom,
+    effectiveZoom,
+    mediaGallery,
+    setFunnel,
+    setCurrentStepId,
+    setSelectedBlockId,
+    setSelectedChildElement,
+    setPreviewMode,
+    setCurrentViewport,
+    setCanvasZoom,
+    setEffectiveZoom,
+    addStep,
+    deleteStep,
+    updateStep,
+    reorderSteps,
+    addBlock,
+    addBlocks,
+    deleteBlock,
+    updateBlock,
+    updateBlockContent,
+    reorderBlocks,
+    duplicateBlock,
+    exportFunnel,
+    importFunnel,
+    addToGallery,
+    removeFromGallery,
+    mediaItems,
+    mediaFolders,
+    addMediaItem,
+    removeMediaItem,
+    createMediaFolder,
+    deleteMediaFolder,
+    moveMediaToFolder,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    countryCodes,
+    defaultCountryId,
+    updateCountryCodes,
+    setDefaultCountryId,
+  ]);
+
   return (
-    <FunnelContext.Provider value={{
-      funnel,
-      currentStepId,
-      selectedBlockId,
-      selectedChildElement,
-      isPreviewMode,
-      currentViewport,
-      canvasZoom,
-      effectiveZoom,
-      mediaGallery,
-      setFunnel,
-      setCurrentStepId,
-      setSelectedBlockId,
-      setSelectedChildElement,
-      setPreviewMode,
-      setCurrentViewport,
-      setCanvasZoom,
-      setEffectiveZoom,
-      addStep,
-      deleteStep,
-      updateStep,
-      reorderSteps,
-      addBlock,
-      addBlocks,
-      deleteBlock,
-      updateBlock,
-      updateBlockContent,
-      reorderBlocks,
-      duplicateBlock,
-      exportFunnel,
-      importFunnel,
-      addToGallery,
-      removeFromGallery,
-      mediaItems,
-      mediaFolders,
-      addMediaItem,
-      removeMediaItem,
-      createMediaFolder,
-      deleteMediaFolder,
-      moveMediaToFolder,
-      undo,
-      redo,
-      canUndo: historyIndex >= 0,
-      canRedo: historyIndex < history.length - 1,
-      // Global country codes
-      countryCodes,
-      defaultCountryId,
-      updateCountryCodes,
-      setDefaultCountryId,
-    }}>
+    <FunnelContext.Provider value={contextValue}>
       {children}
     </FunnelContext.Provider>
   );

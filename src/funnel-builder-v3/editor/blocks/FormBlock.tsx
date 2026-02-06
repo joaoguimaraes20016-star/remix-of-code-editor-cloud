@@ -163,7 +163,9 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
           privacyPolicyUrl: consent.linkUrl,
         } : undefined
       ).catch((error) => {
-        console.error('[FormBlock] submitForm error:', error);
+        if (import.meta.env.DEV) {
+          console.error('[FormBlock] submitForm error:', error);
+        }
         // Don't block navigation on submission error
       });
 
@@ -174,10 +176,10 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
             try {
               window.open(actionValue, '_blank');
             } catch (error) {
-              console.error('[FormBlock] window.open error:', error);
+              if (import.meta.env.DEV) {
+                console.error('[FormBlock] window.open error:', error);
+              }
             }
-          } else {
-            console.warn('[FormBlock] URL action missing actionValue');
           }
           break;
         case 'scroll':
@@ -186,14 +188,12 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
               const element = document.getElementById(actionValue);
               if (element) {
                 element.scrollIntoView({ behavior: 'smooth' });
-              } else {
-                console.warn(`[FormBlock] Scroll target not found: ${actionValue}`);
               }
             } catch (error) {
-              console.error('[FormBlock] scrollIntoView error:', error);
+              if (import.meta.env.DEV) {
+                console.error('[FormBlock] scrollIntoView error:', error);
+              }
             }
-          } else {
-            console.warn('[FormBlock] Scroll action missing actionValue');
           }
           break;
         case 'webhook':
@@ -206,16 +206,17 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
                 fields: localValues,
                 submittedAt: new Date().toISOString(),
               }),
-            }).catch((webhookError) => {
+            }).catch(() => {
               // Don't fail if webhook fails, lead is already saved
-              console.error('[FormBlock] Webhook error:', webhookError);
             });
           }
           // Navigate immediately
           try {
             runtime.goToNextStep();
           } catch (error) {
-            console.error('[FormBlock] goToNextStep error after webhook:', error);
+            if (import.meta.env.DEV) {
+              console.error('[FormBlock] goToNextStep error after webhook:', error);
+            }
           }
           break;
         case 'submit':
@@ -231,13 +232,17 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
               runtime.goToNextStep();
             }
           } catch (error) {
-            console.error('[FormBlock] Navigation error:', error);
+            if (import.meta.env.DEV) {
+              console.error('[FormBlock] Navigation error:', error);
+            }
             toast.error('Failed to navigate. Please try again.');
           }
           break;
       }
     } catch (error) {
-      console.error('[FormBlock] doSubmit unexpected error:', error);
+      if (import.meta.env.DEV) {
+        console.error('[FormBlock] doSubmit unexpected error:', error);
+      }
       toast.error('Failed to submit form. Please try again.');
     }
   };
