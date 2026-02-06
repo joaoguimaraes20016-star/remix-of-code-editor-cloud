@@ -5,10 +5,13 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowLeft, Clock, MapPin, Loader2 } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Loader2, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import BookingCalendar from "@/components/scheduling/BookingCalendar";
 import TimeSlotPicker from "@/components/scheduling/TimeSlotPicker";
@@ -40,8 +43,12 @@ export default function PublicBookingPage() {
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmation, setConfirmation] = useState<BookingConfirmationType | null>(null);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [selectedTimezone, setSelectedTimezone] = useState<string>(
+    Intl.DateTimeFormat().resolvedOptions().timeZone
+  );
 
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timezone = selectedTimezone;
 
   // Load event type on mount
   useEffect(() => {
@@ -150,6 +157,7 @@ export default function PublicBookingPage() {
     if (!selectedSlot || !selectedDate || !eventType) return;
 
     setSubmitting(true);
+    setBookingError(null);
     try {
       const { data, error } = await supabase.functions.invoke("create-booking", {
         body: {
@@ -164,12 +172,22 @@ export default function PublicBookingPage() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message || "Failed to create booking");
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       setConfirmation(data);
       setStep("confirmed");
     } catch (err: any) {
       console.error("[PublicBookingPage] Booking error:", err);
+      const errorMessage = err.message || err.error || "Failed to book appointment. Please try again.";
+      setBookingError(errorMessage);
+      // Scroll to top to show error
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setSubmitting(false);
     }
@@ -254,7 +272,26 @@ export default function PublicBookingPage() {
           {/* Step Content */}
           {step === "date" && (
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-foreground">Select a Date</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground">Select a Date</h3>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="timezone-select" className="text-xs text-muted-foreground">
+                    Timezone:
+                  </Label>
+                  <Select value={selectedTimezone} onValueChange={setSelectedTimezone}>
+                    <SelectTrigger id="timezone-select" className="h-8 w-[200px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Intl.supportedValuesOf("timeZone").map((tz) => (
+                        <SelectItem key={tz} value={tz}>
+                          {tz.replace(/_/g, " ")}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <BookingCalendar
                 selectedDate={selectedDate}
                 onDateSelect={handleDateSelect}

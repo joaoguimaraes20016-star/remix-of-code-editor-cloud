@@ -79,7 +79,37 @@ serve(async (req) => {
       .eq("appointment_id", appointment.id)
       .eq("status", "pending");
 
-    // 4. Delete Google Calendar event if exists
+    // 4. Delete Zoom meeting if exists
+    if (appointment.meeting_link && appointment.meeting_link.includes("zoom.us")) {
+      try {
+        // Extract meeting ID from Zoom URL if possible
+        const zoomUrlMatch = appointment.meeting_link.match(/\/j\/(\d+)/);
+        if (zoomUrlMatch) {
+          const meetingId = zoomUrlMatch[1];
+          const { data: integration } = await supabase
+            .from("team_integrations")
+            .select("config")
+            .eq("team_id", appointment.team_id)
+            .eq("integration_type", "zoom")
+            .eq("is_connected", true)
+            .single();
+
+          if (integration?.config?.access_token) {
+            await fetch(`https://api.zoom.us/v2/meetings/${meetingId}`, {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${integration.config.access_token}`,
+              },
+            });
+          }
+        }
+      } catch (zoomErr) {
+        console.error("[cancel-booking] Zoom meeting deletion error:", zoomErr);
+        // Don't fail cancellation if Zoom deletion fails
+      }
+    }
+
+    // 5. Delete Google Calendar event if exists
     if (appointment.google_calendar_event_id && appointment.assigned_user_id) {
       try {
         const { data: gcalConn } = await supabase
@@ -136,7 +166,7 @@ serve(async (req) => {
       }
     }
 
-    // 5. Fire automation trigger
+    // 6. Fire automation trigger
     try {
       await supabase.functions.invoke("automation-trigger", {
         body: {

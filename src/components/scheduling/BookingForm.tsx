@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 
 interface IntakeQuestion {
@@ -55,8 +57,17 @@ export default function BookingForm({
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = "Invalid email";
 
     questions.forEach((q) => {
-      if (q.required && !intakeAnswers[q.id]?.toString().trim()) {
-        newErrors[q.id] = `${q.label} is required`;
+      const answer = intakeAnswers[q.id];
+      if (q.required) {
+        if (q.type === "checkbox") {
+          if (!answer || !Array.isArray(answer) || answer.length === 0) {
+            newErrors[q.id] = `${q.label} is required`;
+          }
+        } else {
+          if (!answer?.toString().trim()) {
+            newErrors[q.id] = `${q.label} is required`;
+          }
+        }
       }
     });
 
@@ -134,6 +145,50 @@ export default function BookingForm({
               rows={3}
               className={errors[q.id] ? "border-destructive" : ""}
             />
+          ) : q.type === "select" && q.options ? (
+            <Select
+              value={intakeAnswers[q.id] || ""}
+              onValueChange={(value) => setIntakeAnswers((prev) => ({ ...prev, [q.id]: value }))}
+            >
+              <SelectTrigger className={errors[q.id] ? "border-destructive" : ""}>
+                <SelectValue placeholder={`Select ${q.label.toLowerCase()}`} />
+              </SelectTrigger>
+              <SelectContent>
+                {q.options.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : q.type === "checkbox" ? (
+            <div className="space-y-2 mt-2">
+              {q.options?.map((option) => (
+                <div key={option} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`${q.id}-${option}`}
+                    checked={(intakeAnswers[q.id] as string[])?.includes(option) || false}
+                    onCheckedChange={(checked) => {
+                      const current = (intakeAnswers[q.id] as string[]) || [];
+                      if (checked) {
+                        setIntakeAnswers((prev) => ({ ...prev, [q.id]: [...current, option] }));
+                      } else {
+                        setIntakeAnswers((prev) => ({
+                          ...prev,
+                          [q.id]: current.filter((v) => v !== option),
+                        }));
+                      }
+                    }}
+                  />
+                  <Label
+                    htmlFor={`${q.id}-${option}`}
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    {option}
+                  </Label>
+                </div>
+              ))}
+            </div>
           ) : (
             <Input
               value={intakeAnswers[q.id] || ""}

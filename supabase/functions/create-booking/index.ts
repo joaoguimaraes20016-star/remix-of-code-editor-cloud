@@ -70,15 +70,58 @@ serve(async (req) => {
       reminder_config,
     } = eventType;
 
-    // 2. Determine the host (assigned closer)
+    // 2. Convert selected time to UTC (needed for conflict checking)
+    const slotLocalStr = `${date}T${time}:00`;
+    const startAtUtc = convertToUTC(slotLocalStr, timezone || "America/New_York");
+
+    if (!startAtUtc) {
+      return new Response(
+        JSON.stringify({ error: "Invalid date/time" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 3. Determine the host (assigned closer) and validate slot availability
     let assignedUserId: string | null = null;
     let assignedUserName: string | null = null;
     let assignedUserEmail: string | null = null;
+
+    const dayStart = date + "T00:00:00Z";
+    const dayEnd = date + "T23:59:59Z";
+    const slotStartMs = startAtUtc.getTime();
+    const slotEndMs = slotStartMs + duration_minutes * 60 * 1000;
+    const bufferBeforeMs = (eventType.buffer_before_minutes || 0) * 60 * 1000;
+    const bufferAfterMs = (eventType.buffer_after_minutes || 0) * 60 * 1000;
+    const slotEffectiveStart = slotStartMs - bufferBeforeMs;
+    const slotEffectiveEnd = slotEndMs + bufferAfterMs;
 
     if (round_robin_mode === "round_robin" && round_robin_members?.length > 0) {
       // Round-robin: pick next member
       const nextIndex = ((last_assigned_index || 0) + 1) % round_robin_members.length;
       assignedUserId = round_robin_members[nextIndex];
+
+      // Validate slot availability for this host
+      const { data: conflictingAppointments } = await supabase
+        .from("appointments")
+        .select("start_at_utc, duration_minutes")
+        .eq("team_id", team_id)
+        .or(`closer_id.eq.${assignedUserId},assigned_user_id.eq.${assignedUserId}`)
+        .gte("start_at_utc", dayStart)
+        .lte("start_at_utc", dayEnd)
+        .not("status", "in", '("CANCELLED","RESCHEDULED")');
+
+      for (const appt of conflictingAppointments || []) {
+        const apptStart = new Date(appt.start_at_utc).getTime();
+        const apptDuration = (appt.duration_minutes || 30) * 60 * 1000;
+        const apptEnd = apptStart + apptDuration;
+
+        if (slotEffectiveStart < apptEnd && slotEffectiveEnd > apptStart) {
+          return new Response(
+            JSON.stringify({ error: "This time slot is no longer available. Please select another time." }),
+            { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
 
       // Update the index
       await supabase
@@ -86,11 +129,11 @@ serve(async (req) => {
         .update({ last_assigned_index: nextIndex })
         .eq("id", event_type_id);
     } else if (round_robin_mode === "availability_based" && round_robin_members?.length > 0) {
-      // Availability-based: pick member with fewest bookings today
-      const dayStart = date + "T00:00:00Z";
-      const dayEnd = date + "T23:59:59Z";
-
+      // Availability-based: pick member with fewest bookings today, but also check slot availability
       let minBookings = Infinity;
+      let candidateHosts: string[] = [];
+
+      // First, find members with fewest bookings
       for (const memberId of round_robin_members) {
         const { count } = await supabase
           .from("appointments")
@@ -104,8 +147,47 @@ serve(async (req) => {
         const bookingCount = count || 0;
         if (bookingCount < minBookings) {
           minBookings = bookingCount;
-          assignedUserId = memberId;
+          candidateHosts = [memberId];
+        } else if (bookingCount === minBookings) {
+          candidateHosts.push(memberId);
         }
+      }
+
+      // Check slot availability for candidate hosts
+      for (const memberId of candidateHosts) {
+        const { data: conflictingAppointments } = await supabase
+          .from("appointments")
+          .select("start_at_utc, duration_minutes")
+          .eq("team_id", team_id)
+          .or(`closer_id.eq.${memberId},assigned_user_id.eq.${memberId}`)
+          .gte("start_at_utc", dayStart)
+          .lte("start_at_utc", dayEnd)
+          .not("status", "in", '("CANCELLED","RESCHEDULED")');
+
+        let hasConflict = false;
+        for (const appt of conflictingAppointments || []) {
+          const apptStart = new Date(appt.start_at_utc).getTime();
+          const apptDuration = (appt.duration_minutes || 30) * 60 * 1000;
+          const apptEnd = apptStart + apptDuration;
+
+          if (slotEffectiveStart < apptEnd && slotEffectiveEnd > apptStart) {
+            hasConflict = true;
+            break;
+          }
+        }
+
+        if (!hasConflict) {
+          assignedUserId = memberId;
+          break;
+        }
+      }
+
+      // If no available host found, return error
+      if (!assignedUserId) {
+        return new Response(
+          JSON.stringify({ error: "This time slot is no longer available. Please select another time." }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
     } else {
       // Single host: team owner/admin
@@ -119,6 +201,29 @@ serve(async (req) => {
 
       if (members && members.length > 0) {
         assignedUserId = members[0].user_id;
+
+        // Validate slot availability for this host
+        const { data: conflictingAppointments } = await supabase
+          .from("appointments")
+          .select("start_at_utc, duration_minutes")
+          .eq("team_id", team_id)
+          .or(`closer_id.eq.${assignedUserId},assigned_user_id.eq.${assignedUserId}`)
+          .gte("start_at_utc", dayStart)
+          .lte("start_at_utc", dayEnd)
+          .not("status", "in", '("CANCELLED","RESCHEDULED")');
+
+        for (const appt of conflictingAppointments || []) {
+          const apptStart = new Date(appt.start_at_utc).getTime();
+          const apptDuration = (appt.duration_minutes || 30) * 60 * 1000;
+          const apptEnd = apptStart + apptDuration;
+
+          if (slotEffectiveStart < apptEnd && slotEffectiveEnd > apptStart) {
+            return new Response(
+              JSON.stringify({ error: "This time slot is no longer available. Please select another time." }),
+              { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
       }
     }
 
@@ -135,17 +240,6 @@ serve(async (req) => {
         assignedUserName = member.display_name || member.email;
         assignedUserEmail = member.email;
       }
-    }
-
-    // 3. Convert selected time to UTC
-    const slotLocalStr = `${date}T${time}:00`;
-    const startAtUtc = convertToUTC(slotLocalStr, timezone || "America/New_York");
-
-    if (!startAtUtc) {
-      return new Response(
-        JSON.stringify({ error: "Invalid date/time" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
     }
 
     // 4. Generate booking token for reschedule/cancel URLs
@@ -220,6 +314,7 @@ serve(async (req) => {
       start_at_utc: startAtUtc.toISOString(),
       duration_minutes,
       appointment_type_id: event_type_id,
+      event_type_id: event_type_id, // Add foreign key relationship
       event_type_name: eventType.name,
       closer_id: assignedUserId,
       closer_name: assignedUserName,
@@ -347,7 +442,7 @@ serve(async (req) => {
       console.error("[create-booking] Automation trigger error:", autoErr);
     }
 
-    // 14. Return confirmation
+    // 15. Return confirmation
     return new Response(
       JSON.stringify({
         success: true,

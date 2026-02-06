@@ -1,7 +1,7 @@
 // src/components/scheduling/BookingConfirmation.tsx
 // Success screen shown after a booking is confirmed
 
-import { CheckCircle2, Calendar, Clock, Video, RefreshCw, X } from "lucide-react";
+import { CheckCircle2, Calendar, Clock, Video, RefreshCw, X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
@@ -129,6 +129,14 @@ export default function BookingConfirmation({
         >
           <Calendar className="h-4 w-4 mr-2" />
           Add to Google Calendar
+        </Button>
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={generateICal}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Download .ics
         </Button>
       </div>
 

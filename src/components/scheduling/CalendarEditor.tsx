@@ -1,7 +1,7 @@
 // src/components/scheduling/CalendarEditor.tsx
 // Simplified calendar editor with embedded availability (replaces EventTypesManager)
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sheet,
   SheetContent,
@@ -91,6 +93,7 @@ export default function CalendarEditor({
     calendar || DEFAULT_CALENDAR
   );
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; role: string }>>([]);
   const isEditing = !!calendar;
 
   // Update editingCalendar when calendar prop changes
@@ -101,6 +104,39 @@ export default function CalendarEditor({
       setEditingCalendar(DEFAULT_CALENDAR);
     }
   }, [calendar]);
+
+  // Load team members for round-robin selection
+  useEffect(() => {
+    if (!teamId || !open) return;
+
+    const loadTeamMembers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("team_members")
+          .select(`
+            user_id,
+            role,
+            profiles!inner(full_name)
+          `)
+          .eq("team_id", teamId)
+          .eq("is_active", true);
+
+        if (error) throw error;
+
+        const members = (data || []).map((m: any) => ({
+          id: m.user_id,
+          name: m.profiles?.full_name || "Unknown",
+          role: m.role,
+        }));
+
+        setTeamMembers(members);
+      } catch (err) {
+        console.error("Failed to load team members:", err);
+      }
+    };
+
+    loadTeamMembers();
+  }, [teamId, open]);
 
   const createCalendar = useCreateEventType(teamId);
   const updateCalendar = useUpdateEventType(teamId);
@@ -362,6 +398,78 @@ export default function CalendarEditor({
 
             {/* Advanced Tab */}
             <TabsContent value="advanced" className="space-y-4 mt-6">
+              <div>
+                <Label className="text-sm font-medium">Assignment Mode</Label>
+                <Select
+                  value={editingCalendar.round_robin_mode || "none"}
+                  onValueChange={(v) => {
+                    updateField("round_robin_mode", v);
+                    if (v === "none") {
+                      updateField("round_robin_members", []);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Single Host (Team Owner/Admin)</SelectItem>
+                    <SelectItem value="round_robin">Round Robin</SelectItem>
+                    <SelectItem value="availability_based">Availability Based</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {editingCalendar.round_robin_mode === "round_robin"
+                    ? "Assigns bookings to team members in rotation order"
+                    : editingCalendar.round_robin_mode === "availability_based"
+                      ? "Assigns to the team member with the fewest bookings that day"
+                      : "All bookings go to the team owner/admin"}
+                </p>
+              </div>
+
+              {(editingCalendar.round_robin_mode === "round_robin" ||
+                editingCalendar.round_robin_mode === "availability_based") && (
+                <div>
+                  <Label className="text-sm font-medium">Team Members</Label>
+                  <div className="mt-2 space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {teamMembers.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">No team members found</p>
+                    ) : (
+                      teamMembers.map((member) => {
+                        const isSelected = (
+                          editingCalendar.round_robin_members || []
+                        ).includes(member.id);
+                        return (
+                          <div key={member.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`member-${member.id}`}
+                              checked={isSelected}
+                              onCheckedChange={(checked) => {
+                                const current = editingCalendar.round_robin_members || [];
+                                if (checked) {
+                                  updateField("round_robin_members", [...current, member.id]);
+                                } else {
+                                  updateField(
+                                    "round_robin_members",
+                                    current.filter((id) => id !== member.id)
+                                  );
+                                }
+                              }}
+                            />
+                            <Label
+                              htmlFor={`member-${member.id}`}
+                              className="text-sm font-normal cursor-pointer flex-1"
+                            >
+                              {member.name} <span className="text-muted-foreground">({member.role})</span>
+                            </Label>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-sm">Buffer Before (min)</Label>

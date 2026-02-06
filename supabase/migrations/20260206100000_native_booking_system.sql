@@ -142,99 +142,121 @@ ALTER TABLE public.google_calendar_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.booking_reminders ENABLE ROW LEVEL SECURITY;
 
 -- EVENT TYPES: team members can CRUD their team's event types
+DROP POLICY IF EXISTS "Team members can view event types" ON public.event_types;
 CREATE POLICY "Team members can view event types"
   ON public.event_types FOR SELECT
   USING (public.can_access_workspace(auth.uid(), team_id));
 
+DROP POLICY IF EXISTS "Team members can create event types" ON public.event_types;
 CREATE POLICY "Team members can create event types"
   ON public.event_types FOR INSERT
   WITH CHECK (public.can_access_workspace(auth.uid(), team_id));
 
+DROP POLICY IF EXISTS "Team members can update event types" ON public.event_types;
 CREATE POLICY "Team members can update event types"
   ON public.event_types FOR UPDATE
   USING (public.can_access_workspace(auth.uid(), team_id));
 
+DROP POLICY IF EXISTS "Team members can delete event types" ON public.event_types;
 CREATE POLICY "Team members can delete event types"
   ON public.event_types FOR DELETE
   USING (public.can_access_workspace(auth.uid(), team_id));
 
 -- Service role bypass for edge functions
+DROP POLICY IF EXISTS "Service role manages event types" ON public.event_types;
 CREATE POLICY "Service role manages event types"
   ON public.event_types FOR ALL
   USING (auth.role() = 'service_role');
 
 -- AVAILABILITY SCHEDULES: users CRUD their own
+DROP POLICY IF EXISTS "Users can view own availability" ON public.availability_schedules;
 CREATE POLICY "Users can view own availability"
   ON public.availability_schedules FOR SELECT
   USING (public.can_access_workspace(auth.uid(), team_id));
 
+DROP POLICY IF EXISTS "Users can create own availability" ON public.availability_schedules;
 CREATE POLICY "Users can create own availability"
   ON public.availability_schedules FOR INSERT
   WITH CHECK (auth.uid() = user_id AND public.can_access_workspace(auth.uid(), team_id));
 
+DROP POLICY IF EXISTS "Users can update own availability" ON public.availability_schedules;
 CREATE POLICY "Users can update own availability"
   ON public.availability_schedules FOR UPDATE
   USING (auth.uid() = user_id AND public.can_access_workspace(auth.uid(), team_id));
 
+DROP POLICY IF EXISTS "Users can delete own availability" ON public.availability_schedules;
 CREATE POLICY "Users can delete own availability"
   ON public.availability_schedules FOR DELETE
   USING (auth.uid() = user_id AND public.can_access_workspace(auth.uid(), team_id));
 
 -- Service role bypass for edge functions (slot calculation)
+DROP POLICY IF EXISTS "Service role manages availability schedules" ON public.availability_schedules;
 CREATE POLICY "Service role manages availability schedules"
   ON public.availability_schedules FOR ALL
   USING (auth.role() = 'service_role');
 
 -- AVAILABILITY OVERRIDES: users CRUD their own
+DROP POLICY IF EXISTS "Users can view own overrides" ON public.availability_overrides;
 CREATE POLICY "Users can view own overrides"
   ON public.availability_overrides FOR SELECT
   USING (public.can_access_workspace(auth.uid(), team_id));
 
+DROP POLICY IF EXISTS "Users can create own overrides" ON public.availability_overrides;
 CREATE POLICY "Users can create own overrides"
   ON public.availability_overrides FOR INSERT
   WITH CHECK (auth.uid() = user_id AND public.can_access_workspace(auth.uid(), team_id));
 
+DROP POLICY IF EXISTS "Users can update own overrides" ON public.availability_overrides;
 CREATE POLICY "Users can update own overrides"
   ON public.availability_overrides FOR UPDATE
   USING (auth.uid() = user_id AND public.can_access_workspace(auth.uid(), team_id));
 
+DROP POLICY IF EXISTS "Users can delete own overrides" ON public.availability_overrides;
 CREATE POLICY "Users can delete own overrides"
   ON public.availability_overrides FOR DELETE
   USING (auth.uid() = user_id AND public.can_access_workspace(auth.uid(), team_id));
 
 -- Service role bypass
+DROP POLICY IF EXISTS "Service role manages availability overrides" ON public.availability_overrides;
 CREATE POLICY "Service role manages availability overrides"
   ON public.availability_overrides FOR ALL
   USING (auth.role() = 'service_role');
 
 -- GOOGLE CALENDAR CONNECTIONS: users CRUD their own
+DROP POLICY IF EXISTS "Users can view own gcal connections" ON public.google_calendar_connections;
 CREATE POLICY "Users can view own gcal connections"
   ON public.google_calendar_connections FOR SELECT
   USING (auth.uid() = user_id AND public.can_access_workspace(auth.uid(), team_id));
 
+DROP POLICY IF EXISTS "Users can create own gcal connections" ON public.google_calendar_connections;
 CREATE POLICY "Users can create own gcal connections"
   ON public.google_calendar_connections FOR INSERT
   WITH CHECK (auth.uid() = user_id AND public.can_access_workspace(auth.uid(), team_id));
 
+DROP POLICY IF EXISTS "Users can update own gcal connections" ON public.google_calendar_connections;
 CREATE POLICY "Users can update own gcal connections"
   ON public.google_calendar_connections FOR UPDATE
   USING (auth.uid() = user_id AND public.can_access_workspace(auth.uid(), team_id));
 
+DROP POLICY IF EXISTS "Users can delete own gcal connections" ON public.google_calendar_connections;
 CREATE POLICY "Users can delete own gcal connections"
   ON public.google_calendar_connections FOR DELETE
   USING (auth.uid() = user_id AND public.can_access_workspace(auth.uid(), team_id));
 
 -- Service role bypass
+DROP POLICY IF EXISTS "Service role manages gcal connections" ON public.google_calendar_connections;
 CREATE POLICY "Service role manages gcal connections"
   ON public.google_calendar_connections FOR ALL
   USING (auth.role() = 'service_role');
 
 -- BOOKING REMINDERS: service role only
+DROP POLICY IF EXISTS "Service role manages booking reminders" ON public.booking_reminders;
 CREATE POLICY "Service role manages booking reminders"
   ON public.booking_reminders FOR ALL
   USING (auth.role() = 'service_role');
 
 -- Team members can view their team's reminders (read-only)
+DROP POLICY IF EXISTS "Team members can view booking reminders" ON public.booking_reminders;
 CREATE POLICY "Team members can view booking reminders"
   ON public.booking_reminders FOR SELECT
   USING (public.can_access_workspace(auth.uid(), team_id));
