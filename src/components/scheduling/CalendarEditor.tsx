@@ -10,7 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Users, UserPlus, AlertCircle } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -89,11 +92,13 @@ export default function CalendarEditor({
   onDelete,
 }: CalendarEditorProps) {
   const { teamId } = useParams();
+  const { user } = useAuth();
   const [editingCalendar, setEditingCalendar] = useState<Partial<EventType>>(
     calendar || DEFAULT_CALENDAR
   );
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; role: string }>>([]);
+  const [memberAvailability, setMemberAvailability] = useState<Record<string, boolean>>({});
   const isEditing = !!calendar;
 
   // Update editingCalendar when calendar prop changes
@@ -105,7 +110,7 @@ export default function CalendarEditor({
     }
   }, [calendar]);
 
-  // Load team members for round-robin selection
+  // Load team members and their availability status
   useEffect(() => {
     if (!teamId || !open) return;
 
@@ -130,6 +135,20 @@ export default function CalendarEditor({
         }));
 
         setTeamMembers(members);
+
+        // Check availability for each member
+        const availMap: Record<string, boolean> = {};
+        for (const member of members) {
+          const { data: avail } = await supabase
+            .from("availability_schedules")
+            .select("id")
+            .eq("team_id", teamId)
+            .eq("user_id", member.id)
+            .eq("is_available", true)
+            .limit(1);
+          availMap[member.id] = !!avail && avail.length > 0;
+        }
+        setMemberAvailability(availMap);
       } catch (err) {
         console.error("Failed to load team members:", err);
       }
@@ -159,7 +178,15 @@ export default function CalendarEditor({
     if (isEditing && editingCalendar.id) {
       updateCalendar.mutate(editingCalendar as EventType);
     } else {
-      createCalendar.mutate({ ...editingCalendar, team_id: teamId } as any);
+      // Auto-assign current user as host if no members selected
+      const calendarToCreate = { ...editingCalendar, team_id: teamId };
+      if (
+        user?.id &&
+        (!calendarToCreate.round_robin_members || calendarToCreate.round_robin_members.length === 0)
+      ) {
+        calendarToCreate.round_robin_members = [user.id];
+      }
+      createCalendar.mutate(calendarToCreate as any);
     }
 
     onOpenChange(false);
@@ -189,11 +216,12 @@ export default function CalendarEditor({
           </SheetHeader>
 
           <Tabs defaultValue="basics" className="mt-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="basics">Basics</TabsTrigger>
+              <TabsTrigger value="hosts">Hosts</TabsTrigger>
               <TabsTrigger value="when">When</TabsTrigger>
               <TabsTrigger value="where">Where</TabsTrigger>
-              <TabsTrigger value="notifications">Notifications</TabsTrigger>
+              <TabsTrigger value="notifications">Alerts</TabsTrigger>
               <TabsTrigger value="advanced">Advanced</TabsTrigger>
             </TabsList>
 
@@ -261,6 +289,122 @@ export default function CalendarEditor({
                   className="h-10 p-1 mt-1 w-32"
                 />
               </div>
+            </TabsContent>
+
+            {/* Hosts Tab */}
+            <TabsContent value="hosts" className="space-y-4 mt-6">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm font-medium">Calendar Hosts</Label>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Select which team members can receive bookings on this calendar.
+                  At least one host is required for the booking page to show available slots.
+                </p>
+              </div>
+
+              {/* Warning if no hosts */}
+              {(editingCalendar.round_robin_members || []).length === 0 && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
+                  <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-400">No hosts assigned</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-500">
+                      Without hosts, this calendar won't show any available time slots on the public booking page.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Team Members List */}
+              <div className="space-y-2 border rounded-md p-3">
+                {teamMembers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No team members found. Add members in Team Settings first.
+                  </p>
+                ) : (
+                  teamMembers.map((member) => {
+                    const isSelected = (
+                      editingCalendar.round_robin_members || []
+                    ).includes(member.id);
+                    const hasAvail = memberAvailability[member.id];
+                    return (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            id={`host-${member.id}`}
+                            checked={isSelected}
+                            onCheckedChange={(checked) => {
+                              const current = editingCalendar.round_robin_members || [];
+                              if (checked) {
+                                updateField("round_robin_members", [...current, member.id]);
+                              } else {
+                                updateField(
+                                  "round_robin_members",
+                                  current.filter((id) => id !== member.id)
+                                );
+                              }
+                            }}
+                          />
+                          <Label
+                            htmlFor={`host-${member.id}`}
+                            className="text-sm font-normal cursor-pointer"
+                          >
+                            {member.name}
+                            <span className="text-muted-foreground ml-1">({member.role})</span>
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {hasAvail ? (
+                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                              Availability set
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs bg-red-50 text-red-600 border-red-200">
+                              No availability
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Assignment Mode */}
+              {(editingCalendar.round_robin_members || []).length > 1 && (
+                <div>
+                  <Label className="text-sm font-medium">Assignment Mode</Label>
+                  <Select
+                    value={editingCalendar.round_robin_mode || "none"}
+                    onValueChange={(v) => updateField("round_robin_mode", v)}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Single Host (first selected)</SelectItem>
+                      <SelectItem value="round_robin">Round Robin</SelectItem>
+                      <SelectItem value="availability_based">Availability Based</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {editingCalendar.round_robin_mode === "round_robin"
+                      ? "Rotates bookings between hosts in order"
+                      : editingCalendar.round_robin_mode === "availability_based"
+                        ? "Assigns to the host with the fewest bookings that day"
+                        : "All bookings go to the first selected host"}
+                  </p>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                {(editingCalendar.round_robin_members || []).length} host{(editingCalendar.round_robin_members || []).length !== 1 ? "s" : ""} selected
+              </p>
             </TabsContent>
 
             {/* When Tab - Availability */}
@@ -398,78 +542,6 @@ export default function CalendarEditor({
 
             {/* Advanced Tab */}
             <TabsContent value="advanced" className="space-y-4 mt-6">
-              <div>
-                <Label className="text-sm font-medium">Assignment Mode</Label>
-                <Select
-                  value={editingCalendar.round_robin_mode || "none"}
-                  onValueChange={(v) => {
-                    updateField("round_robin_mode", v);
-                    if (v === "none") {
-                      updateField("round_robin_members", []);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Single Host (Team Owner/Admin)</SelectItem>
-                    <SelectItem value="round_robin">Round Robin</SelectItem>
-                    <SelectItem value="availability_based">Availability Based</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {editingCalendar.round_robin_mode === "round_robin"
-                    ? "Assigns bookings to team members in rotation order"
-                    : editingCalendar.round_robin_mode === "availability_based"
-                      ? "Assigns to the team member with the fewest bookings that day"
-                      : "All bookings go to the team owner/admin"}
-                </p>
-              </div>
-
-              {(editingCalendar.round_robin_mode === "round_robin" ||
-                editingCalendar.round_robin_mode === "availability_based") && (
-                <div>
-                  <Label className="text-sm font-medium">Team Members</Label>
-                  <div className="mt-2 space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                    {teamMembers.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">No team members found</p>
-                    ) : (
-                      teamMembers.map((member) => {
-                        const isSelected = (
-                          editingCalendar.round_robin_members || []
-                        ).includes(member.id);
-                        return (
-                          <div key={member.id} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`member-${member.id}`}
-                              checked={isSelected}
-                              onCheckedChange={(checked) => {
-                                const current = editingCalendar.round_robin_members || [];
-                                if (checked) {
-                                  updateField("round_robin_members", [...current, member.id]);
-                                } else {
-                                  updateField(
-                                    "round_robin_members",
-                                    current.filter((id) => id !== member.id)
-                                  );
-                                }
-                              }}
-                            />
-                            <Label
-                              htmlFor={`member-${member.id}`}
-                              className="text-sm font-normal cursor-pointer flex-1"
-                            >
-                              {member.name} <span className="text-muted-foreground">({member.role})</span>
-                            </Label>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              )}
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-sm">Buffer Before (min)</Label>

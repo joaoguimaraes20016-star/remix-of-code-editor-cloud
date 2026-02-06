@@ -110,19 +110,43 @@ export default function Calendars() {
         return;
       }
 
-      // Check availability
-      if (user?.id && teamId) {
+      // Check that calendar has hosts assigned
+      const hostIds = calendar.round_robin_members || [];
+      if (hostIds.length === 0) {
+        // Check if there's at least a team owner/admin as fallback
+        if (teamId) {
+          const { data: admins } = await supabase
+            .from("team_members")
+            .select("user_id")
+            .eq("team_id", teamId)
+            .in("role", ["owner", "admin"])
+            .limit(1);
+
+          if (!admins || admins.length === 0) {
+            toast.error(
+              "No hosts assigned to this calendar. Edit the calendar and add at least one host in the Hosts tab.",
+              { duration: 5000 }
+            );
+            return;
+          }
+          // Use admin as implicit host for availability check
+          hostIds.push(admins[0].user_id);
+        }
+      }
+
+      // Check that at least one host has availability configured
+      if (teamId && hostIds.length > 0) {
         const { data: avail } = await supabase
           .from("availability_schedules")
           .select("id")
           .eq("team_id", teamId)
-          .eq("user_id", user.id)
+          .in("user_id", hostIds)
           .eq("is_available", true)
           .limit(1);
 
         if (!avail || avail.length === 0) {
           toast.error(
-            "No availability hours configured. Create availability in the calendar wizard or settings first.",
+            "None of the hosts assigned to this calendar have availability hours configured. Configure availability in the calendar editor's When tab.",
             { duration: 5000 }
           );
           return;

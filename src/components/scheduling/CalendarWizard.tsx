@@ -114,6 +114,8 @@ export default function CalendarWizard({ onComplete, onCancel }: CalendarWizardP
           location_type: locationType,
           location_value: locationValue || undefined,
           is_active: true,
+          // Auto-assign current user as host so slot calculation works
+          round_robin_members: [user.id],
           reminder_config: [
             { type: "email", template: "24h_before", offset_hours: 24 },
             { type: "email", template: "1h_before", offset_hours: 1 },
