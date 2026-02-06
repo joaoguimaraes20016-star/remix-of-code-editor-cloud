@@ -365,9 +365,11 @@ export interface CalendarContent {
   placeholder?: string;
   buttonText?: string;
   accentColor?: string;
-  provider?: 'native' | 'calendly';
+  provider?: 'native' | 'calendly' | 'native_booking';
   url?: string;
   height?: number;
+  // Native booking provider
+  event_type_id?: string;
   // Color properties for contrast awareness
   titleColor?: string; // Color for title text
 }

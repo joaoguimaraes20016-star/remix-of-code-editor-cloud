@@ -19,6 +19,51 @@ import { formatDateTimeWithTimezone } from "@/lib/utils";
 import { DealAvatar } from "./DealAvatar";
 import { ActivityTimeline } from "./ActivityTimeline";
 
+// Helper to filter and clean answers for display
+function getDisplayableAnswers(answers: Record<string, any>): Array<[string, string]> {
+  if (!answers || typeof answers !== 'object') return [];
+  
+  const identityKeys = ['name', 'email', 'phone', 'phoneCountryCode'];
+  const systemKeys = ['opt_in', 'privacy', 'legal', 'consent', 'undefined'];
+  
+  return Object.entries(answers)
+    .filter(([key, value]) => {
+      // Filter out null/undefined values
+      if (!value) return false;
+      
+      // Filter out identity fields (already shown in contact header)
+      if (identityKeys.includes(key)) return false;
+      
+      // Filter out system fields
+      if (systemKeys.includes(key)) return false;
+      
+      // Filter out UUIDs (block IDs)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(key)) return false;
+      
+      // Filter out pure numeric keys (form field IDs)
+      if (/^\d+$/.test(key)) return false;
+      
+      return true;
+    })
+    .map(([key, value]) => {
+      // Convert complex objects to readable strings
+      let displayValue: string;
+      if (typeof value === 'object') {
+        // Try to extract meaningful data from objects
+        if (Array.isArray(value)) {
+          displayValue = value.join(', ');
+        } else {
+          displayValue = JSON.stringify(value);
+        }
+      } else {
+        displayValue = String(value);
+      }
+      
+      return [key, displayValue];
+    });
+}
+
 export interface DealCardProps {
   id: string;
   teamId: string;
@@ -407,40 +452,25 @@ function DealCardComponent({ id, teamId, appointment, confirmationTask, onCloseD
           </div>
 
           {/* Answers Section */}
-          {rawAnswers && Object.keys(rawAnswers).length > 0 && (
-            <div className="pt-2 border-t space-y-1">
-              <p className="text-[9px] sm:text-xs font-medium text-muted-foreground">Responses:</p>
-              {Object.entries(rawAnswers)
-                .filter(([key, value]) => 
-                  value && 
-                  key !== 'undefined' && 
-                  key !== 'opt_in' && 
-                  key !== 'privacy'
-                )
-                .slice(0, 3)
-                .map(([question, answer], idx) => (
+          {(() => {
+            const displayableAnswers = getDisplayableAnswers(rawAnswers || {});
+            return displayableAnswers.length > 0 && (
+              <div className="pt-2 border-t space-y-1">
+                <p className="text-[9px] sm:text-xs font-medium text-muted-foreground">Responses:</p>
+                {displayableAnswers.slice(0, 3).map(([question, answer], idx) => (
                   <div key={idx} className="text-[9px] sm:text-xs">
                     <span className="text-muted-foreground truncate block sm:inline">{question}:</span>{' '}
-                    <span className="font-medium truncate block sm:inline">{String(answer)}</span>
+                    <span className="font-medium truncate block sm:inline">{answer}</span>
                   </div>
                 ))}
-              {Object.entries(rawAnswers).filter(([key, value]) => 
-                value && 
-                key !== 'undefined' && 
-                key !== 'opt_in' && 
-                key !== 'privacy'
-              ).length > 3 && (
-                <p className="text-[9px] sm:text-xs text-muted-foreground italic">
-                  +{Object.entries(rawAnswers).filter(([key, value]) => 
-                    value && 
-                    key !== 'undefined' && 
-                    key !== 'opt_in' && 
-                    key !== 'privacy'
-                  ).length - 3} more
-                </p>
-              )}
-            </div>
-          )}
+                {displayableAnswers.length > 3 && (
+                  <p className="text-[9px] sm:text-xs text-muted-foreground italic">
+                    +{displayableAnswers.length - 3} more
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Reschedule Badges */}
           {mode === "appointment" && (appointment.original_appointment_id || appointment.rescheduled_to_appointment_id) && (

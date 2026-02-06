@@ -39,6 +39,51 @@ interface ContactDetailDrawerProps {
   teamId?: string;
 }
 
+// Helper to filter and clean answers for display
+function getDisplayableAnswers(answers: Record<string, any>): Array<[string, string]> {
+  if (!answers || typeof answers !== 'object') return [];
+  
+  const identityKeys = ['name', 'email', 'phone', 'phoneCountryCode'];
+  const systemKeys = ['opt_in', 'privacy', 'legal', 'consent', 'undefined'];
+  
+  return Object.entries(answers)
+    .filter(([key, value]) => {
+      // Filter out null/undefined values
+      if (!value) return false;
+      
+      // Filter out identity fields (already shown in contact header)
+      if (identityKeys.includes(key)) return false;
+      
+      // Filter out system fields
+      if (systemKeys.includes(key)) return false;
+      
+      // Filter out UUIDs (block IDs)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(key)) return false;
+      
+      // Filter out pure numeric keys (form field IDs)
+      if (/^\d+$/.test(key)) return false;
+      
+      return true;
+    })
+    .map(([key, value]) => {
+      // Convert complex objects to readable strings
+      let displayValue: string;
+      if (typeof value === 'object') {
+        // Try to extract meaningful data from objects
+        if (Array.isArray(value)) {
+          displayValue = value.join(', ');
+        } else {
+          displayValue = JSON.stringify(value);
+        }
+      } else {
+        displayValue = String(value);
+      }
+      
+      return [key, displayValue];
+    });
+}
+
 export function ContactDetailDrawer({ contact, open, onOpenChange, teamId }: ContactDetailDrawerProps) {
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -86,10 +131,8 @@ export function ContactDetailDrawer({ contact, open, onOpenChange, teamId }: Con
     ? contact.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : contact.email?.charAt(0).toUpperCase() || '?';
 
-  // Parse custom_fields as funnel answers
-  const funnelAnswers = contact.custom_fields && typeof contact.custom_fields === 'object'
-    ? Object.entries(contact.custom_fields).filter(([key, value]) => value && key !== 'undefined')
-    : [];
+  // Parse custom_fields as funnel answers using smart filtering
+  const funnelAnswers = getDisplayableAnswers(contact.custom_fields || {});
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -276,15 +319,8 @@ export function ContactDetailDrawer({ contact, open, onOpenChange, teamId }: Con
                   <div className="space-y-3">
                     <h3 className="text-sm font-medium text-muted-foreground mb-3">Funnel Submissions</h3>
                     {activityLeads.map((lead: any) => {
-                      // Parse answers from the lead
-                      const leadAnswers = lead.answers && typeof lead.answers === 'object'
-                        ? Object.entries(lead.answers).filter(([key, value]) => 
-                            value && 
-                            key !== 'undefined' && 
-                            key !== 'opt_in' && 
-                            key !== 'privacy'
-                          )
-                        : [];
+                      // Parse answers from the lead using smart filtering
+                      const leadAnswers = getDisplayableAnswers(lead.answers || {});
 
                       return (
                         <div key={lead.id} className="flex items-start gap-3 p-4 rounded-lg bg-muted/50 border">

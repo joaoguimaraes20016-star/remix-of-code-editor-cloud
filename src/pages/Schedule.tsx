@@ -1,9 +1,12 @@
+// src/pages/Schedule.tsx
+// Simplified schedule view - shows appointments and tasks only (no tabs, no gradients)
+
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Calendar, Clock, User, Video, CheckCircle2 } from "lucide-react";
 import { format, isToday, isTomorrow, isThisWeek, parseISO } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
-import { useMySchedule, useTeamSchedule, ScheduleAppointment, ScheduleTask } from "@/hooks/useSchedule";
+import { useMySchedule, useTeamSchedule } from "@/hooks/useSchedule";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -120,20 +123,20 @@ export default function Schedule() {
       className={cn(
         "flex items-start gap-4 p-4 rounded-xl border bg-card transition-all hover:shadow-md",
         item.type === "appointment" 
-          ? "border-blue-500/20 hover:border-blue-500/40" 
-          : "border-emerald-500/20 hover:border-emerald-500/40"
+          ? "border-blue-200 bg-blue-50/50" 
+          : "border-emerald-200 bg-emerald-50/50"
       )}
     >
       <div className={cn(
         "flex items-center justify-center w-10 h-10 rounded-xl shrink-0",
         item.type === "appointment" 
-          ? "bg-gradient-to-br from-blue-500 to-indigo-500" 
-          : "bg-gradient-to-br from-emerald-500 to-teal-500"
+          ? "bg-blue-500 text-white" 
+          : "bg-emerald-500 text-white"
       )}>
         {item.type === "appointment" ? (
-          <Video className="h-5 w-5 text-white" />
+          <Video className="h-5 w-5" />
         ) : (
-          <CheckCircle2 className="h-5 w-5 text-white" />
+          <CheckCircle2 className="h-5 w-5" />
         )}
       </div>
       
@@ -143,8 +146,8 @@ export default function Schedule() {
           <Badge variant="secondary" className={cn(
             "text-xs shrink-0",
             item.type === "appointment" 
-              ? "bg-blue-500/10 text-blue-600 border-blue-500/20" 
-              : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+              ? "bg-blue-100 text-blue-700 border-blue-200" 
+              : "bg-emerald-100 text-emerald-700 border-emerald-200"
           )}>
             {item.subtitle}
           </Badge>
@@ -168,7 +171,8 @@ export default function Schedule() {
       {item.meetingLink && (
         <Button
           size="sm"
-          className="shrink-0 bg-[#ef476f] hover:bg-[#d63d5f] text-white"
+          variant="default"
+          className="shrink-0"
           onClick={() => window.open(item.meetingLink!, "_blank")}
         >
           Join
@@ -203,87 +207,68 @@ export default function Schedule() {
   return (
     <div className="flex-1 p-6 space-y-6 overflow-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600">
-            <Calendar className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Schedule</h1>
-            <p className="text-muted-foreground">
-              {viewMode === "my" ? "Your upcoming calls and tasks" : "All team calls and tasks"}
-            </p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="p-2.5 rounded-xl bg-primary">
+          <Calendar className="h-5 w-5 text-primary-foreground" />
         </div>
-        
-        {/* Toggles */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          {/* View Toggle */}
-          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
-            <Button
-              variant={viewMode === "my" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("my")}
-              className={cn(
-                "h-8",
-                viewMode === "my" && "bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600"
-              )}
-            >
-              My Schedule
-            </Button>
-            <Button
-              variant={viewMode === "team" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("team")}
-              className={cn(
-                "h-8",
-                viewMode === "team" && "bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600"
-              )}
-            >
-              Team Schedule
-            </Button>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Schedule</h1>
+          <p className="text-muted-foreground">
+            {viewMode === "my" ? "Your upcoming calls and tasks" : "All team calls and tasks"}
+          </p>
+        </div>
+      </div>
 
-          {/* Filter Toggle */}
-          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
-            <Button
-              variant={filterMode === "all" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFilterMode("all")}
-              className={cn(
-                "h-8",
-                filterMode === "all" && "bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600"
-              )}
-            >
-              All
-            </Button>
-            <Button
-              variant={filterMode === "appointments" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFilterMode("appointments")}
-              className={cn(
-                "h-8",
-                filterMode === "appointments" && "bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600"
-              )}
-            >
-              Appointments
-            </Button>
-            <Button
-              variant={filterMode === "tasks" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFilterMode("tasks")}
-              className={cn(
-                "h-8",
-                filterMode === "tasks" && "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600"
-              )}
-            >
-              Tasks
-            </Button>
-          </div>
+      {/* View / Filter Toggles */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+          <Button
+            variant={viewMode === "my" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("my")}
+            className="h-8"
+          >
+            My Schedule
+          </Button>
+          <Button
+            variant={viewMode === "team" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("team")}
+            className="h-8"
+          >
+            Team Schedule
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+          <Button
+            variant={filterMode === "all" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setFilterMode("all")}
+            className="h-8"
+          >
+            All
+          </Button>
+          <Button
+            variant={filterMode === "appointments" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setFilterMode("appointments")}
+            className="h-8"
+          >
+            Appointments
+          </Button>
+          <Button
+            variant={filterMode === "tasks" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setFilterMode("tasks")}
+            className="h-8"
+          >
+            Tasks
+          </Button>
         </div>
       </div>
       
-      {/* Content */}
+      {/* Schedule Content */}
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
@@ -299,8 +284,8 @@ export default function Schedule() {
       ) : hasNoItems ? (
         <Card className="border-dashed border-2">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/10 to-indigo-500/10 flex items-center justify-center mb-4">
-              <Calendar className="h-8 w-8 text-purple-500" />
+            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+              <Calendar className="h-8 w-8 text-muted-foreground" />
             </div>
             <h3 className="font-semibold text-foreground mb-1">No upcoming items</h3>
             <p className="text-sm text-muted-foreground">

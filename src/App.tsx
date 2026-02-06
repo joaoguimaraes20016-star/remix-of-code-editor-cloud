@@ -20,11 +20,14 @@ import Workflows from "./pages/Workflows";
 import AutomationEditor from "./pages/AutomationEditor";
 import ClientAssets from "./pages/ClientAssets";
 import Schedule from "./pages/Schedule";
+import Calendars from "./pages/Calendars";
 import OnboardingForm from "./pages/OnboardingForm";
 import NotFound from "./pages/NotFound";
 import FunnelList from "./pages/FunnelList";
 import FunnelEditorV3 from "./pages/FunnelEditorV3";
 import PublicFunnel from "./pages/PublicFunnel";
+import PublicBookingPage from "./pages/PublicBookingPage";
+import ManageBookingPage from "./pages/ManageBookingPage";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Marketing from "./pages/Marketing";
 import Billing from "./pages/Billing";
@@ -98,6 +101,8 @@ const App = () => (
             {/* Public routes - no auth required */}
             <Route path="/onboard/:token" element={<OnboardingForm />} />
             <Route path="/f/:slug" element={<PublicFunnel />} />
+            <Route path="/book/:teamSlug/:eventSlug" element={<PublicBookingPage />} />
+            <Route path="/booking/:token/manage" element={<ManageBookingPage />} />
             <Route path="/runtime/:documentId" element={<RuntimePage />} />
             <Route path="/legal/privacy" element={<PrivacyPolicy />} />
 
@@ -133,6 +138,7 @@ const App = () => (
               <Route path="crm" element={<Navigate to="../dashboard" replace />} />
               <Route path="funnels" element={<FunnelList />} />
               <Route path="schedule" element={<Schedule />} />
+              <Route path="calendars" element={<Calendars />} />
               <Route path="chat" element={<TeamChatPage />} />
               <Route path="payments" element={<PaymentsPortal />} />
               <Route path="apps" element={<AppsPortal />} />
