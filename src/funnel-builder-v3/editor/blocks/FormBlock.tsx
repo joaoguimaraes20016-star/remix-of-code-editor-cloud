@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { defaultCountryCodes } from '@/funnel-builder-v3/lib/block-definitions';
 import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 import { validateEmail, validatePhone } from '@/lib/validation';
+import { AlertCircle } from 'lucide-react';
 
 // Default consent settings
 const defaultConsent: ConsentSettings = {
@@ -71,6 +72,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
   const [hasConsented, setHasConsented] = useState(false);
   const [hoveredFieldId, setHoveredFieldId] = useState<string | null>(null);
   const [isButtonHovered, setIsButtonHovered] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const canEdit = blockId && stepId && !isPreview;
   const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
@@ -132,6 +134,61 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
   const handleFieldChange = (fieldId: string, value: string) => {
     setLocalValues(prev => ({ ...prev, [fieldId]: value }));
     runtime?.setFormField(fieldId, value);
+    // Clear error when user starts typing
+    if (fieldErrors[fieldId]) {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next[fieldId];
+        return next;
+      });
+    }
+  };
+
+  // Validate field on blur
+  const handleFieldBlur = (field: typeof fields[0], value: string) => {
+    if (!value || value.trim().length === 0) {
+      // Clear error for empty non-required fields
+      if (!field.required) {
+        setFieldErrors(prev => {
+          const next = { ...prev };
+          delete next[field.id];
+          return next;
+        });
+      }
+      return;
+    }
+
+    let error: string | null = null;
+
+    if (field.type === 'email') {
+      const validation = validateEmail(value);
+      error = validation.valid ? null : validation.error || null;
+    } else if (field.type === 'phone') {
+      const fieldCountryId = phoneCountryIds[field.id] || defaultCountryId || countryCodes[0]?.id || '1';
+      
+      // Map country ID to ISO country code
+      let countryCodeForValidation = fieldCountryId;
+      if (fieldCountryId === '1' || countryCodes.find(c => c.id === fieldCountryId)?.code === '+1') {
+        countryCodeForValidation = 'US';
+      } else if (fieldCountryId.length === 2) {
+        countryCodeForValidation = fieldCountryId.toUpperCase();
+      } else {
+        countryCodeForValidation = 'US';
+      }
+      
+      const validation = validatePhone(value, countryCodeForValidation);
+      error = validation.valid ? null : validation.error || null;
+    }
+
+    if (error) {
+      setFieldErrors(prev => ({ ...prev, [field.id]: error }));
+    } else {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next[field.id];
+        return next;
+      });
+    }
   };
 
   // Shared submission logic - called by both button click (direct) and Enter key (form submit)
@@ -150,6 +207,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
     }
 
     // Validate email and phone fields
+    const validationErrors: Record<string, string> = {};
     for (const field of fields || []) {
       const value = localValues[field.id];
       
@@ -157,8 +215,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
       if (field.type === 'email' && value) {
         const validation = validateEmail(value);
         if (!validation.valid) {
-          toast.error(`${field.label}: ${validation.error}`);
-          return;
+          validationErrors[field.id] = validation.error || 'Please enter a valid email address';
         }
       }
       
@@ -179,11 +236,37 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
         
         const validation = validatePhone(value, countryCodeForValidation);
         if (!validation.valid) {
-          toast.error(`${field.label}: ${validation.error}`);
-          return;
+          validationErrors[field.id] = validation.error || 'Please enter a valid phone number';
         }
       }
     }
+    
+    // If there are validation errors, set them and show toast
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      const errorMessages = Object.entries(validationErrors).map(([id, error]) => {
+        const field = fields.find(f => f.id === id);
+        return `${field?.label}: ${error}`;
+      });
+      
+      if (errorMessages.length === 1) {
+        toast.error(errorMessages[0], { duration: 5000 });
+      } else {
+        toast.error(
+          <div>
+            <div className="font-semibold mb-1">Please fix the following errors:</div>
+            <ul className="list-disc list-inside text-sm space-y-0.5">
+              {errorMessages.map((msg, i) => <li key={i}>{msg}</li>)}
+            </ul>
+          </div>,
+          { duration: 7000 }
+        );
+      }
+      return;
+    }
+    
+    // Clear all errors if validation passes
+    setFieldErrors({});
 
     // Validate consent if required
     if (consent.enabled && consent.required && !hasConsented) {
@@ -431,27 +514,28 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
             {field.required && <span className="text-destructive ml-1">*</span>}
           </div>
           
-          <div 
-            className={cn(
-              "relative p-1 -m-1 rounded-lg transition-all",
-              canEdit && "cursor-pointer",
-              (hoveredFieldId === field.id || isFieldSelected(field.id)) && "ring-2 ring-primary",
-              hoveredFieldId === field.id && !isFieldSelected(field.id) && "ring-primary/50"
-            )}
-            onMouseEnter={() => canEdit && setHoveredFieldId(field.id)}
-            onMouseLeave={() => setHoveredFieldId(null)}
-            onClick={(e) => {
-              if (canEdit) {
-                e.preventDefault();
-                e.stopPropagation();
-                // Select parent block AND child element in one action
-                if (blockId) {
-                  setSelectedBlockId(blockId);
+          <div className="space-y-1">
+            <div 
+              className={cn(
+                "relative p-1 -m-1 rounded-lg transition-all",
+                canEdit && "cursor-pointer",
+                (hoveredFieldId === field.id || isFieldSelected(field.id)) && "ring-2 ring-primary",
+                hoveredFieldId === field.id && !isFieldSelected(field.id) && "ring-primary/50"
+              )}
+              onMouseEnter={() => canEdit && setHoveredFieldId(field.id)}
+              onMouseLeave={() => setHoveredFieldId(null)}
+              onClick={(e) => {
+                if (canEdit) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Select parent block AND child element in one action
+                  if (blockId) {
+                    setSelectedBlockId(blockId);
+                  }
+                  setSelectedChildElement(`form-field-${field.id}`);
                 }
-                setSelectedChildElement(`form-field-${field.id}`);
-              }
-            }}
-          >
+              }}
+            >
             {field.type === 'textarea' ? (
               <Textarea
                 id={field.id}
@@ -513,6 +597,10 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
                     value={phoneCountryIds[field.id] || defaultCountryId || countryCodes[0]?.id || '1'}
                     onValueChange={(value) => {
                       setPhoneCountryIds(prev => ({ ...prev, [field.id]: value }));
+                      // Re-validate phone when country changes
+                      if (localValues[field.id] && localValues[field.id].trim().length > 0) {
+                        handleFieldBlur(field, localValues[field.id]);
+                      }
                     }}
                     disabled={canEdit}
                   >
@@ -538,9 +626,13 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
                   id={field.id}
                   type="tel"
                   placeholder={field.placeholder}
-                  className="h-12 flex-1 rounded-l-none"
+                  className={cn(
+                    "h-12 flex-1 rounded-l-none",
+                    fieldErrors[field.id] && "border-destructive focus-visible:ring-destructive"
+                  )}
                   value={localValues[field.id] || ''}
                   onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                  onBlur={!canEdit ? () => handleFieldBlur(field, localValues[field.id] || '') : undefined}
                   onFocus={(e) => {
                     if (canEdit) {
                       e.preventDefault();
@@ -562,9 +654,13 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
                 id={field.id}
                 type={field.type}
                 placeholder={field.placeholder}
-                className="h-12"
+                className={cn(
+                  "h-12",
+                  fieldErrors[field.id] && "border-destructive focus-visible:ring-destructive"
+                )}
                 value={localValues[field.id] || ''}
                 onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                onBlur={!canEdit && (field.type === 'email' || field.type === 'phone') ? () => handleFieldBlur(field, localValues[field.id] || '') : undefined}
                 onFocus={(e) => {
                   if (canEdit) {
                     e.preventDefault();
@@ -580,6 +676,13 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
                 }}
                 readOnly={canEdit}
               />
+            )}
+            </div>
+            {fieldErrors[field.id] && (
+              <div className="flex items-center gap-1 text-xs text-destructive mt-1 px-1">
+                <AlertCircle className="h-3 w-3" />
+                <span>{fieldErrors[field.id]}</span>
+              </div>
             )}
           </div>
         </div>
@@ -620,6 +723,11 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
         onClick={handleButtonClick}
         onMouseEnter={() => canEdit && setIsButtonHovered(true)}
         onMouseLeave={() => setIsButtonHovered(false)}
+        disabled={
+          Object.keys(fieldErrors).length > 0 ||
+          (fields || []).some(f => f.required && !localValues[f.id]?.trim()) ||
+          (consent.enabled && consent.required && !hasConsented)
+        }
         className={cn(
           sizeClasses[size],
           fullWidth && 'w-full',

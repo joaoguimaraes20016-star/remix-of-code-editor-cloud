@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 import { validatePhone } from '@/lib/validation';
+import { AlertCircle } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -71,6 +72,7 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
   const [phone, setPhone] = useState('');
   const [hasConsented, setHasConsented] = useState(false);
   const [isButtonHovered, setIsButtonHovered] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [selectedCountryId, setSelectedCountryId] = useState(
     globalDefaultCountryId || countryCodes[0]?.id || '1'
   );
@@ -119,9 +121,15 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
     
     const validation = validatePhone(phone, countryCodeForValidation);
     if (!validation.valid) {
-      toast.error(validation.error || 'Please enter a valid phone number');
+      setPhoneError(validation.error || 'Please enter a valid phone number');
+      toast.error(validation.error || 'Please enter a valid phone number', {
+        duration: 5000,
+      });
       return;
     }
+    
+    // Clear any previous errors
+    setPhoneError(null);
 
     // Use formatted number if available, otherwise construct from country code
     const fullPhoneNumber = validation.formatted || (selectedCountry ? `${selectedCountry.code}${phone}` : phone);
@@ -184,6 +192,33 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     doSubmit();
+  };
+
+  // Validate phone on blur
+  const handlePhoneBlur = () => {
+    if (phone.trim().length > 0) {
+      // Map country ID to ISO country code for validation (same logic as doSubmit)
+      let countryCodeForValidation = selectedCountryId;
+      if (selectedCountryId === '1' || selectedCountry?.code === '+1') {
+        countryCodeForValidation = 'US';
+      } else if (selectedCountryId.length === 2) {
+        // Assume it's already an ISO code like 'us', 'uk', etc.
+        countryCodeForValidation = selectedCountryId.toUpperCase();
+      } else {
+        // Fallback to US if we can't determine
+        countryCodeForValidation = 'US';
+      }
+      
+      const validation = validatePhone(phone, countryCodeForValidation);
+      setPhoneError(validation.valid ? null : validation.error || null);
+    } else {
+      setPhoneError(null);
+    }
+  };
+
+  // Clear error on focus
+  const handlePhoneFocus = () => {
+    setPhoneError(null);
   };
 
   // Handle button click - select in editor, submit directly in preview
@@ -257,61 +292,13 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
 
   const formElement = (
     <form onSubmit={handleSubmit} noValidate className="space-y-3">
-      <div 
-        className={cn(
-          "flex gap-2 relative p-1 -m-1 rounded-lg transition-all",
-          canEdit && "cursor-pointer hover:ring-2 hover:ring-primary/50",
-          isPhoneInputSelected && "ring-2 ring-primary"
-        )}
-        onClick={(e) => {
-          if (canEdit) {
-            e.preventDefault();
-            e.stopPropagation();
-            setSelectedChildElement('phone-input');
-          }
-        }}
-      >
-        <div
-          onClick={(e) => {
-            // Prevent opening country codes inspector when clicking selector
-            e.stopPropagation();
-          }}
-        >
-          <Select
-            value={selectedCountryId}
-            onValueChange={setSelectedCountryId}
-            disabled={canEdit}
-          >
-            <SelectTrigger className="w-[80px] shrink-0 rounded-r-none border-r-0 bg-muted">
-              <span className="text-sm font-medium">
-                {selectedCountry?.flag} {selectedCountry?.code}
-              </span>
-            </SelectTrigger>
-            <SelectContent className="bg-popover max-h-[300px]">
-              {countryCodes.map((country) => (
-                <SelectItem key={country.id} value={country.id}>
-                  <div className="flex items-center gap-2">
-                    <span>{country.flag}</span>
-                    <span className="font-medium">{country.code}</span>
-                    <span className="text-muted-foreground text-xs">{country.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Input
-          type="tel"
-          placeholder={placeholder || 'Enter your phone number'}
-          className="flex-1 rounded-l-none"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          onFocus={(e) => {
-            if (canEdit) {
-              e.preventDefault();
-              e.target.blur();
-            }
-          }}
+      <div className="space-y-1">
+        <div 
+          className={cn(
+            "flex gap-2 relative p-1 -m-1 rounded-lg transition-all",
+            canEdit && "cursor-pointer hover:ring-2 hover:ring-primary/50",
+            isPhoneInputSelected && "ring-2 ring-primary"
+          )}
           onClick={(e) => {
             if (canEdit) {
               e.preventDefault();
@@ -319,8 +306,79 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
               setSelectedChildElement('phone-input');
             }
           }}
-          readOnly={canEdit}
-        />
+        >
+          <div
+            onClick={(e) => {
+              // Prevent opening country codes inspector when clicking selector
+              e.stopPropagation();
+            }}
+          >
+            <Select
+              value={selectedCountryId}
+              onValueChange={(value) => {
+                setSelectedCountryId(value);
+                // Re-validate phone when country changes
+                if (phone.trim().length > 0) {
+                  handlePhoneBlur();
+                }
+              }}
+              disabled={canEdit}
+            >
+              <SelectTrigger className="w-[80px] shrink-0 rounded-r-none border-r-0 bg-muted">
+                <span className="text-sm font-medium">
+                  {selectedCountry?.flag} {selectedCountry?.code}
+                </span>
+              </SelectTrigger>
+              <SelectContent className="bg-popover max-h-[300px]">
+                {countryCodes.map((country) => (
+                  <SelectItem key={country.id} value={country.id}>
+                    <div className="flex items-center gap-2">
+                      <span>{country.flag}</span>
+                      <span className="font-medium">{country.code}</span>
+                      <span className="text-muted-foreground text-xs">{country.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Input
+            type="tel"
+            placeholder={placeholder || 'Enter your phone number'}
+            className={cn(
+              "flex-1 rounded-l-none",
+              phoneError && "border-destructive focus-visible:ring-destructive"
+            )}
+            value={phone}
+            onChange={(e) => {
+              setPhone(e.target.value);
+              setPhoneError(null); // Clear error while typing
+            }}
+            onBlur={!canEdit ? handlePhoneBlur : undefined}
+            onFocus={(e) => {
+              if (canEdit) {
+                e.preventDefault();
+                e.target.blur();
+              } else {
+                handlePhoneFocus();
+              }
+            }}
+            onClick={(e) => {
+              if (canEdit) {
+                e.preventDefault();
+                e.stopPropagation();
+                setSelectedChildElement('phone-input');
+              }
+            }}
+            readOnly={canEdit}
+          />
+        </div>
+        {phoneError && (
+          <div className="flex items-center gap-1 text-xs text-destructive mt-1 px-1">
+            <AlertCircle className="h-3 w-3" />
+            <span>{phoneError}</span>
+          </div>
+        )}
       </div>
 
       {/* Privacy Consent Checkbox */}
@@ -358,6 +416,7 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
         onClick={handleButtonClick}
         onMouseEnter={() => canEdit && setIsButtonHovered(true)}
         onMouseLeave={() => setIsButtonHovered(false)}
+        disabled={!!phoneError || !phone.trim()}
         className={cn(
           sizeClasses[size],
           fullWidth && 'w-full',

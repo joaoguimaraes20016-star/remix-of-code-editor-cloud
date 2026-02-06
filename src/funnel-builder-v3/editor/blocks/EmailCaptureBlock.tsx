@@ -10,6 +10,7 @@ import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { toast } from 'sonner';
 import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 import { validateEmail } from '@/lib/validation';
+import { AlertCircle } from 'lucide-react';
 
 // Default submit button configuration
 const defaultSubmitButton: ButtonContent = {
@@ -75,6 +76,7 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
   const [email, setEmail] = useState('');
   const [hasConsented, setHasConsented] = useState(false);
   const [isButtonHovered, setIsButtonHovered] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const canEdit = blockId && stepId && !isPreview;
   const isMobile = currentViewport === 'mobile';
@@ -130,9 +132,15 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
     // Validate email format
     const validation = validateEmail(email);
     if (!validation.valid) {
-      toast.error(validation.error || 'Please enter a valid email');
+      setEmailError(validation.error || 'Please enter a valid email');
+      toast.error(validation.error || 'Please enter a valid email', {
+        duration: 5000,
+      });
       return;
     }
+    
+    // Clear any previous errors
+    setEmailError(null);
 
     // Validate consent if required
     if (consent.enabled && consent.required && !hasConsented) {
@@ -207,6 +215,21 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
     }
   }, [blockId, stepId, updateBlockContent]);
 
+  // Validate email on blur
+  const handleEmailBlur = () => {
+    if (email.trim().length > 0) {
+      const validation = validateEmail(email);
+      setEmailError(validation.valid ? null : validation.error || null);
+    } else {
+      setEmailError(null);
+    }
+  };
+
+  // Clear error on focus
+  const handleEmailFocus = () => {
+    setEmailError(null);
+  };
+
   // Handle button click - select in editor, submit directly in preview
   const handleButtonClick = (e: React.MouseEvent) => {
     if (!isPreview) {
@@ -271,23 +294,38 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
   const formElement = (
     <form onSubmit={handleSubmit} noValidate className="space-y-2">
       <div className="flex gap-1.5">
-        <Input
-          type="email"
-          placeholder={placeholder}
-          className={cn(
-            "flex-1",
-            isMobile ? "h-9 px-2.5" : "h-12",
-            placeholderTextSize
+        <div className="flex-1">
+          <Input
+            type="email"
+            placeholder={placeholder}
+            className={cn(
+              "w-full",
+              isMobile ? "h-9 px-2.5" : "h-12",
+              placeholderTextSize,
+              emailError && "border-destructive focus-visible:ring-destructive"
+            )}
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setEmailError(null); // Clear error while typing
+            }}
+            onBlur={handleEmailBlur}
+            onFocus={handleEmailFocus}
+          />
+          {emailError && (
+            <div className="flex items-center gap-1 text-xs text-destructive mt-1">
+              <AlertCircle className="h-3 w-3" />
+              <span>{emailError}</span>
+            </div>
           )}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        </div>
         <Button 
           type="button"
           variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
           onClick={handleButtonClick}
           onMouseEnter={() => canEdit && setIsButtonHovered(true)}
           onMouseLeave={() => setIsButtonHovered(false)}
+          disabled={!!emailError || !email.trim()}
           className={cn(
             "shrink-0 whitespace-nowrap",
             isMobile ? "h-9 px-3" : "h-12 px-6",
