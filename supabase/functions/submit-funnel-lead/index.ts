@@ -124,17 +124,37 @@ function computeConsentRequirement(opts: {
   return { termsUrl, consentMode, showConsentCheckbox, requireConsent };
 }
 
+function validateEmailFormat(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
 function normalizeEmail(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  const trimmed = value.trim();
+  const trimmed = value.trim().toLowerCase();
   if (!trimmed) return null;
-  return trimmed.toLowerCase();
+  
+  // Validate format before accepting
+  if (!validateEmailFormat(trimmed)) {
+    console.warn('[submit-funnel-lead] Invalid email format:', trimmed);
+    return null; // Reject invalid emails
+  }
+  
+  return trimmed;
 }
 
 function normalizeName(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function validatePhoneFormat(phone: string): boolean {
+  // E.164 format: + followed by 7-15 digits
+  const e164Regex = /^\+[1-9]\d{6,14}$/;
+  // Or just digits (10-15 digits for most countries)
+  const digitsRegex = /^\d{10,15}$/;
+  return e164Regex.test(phone) || digitsRegex.test(phone);
 }
 
 function normalizePhone(value: unknown): string | null {
@@ -145,10 +165,24 @@ function normalizePhone(value: unknown): string | null {
   if (trimmed.startsWith("+")) {
     const digits = trimmed.slice(1).replace(/[^0-9]/g, "");
     const withPlus = digits.length > 0 ? `+${digits}` : "";
+    
+    // Validate E.164 format
+    if (withPlus && !validatePhoneFormat(withPlus)) {
+      console.warn('[submit-funnel-lead] Invalid phone format:', withPlus);
+      return null;
+    }
+    
     return withPlus || null;
   }
 
   const digits = trimmed.replace(/[^0-9]/g, "");
+  
+  // Validate digit count
+  if (digits && !validatePhoneFormat(digits)) {
+    console.warn('[submit-funnel-lead] Invalid phone format:', digits);
+    return null;
+  }
+  
   return digits.length > 0 ? digits : null;
 }
 

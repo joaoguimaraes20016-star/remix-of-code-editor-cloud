@@ -47,6 +47,7 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
   } = content;
   const [selected, setSelected] = useState<string[]>([]);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
   
   // Reset navigating state when step changes (matches ButtonBlock pattern)
   const currentStepId = runtime?.currentStepId;
@@ -275,6 +276,10 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
       // unwanted behavior, then select the button element
       e.preventDefault();
       e.stopPropagation();
+      // Select parent block AND child element in one action
+      if (blockId) {
+        setSelectedBlockId(blockId);
+      }
       setSelectedChildElement('submit-button');
     } else {
       // In preview/runtime mode: submit action
@@ -518,6 +523,8 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
             type="button"
             variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
             onClick={handleButtonClick}
+            onMouseEnter={() => canEdit && setIsButtonHovered(true)}
+            onMouseLeave={() => setIsButtonHovered(false)}
             disabled={(isPreview && selected.length === 0) || isNavigating}
             className={cn(
               sizeClasses[size],
@@ -526,7 +533,8 @@ export function QuizBlock({ content, blockId, stepId, isPreview }: QuizBlockProp
               'mt-4 font-medium rounded-xl',
               isPreview && selected.length === 0 && !isNavigating && 'opacity-50 cursor-not-allowed',
               isNavigating && 'opacity-70 cursor-wait',
-              isButtonSelected && 'ring-2 ring-primary ring-offset-2'
+              (isButtonHovered || isButtonSelected) && 'ring-2 ring-primary ring-offset-2',
+              isButtonHovered && !isButtonSelected && 'ring-primary/50'
             )}
             style={{ ...customStyle, touchAction: 'manipulation' as const }}
           >

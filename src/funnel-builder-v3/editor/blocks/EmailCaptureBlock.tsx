@@ -9,6 +9,7 @@ import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { toast } from 'sonner';
 import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
+import { validateEmail } from '@/lib/validation';
 
 // Default submit button configuration
 const defaultSubmitButton: ButtonContent = {
@@ -124,13 +125,10 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
   const doSubmit = () => {
     if (!runtime) return; // Editor mode
 
-    if (!email.trim()) {
-      toast.error('Please enter your email');
-      return;
-    }
-
-    if (!email.includes('@')) {
-      toast.error('Please enter a valid email');
+    // Validate email format
+    const validation = validateEmail(email);
+    if (!validation.valid) {
+      toast.error(validation.error || 'Please enter a valid email');
       return;
     }
 

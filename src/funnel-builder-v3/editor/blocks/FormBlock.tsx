@@ -20,6 +20,7 @@ import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { toast } from 'sonner';
 import { defaultCountryCodes } from '@/funnel-builder-v3/lib/block-definitions';
 import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
+import { validateEmail, validatePhone } from '@/lib/validation';
 
 // Default consent settings
 const defaultConsent: ConsentSettings = {
@@ -67,6 +68,8 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
   const [localValues, setLocalValues] = useState<Record<string, string>>({});
   const [phoneCountryIds, setPhoneCountryIds] = useState<Record<string, string>>({});
   const [hasConsented, setHasConsented] = useState(false);
+  const [hoveredFieldId, setHoveredFieldId] = useState<string | null>(null);
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
 
   const canEdit = blockId && stepId && !isPreview;
   const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
@@ -143,6 +146,42 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
     if (missingFields.length > 0) {
       toast.error(`Please fill in: ${missingFields.map(f => f.label).join(', ')}`);
       return;
+    }
+
+    // Validate email and phone fields
+    for (const field of fields || []) {
+      const value = localValues[field.id];
+      
+      // Email field validation
+      if (field.type === 'email' && value) {
+        const validation = validateEmail(value);
+        if (!validation.valid) {
+          toast.error(`${field.label}: ${validation.error}`);
+          return;
+        }
+      }
+      
+      // Phone field validation
+      if (field.type === 'phone' && value) {
+        // Get country code for this field
+        const fieldCountryId = phoneCountryIds[field.id] || defaultCountryId || countryCodes[0]?.id || '1';
+        
+        // Map country ID to ISO country code
+        let countryCodeForValidation = fieldCountryId;
+        if (fieldCountryId === '1' || countryCodes.find(c => c.id === fieldCountryId)?.code === '+1') {
+          countryCodeForValidation = 'US';
+        } else if (fieldCountryId.length === 2) {
+          countryCodeForValidation = fieldCountryId.toUpperCase();
+        } else {
+          countryCodeForValidation = 'US';
+        }
+        
+        const validation = validatePhone(value, countryCodeForValidation);
+        if (!validation.valid) {
+          toast.error(`${field.label}: ${validation.error}`);
+          return;
+        }
+      }
     }
 
     // Validate consent if required
@@ -390,13 +429,20 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
           <div 
             className={cn(
               "relative p-1 -m-1 rounded-lg transition-all",
-              canEdit && "cursor-pointer hover:ring-2 hover:ring-primary/50",
-              isFieldSelected(field.id) && "ring-2 ring-primary"
+              canEdit && "cursor-pointer",
+              (hoveredFieldId === field.id || isFieldSelected(field.id)) && "ring-2 ring-primary",
+              hoveredFieldId === field.id && !isFieldSelected(field.id) && "ring-primary/50"
             )}
+            onMouseEnter={() => canEdit && setHoveredFieldId(field.id)}
+            onMouseLeave={() => setHoveredFieldId(null)}
             onClick={(e) => {
               if (canEdit) {
                 e.preventDefault();
                 e.stopPropagation();
+                // Select parent block AND child element in one action
+                if (blockId) {
+                  setSelectedBlockId(blockId);
+                }
                 setSelectedChildElement(`form-field-${field.id}`);
               }
             }}
@@ -567,12 +613,15 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
         type="button"
         variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
         onClick={handleButtonClick}
+        onMouseEnter={() => canEdit && setIsButtonHovered(true)}
+        onMouseLeave={() => setIsButtonHovered(false)}
         className={cn(
           sizeClasses[size],
           fullWidth && 'w-full',
           hasCustomBg && 'hover:opacity-90',
           'font-medium rounded-xl',
-          isButtonSelected && 'ring-2 ring-primary ring-offset-2'
+          (isButtonHovered || isButtonSelected) && 'ring-2 ring-primary ring-offset-2',
+          isButtonHovered && !isButtonSelected && 'ring-primary/50'
         )}
         style={{ ...customStyle, touchAction: 'manipulation' as const }}
       >

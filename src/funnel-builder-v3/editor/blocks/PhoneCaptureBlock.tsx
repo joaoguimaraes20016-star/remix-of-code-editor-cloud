@@ -8,6 +8,7 @@ import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
+import { validatePhone } from '@/lib/validation';
 import {
   Select,
   SelectContent,
@@ -100,13 +101,28 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
   const doSubmit = () => {
     if (!runtime) return; // Editor mode
 
-    if (!phone.trim()) {
-      toast.error('Please enter your phone number');
+    // Validate phone number format
+    // Map country ID to ISO country code (e.g., 'us' -> 'US', '1' -> 'US')
+    // If selectedCountryId is numeric, try to map it to ISO code
+    let countryCodeForValidation = selectedCountryId;
+    if (selectedCountryId === '1' || selectedCountry?.code === '+1') {
+      countryCodeForValidation = 'US';
+    } else if (selectedCountryId.length === 2) {
+      // Assume it's already an ISO code like 'us', 'uk', etc.
+      countryCodeForValidation = selectedCountryId.toUpperCase();
+    } else {
+      // Fallback to US if we can't determine
+      countryCodeForValidation = 'US';
+    }
+    
+    const validation = validatePhone(phone, countryCodeForValidation);
+    if (!validation.valid) {
+      toast.error(validation.error || 'Please enter a valid phone number');
       return;
     }
 
-    // Save to runtime (include country code)
-    const fullPhoneNumber = selectedCountry ? `${selectedCountry.code}${phone}` : phone;
+    // Use formatted number if available, otherwise construct from country code
+    const fullPhoneNumber = validation.formatted || (selectedCountry ? `${selectedCountry.code}${phone}` : phone);
     runtime.setFormField('phone', fullPhoneNumber);
     runtime.setFormField('phoneCountryCode', selectedCountry?.code || '');
     
