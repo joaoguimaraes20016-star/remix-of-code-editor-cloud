@@ -373,9 +373,45 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
     // Track that we've "submitted" from this step (for handleStepChange to know)
     lastSubmitStepRef.current = currentStepId;
     
-    // On intermediate steps: data is already accumulated in FunnelRuntimeContext
-    // Just return immediately - no API calls, no delays
+    // On intermediate steps: check if form data contains identity info (email/phone/name)
+    // If it does, submit as a draft so leads appear in the Performance tab immediately.
+    // Navigation is NOT blocked - submit is fire-and-forget.
     if (!isLastStep) {
+      // Check if accumulated data contains any identity/contact info worth saving
+      const allData = { ...accumulatedFormDataRef.current, ...data };
+      const { identity } = extractIdentityFromAnswers(allData);
+      const hasIdentity = !!(identity.name || identity.email || identity.phone);
+      
+      if (hasIdentity) {
+        // Fire-and-forget: submit draft with identity data so it appears in Performance tab
+        const stepIndex = funnel.steps.findIndex(s => s.id === currentStepId);
+        const payload = createUnifiedPayload({ ...allData, ...selections }, {
+          funnelId,
+          teamId,
+          stepId: currentStepId,
+          stepIntent: 'navigate',
+          lastStepIndex: stepIndex >= 0 ? stepIndex : 0,
+        }, {
+          consent: consent ? {
+            agreed: consent.agreed,
+            privacyPolicyUrl: consent.privacyPolicyUrl,
+            timestamp: new Date().toISOString(),
+          } : undefined,
+        });
+        
+        // Override identity from form fields
+        if (identity.name || identity.email || identity.phone) {
+          payload.identity = identity;
+        }
+        
+        // Submit as draft (fire-and-forget, does NOT block navigation)
+        submit(payload).catch((error) => {
+          if (import.meta.env.DEV) {
+            console.error('[FunnelV3Renderer] Draft submission failed:', error);
+          }
+        });
+      }
+      
       return;
     }
     
