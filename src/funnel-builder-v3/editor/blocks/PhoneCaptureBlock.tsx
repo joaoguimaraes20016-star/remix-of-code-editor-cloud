@@ -75,8 +75,6 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
     globalDefaultCountryId || countryCodes[0]?.id || '1'
   );
   const canEdit = blockId && stepId && !isPreview;
-  const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
-
   const selectedCountry = countryCodes.find(c => c.id === selectedCountryId) || countryCodes[0];
   const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
   const isPhoneInputSelected = !isPreview && selectedChildElement === 'phone-input';
@@ -187,8 +185,6 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
     e.preventDefault();
     doSubmit();
   };
-
-  const [isButtonHovered, setIsButtonHovered] = useState(false);
 
   // Handle button click - select in editor, submit directly in preview
   const handleButtonClick = (e: React.MouseEvent) => {
