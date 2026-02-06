@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { EmailCaptureContent, ButtonContent, ConsentSettings } from '@/funnel-builder-v3/types/funnel';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -77,6 +77,8 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
   const [hasConsented, setHasConsented] = useState(false);
   const [isButtonHovered, setIsButtonHovered] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [touchedFields, setTouchedFields] = useState({ email: false, consent: false });
+  const validateTimeoutRef = useRef<NodeJS.Timeout>();
 
   const canEdit = blockId && stepId && !isPreview;
   const isMobile = currentViewport === 'mobile';
@@ -215,8 +217,31 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
     }
   }, [blockId, stepId, updateBlockContent]);
 
+  // Real-time debounced validation (500ms after user stops typing)
+  const validateEmailRealtime = useCallback((value: string) => {
+    // Clear existing timeout
+    if (validateTimeoutRef.current) {
+      clearTimeout(validateTimeoutRef.current);
+    }
+    
+    // Don't validate if field hasn't been touched or too short
+    if (!touchedFields.email || value.length < 3) {
+      if (value.length === 0 && touchedFields.email) {
+        setEmailError(null); // Clear error when empty
+      }
+      return;
+    }
+    
+    // Debounce validation by 500ms
+    validateTimeoutRef.current = setTimeout(() => {
+      const validation = validateEmail(value);
+      setEmailError(validation.valid ? null : validation.error || null);
+    }, 500);
+  }, [touchedFields.email]);
+
   // Validate email on blur
   const handleEmailBlur = () => {
+    setTouchedFields(prev => ({ ...prev, email: true }));
     if (email.trim().length > 0) {
       const validation = validateEmail(email);
       setEmailError(validation.valid ? null : validation.error || null);
@@ -225,10 +250,21 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
     }
   };
 
-  // Clear error on focus
+  // Mark field as focused (don't clear error immediately - let real-time validation handle it)
   const handleEmailFocus = () => {
-    setEmailError(null);
+    if (!touchedFields.email) {
+      setTouchedFields(prev => ({ ...prev, email: true }));
+    }
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (validateTimeoutRef.current) {
+        clearTimeout(validateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handle button click - select in editor, submit directly in preview
   const handleButtonClick = (e: React.MouseEvent) => {
@@ -306,8 +342,14 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
             )}
             value={email}
             onChange={(e) => {
-              setEmail(e.target.value);
-              setEmailError(null); // Clear error while typing
+              const newValue = e.target.value;
+              setEmail(newValue);
+              // Mark as touched on first interaction
+              if (!touchedFields.email) {
+                setTouchedFields(prev => ({ ...prev, email: true }));
+              }
+              // Trigger debounced validation
+              validateEmailRealtime(newValue);
             }}
             onBlur={handleEmailBlur}
             onFocus={handleEmailFocus}
@@ -325,7 +367,12 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
           onClick={handleButtonClick}
           onMouseEnter={() => canEdit && setIsButtonHovered(true)}
           onMouseLeave={() => setIsButtonHovered(false)}
-          disabled={!!emailError || !email.trim()}
+          disabled={
+            // Only disable for touched fields with errors or empty required fields
+            (touchedFields.email && !!emailError) || 
+            (touchedFields.email && !email.trim()) ||
+            (consent.enabled && consent.required && touchedFields.consent && !hasConsented)
+          }
           className={cn(
             "shrink-0 whitespace-nowrap",
             isMobile ? "h-9 px-3" : "h-12 px-6",
@@ -353,7 +400,10 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
           <Checkbox
             id="privacy-consent-email"
             checked={hasConsented}
-            onCheckedChange={(checked) => setHasConsented(checked === true)}
+            onCheckedChange={(checked) => {
+              setHasConsented(checked === true);
+              setTouchedFields(prev => ({ ...prev, consent: true }));
+            }}
             className="mt-0.5"
           />
           <label 
@@ -378,6 +428,19 @@ export function EmailCaptureBlock({ content, blockId, stepId, isPreview }: Email
             {consent.required && <span className="text-destructive ml-0.5">*</span>}
           </label>
         </div>
+      )}
+
+      {/* Helper text when button is disabled */}
+      {!isPreview && touchedFields.email && (
+        (emailError || !email.trim() || (consent.enabled && consent.required && !hasConsented)) && (
+          <div className="text-xs text-muted-foreground text-center mt-2">
+            {emailError 
+              ? "Please fix the error above to continue"
+              : !email.trim()
+              ? "Please enter your email address"
+              : "Please accept the privacy policy to continue"}
+          </div>
+        )
       )}
 
       {(subtitle || canEdit) && (

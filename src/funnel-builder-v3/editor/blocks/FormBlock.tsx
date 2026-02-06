@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FormContent, ButtonContent, ConsentSettings, TextStyles } from '@/funnel-builder-v3/types/funnel';
 import { useEditableStyleSync } from '@/funnel-builder-v3/hooks/useEditableStyleSync';
 import { Input } from '@/components/ui/input';
@@ -73,6 +73,8 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
   const [hoveredFieldId, setHoveredFieldId] = useState<string | null>(null);
   const [isButtonHovered, setIsButtonHovered] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({ consent: false });
+  const validateTimeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
 
   const canEdit = blockId && stepId && !isPreview;
   const isButtonSelected = !isPreview && selectedChildElement === 'submit-button';
@@ -131,21 +133,90 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
     }
   }, [runtime, fields, defaultCountryId, countryCodes]);
 
-  const handleFieldChange = (fieldId: string, value: string) => {
+  // Real-time debounced validation (500ms after user stops typing)
+  const validateFieldRealtime = useCallback((field: typeof fields[0], value: string) => {
+    // Clear existing timeout for this field
+    if (validateTimeoutRefs.current[field.id]) {
+      clearTimeout(validateTimeoutRefs.current[field.id]);
+    }
+    
+    // Don't validate if field hasn't been touched or doesn't need validation
+    if (!touchedFields[field.id]) {
+      return;
+    }
+    
+    // Skip validation for non-email/phone fields
+    if (field.type !== 'email' && field.type !== 'phone') {
+      return;
+    }
+    
+    // Don't validate if too short
+    const minLength = field.type === 'email' ? 3 : 5;
+    if (value.length < minLength) {
+      if (value.length === 0 && touchedFields[field.id]) {
+        setFieldErrors(prev => {
+          const next = { ...prev };
+          delete next[field.id];
+          return next;
+        });
+      }
+      return;
+    }
+    
+    // Debounce validation by 500ms
+    validateTimeoutRefs.current[field.id] = setTimeout(() => {
+      let error: string | null = null;
+
+      if (field.type === 'email') {
+        const validation = validateEmail(value);
+        error = validation.valid ? null : validation.error || null;
+      } else if (field.type === 'phone') {
+        const fieldCountryId = phoneCountryIds[field.id] || defaultCountryId || countryCodes[0]?.id || '1';
+        
+        let countryCodeForValidation = fieldCountryId;
+        if (fieldCountryId === '1' || countryCodes.find(c => c.id === fieldCountryId)?.code === '+1') {
+          countryCodeForValidation = 'US';
+        } else if (fieldCountryId.length === 2) {
+          countryCodeForValidation = fieldCountryId.toUpperCase();
+        } else {
+          countryCodeForValidation = 'US';
+        }
+        
+        const validation = validatePhone(value, countryCodeForValidation);
+        error = validation.valid ? null : validation.error || null;
+      }
+
+      if (error) {
+        setFieldErrors(prev => ({ ...prev, [field.id]: error }));
+      } else {
+        setFieldErrors(prev => {
+          const next = { ...prev };
+          delete next[field.id];
+          return next;
+        });
+      }
+    }, 500);
+  }, [touchedFields, phoneCountryIds, defaultCountryId, countryCodes]);
+
+  const handleFieldChange = (fieldId: string, value: string, field?: typeof fields[0]) => {
     setLocalValues(prev => ({ ...prev, [fieldId]: value }));
     runtime?.setFormField(fieldId, value);
-    // Clear error when user starts typing
-    if (fieldErrors[fieldId]) {
-      setFieldErrors(prev => {
-        const next = { ...prev };
-        delete next[fieldId];
-        return next;
-      });
+    
+    // Mark as touched on first interaction
+    if (!touchedFields[fieldId]) {
+      setTouchedFields(prev => ({ ...prev, [fieldId]: true }));
+    }
+    
+    // Trigger debounced validation for email/phone fields
+    if (field && (field.type === 'email' || field.type === 'phone')) {
+      validateFieldRealtime(field, value);
     }
   };
 
   // Validate field on blur
   const handleFieldBlur = (field: typeof fields[0], value: string) => {
+    setTouchedFields(prev => ({ ...prev, [field.id]: true }));
+    
     if (!value || value.trim().length === 0) {
       // Clear error for empty non-required fields
       if (!field.required) {
@@ -190,6 +261,15 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
       });
     }
   };
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(validateTimeoutRefs.current).forEach(timeout => {
+        if (timeout) clearTimeout(timeout);
+      });
+    };
+  }, []);
 
   // Shared submission logic - called by both button click (direct) and Enter key (form submit)
   const doSubmit = () => {
@@ -542,7 +622,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
                 placeholder={field.placeholder}
                 className="min-h-[100px]"
                 value={localValues[field.id] || ''}
-                onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                onChange={(e) => handleFieldChange(field.id, e.target.value, field)}
                 onFocus={(e) => {
                   if (canEdit) {
                     e.preventDefault();
@@ -570,7 +650,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
               >
                 <Select
                   value={localValues[field.id] || ''}
-                  onValueChange={(value) => handleFieldChange(field.id, value)}
+                  onValueChange={(value) => handleFieldChange(field.id, value, field)}
                   disabled={canEdit}
                 >
                   <SelectTrigger>
@@ -597,9 +677,9 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
                     value={phoneCountryIds[field.id] || defaultCountryId || countryCodes[0]?.id || '1'}
                     onValueChange={(value) => {
                       setPhoneCountryIds(prev => ({ ...prev, [field.id]: value }));
-                      // Re-validate phone when country changes
-                      if (localValues[field.id] && localValues[field.id].trim().length > 0) {
-                        handleFieldBlur(field, localValues[field.id]);
+                      // Re-validate phone when country changes (use debounced validation)
+                      if (localValues[field.id] && localValues[field.id].trim().length > 0 && touchedFields[field.id]) {
+                        validateFieldRealtime(field, localValues[field.id]);
                       }
                     }}
                     disabled={canEdit}
@@ -631,7 +711,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
                     fieldErrors[field.id] && "border-destructive focus-visible:ring-destructive"
                   )}
                   value={localValues[field.id] || ''}
-                  onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                  onChange={(e) => handleFieldChange(field.id, e.target.value, field)}
                   onBlur={!canEdit ? () => handleFieldBlur(field, localValues[field.id] || '') : undefined}
                   onFocus={(e) => {
                     if (canEdit) {
@@ -659,7 +739,7 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
                   fieldErrors[field.id] && "border-destructive focus-visible:ring-destructive"
                 )}
                 value={localValues[field.id] || ''}
-                onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                onChange={(e) => handleFieldChange(field.id, e.target.value, field)}
                 onBlur={!canEdit && (field.type === 'email' || field.type === 'phone') ? () => handleFieldBlur(field, localValues[field.id] || '') : undefined}
                 onFocus={(e) => {
                   if (canEdit) {
@@ -694,7 +774,10 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
           <Checkbox
             id="privacy-consent"
             checked={hasConsented}
-            onCheckedChange={(checked) => setHasConsented(checked === true)}
+            onCheckedChange={(checked) => {
+              setHasConsented(checked === true);
+              setTouchedFields(prev => ({ ...prev, consent: true }));
+            }}
             className="mt-0.5"
           />
           <label 
@@ -724,9 +807,16 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
         onMouseEnter={() => canEdit && setIsButtonHovered(true)}
         onMouseLeave={() => setIsButtonHovered(false)}
         disabled={
-          Object.keys(fieldErrors).length > 0 ||
-          (fields || []).some(f => f.required && !localValues[f.id]?.trim()) ||
-          (consent.enabled && consent.required && !hasConsented)
+          // Only disable for touched fields with errors
+          Object.entries(fieldErrors).some(([fieldId, _]) => touchedFields[fieldId]) ||
+          // Required fields are empty AND touched
+          (fields || []).some(f => 
+            f.required && 
+            touchedFields[f.id] && 
+            !localValues[f.id]?.trim()
+          ) ||
+          // Consent required but not given AND touched
+          (consent.enabled && consent.required && touchedFields.consent && !hasConsented)
         }
         className={cn(
           sizeClasses[size],
@@ -749,6 +839,21 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
           text || 'Submit'
         )}
       </Button>
+
+      {/* Helper text when button is disabled */}
+      {!isPreview && (
+        Object.entries(fieldErrors).some(([fieldId, _]) => touchedFields[fieldId]) ||
+        (fields || []).some(f => f.required && touchedFields[f.id] && !localValues[f.id]?.trim()) ||
+        (consent.enabled && consent.required && touchedFields.consent && !hasConsented)
+      ) && (
+        <div className="text-xs text-muted-foreground text-center mt-2">
+          {Object.entries(fieldErrors).some(([fieldId, _]) => touchedFields[fieldId])
+            ? "Please fix the errors above to continue"
+            : (fields || []).some(f => f.required && touchedFields[f.id] && !localValues[f.id]?.trim())
+            ? "Please fill in all required fields"
+            : "Please accept the privacy policy to continue"}
+        </div>
+      )}
     </form>
   );
 }

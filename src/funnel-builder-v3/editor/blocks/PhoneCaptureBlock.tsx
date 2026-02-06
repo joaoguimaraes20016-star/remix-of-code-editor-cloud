@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PhoneCaptureContent, ButtonContent, ConsentSettings, CountryCode } from '@/funnel-builder-v3/types/funnel';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -73,6 +73,8 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
   const [hasConsented, setHasConsented] = useState(false);
   const [isButtonHovered, setIsButtonHovered] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [touchedFields, setTouchedFields] = useState({ phone: false, consent: false });
+  const validateTimeoutRef = useRef<NodeJS.Timeout>();
   const [selectedCountryId, setSelectedCountryId] = useState(
     globalDefaultCountryId || countryCodes[0]?.id || '1'
   );
@@ -194,18 +196,49 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
     doSubmit();
   };
 
+  // Real-time debounced validation (500ms after user stops typing)
+  const validatePhoneRealtime = useCallback((value: string) => {
+    // Clear existing timeout
+    if (validateTimeoutRef.current) {
+      clearTimeout(validateTimeoutRef.current);
+    }
+    
+    // Don't validate if field hasn't been touched or too short
+    if (!touchedFields.phone || value.length < 5) {
+      if (value.length === 0 && touchedFields.phone) {
+        setPhoneError(null); // Clear error when empty
+      }
+      return;
+    }
+    
+    // Debounce validation by 500ms
+    validateTimeoutRef.current = setTimeout(() => {
+      // Map country ID to ISO country code for validation (same logic as doSubmit)
+      let countryCodeForValidation = selectedCountryId;
+      if (selectedCountryId === '1' || selectedCountry?.code === '+1') {
+        countryCodeForValidation = 'US';
+      } else if (selectedCountryId.length === 2) {
+        countryCodeForValidation = selectedCountryId.toUpperCase();
+      } else {
+        countryCodeForValidation = 'US';
+      }
+      
+      const validation = validatePhone(value, countryCodeForValidation);
+      setPhoneError(validation.valid ? null : validation.error || null);
+    }, 500);
+  }, [touchedFields.phone, selectedCountryId, selectedCountry]);
+
   // Validate phone on blur
   const handlePhoneBlur = () => {
+    setTouchedFields(prev => ({ ...prev, phone: true }));
     if (phone.trim().length > 0) {
       // Map country ID to ISO country code for validation (same logic as doSubmit)
       let countryCodeForValidation = selectedCountryId;
       if (selectedCountryId === '1' || selectedCountry?.code === '+1') {
         countryCodeForValidation = 'US';
       } else if (selectedCountryId.length === 2) {
-        // Assume it's already an ISO code like 'us', 'uk', etc.
         countryCodeForValidation = selectedCountryId.toUpperCase();
       } else {
-        // Fallback to US if we can't determine
         countryCodeForValidation = 'US';
       }
       
@@ -216,10 +249,21 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
     }
   };
 
-  // Clear error on focus
+  // Mark field as focused
   const handlePhoneFocus = () => {
-    setPhoneError(null);
+    if (!touchedFields.phone) {
+      setTouchedFields(prev => ({ ...prev, phone: true }));
+    }
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (validateTimeoutRef.current) {
+        clearTimeout(validateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handle button click - select in editor, submit directly in preview
   const handleButtonClick = (e: React.MouseEvent) => {
@@ -317,9 +361,9 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
               value={selectedCountryId}
               onValueChange={(value) => {
                 setSelectedCountryId(value);
-                // Re-validate phone when country changes
-                if (phone.trim().length > 0) {
-                  handlePhoneBlur();
+                // Re-validate phone when country changes (use debounced validation)
+                if (phone.trim().length > 0 && touchedFields.phone) {
+                  validatePhoneRealtime(phone);
                 }
               }}
               disabled={canEdit}
@@ -351,8 +395,14 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
             )}
             value={phone}
             onChange={(e) => {
-              setPhone(e.target.value);
-              setPhoneError(null); // Clear error while typing
+              const newValue = e.target.value;
+              setPhone(newValue);
+              // Mark as touched on first interaction
+              if (!touchedFields.phone) {
+                setTouchedFields(prev => ({ ...prev, phone: true }));
+              }
+              // Trigger debounced validation
+              validatePhoneRealtime(newValue);
             }}
             onBlur={!canEdit ? handlePhoneBlur : undefined}
             onFocus={(e) => {
@@ -387,7 +437,10 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
           <Checkbox
             id="privacy-consent-phone"
             checked={hasConsented}
-            onCheckedChange={(checked) => setHasConsented(checked === true)}
+            onCheckedChange={(checked) => {
+              setHasConsented(checked === true);
+              setTouchedFields(prev => ({ ...prev, consent: true }));
+            }}
             className="mt-0.5"
           />
           <label 
@@ -410,13 +463,31 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
         </div>
       )}
 
+      {/* Helper text when button is disabled */}
+      {!isPreview && touchedFields.phone && (
+        (phoneError || !phone.trim() || (consent.enabled && consent.required && !hasConsented)) && (
+          <div className="text-xs text-muted-foreground text-center mt-2">
+            {phoneError 
+              ? "Please fix the error above to continue"
+              : !phone.trim()
+              ? "Please enter your phone number"
+              : "Please accept the privacy policy to continue"}
+          </div>
+        )
+      )}
+
       <Button 
         type="button"
         variant={hasCustomBg ? 'ghost' : (variant === 'primary' ? 'default' : variant)}
         onClick={handleButtonClick}
         onMouseEnter={() => canEdit && setIsButtonHovered(true)}
         onMouseLeave={() => setIsButtonHovered(false)}
-        disabled={!!phoneError || !phone.trim()}
+        disabled={
+          // Only disable for touched fields with errors or empty required fields
+          (touchedFields.phone && !!phoneError) || 
+          (touchedFields.phone && !phone.trim()) ||
+          (consent.enabled && consent.required && touchedFields.consent && !hasConsented)
+        }
         className={cn(
           sizeClasses[size],
           fullWidth && 'w-full',
