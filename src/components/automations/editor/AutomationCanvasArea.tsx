@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ZapOff, Plus, MessageSquare, Clock, GitBranch, Tag, Bell, Webhook, Zap } from "lucide-react";
 import type { AutomationDefinition, AutomationStep, ActionType, AutomationTrigger } from "@/lib/automations/types";
@@ -6,6 +7,7 @@ import { ActionNodeCard } from "./nodes/ActionNodeCard";
 import { ConditionNodeCard } from "./nodes/ConditionNodeCard";
 import { NodeConnectionLine } from "./nodes/NodeConnectionLine";
 import { getContextualSuggestions } from "@/lib/automations/workflowSuggestions";
+import { ZoomControl, ZOOM_STEP, MIN_ZOOM, MAX_ZOOM } from "./ZoomControl";
 import { cn } from "@/lib/utils";
 
 interface AutomationCanvasAreaProps {
@@ -18,6 +20,7 @@ interface AutomationCanvasAreaProps {
   onStepDelete: (stepId: string) => void;
   onAddStep: (type: ActionType, afterStepId?: string) => void;
   onOpenActionLibrary: (afterStepId?: string) => void;
+  onToggleStepEnabled?: (stepId: string, enabled: boolean) => void;
 }
 
 const QUICK_ACTION_CONFIG: Record<string, { icon: React.ReactNode; label: string }> = {
@@ -44,13 +47,145 @@ export function AutomationCanvasArea({
   onStepDelete,
   onAddStep,
   onOpenActionLibrary,
+  onToggleStepEnabled,
 }: AutomationCanvasAreaProps) {
+  const [zoom, setZoom] = useState(1);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const suggestions = getContextualSuggestions(definition.trigger.type, definition.steps);
   const topSuggestions = suggestions.slice(0, 4);
   const hasTrigger = !isTriggerEmpty(definition.trigger);
 
+  // Mouse wheel zoom (Ctrl/Cmd + scroll)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+        setZoom((prev) => {
+          const next = Math.round((prev + delta) * 100) / 100;
+          return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, next));
+        });
+      }
+    };
+
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', handleWheel);
+  }, []);
+
+  // Keyboard shortcuts for zoom and navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle shortcuts when not typing in an input/textarea
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      // Zoom shortcuts
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        setZoom((prev) => Math.min(MAX_ZOOM, Math.round((prev + ZOOM_STEP) * 100) / 100));
+        return;
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        setZoom((prev) => Math.max(MIN_ZOOM, Math.round((prev - ZOOM_STEP) * 100) / 100));
+        return;
+      } else if (e.key === '0') {
+        e.preventDefault();
+        setZoom(1);
+        return;
+      } else if (e.key === '1' && !e.shiftKey) {
+        // Fit to screen - calculate zoom that fits all nodes
+        e.preventDefault();
+        // For now, set to 0.75 as a reasonable "fit" zoom
+        // TODO: Calculate actual fit based on node positions
+        setZoom(0.75);
+        return;
+      }
+
+      // Escape to deselect
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onSelectNode(null);
+        return;
+      }
+
+      // Delete/Backspace to delete selected node
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeId && selectedNodeId !== 'trigger') {
+        e.preventDefault();
+        onStepDelete(selectedNodeId);
+        return;
+      }
+
+      // D to toggle enable/disable on selected node
+      if (e.key === 'd' && selectedNodeId && selectedNodeId !== 'trigger' && onToggleStepEnabled) {
+        e.preventDefault();
+        const step = definition.steps.find(s => s.id === selectedNodeId);
+        if (step) {
+          onToggleStepEnabled(step.id, step.enabled === false);
+        }
+        return;
+      }
+
+      // Arrow key navigation between nodes
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        
+        // Build list of all selectable node IDs (trigger first, then steps)
+        const nodeIds: (string | null)[] = [];
+        if (hasTrigger) {
+          nodeIds.push('trigger');
+        }
+        definition.steps.forEach(step => {
+          nodeIds.push(step.id);
+        });
+
+        if (nodeIds.length === 0) return;
+
+        // Find current index
+        const currentIndex = selectedNodeId 
+          ? nodeIds.indexOf(selectedNodeId)
+          : -1;
+
+        // Navigate
+        let newIndex: number;
+        if (e.key === 'ArrowDown') {
+          // Move to next node (or first if none selected)
+          newIndex = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, nodeIds.length - 1);
+        } else {
+          // Move to previous node (or last if none selected)
+          newIndex = currentIndex < 0 ? nodeIds.length - 1 : Math.max(currentIndex - 1, 0);
+        }
+
+        const newNodeId = nodeIds[newIndex];
+        if (newNodeId !== undefined) {
+          onSelectNode(newNodeId);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNodeId, definition.steps, hasTrigger, onSelectNode, onStepDelete, onToggleStepEnabled]);
+
   return (
-    <div className="min-h-full py-12 px-8 flex flex-col items-center">
+    <div className="relative min-h-full w-full" ref={canvasRef}>
+      {/* Zoom Controls - Fixed position in bottom right */}
+      <div className="fixed bottom-6 right-6 z-30">
+        <ZoomControl zoom={zoom} onZoomChange={setZoom} />
+      </div>
+
+      {/* Canvas Content with Zoom Transform */}
+      <div 
+        className="min-h-full w-full py-12 px-8 flex flex-col items-center transition-transform duration-200"
+        style={{ 
+          transform: `scale(${zoom})`,
+          transformOrigin: 'top center',
+        }}
+      >
       {/* Trigger Node or Add Trigger Placeholder */}
       {hasTrigger ? (
         <TriggerNodeCard
@@ -132,6 +267,7 @@ export function AutomationCanvasArea({
                 step={step}
                 isSelected={selectedNodeId === step.id}
                 onSelect={() => onSelectNode(step.id)}
+                onToggleEnabled={onToggleStepEnabled}
               />
             )}
 
@@ -164,6 +300,7 @@ export function AutomationCanvasArea({
           <span className="text-sm text-muted-foreground/60 font-medium">End</span>
         </motion.div>
       )}
+      </div>
     </div>
   );
 }

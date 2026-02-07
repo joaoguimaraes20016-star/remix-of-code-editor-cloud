@@ -15,7 +15,6 @@ const SUPPORTED_ACTIONS: ActionType[] = [
   "send_whatsapp",
   "send_voicemail",
   "make_call",
-  "enqueue_dialer",
   "notify_team",
   "send_review_request",
   "reply_in_comments",
@@ -30,6 +29,7 @@ const SUPPORTED_ACTIONS: ActionType[] = [
   "run_workflow",
   "add_to_workflow",
   "remove_from_workflow",
+  "remove_from_all_workflows",
   "stop_workflow",
   // CRM Actions
   "add_tag",
@@ -52,7 +52,6 @@ const SUPPORTED_ACTIONS: ActionType[] = [
   "book_appointment",
   "update_appointment",
   "cancel_appointment",
-  "create_booking_link",
   "log_call",
   // Payments
   "send_invoice",
@@ -141,6 +140,7 @@ export function NodeInspector({
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Delete Step
+            <kbd className="ml-auto px-1.5 py-0.5 text-[10px] font-mono bg-muted rounded border border-border text-muted-foreground">Del</kbd>
           </Button>
         </div>
       </div>

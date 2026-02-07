@@ -1,6 +1,8 @@
 import type { AutomationStep } from "@/lib/automations/types";
 import { ACTION_META } from "@/lib/automations/types";
-import { Settings2 } from "lucide-react";
+import { Settings2, Power } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   SendMessageForm,
   TimeDelayForm,
@@ -59,6 +61,7 @@ import {
   SetVariableForm,
   AddToWorkflowForm,
   RemoveFromWorkflowForm,
+  RemoveFromAllWorkflowsForm,
   // Data Transform
   FormatDateForm,
   FormatNumberForm,
@@ -82,7 +85,7 @@ const SUPPORTED_ACTION_TYPES = new Set([
   // Pipeline
   "update_deal",
   // Flow Control & Variables
-  "set_variable", "add_to_workflow", "remove_from_workflow",
+  "set_variable", "add_to_workflow", "remove_from_workflow", "remove_from_all_workflows",
   // Appointments
   "book_appointment", "update_appointment", "cancel_appointment",
   "create_booking_link", "log_call",
@@ -109,8 +112,33 @@ export function ActionInspector({ step, onUpdate, teamId }: ActionInspectorProps
   const hasForm = SUPPORTED_ACTION_TYPES.has(step.type);
   const meta = ACTION_META[step.type as keyof typeof ACTION_META];
 
+  const isEnabled = step.enabled !== false;
+
   return (
     <div className="space-y-4">
+      {/* Enable/Disable Toggle - Like GHL's action enable toggle */}
+      <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border bg-muted/20">
+        <div className="flex items-center gap-2">
+          <Power className={`h-4 w-4 ${isEnabled ? 'text-green-500' : 'text-muted-foreground'}`} />
+          <Label htmlFor="step-enabled" className="text-sm font-medium cursor-pointer">
+            {isEnabled ? 'Enabled' : 'Disabled'}
+          </Label>
+        </div>
+        <Switch
+          id="step-enabled"
+          checked={isEnabled}
+          onCheckedChange={(checked) => onUpdate({ enabled: checked })}
+        />
+      </div>
+
+      {!isEnabled && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            This step is disabled and will be skipped during execution. Press <kbd className="px-1 py-0.5 text-[10px] font-mono bg-background rounded border">D</kbd> to toggle.
+          </p>
+        </div>
+      )}
+
       {/* Messaging */}
       {step.type === "send_message" && <SendMessageForm {...formProps} teamId={teamId} />}
       {step.type === "send_email" && <SendEmailForm {...formProps} />}
@@ -165,6 +193,7 @@ export function ActionInspector({ step, onUpdate, teamId }: ActionInspectorProps
       {step.type === "run_workflow" && <RunWorkflowForm {...formProps} teamId={teamId} />}
       {step.type === "add_to_workflow" && <AddToWorkflowForm {...formProps} />}
       {step.type === "remove_from_workflow" && <RemoveFromWorkflowForm {...formProps} />}
+      {step.type === "remove_from_all_workflows" && <RemoveFromAllWorkflowsForm {...formProps} />}
       {step.type === "stop_workflow" && <StopWorkflowForm {...formProps} />}
       
       {/* Integrations */}

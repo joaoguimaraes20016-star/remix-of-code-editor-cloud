@@ -222,6 +222,12 @@
   background-size: 100% 100%, 40px 40px, 40px 40px;
 }
 
+/* Ensure canvas content wrapper handles zoom properly */
+.automation-editor-canvas > div {
+  min-height: 100%;
+  width: 100%;
+}
+
 /* Custom scrollbar for canvas */
 .automation-editor-canvas::-webkit-scrollbar {
   width: 8px;

@@ -188,6 +188,12 @@ BEGIN
         'appointmentId', NEW.id,
         'previousStage', OLD.pipeline_stage,
         'newStage', NEW.pipeline_stage,
+        'meta', jsonb_build_object(
+          'fromStage', OLD.pipeline_stage,
+          'toStage', NEW.pipeline_stage,
+          'from_stage', OLD.pipeline_stage,
+          'to_stage', NEW.pipeline_stage
+        ),
         'lead', jsonb_build_object(
           'name', NEW.lead_name,
           'email', NEW.lead_email,

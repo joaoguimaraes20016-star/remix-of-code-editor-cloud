@@ -184,3 +184,89 @@ export async function executeRemoveFromWorkflow(
 
   return log;
 }
+
+/**
+ * Remove contact from ALL active workflows (like GHL's "Remove from all workflows" action).
+ * Exits all active enrollments for this contact and cancels pending scheduled jobs.
+ */
+export async function executeRemoveFromAllWorkflows(
+  config: FlexibleConfig,
+  context: AutomationContext,
+  supabase: any,
+  currentAutomationId?: string,
+): Promise<StepExecutionLog> {
+  const log: StepExecutionLog = { status: "success" };
+
+  const contactId = context.lead?.id;
+  const appointmentId = context.appointment?.id;
+
+  if (!contactId && !appointmentId) {
+    log.status = "skipped";
+    log.skipReason = "no_contact_in_context";
+    return log;
+  }
+
+  const excludeSelf = (config.excludeCurrentWorkflow as boolean) !== false; // default true
+
+  try {
+    // Build the enrollments exit query
+    let enrollQuery = supabase
+      .from("automation_enrollments")
+      .update({
+        status: "exited",
+        exited_at: new Date().toISOString(),
+        exit_reason: "Removed from all workflows by automation action",
+      })
+      .eq("status", "active")
+      .eq("team_id", context.teamId);
+
+    if (contactId) {
+      enrollQuery = enrollQuery.eq("contact_id", contactId);
+    }
+    if (appointmentId) {
+      enrollQuery = enrollQuery.eq("appointment_id", appointmentId);
+    }
+
+    // Optionally exclude the current automation so it doesn't stop itself mid-run
+    if (excludeSelf && currentAutomationId) {
+      enrollQuery = enrollQuery.neq("automation_id", currentAutomationId);
+    }
+
+    const { data: exitedEnrollments, error: enrollError } = await enrollQuery.select("automation_id");
+
+    if (enrollError) {
+      log.status = "error";
+      log.error = enrollError.message;
+      return log;
+    }
+
+    const exitedCount = exitedEnrollments?.length || 0;
+
+    // Cancel all pending scheduled jobs for this contact across all automations
+    let jobQuery = supabase
+      .from("scheduled_automation_jobs")
+      .update({ status: "cancelled" })
+      .eq("status", "pending");
+
+    if (excludeSelf && currentAutomationId) {
+      jobQuery = jobQuery.neq("automation_id", currentAutomationId);
+    }
+
+    if (contactId) {
+      jobQuery = jobQuery.contains("context_snapshot", { lead: { id: contactId } });
+    }
+
+    await jobQuery;
+
+    log.output = {
+      exitedWorkflowCount: exitedCount,
+      exitedWorkflowIds: exitedEnrollments?.map((e: any) => e.automation_id) || [],
+      excludedSelf: excludeSelf,
+    };
+  } catch (err) {
+    log.status = "error";
+    log.error = err instanceof Error ? err.message : "Unknown error";
+  }
+
+  return log;
+}

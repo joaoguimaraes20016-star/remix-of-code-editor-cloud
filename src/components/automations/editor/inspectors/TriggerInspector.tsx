@@ -13,6 +13,7 @@ import {
   DollarSign, AlertCircle, Send, AlertTriangle, Repeat, ShoppingCart, RotateCcw,
   MessageCircle, MailOpen, MailX, AlertOctagon, Star,
   Webhook, Play, Search, Music, Mic
+  Phone,
 } from "lucide-react";
 
 interface TriggerInspectorProps {
@@ -45,11 +46,18 @@ const FUNCTIONAL_TRIGGERS: Set<TriggerType> = new Set([
   "appointment_canceled",
   "appointment_no_show",
   "appointment_completed",
+  // Pipeline/Deal triggers
+  "stage_changed",
+  "deal_created",
+  "deal_won",
+  "deal_lost",
   // Payment triggers
   "payment_received",
   "payment_failed",
+  "invoice_paid",
   "subscription_created",
   "subscription_cancelled",
+  "subscription_renewed",
   "refund_issued",
   // Integration triggers
   "webhook_received",
@@ -72,6 +80,7 @@ const TRIGGER_OPTIONS: TriggerOption[] = [
   { value: "birthday_reminder", label: "Birthday Reminder", description: "Annual birthday trigger", icon: <Cake className="h-4 w-4" />, category: "contact" },
   { value: "custom_date_reminder", label: "Custom Date Reminder", description: "Trigger on custom date field", icon: <CalendarDays className="h-4 w-4" />, category: "contact" },
   { value: "note_added", label: "Note Added", description: "When a note is added", icon: <StickyNote className="h-4 w-4" />, category: "contact" },
+  { value: "note_changed", label: "Note Changed", description: "When a note is updated", icon: <StickyNote className="h-4 w-4" />, category: "contact" },
   
   // Form triggers
   { value: "form_submitted", label: "Form Submitted", description: "When a form is completed", icon: <FileText className="h-4 w-4" />, category: "form" },
@@ -118,6 +127,7 @@ const TRIGGER_OPTIONS: TriggerOption[] = [
   { value: "email_opened", label: "Email Opened", description: "When email is opened", icon: <MailOpen className="h-4 w-4" />, category: "messaging" },
   { value: "email_bounced", label: "Email Bounced", description: "When email bounces", icon: <MailX className="h-4 w-4" />, category: "messaging" },
   { value: "messaging_error", label: "Messaging Error", description: "When delivery fails", icon: <AlertOctagon className="h-4 w-4" />, category: "messaging" },
+  { value: "call_status", label: "Call Status", description: "When call status changes", icon: <Phone className="h-4 w-4" />, category: "messaging" },
   { value: "new_review_received", label: "New Review Received", description: "When a review is received", icon: <Star className="h-4 w-4" />, category: "messaging" },
   
   // Integration triggers

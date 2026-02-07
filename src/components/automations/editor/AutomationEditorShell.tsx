@@ -164,6 +164,17 @@ export function AutomationEditorShell({
     }
   }, []);
 
+  // Handler for toggling step enabled/disabled (like GHL pause)
+  const handleToggleStepEnabled = useCallback(
+    (stepId: string, enabled: boolean) => {
+      const updatedSteps = definition.steps.map((step) =>
+        step.id === stepId ? { ...step, enabled } : step
+      );
+      onChange({ ...definition, steps: updatedSteps });
+    },
+    [definition, onChange]
+  );
+
   // Handler for opening action library (called by "+" buttons)
   const handleOpenActionLibrary = useCallback((afterStepId?: string) => {
     if (afterStepId) {
@@ -306,6 +317,7 @@ export function AutomationEditorShell({
             onStepDelete={handleStepDelete}
             onAddStep={handleAddStep}
             onOpenActionLibrary={handleOpenActionLibrary}
+            onToggleStepEnabled={handleToggleStepEnabled}
           />
         </main>
 
@@ -404,6 +416,14 @@ function getDefaultConfigForType(type: ActionType): Record<string, any> {
       return {};
     case "condition":
       return { conditions: [] };
+    case "remove_from_all_workflows":
+      return { excludeCurrentWorkflow: true };
+    case "wait_until":
+      return { waitType: "event", timeoutHours: 24, timeoutAction: "continue" };
+    case "business_hours":
+      return {};
+    case "set_variable":
+      return { variableName: "", value: "" };
     default:
       return {};
   }

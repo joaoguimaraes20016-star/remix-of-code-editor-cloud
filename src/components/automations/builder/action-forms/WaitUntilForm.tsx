@@ -187,6 +187,9 @@ export function WaitUntilForm({ config, onChange }: WaitUntilFormProps) {
                 <SelectContent>
                   <SelectItem value="continue">Continue workflow</SelectItem>
                   <SelectItem value="stop">Stop workflow</SelectItem>
+                  <SelectItem value="branch" disabled>
+                    Branch (coming soon)
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -195,7 +198,8 @@ export function WaitUntilForm({ config, onChange }: WaitUntilFormProps) {
           <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <p className="text-xs text-blue-300">
               The workflow will pause until the selected event occurs for this contact, 
-              or until the timeout is reached.
+              or until the timeout is reached. Timeout branching (like GoHighLevel) will allow 
+              separate paths for "event received" vs "timed out" once canvas branching is supported.
             </p>
           </div>
         </>

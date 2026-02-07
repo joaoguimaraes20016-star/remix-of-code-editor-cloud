@@ -17,6 +17,7 @@ interface ActionNodeCardProps {
   step: AutomationStep;
   isSelected: boolean;
   onSelect: () => void;
+  onToggleEnabled?: (stepId: string, enabled: boolean) => void;
 }
 
 interface ActionDisplay {
@@ -326,6 +327,12 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
     color: "text-red-400",
     bgColor: "bg-red-500/15"
   },
+  remove_from_all_workflows: {
+    label: "Remove from All Workflows",
+    icon: <XCircle className="h-4 w-4" />,
+    color: "text-red-500",
+    bgColor: "bg-red-500/15"
+  },
   stop_workflow: { 
     label: "Stop", 
     icon: <StopCircle className="h-4 w-4" />, 
@@ -526,10 +533,11 @@ function getStepPreview(step: AutomationStep): string {
   }
 }
 
-export function ActionNodeCard({ step, isSelected, onSelect }: ActionNodeCardProps) {
+export function ActionNodeCard({ step, isSelected, onSelect, onToggleEnabled }: ActionNodeCardProps) {
   const display = ACTION_DISPLAY[step.type] || ACTION_DISPLAY.send_message;
   const preview = getStepPreview(step);
   const isConfigured = isStepConfigured(step);
+  const isEnabled = step.enabled !== false; // default to enabled
 
   return (
     <motion.button
@@ -541,31 +549,64 @@ export function ActionNodeCard({ step, isSelected, onSelect }: ActionNodeCardPro
         "bg-background",
         isSelected 
           ? "border-primary shadow-primary/20" 
-          : "border-border hover:border-primary/50 hover:shadow-xl"
+          : "border-border hover:border-primary/50 hover:shadow-xl",
+        !isEnabled && "opacity-50"
       )}
     >
       {/* Status Indicator */}
       <div className={cn(
         "absolute -right-1.5 -top-1.5 w-6 h-6 rounded-full flex items-center justify-center border-2 border-background",
-        isConfigured ? "bg-green-500" : "bg-yellow-500"
+        !isEnabled ? "bg-muted-foreground" : isConfigured ? "bg-green-500" : "bg-yellow-500"
       )}>
-        {isConfigured ? (
+        {!isEnabled ? (
+          <StopCircle className="h-3.5 w-3.5 text-white" />
+        ) : isConfigured ? (
           <Check className="h-3.5 w-3.5 text-white" />
         ) : (
           <AlertCircle className="h-3.5 w-3.5 text-white" />
         )}
       </div>
 
+      {/* Enable/Disable Toggle */}
+      {onToggleEnabled && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleEnabled(step.id, !isEnabled);
+          }}
+          className={cn(
+            "absolute -left-1.5 -top-1.5 w-6 h-6 rounded-full flex items-center justify-center border-2 border-background transition-colors z-10",
+            isEnabled 
+              ? "bg-primary hover:bg-primary/80" 
+              : "bg-muted-foreground hover:bg-muted-foreground/80"
+          )}
+          title={isEnabled ? "Disable this step (skip during execution)" : "Enable this step"}
+        >
+          {isEnabled ? (
+            <Check className="h-3 w-3 text-white" />
+          ) : (
+            <StopCircle className="h-3 w-3 text-white" />
+          )}
+        </button>
+      )}
+
       <div className="flex items-start gap-5 p-6">
         {/* Icon */}
-        <div className={cn("p-4 rounded-xl", display.bgColor)}>
-          <span className={display.color}>{display.icon}</span>
+        <div className={cn("p-4 rounded-xl", isEnabled ? display.bgColor : "bg-muted")}>
+          <span className={isEnabled ? display.color : "text-muted-foreground"}>{display.icon}</span>
         </div>
 
         {/* Content */}
         <div className="flex-1 text-left min-w-0">
-          <div className="text-foreground font-semibold text-lg mb-1">{display.label}</div>
-          <div className="text-sm text-muted-foreground truncate">{preview}</div>
+          <div className={cn(
+            "font-semibold text-lg mb-1",
+            isEnabled ? "text-foreground" : "text-muted-foreground"
+          )}>
+            {display.label}
+          </div>
+          <div className="text-sm text-muted-foreground truncate">
+            {!isEnabled ? "Disabled — will be skipped" : preview}
+          </div>
         </div>
       </div>
     </motion.button>

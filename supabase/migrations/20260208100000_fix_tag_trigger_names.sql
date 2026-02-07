@@ -27,6 +27,10 @@ BEGIN
         'contactId', NEW.id,
         'addedTags', to_jsonb(v_added_tags),
         'allTags', to_jsonb(NEW.tags),
+        'meta', jsonb_build_object(
+          'tag', v_added_tags[1],  -- First added tag for constraint matching
+          'tagName', v_added_tags[1]
+        ),
         'lead', jsonb_build_object(
           'id', NEW.id,
           'name', NEW.name,
@@ -48,6 +52,10 @@ BEGIN
         'contactId', NEW.id,
         'removedTags', to_jsonb(v_removed_tags),
         'allTags', to_jsonb(NEW.tags),
+        'meta', jsonb_build_object(
+          'tag', v_removed_tags[1],  -- First removed tag for constraint matching
+          'tagName', v_removed_tags[1]
+        ),
         'lead', jsonb_build_object(
           'id', NEW.id,
           'name', NEW.name,

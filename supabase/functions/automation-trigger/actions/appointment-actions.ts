@@ -122,7 +122,7 @@ export async function executeUpdateAppointment(
     }
 
     if (config.notes) {
-      updates.notes = renderTemplate(config.notes as string, context);
+      updates.appointment_notes = renderTemplate(config.notes as string, context);
     }
 
     if (Object.keys(updates).length === 0) {
@@ -139,9 +139,69 @@ export async function executeUpdateAppointment(
     if (error) {
       log.status = "error";
       log.error = error.message;
-    } else {
-      log.output = { appointmentId, updatedFields: Object.keys(updates) };
+      return log;
     }
+
+    // Send notification to attendee if requested
+    const notifyAttendee = config.notifyAttendee !== false; // Default to true if not specified
+    if (notifyAttendee && context.appointment) {
+      const attendeeEmail = context.appointment.lead_email;
+      const attendeePhone = context.appointment.lead_phone;
+      
+      if (attendeeEmail || attendeePhone) {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+        const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+        
+        // Build notification message
+        const statusText = config.status ? `Status: ${config.status}` : "";
+        const timeText = config.newTime ? `New time: ${config.newTime}` : "";
+        const notesText = config.notes ? `Notes: ${renderTemplate(config.notes as string, context)}` : "";
+        const message = [statusText, timeText, notesText].filter(Boolean).join("\n");
+        
+        // Send email if available
+        if (attendeeEmail) {
+          try {
+            await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${supabaseServiceKey}`,
+              },
+              body: JSON.stringify({
+                to: attendeeEmail,
+                subject: "Appointment Update",
+                body: message || "Your appointment has been updated.",
+                teamId: context.teamId,
+              }),
+            });
+          } catch (emailErr) {
+            console.error("[UpdateAppointment] Failed to send email notification:", emailErr);
+          }
+        }
+        
+        // Send SMS if available and no email
+        if (attendeePhone && !attendeeEmail) {
+          try {
+            await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${supabaseServiceKey}`,
+              },
+              body: JSON.stringify({
+                to: attendeePhone,
+                body: message || "Your appointment has been updated.",
+                teamId: context.teamId,
+              }),
+            });
+          } catch (smsErr) {
+            console.error("[UpdateAppointment] Failed to send SMS notification:", smsErr);
+          }
+        }
+      }
+    }
+
+    log.output = { appointmentId, updatedFields: Object.keys(updates), notifiedAttendee: notifyAttendee };
   } catch (err) {
     log.status = "error";
     log.error = err instanceof Error ? err.message : "Unknown error";
@@ -328,6 +388,17 @@ export async function executeLogCall(
     const duration = Number(config.duration) || 0;
     const notes = config.notes ? renderTemplate(config.notes as string, context) : undefined;
 
+    // Map call outcome to appointment status
+    // Only "answered" maps to COMPLETED; all others map to CANCELLED (not NO_SHOW)
+    const statusMap: Record<string, string> = {
+      "answered": "COMPLETED",
+      "no_answer": "CANCELLED",
+      "busy": "CANCELLED",
+      "voicemail": "COMPLETED", // Voicemail left is considered completed
+      "left_message": "COMPLETED", // Message left is considered completed
+    };
+    const appointmentStatus = statusMap[outcome] || "CANCELLED";
+
     // Log the call as an appointment/activity record
     const { data, error } = await supabase
       .from("appointments")
@@ -337,8 +408,8 @@ export async function executeLogCall(
         lead_name: context.lead?.name || context.lead?.first_name || "Unknown",
         lead_email: context.lead?.email || "",
         lead_phone: context.lead?.phone || "",
-        status: outcome === "answered" ? "COMPLETED" : "NO_SHOW",
-        notes: `[Call Log] Direction: ${direction} | Outcome: ${outcome} | Duration: ${duration}s${notes ? `\n${notes}` : ""}`,
+        status: appointmentStatus,
+        appointment_notes: `[Call Log] Direction: ${direction} | Outcome: ${outcome} | Duration: ${duration}s${notes ? `\n${notes}` : ""}`,
         start_at_utc: new Date().toISOString(),
         duration_minutes: Math.ceil(duration / 60),
       })

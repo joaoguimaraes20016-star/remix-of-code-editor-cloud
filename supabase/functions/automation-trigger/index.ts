@@ -34,6 +34,7 @@ import {
   executeSetVariable,
   executeAddToWorkflow,
   executeRemoveFromWorkflow,
+  executeRemoveFromAllWorkflows,
 } from "./actions/variable-actions.ts";
 import {
   executeFormatDate,
@@ -324,10 +325,21 @@ function matchesTriggerConstraints(
   // --- TAG TRIGGER CONSTRAINTS ---
   if (triggerType === "lead_tag_added" || triggerType === "lead_tag_removed") {
     if (config.tag && config.tag.trim()) {
+      // Check if the configured tag is in the addedTags/removedTags arrays from the payload
+      // The SQL trigger sends addedTags/removedTags as arrays, and also includes meta.tag for single-tag events
       const eventTag = context.meta?.tag || context.meta?.tagName;
-      const tagMatch = eventTag?.toLowerCase() === config.tag.toLowerCase();
+      const addedTags = (context.addedTags as string[]) || [];
+      const removedTags = (context.removedTags as string[]) || [];
+      
+      // Check if config.tag matches the single tag in meta (if present) OR is in the arrays
+      const configTagLower = config.tag.toLowerCase().trim();
+      const tagMatch = 
+        (eventTag && eventTag.toLowerCase() === configTagLower) ||
+        addedTags.some(tag => tag.toLowerCase() === configTagLower) ||
+        removedTags.some(tag => tag.toLowerCase() === configTagLower);
+      
       if (!tagMatch) {
-        reasons.push(`tag mismatch: expected "${config.tag}", got "${eventTag}"`);
+        reasons.push(`tag mismatch: expected "${config.tag}", got tags: [${addedTags.concat(removedTags).join(", ")}]`);
       }
     }
   }
@@ -362,18 +374,24 @@ function matchesTriggerConstraints(
     }
     
     if (config.fromStage && config.fromStage.trim()) {
-      const fromMatch = context.meta?.fromStage === config.fromStage ||
-                        context.meta?.from_stage === config.fromStage;
+      // Check meta.fromStage/meta.from_stage first, then fall back to top-level previousStage
+      const fromMatch = 
+        context.meta?.fromStage === config.fromStage ||
+        context.meta?.from_stage === config.fromStage ||
+        (context.previousStage as string) === config.fromStage;
       if (!fromMatch) {
-        reasons.push(`from_stage mismatch: expected "${config.fromStage}", got "${context.meta?.fromStage || context.meta?.from_stage}"`);
+        reasons.push(`from_stage mismatch: expected "${config.fromStage}", got "${context.meta?.fromStage || context.meta?.from_stage || context.previousStage}"`);
       }
     }
     
     if (config.toStage && config.toStage.trim()) {
-      const toMatch = context.meta?.toStage === config.toStage ||
-                      context.meta?.to_stage === config.toStage;
+      // Check meta.toStage/meta.to_stage first, then fall back to top-level newStage
+      const toMatch = 
+        context.meta?.toStage === config.toStage ||
+        context.meta?.to_stage === config.toStage ||
+        (context.newStage as string) === config.toStage;
       if (!toMatch) {
-        reasons.push(`to_stage mismatch: expected "${config.toStage}", got "${context.meta?.toStage || context.meta?.to_stage}"`);
+        reasons.push(`to_stage mismatch: expected "${config.toStage}", got "${context.meta?.toStage || context.meta?.to_stage || context.newStage}"`);
       }
     }
   }
@@ -692,6 +710,22 @@ async function runAutomation(
     if (!step) {
       console.warn(`[Automation] Step ${currentStepId} not found`);
       break;
+    }
+
+    // Skip disabled steps (like GHL's enable/disable toggle)
+    if (step.enabled === false) {
+      console.log(`[Automation] Skipping disabled step ${step.id} (${step.type})`);
+      logs.push({
+        stepId: step.id,
+        actionType: step.type,
+        status: "skipped",
+        skipReason: "step_disabled",
+        timestamp: new Date().toISOString(),
+      });
+      // Move to next step in order
+      const currentIndex = steps.findIndex((s) => s.id === currentStepId);
+      currentStepId = currentIndex < steps.length - 1 ? steps[currentIndex + 1].id : null;
+      continue;
     }
 
     // Evaluate step conditions (NOT for condition nodes - those have their own logic)
@@ -1406,6 +1440,12 @@ async function runAutomation(
 
         case "remove_from_workflow": {
           const result = await executeRemoveFromWorkflow(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "remove_from_all_workflows": {
+          const result = await executeRemoveFromAllWorkflows(step.config, context, supabase, automationId);
           log = { ...log, ...result };
           break;
         }

@@ -64,7 +64,7 @@ export async function executeAddTask(
           status: "pending",
           due_at: dueAt?.toISOString() || new Date().toISOString(),
           assigned_to: assignedTo,
-          pipeline_stage: title, // Using pipeline_stage to store task title
+          notes: title, // Store task title in notes column
         },
       ])
       .select("id")
@@ -105,32 +105,107 @@ export async function executeNotifyTeam(
     // Render message with template engine (supports pipes like {{lead.name | uppercase}})
     const renderedMessage = renderTemplate(rawMessage, context);
 
-    // Log as in-app notification in message_logs
     const notifyAdmin = config.notifyAdmin as boolean | undefined;
     const notifyOwner = config.notifyOwner as boolean | undefined;
-    const { error } = await supabase.from("message_logs").insert([
+
+    // Determine which roles to notify
+    const rolesToNotify: string[] = [];
+    if (notifyAdmin) rolesToNotify.push("admin");
+    if (notifyOwner) rolesToNotify.push("owner", "offer_owner");
+    // If neither is specified, notify all admins and owners
+    if (rolesToNotify.length === 0) {
+      rolesToNotify.push("admin", "owner", "offer_owner");
+    }
+
+    // Fetch team members with admin/owner roles and their email addresses
+    const { data: teamMembers, error: membersError } = await supabase
+      .from("team_members")
+      .select("user_id, role, profiles!inner(email, full_name)")
+      .eq("team_id", context.teamId)
+      .in("role", rolesToNotify)
+      .eq("is_active", true);
+
+    if (membersError) {
+      log.status = "error";
+      log.error = `Failed to fetch team members: ${membersError.message}`;
+      return log;
+    }
+
+    // Extract email addresses (filter out null emails)
+    const emailAddresses = (teamMembers || [])
+      .map((member: any) => member.profiles?.email)
+      .filter((email: string | null) => email && email.trim().length > 0);
+
+    if (emailAddresses.length === 0) {
+      log.status = "skipped";
+      log.skipReason = "no_team_members_with_email";
+      return log;
+    }
+
+    // Send email to each team member
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+
+    const emailPromises = emailAddresses.map(async (email: string) => {
+      const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          to: email,
+          subject: "Team Notification",
+          body: renderedMessage,
+          teamId: context.teamId,
+          automationId,
+          runId,
+        }),
+      });
+
+      if (!emailResponse.ok) {
+        const errorText = await emailResponse.text();
+        console.error(`[NotifyTeam] Failed to send email to ${email}:`, errorText);
+        return { email, success: false, error: errorText };
+      }
+
+      return { email, success: true };
+    });
+
+    const emailResults = await Promise.all(emailPromises);
+    const failedEmails = emailResults.filter((r) => !r.success);
+
+    // Log as in-app notification in message_logs for audit trail
+    await supabase.from("message_logs").insert([
       {
         team_id: context.teamId,
         automation_id: automationId,
         run_id: runId,
-        channel: "in_app",
+        channel: "email",
         provider: "internal",
-        to_address: notifyAdmin ? "admin" : "team",
+        to_address: emailAddresses.join(", "),
         payload: {
           message: renderedMessage,
           notifyAdmin,
           notifyOwner,
           leadId: context.lead?.id,
           appointmentId: context.appointment?.id,
+          emailResults,
         },
-        status: "sent",
+        status: failedEmails.length > 0 ? "partial" : "sent",
       },
     ]);
 
-    if (error) {
-      log.status = "error";
-      log.error = error.message;
+    if (failedEmails.length > 0) {
+      log.status = "partial";
+      log.error = `Failed to send to ${failedEmails.length} recipients: ${failedEmails.map((r) => r.email).join(", ")}`;
     }
+
+    log.output = {
+      emailsSent: emailResults.filter((r) => r.success).length,
+      emailsFailed: failedEmails.length,
+      recipients: emailAddresses,
+    };
   } catch (err) {
     log.status = "error";
     log.error = err instanceof Error ? err.message : "Unknown error";

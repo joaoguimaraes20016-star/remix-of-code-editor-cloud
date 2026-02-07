@@ -14,6 +14,7 @@ export type TriggerType =
   | 'birthday_reminder'
   | 'custom_date_reminder'
   | 'note_added'
+  | 'note_changed'
   // Form/Funnel triggers
   | 'form_submitted'
   | 'survey_submitted'
@@ -54,6 +55,7 @@ export type TriggerType =
   | 'email_opened'
   | 'email_bounced'
   | 'messaging_error'
+  | 'call_status'
   // Review triggers
   | 'new_review_received'
   // Integration triggers
@@ -128,6 +130,7 @@ export type ActionType =
   | 'set_variable'        // Custom value management
   | 'add_to_workflow'     // Add to another workflow
   | 'remove_from_workflow'
+  | 'remove_from_all_workflows'  // Remove from all active workflows
   // Data Transformation
   | 'format_date'
   | 'format_number'
@@ -423,6 +426,8 @@ export interface AutomationStep {
   conditions?: AutomationCondition[];
   conditionGroups?: ConditionGroup[];
   retryConfig?: StepRetryConfig;
+  // Enable/disable - disabled steps are skipped during execution (like GHL)
+  enabled?: boolean;
   // For branching
   trueBranchStepId?: string;
   falseBranchStepId?: string;
@@ -508,6 +513,7 @@ export const TRIGGER_META: Record<TriggerType, TriggerMeta> = {
   birthday_reminder: { type: 'birthday_reminder', label: 'Birthday Reminder', description: 'Annual birthday trigger', icon: 'Cake', category: 'contact' },
   custom_date_reminder: { type: 'custom_date_reminder', label: 'Custom Date Reminder', description: 'Trigger on custom date field', icon: 'CalendarDays', category: 'contact' },
   note_added: { type: 'note_added', label: 'Note Added', description: 'When a note is added to contact', icon: 'StickyNote', category: 'contact' },
+  note_changed: { type: 'note_changed', label: 'Note Changed', description: 'When a note is updated', icon: 'StickyNote', category: 'contact' },
   
   // Form triggers
   form_submitted: { type: 'form_submitted', label: 'Form Submitted', description: 'When a form is completed', icon: 'FileText', category: 'form' },
@@ -554,6 +560,7 @@ export const TRIGGER_META: Record<TriggerType, TriggerMeta> = {
   email_opened: { type: 'email_opened', label: 'Email Opened', description: 'When email is opened', icon: 'MailOpen', category: 'messaging' },
   email_bounced: { type: 'email_bounced', label: 'Email Bounced', description: 'When email bounces', icon: 'MailX', category: 'messaging' },
   messaging_error: { type: 'messaging_error', label: 'Messaging Error', description: 'When message delivery fails', icon: 'AlertOctagon', category: 'messaging' },
+  call_status: { type: 'call_status', label: 'Call Status', description: 'When call status changes', icon: 'Phone', category: 'messaging' },
   new_review_received: { type: 'new_review_received', label: 'New Review Received', description: 'When a review is received', icon: 'Star', category: 'messaging' },
   
   // Integration triggers
@@ -609,6 +616,7 @@ export const ACTION_META: Record<ActionType, ActionMeta> = {
   create_deal: { type: 'create_deal', label: 'Create Opportunity', description: 'Create a new deal', icon: 'Briefcase', color: 'text-violet-400', bgColor: 'bg-violet-500/20', category: 'pipeline' },
   update_deal: { type: 'update_deal', label: 'Update Opportunity', description: 'Modify deal details', icon: 'Edit', color: 'text-sky-400', bgColor: 'bg-sky-500/20', category: 'pipeline' },
   close_deal: { type: 'close_deal', label: 'Close Deal', description: 'Mark deal as won/lost', icon: 'CheckCircle', color: 'text-green-400', bgColor: 'bg-green-500/20', category: 'pipeline' },
+  remove_opportunity: { type: 'remove_opportunity', label: 'Remove Opportunity', description: 'Delete/remove opportunity', icon: 'Trash2', color: 'text-red-400', bgColor: 'bg-red-500/20', category: 'pipeline' },
   find_opportunity: { type: 'find_opportunity', label: 'Find Opportunity', description: 'Lookup opportunity', icon: 'Search', color: 'text-violet-400', bgColor: 'bg-violet-500/20', category: 'pipeline' },
   
   // Payment Actions
@@ -630,6 +638,7 @@ export const ACTION_META: Record<ActionType, ActionMeta> = {
   set_variable: { type: 'set_variable', label: 'Set Variable', description: 'Set custom value', icon: 'Variable', color: 'text-purple-400', bgColor: 'bg-purple-500/20', category: 'flow' },
   add_to_workflow: { type: 'add_to_workflow', label: 'Add to Workflow', description: 'Add to another workflow', icon: 'ListPlus', color: 'text-blue-400', bgColor: 'bg-blue-500/20', category: 'flow' },
   remove_from_workflow: { type: 'remove_from_workflow', label: 'Remove from Workflow', description: 'Remove from workflow', icon: 'ListMinus', color: 'text-slate-400', bgColor: 'bg-slate-500/20', category: 'flow' },
+  remove_from_all_workflows: { type: 'remove_from_all_workflows', label: 'Remove from All Workflows', description: 'Remove from all active workflows', icon: 'ListX', color: 'text-red-400', bgColor: 'bg-red-500/20', category: 'flow' },
   
   // Data Transformation
   format_date: { type: 'format_date', label: 'Format Date', description: 'Convert date format', icon: 'Calendar', color: 'text-amber-400', bgColor: 'bg-amber-500/20', category: 'data' },

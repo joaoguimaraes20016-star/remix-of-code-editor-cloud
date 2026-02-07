@@ -10,6 +10,7 @@ export type TriggerType =
   | "birthday_reminder"
   | "custom_date_reminder"
   | "note_added"
+  | "note_changed"
   // Form/Funnel triggers
   | "form_submitted"
   | "survey_submitted"
@@ -50,6 +51,7 @@ export type TriggerType =
   | "email_opened"
   | "email_bounced"
   | "messaging_error"
+  | "call_status"
   | "new_review_received"
   // Integration triggers
   | "webhook_received"
@@ -116,6 +118,7 @@ export type ActionType =
   | "set_variable"
   | "add_to_workflow"
   | "remove_from_workflow"
+  | "remove_from_all_workflows"
   // Data Transform
   | "format_date"
   | "format_number"

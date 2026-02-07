@@ -3,6 +3,19 @@
 import type { AutomationContext, StepExecutionLog } from "../types.ts";
 import { renderTemplate, extractTemplateVariables, getFieldValue } from "../template-engine.ts";
 
+/**
+ * Check if Twilio is configured (via environment variables)
+ */
+function isTwilioConfigured(): boolean {
+  const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+  const apiKeySid = Deno.env.get("TWILIO_API_KEY_SID");
+  const apiKeySecret = Deno.env.get("TWILIO_API_KEY_SECRET");
+  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+  
+  // Twilio is configured if we have account SID and either API keys or auth token
+  return !!(accountSid && (apiKeySid && apiKeySecret || authToken));
+}
+
 interface SendMessageConfig {
   channel?: "sms" | "email" | "voice" | "whatsapp";
   template?: string;
@@ -56,6 +69,17 @@ export async function executeSendMessage(
   };
 
   try {
+    // Check integration configuration before calling edge functions
+    if (channel === "sms" || channel === "whatsapp" || channel === "voice") {
+      if (!isTwilioConfigured()) {
+        log.status = "skipped";
+        log.skipReason = "twilio_not_configured";
+        return log;
+      }
+    }
+    // Note: Email channel uses Resend/Mailgun which may be configured via env vars or team settings
+    // We don't check email integration here as it's more complex and edge function handles stub mode
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 

@@ -34,6 +34,7 @@ export { SetVariableForm } from "./SetVariableForm";
 export { RunWorkflowForm } from "./RunWorkflowForm";
 export { AddToWorkflowForm } from "./AddToWorkflowForm";
 export { RemoveFromWorkflowForm } from "./RemoveFromWorkflowForm";
+export { RemoveFromAllWorkflowsForm } from "./RemoveFromAllWorkflowsForm";
 export { StopWorkflowForm } from "./StopWorkflowForm";
 
 // Data Transform

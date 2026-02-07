@@ -7,6 +7,19 @@ import { renderTemplate } from "../template-engine.ts";
 type FlexibleConfig = Record<string, unknown>;
 
 /**
+ * Check if Twilio is configured (via environment variables)
+ */
+function isTwilioConfigured(): boolean {
+  const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+  const apiKeySid = Deno.env.get("TWILIO_API_KEY_SID");
+  const apiKeySecret = Deno.env.get("TWILIO_API_KEY_SECRET");
+  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+  
+  // Twilio is configured if we have account SID and either API keys or auth token
+  return !!(accountSid && (apiKeySid && apiKeySecret || authToken));
+}
+
+/**
  * Send a voicemail drop (ringless voicemail)
  * Uses Twilio to place a call that goes directly to voicemail
  */
@@ -18,6 +31,13 @@ export async function executeSendVoicemail(
   const log: StepExecutionLog = { status: "success" };
 
   try {
+    // Check if Twilio is configured before attempting to send
+    if (!isTwilioConfigured()) {
+      log.status = "skipped";
+      log.skipReason = "twilio_not_configured";
+      return log;
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -96,6 +116,13 @@ export async function executeMakeCall(
   const log: StepExecutionLog = { status: "success" };
 
   try {
+    // Check if Twilio is configured before attempting to make call
+    if (!isTwilioConfigured()) {
+      log.status = "skipped";
+      log.skipReason = "twilio_not_configured";
+      return log;
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
