@@ -51,7 +51,7 @@ export default function ManageBookingPage() {
         const { data, error: fetchError } = await supabase
           .from("appointments")
           .select("*")
-          .eq("booking_token", token)
+          .eq("booking_token" as any, token)
           .single();
 
         if (fetchError || !data) {

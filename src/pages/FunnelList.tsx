@@ -224,7 +224,7 @@ export default function FunnelList() {
 
         // Quick check: can_access_workspace via RPC (if it exists)
         const { data: canAccess, error: canAccessError } = await supabase
-          .rpc('can_access_workspace', { _user_id: session.user.id, _team_id: teamId });
+          .rpc('can_access_workspace' as any, { _user_id: session.user.id, _team_id: teamId });
         console.log('[DIAG] can_access_workspace:', { canAccess, canAccessError });
       }
     };

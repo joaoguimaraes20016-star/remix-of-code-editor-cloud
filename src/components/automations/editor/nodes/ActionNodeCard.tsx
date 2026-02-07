@@ -233,6 +233,12 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
     color: "text-indigo-400",
     bgColor: "bg-indigo-500/15"
   },
+  remove_opportunity: {
+    label: "Remove Opportunity",
+    icon: <Trash2 className="h-4 w-4" />,
+    color: "text-red-400",
+    bgColor: "bg-red-500/15"
+  },
 
   // Payment Actions
   send_invoice: {

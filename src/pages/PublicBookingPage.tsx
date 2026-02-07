@@ -61,7 +61,7 @@ export default function PublicBookingPage() {
         let teamQuery = supabase.from("teams" as any).select("id, name, booking_slug");
 
         // Try booking_slug first, fall back to id
-        const { data: teamBySlug } = await teamQuery.eq("booking_slug", teamSlug).single();
+        const { data: teamBySlug } = await teamQuery.eq("booking_slug", teamSlug).single() as { data: any; error: any };
 
         let team = teamBySlug;
         if (!team) {
@@ -69,7 +69,7 @@ export default function PublicBookingPage() {
             .from("teams" as any)
             .select("id, name, booking_slug")
             .eq("id", teamSlug)
-            .single();
+            .single() as { data: any; error: any };
           team = teamById;
         }
 
@@ -381,7 +381,7 @@ export default function PublicBookingPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Intl.supportedValuesOf("timeZone").map((tz) => (
+                      {(Intl as any).supportedValuesOf("timeZone").map((tz: string) => (
                         <SelectItem key={tz} value={tz}>
                           {tz.replace(/_/g, " ")}
                         </SelectItem>

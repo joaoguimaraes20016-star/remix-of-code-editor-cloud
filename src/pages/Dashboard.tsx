@@ -296,7 +296,7 @@ const Dashboard = () => {
           booking_slug: bookingSlug,
         } as any)
         .select()
-        .single();
+        .single() as { data: any; error: any };
 
       if (teamError) throw teamError;
 

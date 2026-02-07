@@ -43,7 +43,7 @@ export default function ConnectionsSettings() {
         .select("sync_enabled")
         .eq("team_id", teamId)
         .eq("user_id", user.id)
-        .maybeSingle();
+        .maybeSingle() as { data: any; error: any };
 
       setGcalConnected(!!gcalData && !!gcalData.sync_enabled);
 
@@ -117,13 +117,13 @@ export default function ConnectionsSettings() {
           setGcalConnecting(false);
           // Refresh connection status
           setTimeout(() => {
-            supabase
+            (supabase
               .from("google_calendar_connections" as any)
               .select("sync_enabled")
               .eq("team_id", teamId)
               .eq("user_id", user?.id)
-              .single()
-              .then(({ data }) => {
+              .single() as any)
+              .then(({ data }: any) => {
                 setGcalConnected(!!data && data.sync_enabled);
                 if (data?.sync_enabled) {
                   toast.success("Google Calendar connected successfully");

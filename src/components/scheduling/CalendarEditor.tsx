@@ -175,7 +175,7 @@ export default function CalendarEditor({
             .select("sync_enabled")
             .eq("team_id", teamId)
             .eq("user_id", user.id)
-            .maybeSingle();
+            .maybeSingle() as { data: any; error: any };
           setHasGoogleCalendar(!!gcal && !!gcal.sync_enabled);
 
           const { data: zoom } = await supabase

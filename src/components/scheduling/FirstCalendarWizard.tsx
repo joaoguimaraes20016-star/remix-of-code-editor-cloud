@@ -115,7 +115,7 @@ export default function FirstCalendarWizard({ onComplete, onCancel }: FirstCalen
         .from("teams" as any)
         .select("booking_slug, name")
         .eq("id", teamId)
-        .single();
+        .single() as { data: any; error: any };
 
       if (!teamData?.booking_slug && teamData?.name) {
         let bookingSlug = teamData.name

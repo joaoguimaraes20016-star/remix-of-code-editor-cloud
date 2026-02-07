@@ -82,7 +82,7 @@ export default function TeamSettings() {
         .from("teams" as any)
         .select("name, logo_url, booking_slug")
         .eq("id", teamId)
-        .single();
+        .single() as { data: any; error: any };
 
       if (error) throw error;
       setTeamName(data?.name || "");
