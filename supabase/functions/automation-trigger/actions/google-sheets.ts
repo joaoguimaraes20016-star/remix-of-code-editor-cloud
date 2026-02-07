@@ -193,8 +193,8 @@ export async function executeGoogleSheets(
       const columnIndex = columnToIndex(mapping.column.toUpperCase());
       maxColumnIndex = Math.max(maxColumnIndex, columnIndex);
       
-      // Render template - pass original context, enrichContext returns Record<string, any>
-      const renderedValue = renderTemplate(mapping.value, context);
+      // Render template - use enriched context for template variables
+      const renderedValue = renderTemplate(mapping.value, enrichedContext);
       columnData.push({ index: columnIndex, value: renderedValue });
     }
 

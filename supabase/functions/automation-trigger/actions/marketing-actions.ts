@@ -134,7 +134,7 @@ export async function executeReplyInComments(
       : "Thank you for your comment!";
 
     // Get the comment ID from the event payload (if triggered by a comment event)
-    const commentId = (context as any).eventPayload?.commentId;
+    const commentId = context.meta?.commentId;
 
     if (!commentId) {
       log.status = "skipped";

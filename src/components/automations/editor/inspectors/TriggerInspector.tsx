@@ -12,7 +12,7 @@ import {
   ArrowRightLeft, Briefcase, Trophy, XCircle, RefreshCw, Clock,
   DollarSign, AlertCircle, Send, AlertTriangle, Repeat, ShoppingCart, RotateCcw,
   MessageCircle, MailOpen, MailX, AlertOctagon, Star,
-  Webhook, Play, Search, Music, Mic
+  Webhook, Play, Search, Music, Mic,
   Phone,
 } from "lucide-react";
 

@@ -1,6 +1,7 @@
 // supabase/functions/automation-trigger/actions/time-delay.ts
 
 import type { AutomationContext, AutomationStep } from "../types.ts";
+import { getFieldValue } from "../template-engine.ts";
 
 interface TimeDelayConfig {
   duration?: number;
@@ -323,6 +324,33 @@ export async function executeWaitUntil(
       const timeoutHours = config.timeoutHours || 24;
       resumeAt = new Date(now.getTime() + timeoutHours * 60 * 60 * 1000);
       waitingForEvent = config.eventType;
+      break;
+    }
+    
+    case 'before_appointment': {
+      // Wait until N hours before an appointment
+      const hoursBeforeAppt = config.hours_before || config.offsetHours || 1;
+      const apptField = config.appointment_field || 'appointment.start_at';
+      
+      // Resolve the appointment time from context using getFieldValue
+      const apptTime = getFieldValue(context, apptField);
+      
+      if (!apptTime) {
+        return { scheduled: false, resumeAt: now.toISOString(), error: 'No appointment time found' };
+      }
+      
+      const appointmentDate = new Date(apptTime);
+      if (isNaN(appointmentDate.getTime())) {
+        return { scheduled: false, resumeAt: now.toISOString(), error: `Invalid appointment time: ${apptTime}` };
+      }
+      
+      // Calculate resume time: appointment time minus hours_before
+      resumeAt = new Date(appointmentDate.getTime() - hoursBeforeAppt * 60 * 60 * 1000);
+      
+      // If the resume time is in the past, continue immediately
+      if (resumeAt <= now) {
+        return { scheduled: false, resumeAt: now.toISOString() };
+      }
       break;
     }
     

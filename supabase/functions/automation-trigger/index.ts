@@ -102,7 +102,7 @@ function getSupabaseClient() {
 // differentiated by type/status fields. When refreshing context after mutations (assign_owner,
 // update_stage, close_deal, update_deal), both are queried from `appointments` table.
 // `context.lead` maps to the `contacts` table and is always a separate entity.
-function buildAutomationContext(triggerType: TriggerType, payload: Record<string, any>): AutomationContext {
+function buildAutomationContext(triggerType: TriggerType, payload: Record<string, any>, automationId?: string): AutomationContext {
   const { teamId } = payload;
   return {
     teamId,
@@ -114,6 +114,8 @@ function buildAutomationContext(triggerType: TriggerType, payload: Record<string
     deal: payload.deal ?? null,
     meta: payload.meta ?? null,
     stepOutputs: payload.stepOutputs ?? undefined,
+    automationId,
+    depth: payload.depth ?? 0,
   };
 }
 
@@ -214,6 +216,19 @@ function evaluateCondition(condition: AutomationCondition, context: Record<strin
       const date = new Date(actual);
       return (date.getMonth() + 1) === Number(expected);
     }
+    case "date_before":
+      return new Date(actual) < new Date(String(expected));
+    case "date_after":
+      return new Date(actual) > new Date(String(expected));
+    case "date_within_days": {
+      const daysAgo = new Date(Date.now() - Number(expected) * 24 * 60 * 60 * 1000);
+      const dateValue = new Date(actual);
+      return dateValue >= daysAgo && dateValue <= new Date();
+    }
+    case "date_past_days": {
+      const daysAgo = new Date(Date.now() - Number(expected) * 24 * 60 * 60 * 1000);
+      return new Date(actual) < daysAgo;
+    }
 
     // === BOOLEAN OPERATORS ===
     case "is_true":
@@ -228,6 +243,8 @@ function evaluateCondition(condition: AutomationCondition, context: Record<strin
       return Array.isArray(actual) && Array.isArray(expected) && expected.every((e: any) => actual.includes(e));
     case "not_contains_any":
       return Array.isArray(actual) && Array.isArray(expected) && !expected.some((e: any) => actual.includes(e));
+    case "not_in":
+      return Array.isArray(expected) && !expected.includes(actual);
 
     // === EXISTENCE OPERATORS ===
     case "is_set":
@@ -243,6 +260,24 @@ function evaluateCondition(condition: AutomationCondition, context: Record<strin
     // === LEGACY OPERATORS ===
     case "in":
       return Array.isArray(expected) && expected.includes(actual);
+    case "tag_present":
+      // Alias for contains - check if tag array contains the expected value
+      if (Array.isArray(actual)) {
+        return actual.includes(expected);
+      }
+      if (typeof actual === "string") {
+        return actual.toLowerCase().includes(String(expected).toLowerCase());
+      }
+      return false;
+    case "tag_absent":
+      // Alias for not_contains - check if tag array does not contain the expected value
+      if (Array.isArray(actual)) {
+        return !actual.includes(expected);
+      }
+      if (typeof actual === "string") {
+        return !actual.toLowerCase().includes(String(expected).toLowerCase());
+      }
+      return true;
 
     default:
       console.warn(`[Automation] Unknown operator: ${condition.operator}`);
@@ -1043,6 +1078,12 @@ async function runAutomation(
         }
 
         case "notify_team": {
+          const rateCheck = await checkRateLimit(supabase, context.teamId, "notification", automation.id);
+          if (!rateCheck.allowed) {
+            log.skipped = true;
+            log.skipReason = rateCheck.reason || "rate_limit_exceeded";
+            break;
+          }
           const result = await executeNotifyTeam(step.config, context, supabase, automation.id, runId);
           log = { ...log, ...result };
           break;
@@ -1133,7 +1174,20 @@ async function runAutomation(
         }
 
         case "run_workflow": {
-          const result = await executeRunWorkflow(step.config, context, supabase);
+          // Check recursion depth to prevent infinite loops
+          const currentDepth = context.depth ?? 0;
+          const maxDepth = 5;
+          
+          if (currentDepth >= maxDepth) {
+            log.status = "skipped";
+            log.skipReason = `recursion_depth_exceeded:${currentDepth}>=${maxDepth}`;
+            log.error = `Maximum recursion depth (${maxDepth}) exceeded. This workflow would trigger another workflow, creating a potential infinite loop.`;
+            break;
+          }
+          
+          // Pass incremented depth to the nested workflow
+          const nestedContext = { ...context, depth: currentDepth + 1 };
+          const result = await executeRunWorkflow(step.config, nestedContext, supabase);
           log = { ...log, ...result };
           break;
         }
@@ -1445,7 +1499,7 @@ async function runAutomation(
         }
 
         case "remove_from_all_workflows": {
-          const result = await executeRemoveFromAllWorkflows(step.config, context, supabase, automationId);
+          const result = await executeRemoveFromAllWorkflows(step.config, context, supabase, automation.id);
           log = { ...log, ...result };
           break;
         }
@@ -1500,6 +1554,7 @@ async function runAutomation(
         case "add_followers":
         case "remove_followers":
         case "find_opportunity":
+        case "remove_opportunity":
         case "ai_intent":
         case "ai_decision":
         case "ai_translate":
@@ -1760,8 +1815,11 @@ Deno.serve(async (req) => {
       let stepLogs: StepExecutionLog[] = [];
       let exitedByGoal = false;
 
+      // Inject automationId into context for conversion tracking actions
+      const contextWithAutomationId = { ...context, automationId: automation.id };
+
       try {
-        stepLogs = await runAutomation(automation, context, supabase, runId, eventPayload as Record<string, any>);
+        stepLogs = await runAutomation(automation, contextWithAutomationId, supabase, runId, eventPayload as Record<string, any>);
         allStepsExecuted.push(...stepLogs);
         
         // Check if a mid-run goal exit already handled enrollment
@@ -1774,14 +1832,14 @@ Deno.serve(async (req) => {
           exitedByGoal = true;
         } else {
           // Check for goal completion after run (handles goals met on the final step)
-          const goalCheck = await checkGoals(supabase, automation.id, context);
+          const goalCheck = await checkGoals(supabase, automation.id, contextWithAutomationId);
           if (goalCheck.goalMet && goalCheck.goal?.exitOnGoal) {
             exitedByGoal = true;
             await exitEnrollment(
               supabase,
               automation.id,
-              context.lead?.id || null,
-              context.appointment?.id || null,
+              contextWithAutomationId.lead?.id || null,
+              contextWithAutomationId.appointment?.id || null,
               `Goal met: ${goalCheck.goal.name}`,
             );
           }
@@ -1797,8 +1855,8 @@ Deno.serve(async (req) => {
         await completeEnrollment(
           supabase,
           automation.id,
-          context.lead?.id || null,
-          context.appointment?.id || null,
+          contextWithAutomationId.lead?.id || null,
+          contextWithAutomationId.appointment?.id || null,
         );
       }
 

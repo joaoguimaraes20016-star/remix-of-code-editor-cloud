@@ -355,7 +355,7 @@ export async function executeCreateBookingLink(
     };
 
     // Store in context so template variables can reference it
-    (context as any).bookingLink = bookingUrl;
+    context.bookingLink = bookingUrl;
 
   } catch (err) {
     log.status = "error";

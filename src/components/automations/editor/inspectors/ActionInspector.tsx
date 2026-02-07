@@ -62,6 +62,7 @@ import {
   AddToWorkflowForm,
   RemoveFromWorkflowForm,
   RemoveFromAllWorkflowsForm,
+  GoalAchievedForm,
   // Data Transform
   FormatDateForm,
   FormatNumberForm,
@@ -83,7 +84,7 @@ const SUPPORTED_ACTION_TYPES = new Set([
   // CRM
   "find_contact", "delete_contact", "remove_owner", "toggle_dnd",
   // Pipeline
-  "update_deal",
+  "update_deal", "remove_opportunity",
   // Flow Control & Variables
   "set_variable", "add_to_workflow", "remove_from_workflow", "remove_from_all_workflows",
   // Appointments
@@ -168,6 +169,7 @@ export function ActionInspector({ step, onUpdate, teamId }: ActionInspectorProps
       {step.type === "create_deal" && <CreateDealForm {...formProps} />}
       {step.type === "update_deal" && <UpdateDealForm {...formProps} />}
       {step.type === "close_deal" && <CloseDealForm {...formProps} />}
+      {step.type === "remove_opportunity" && <RemoveOpportunityForm {...formProps} />}
       
       {/* Appointments */}
       {step.type === "book_appointment" && <BookAppointmentForm {...formProps} />}
@@ -195,6 +197,7 @@ export function ActionInspector({ step, onUpdate, teamId }: ActionInspectorProps
       {step.type === "remove_from_workflow" && <RemoveFromWorkflowForm {...formProps} />}
       {step.type === "remove_from_all_workflows" && <RemoveFromAllWorkflowsForm {...formProps} />}
       {step.type === "stop_workflow" && <StopWorkflowForm {...formProps} />}
+      {step.type === "goal_achieved" && <GoalAchievedForm {...formProps} />}
       
       {/* Integrations */}
       {step.type === "custom_webhook" && <WebhookForm {...formProps} />}

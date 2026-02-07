@@ -23,6 +23,7 @@ export { ToggleDndForm } from "./ToggleDndForm";
 export { CreateDealForm } from "./CreateDealForm";
 export { UpdateDealForm } from "./UpdateDealForm";
 export { CloseDealForm } from "./CloseDealForm";
+export { RemoveOpportunityForm } from "./RemoveOpportunityForm";
 
 // Flow Control
 export { WaitUntilForm } from "./WaitUntilForm";
@@ -36,6 +37,7 @@ export { AddToWorkflowForm } from "./AddToWorkflowForm";
 export { RemoveFromWorkflowForm } from "./RemoveFromWorkflowForm";
 export { RemoveFromAllWorkflowsForm } from "./RemoveFromAllWorkflowsForm";
 export { StopWorkflowForm } from "./StopWorkflowForm";
+export { GoalAchievedForm } from "./GoalAchievedForm";
 
 // Data Transform
 export { FormatDateForm } from "./FormatDateForm";

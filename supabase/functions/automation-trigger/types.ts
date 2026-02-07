@@ -60,6 +60,8 @@ export type TriggerType =
   | "facebook_lead_form"
   | "tiktok_form_submitted"
   | "google_lead_form"
+  | "typeform_response"
+  | "fathom_summary_received"
   | "time_delay";
 
 export type ActionType =
@@ -100,6 +102,7 @@ export type ActionType =
   | "update_deal"
   | "close_deal"
   | "find_opportunity"
+  | "remove_opportunity"
   // Payment Actions
   | "send_invoice"
   | "charge_payment"
@@ -173,11 +176,16 @@ export type ConditionOperator =
   | "after_now_minutes"
   | "day_of_week_is"
   | "month_is"
+  | "date_before"
+  | "date_after"
+  | "date_within_days"
+  | "date_past_days"
   // Boolean operators
   | "is_true"
   | "is_false"
   // Array operators
   | "in"
+  | "not_in"
   | "contains_any"
   | "contains_all"
   | "not_contains_any"
@@ -186,7 +194,10 @@ export type ConditionOperator =
   | "is_not_set"
   | "exists"
   | "is_empty"
-  | "is_not_empty";
+  | "is_not_empty"
+  // Tag operators (legacy)
+  | "tag_present"
+  | "tag_absent";
 
 export interface AutomationCondition {
   field: string;
@@ -201,6 +212,8 @@ export interface AutomationStep {
   config: Record<string, any>;
   conditions?: AutomationCondition[];
   conditionLogic?: "AND" | "OR";
+  // Enable/disable toggle (like GHL's step enable/disable)
+  enabled?: boolean;
   // For condition (If/Else) steps
   trueBranchStepId?: string;
   falseBranchStepId?: string;
@@ -251,6 +264,20 @@ export interface AutomationContext {
   meta?: Record<string, any> | null;
   /** Outputs from completed steps, keyed by step ID. Also contains a "variables" sub-key for set_variable actions. */
   stepOutputs?: Record<string, any>;
+  /** Automation ID for tracking in conversion actions */
+  automationId?: string;
+  /** Tags added in tag trigger payloads */
+  addedTags?: string[];
+  /** Tags removed in tag trigger payloads */
+  removedTags?: string[];
+  /** Previous stage from stage_changed payloads */
+  previousStage?: string;
+  /** New stage from stage_changed payloads */
+  newStage?: string;
+  /** Booking link from create_booking_link action */
+  bookingLink?: string;
+  /** Recursion depth for run_workflow actions (prevents infinite loops) */
+  depth?: number;
 }
 
 export interface StepExecutionLog {
@@ -259,7 +286,8 @@ export interface StepExecutionLog {
   channel?: string;
   provider?: string;
   templateVariables?: Record<string, any>;
-  status?: "success" | "error" | "skipped" | "pending";
+  status?: "success" | "error" | "skipped" | "pending" | "partial";
+  timestamp?: string;
   skipped?: boolean;
   skipReason?: string;
   entity?: CrmEntity;

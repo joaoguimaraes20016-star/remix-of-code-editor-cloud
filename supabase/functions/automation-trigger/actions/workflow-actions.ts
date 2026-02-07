@@ -327,6 +327,7 @@ export async function executeRunWorkflow(
           appointment: context.appointment,
           deal: context.deal,
           meta: { ...context.meta, triggeredByWorkflow: true },
+          depth: context.depth ?? 0, // Pass depth to prevent infinite recursion
         },
         eventId: `run_workflow:${workflowId}:${Date.now()}`,
       }),
