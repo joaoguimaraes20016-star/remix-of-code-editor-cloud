@@ -112,6 +112,7 @@ export type ActionType =
   | 'update_deal'
   | 'close_deal'
   | 'find_opportunity'
+  | 'remove_opportunity'
   // Payment Actions
   | 'send_invoice'
   | 'charge_payment'

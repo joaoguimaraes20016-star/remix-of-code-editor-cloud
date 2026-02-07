@@ -112,7 +112,7 @@ export default function FirstCalendarWizard({ onComplete, onCancel }: FirstCalen
     try {
       // 1. Auto-generate booking slug if missing
       const { data: teamData } = await supabase
-        .from("teams")
+        .from("teams" as any)
         .select("booking_slug, name")
         .eq("id", teamId)
         .single();
@@ -125,7 +125,7 @@ export default function FirstCalendarWizard({ onComplete, onCancel }: FirstCalen
         if (bookingSlug.length < 3) bookingSlug = `${bookingSlug}-team`;
 
         const { data: existing } = await supabase
-          .from("teams")
+          .from("teams" as any)
           .select("id")
           .eq("booking_slug", bookingSlug)
           .neq("id", teamId)
@@ -136,21 +136,21 @@ export default function FirstCalendarWizard({ onComplete, onCancel }: FirstCalen
         }
 
         await supabase
-          .from("teams")
+          .from("teams" as any)
           .update({ booking_slug: bookingSlug })
           .eq("id", teamId);
       }
 
       // 2. Seed team-wide availability from the wizard
       const { data: existingAvail } = await supabase
-        .from("availability_schedules")
+        .from("availability_schedules" as any)
         .select("id")
         .eq("team_id", teamId)
         .is("user_id", null)
         .limit(1);
 
       if (!existingAvail || existingAvail.length === 0) {
-        await supabase.from("availability_schedules").insert(
+        await supabase.from("availability_schedules" as any).insert(
           availability.map((day, index) => ({
             team_id: teamId,
             user_id: null,

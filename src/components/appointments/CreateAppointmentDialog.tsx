@@ -102,7 +102,7 @@ export function CreateAppointmentDialog({
 
   const loadEventTypes = async () => {
     const { data, error } = await supabase
-      .from("event_types")
+      .from("event_types" as any)
       .select("id, name, duration_minutes, is_active")
       .eq("team_id", teamId)
       .eq("is_active", true)

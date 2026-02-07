@@ -138,7 +138,7 @@ export default function CalendarEditor({
 
         // Check team-wide availability (one check for all)
         const { data: teamAvail } = await supabase
-          .from("availability_schedules")
+          .from("availability_schedules" as any)
           .select("id")
           .eq("team_id", teamId)
           .is("user_id", null)
@@ -151,7 +151,7 @@ export default function CalendarEditor({
         const gcalMap: Record<string, boolean> = {};
         for (const member of members) {
           const { data: gcal } = await supabase
-            .from("google_calendar_connections")
+            .from("google_calendar_connections" as any)
             .select("id")
             .eq("team_id", teamId)
             .eq("user_id", member.id)
@@ -171,7 +171,7 @@ export default function CalendarEditor({
         // Check current user's connections
         if (user?.id) {
           const { data: gcal } = await supabase
-            .from("google_calendar_connections")
+            .from("google_calendar_connections" as any)
             .select("sync_enabled")
             .eq("team_id", teamId)
             .eq("user_id", user.id)

@@ -39,7 +39,7 @@ export default function ConnectionsSettings() {
     const checkConnections = async () => {
       // Google Calendar — per-user table
       const { data: gcalData } = await supabase
-        .from("google_calendar_connections")
+        .from("google_calendar_connections" as any)
         .select("sync_enabled")
         .eq("team_id", teamId)
         .eq("user_id", user.id)
@@ -118,7 +118,7 @@ export default function ConnectionsSettings() {
           // Refresh connection status
           setTimeout(() => {
             supabase
-              .from("google_calendar_connections")
+              .from("google_calendar_connections" as any)
               .select("sync_enabled")
               .eq("team_id", teamId)
               .eq("user_id", user?.id)

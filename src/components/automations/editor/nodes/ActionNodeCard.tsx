@@ -3,12 +3,12 @@ import {
   MessageSquare, Clock, Tag, ClipboardList, UserCheck, ArrowRightLeft, 
   Bell, Webhook, Check, AlertCircle, GitBranch, UserPlus, UserCog, StickyNote,
   Briefcase, CheckCircle, CalendarClock, Building2, Split, CornerDownRight,
-  PlayCircle, StopCircle, Phone, Mail, MessageCircleMore, Voicemail, PhoneCall,
+  PlayCircle, StopCircle, Phone, Mail, MessageCircleMore, MessageCircle, Voicemail, PhoneCall,
   Star, Reply, Search, Trash2, BellOff, Copy, Users, UserMinus, Calendar,
   CalendarX, Link, PhoneIncoming, RefreshCw, Receipt, CreditCard, Repeat,
   XCircle, Target, Variable, PlusCircle, MinusCircle, CalendarDays,
   Hash, Type, Calculator, Brain, Sparkles, Languages, FileText, Bot,
-  Facebook, ChartBar, Megaphone, Table, Slack
+  Facebook, ChartBar, Megaphone, Table, Slack, Music
 } from "lucide-react";
 import type { AutomationStep, ActionType } from "@/lib/automations/types";
 import { cn } from "@/lib/utils";
@@ -448,6 +448,18 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
     icon: <Phone className="h-4 w-4" />, 
     color: "text-primary", 
     bgColor: "bg-primary/15" 
+  },
+  discord_message: {
+    label: "Discord Message",
+    icon: <MessageCircle className="h-4 w-4" />,
+    color: "text-indigo-400",
+    bgColor: "bg-indigo-500/15"
+  },
+  tiktok_event: {
+    label: "TikTok Event",
+    icon: <Music className="h-4 w-4" />,
+    color: "text-pink-400",
+    bgColor: "bg-pink-500/15"
   },
 };
 

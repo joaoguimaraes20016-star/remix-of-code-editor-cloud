@@ -26,6 +26,8 @@ export interface EventType {
   round_robin_members: string[];
   last_assigned_index: number;
   questions: IntakeQuestion[];
+  availability_mode?: string;
+  google_calendar_mode?: string;
   created_at: string;
   updated_at: string;
 }
@@ -45,7 +47,7 @@ export function useEventTypes(teamId?: string) {
       if (!teamId) return [];
 
       const { data, error } = await supabase
-        .from("event_types")
+        .from("event_types" as any)
         .select("*")
         .eq("team_id", teamId)
         .order("created_at", { ascending: false });
@@ -71,7 +73,7 @@ export function useCreateEventType(teamId?: string) {
       }
 
       const { data, error } = await supabase
-        .from("event_types")
+        .from("event_types" as any)
         .insert(eventType)
         .select()
         .single();
@@ -100,7 +102,7 @@ export function useUpdateEventType(teamId?: string) {
     mutationFn: async (eventType: Partial<EventType> & { id: string }) => {
       const { id, ...updates } = eventType;
       const { data, error } = await supabase
-        .from("event_types")
+        .from("event_types" as any)
         .update(updates)
         .eq("id", id)
         .select()
@@ -125,7 +127,7 @@ export function useDeleteEventType(teamId?: string) {
   return useMutation({
     mutationFn: async (eventTypeId: string) => {
       const { error } = await supabase
-        .from("event_types")
+        .from("event_types" as any)
         .delete()
         .eq("id", eventTypeId);
 

@@ -75,7 +75,7 @@ export default function CreateCalendarDialog({
 
       // Auto-generate booking slug if team doesn't have one
       const { data: teamData } = await supabase
-        .from("teams")
+        .from("teams" as any)
         .select("booking_slug, name")
         .eq("id", teamId)
         .single();
@@ -88,7 +88,7 @@ export default function CreateCalendarDialog({
         if (bookingSlug.length < 3) bookingSlug = `${bookingSlug}-team`;
 
         const { data: existing } = await supabase
-          .from("teams")
+          .from("teams" as any)
           .select("id")
           .eq("booking_slug", bookingSlug)
           .neq("id", teamId)
@@ -99,14 +99,14 @@ export default function CreateCalendarDialog({
         }
 
         await supabase
-          .from("teams")
+          .from("teams" as any)
           .update({ booking_slug: bookingSlug })
           .eq("id", teamId);
       }
 
       // Seed team-wide availability defaults if none exist
       const { data: existingAvail } = await supabase
-        .from("availability_schedules")
+        .from("availability_schedules" as any)
         .select("id")
         .eq("team_id", teamId)
         .is("user_id", null)
@@ -124,7 +124,7 @@ export default function CreateCalendarDialog({
           { day: 6, enabled: false },
         ];
 
-        await supabase.from("availability_schedules").insert(
+        await supabase.from("availability_schedules" as any).insert(
           defaultDays.map((d) => ({
             team_id: teamId,
             user_id: null,

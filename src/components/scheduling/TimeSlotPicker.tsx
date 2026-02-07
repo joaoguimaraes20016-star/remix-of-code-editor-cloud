@@ -21,6 +21,7 @@ export default function TimeSlotPicker({
   onTimeSelect,
   isLoading,
   accentColor = "#3B82F6",
+  debugInfo,
 }: TimeSlotPickerProps) {
   if (isLoading) {
     return (

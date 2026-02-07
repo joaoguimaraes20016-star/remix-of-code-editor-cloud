@@ -8,7 +8,7 @@ import {
   ListPlus, Bell, CheckSquare, RefreshCw, Send, AlertTriangle,
   Repeat, RotateCcw, ShoppingCart, MessageCircle, MailOpen, MailX,
   AlertOctagon, Star, Facebook, Music, Search, CreditCard, Receipt,
-  ReceiptText
+  ReceiptText, Phone, Mic
 } from "lucide-react";
 import type { AutomationTrigger, TriggerType } from "@/lib/automations/types";
 import { cn } from "@/lib/utils";
@@ -342,6 +342,36 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
     icon: <Search className="h-5 w-5" />,
     color: "text-red-400",
     bgColor: "bg-red-500/20"
+  },
+  call_status: {
+    label: "Call Status",
+    icon: <Phone className="h-5 w-5" />,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/20"
+  },
+  fathom_summary_received: {
+    label: "Fathom Summary",
+    icon: <Mic className="h-5 w-5" />,
+    color: "text-purple-400",
+    bgColor: "bg-purple-500/20"
+  },
+  note_changed: {
+    label: "Note Changed",
+    icon: <StickyNote className="h-5 w-5" />,
+    color: "text-amber-400",
+    bgColor: "bg-amber-500/20"
+  },
+  typeform_response: {
+    label: "Typeform Response",
+    icon: <FileText className="h-5 w-5" />,
+    color: "text-violet-400",
+    bgColor: "bg-violet-500/20"
+  },
+  time_delay: {
+    label: "Time Delay (Legacy)",
+    icon: <Clock className="h-5 w-5" />,
+    color: "text-slate-400",
+    bgColor: "bg-slate-500/20"
   },
 };
 
