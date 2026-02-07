@@ -55,7 +55,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "anthropic/claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-20250514",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: prompt },

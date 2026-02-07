@@ -222,10 +222,12 @@ export function AutomationAIPanel({
               }
             },
             onError: (error) => {
+              console.error('[AutomationAIPanel] Generation error:', error);
               setIsLoading(false);
+              const errorMessage = error instanceof Error ? error.message : String(error);
               setMessages(prev => prev.map(m => 
                 m.id === assistantMessageId 
-                  ? { ...m, content: `Sorry, I encountered an error: ${error.message || error}`, isGenerating: false }
+                  ? { ...m, content: `Sorry, I encountered an error: ${errorMessage}`, isGenerating: false }
                   : m
               ));
             },
@@ -341,10 +343,12 @@ export function AutomationAIPanel({
           });
         }
       } catch (error) {
+        console.error("[AutomationAIPanel] Chat error:", error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
         setIsLoading(false);
         setMessages(prev => prev.map(m => 
           m.id === assistantMessageId 
-            ? { ...m, content: "Sorry, I encountered an error. Please try again.", isGenerating: false }
+            ? { ...m, content: `Sorry, I encountered an error: ${errorMessage}`, isGenerating: false }
             : m
         ));
       }

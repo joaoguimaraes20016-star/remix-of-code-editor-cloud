@@ -62,8 +62,15 @@ export async function streamWorkflowGeneration(
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Request failed: ${response.status}`);
+      const errorText = await response.text().catch(() => 'Unknown error');
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: errorText || `Request failed: ${response.status}` };
+      }
+      console.error('[automationAIService] API error:', response.status, errorData);
+      throw new Error(errorData.error || errorData.message || `Request failed: ${response.status}`);
     }
 
     if (!response.body) {
@@ -149,8 +156,15 @@ export async function streamWorkflowHelp(
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Request failed: ${response.status}`);
+      const errorText = await response.text().catch(() => 'Unknown error');
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: errorText || `Request failed: ${response.status}` };
+      }
+      console.error('[automationAIService] API error:', response.status, errorData);
+      throw new Error(errorData.error || errorData.message || `Request failed: ${response.status}`);
     }
 
     if (!response.body) {
@@ -233,8 +247,15 @@ export async function streamWorkflowOptimization(
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Request failed: ${response.status}`);
+      const errorText = await response.text().catch(() => 'Unknown error');
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: errorText || `Request failed: ${response.status}` };
+      }
+      console.error('[automationAIService] API error:', response.status, errorData);
+      throw new Error(errorData.error || errorData.message || `Request failed: ${response.status}`);
     }
 
     if (!response.body) {
@@ -317,8 +338,15 @@ export async function streamWorkflowExplain(
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Request failed: ${response.status}`);
+      const errorText = await response.text().catch(() => 'Unknown error');
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: errorText || `Request failed: ${response.status}` };
+      }
+      console.error('[automationAIService] API error:', response.status, errorData);
+      throw new Error(errorData.error || errorData.message || `Request failed: ${response.status}`);
     }
 
     if (!response.body) {
