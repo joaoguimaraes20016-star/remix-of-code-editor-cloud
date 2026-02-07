@@ -52,7 +52,7 @@ export default function ManageBookingPage() {
           .from("appointments")
           .select("*")
           .eq("booking_token" as any, token)
-          .single();
+          .single() as { data: any; error: any };
 
         if (fetchError || !data) {
           setError("Booking not found. It may have been cancelled or the link is invalid.");
