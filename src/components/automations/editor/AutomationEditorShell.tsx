@@ -20,6 +20,7 @@ import { NodeInspector } from "./NodeInspector";
 import { PublishStatusBadge } from "./PublishStatusBadge";
 import { VersionHistoryPanel } from "./VersionHistoryPanel";
 import { TestPanel } from "./TestPanel";
+import { RunNowModal } from "../RunNowModal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import "./automation-editor.css";
@@ -79,6 +80,7 @@ export function AutomationEditorShell({
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showTestPanel, setShowTestPanel] = useState(false);
+  const [showRunNowModal, setShowRunNowModal] = useState(false);
 
   const handleTriggerChange = useCallback(
     (trigger: AutomationTrigger) => {
@@ -248,6 +250,15 @@ export function AutomationEditorShell({
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setShowRunNowModal(true)}
+            disabled={!automationId || isSaving || isPublishing}
+          >
+            <Rocket className="h-4 w-4 mr-2" />
+            Run Now
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onSave}
             disabled={isSaving || isPublishing}
           >
@@ -362,6 +373,7 @@ export function AutomationEditorShell({
                   selectedNodeId={selectedNodeId}
                   trigger={definition.trigger}
                   step={selectedStep}
+                  steps={definition.steps}
                   onTriggerChange={handleTriggerChange}
                   onStepUpdate={handleStepUpdate}
                   onStepDelete={handleStepDelete}
@@ -390,6 +402,17 @@ export function AutomationEditorShell({
         teamId={teamId}
         definition={definition}
       />
+
+      {/* Run Now Modal */}
+      {automationId && (
+        <RunNowModal
+          open={showRunNowModal}
+          onOpenChange={setShowRunNowModal}
+          automationId={automationId}
+          automationName={name}
+          teamId={teamId}
+        />
+      )}
     </div>
   );
 }

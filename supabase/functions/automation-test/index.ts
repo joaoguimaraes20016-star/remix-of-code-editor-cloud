@@ -266,7 +266,10 @@ Deno.serve(async (req) => {
         
         const evaluatedConditions = trace.conditionsEvaluated;
         if (evaluatedConditions) {
-          const allPassed = evaluatedConditions.every((c) => c.result);
+          const conditionLogic = step.conditionLogic || "AND";
+          const allPassed = conditionLogic === "OR"
+            ? evaluatedConditions.some((c) => c.result)
+            : evaluatedConditions.every((c) => c.result);
           if (!allPassed) {
             trace.status = "skipped";
             trace.skipReason = "conditions_not_met";
@@ -316,11 +319,18 @@ Deno.serve(async (req) => {
           
           case "condition": {
             // For condition nodes, evaluate which branch to take
-            const stepConditions = (step.config?.conditions || []) as AutomationCondition[];
-            const conditionsPassed = stepConditions.every((cond) => {
-              const { result } = evaluateCondition(cond, context);
-              return result;
-            });
+            // Read from step-level properties (not config) to match production behavior
+            const stepConditions = (step.conditions || step.config?.conditions || []) as AutomationCondition[];
+            const conditionLogic = step.conditionLogic || step.config?.conditionLogic || "AND";
+            const conditionsPassed = conditionLogic === "OR"
+              ? stepConditions.some((cond) => {
+                  const { result } = evaluateCondition(cond, context);
+                  return result;
+                })
+              : stepConditions.every((cond) => {
+                  const { result } = evaluateCondition(cond, context);
+                  return result;
+                });
             
             trace.branchTaken = conditionsPassed ? "true" : "false";
             trace.resolvedConfig = {

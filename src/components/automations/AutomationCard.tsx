@@ -29,6 +29,7 @@ interface AutomationCardProps {
   onEdit: () => void;
   onDuplicate?: () => void;
   onDelete?: () => void;
+  onRunNow?: () => void;
   extraActions?: React.ReactNode;
 }
 
@@ -80,6 +81,7 @@ export function AutomationCard({
   onEdit,
   onDuplicate,
   onDelete,
+  onRunNow,
   extraActions,
 }: AutomationCardProps) {
   const icon = TRIGGER_ICONS[triggerType] || <Zap className="h-4 w-4" />;
@@ -137,6 +139,12 @@ export function AutomationCard({
                 <Pencil className="h-4 w-4 mr-2" />
                 Edit
               </DropdownMenuItem>
+              {onRunNow && (
+                <DropdownMenuItem onClick={onRunNow}>
+                  <Play className="h-4 w-4 mr-2" />
+                  Run Now
+                </DropdownMenuItem>
+              )}
               {onDuplicate && (
                 <DropdownMenuItem onClick={onDuplicate}>
                   <Copy className="h-4 w-4 mr-2" />

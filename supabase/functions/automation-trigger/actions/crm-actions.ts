@@ -347,7 +347,7 @@ export async function executeAssignOwner(
         return log;
       }
 
-      const { error } = await supabase.from("contacts").update({ owner_id: ownerId }).eq("id", leadId);
+      const { error } = await supabase.from("contacts").update({ owner_user_id: ownerId }).eq("id", leadId);
       if (error) {
         log.status = "error";
         log.error = error.message;
@@ -752,7 +752,7 @@ export async function executeRemoveOwner(
         log.skipReason = "no_lead_in_context";
         return log;
       }
-      const { error } = await supabase.from("contacts").update({ owner_id: null }).eq("id", leadId);
+      const { error } = await supabase.from("contacts").update({ owner_user_id: null }).eq("id", leadId);
       if (error) { log.status = "error"; log.error = error.message; }
     } else if (entity === "deal" || entity === "appointment") {
       const dealId = context.deal?.id || context.appointment?.id;
@@ -872,4 +872,358 @@ export async function executeUpdateDeal(
   }
 
   return log;
+}
+
+// Find Opportunity (GHL-style: search by filters, earliest/latest, AND logic)
+export async function executeFindOpportunity(
+  config: FlexibleConfig,
+  context: AutomationContext,
+  supabase: any,
+): Promise<StepExecutionLog> {
+  const log: StepExecutionLog = { status: "success" };
+
+  try {
+    const teamId = context.teamId;
+
+    // Build query
+    let query = supabase
+      .from("appointments")
+      .select("*")
+      .eq("team_id", teamId)
+      .neq("status", "CLOSED"); // Exclude closed deals
+
+    // Search filters (AND logic - all must match)
+    if (config.email) {
+      const email = renderTemplate(String(config.email), context);
+      query = query.eq("lead_email", email);
+    }
+    if (config.phone) {
+      const phone = renderTemplate(String(config.phone), context);
+      query = query.eq("lead_phone", phone);
+    }
+    // Default: search for opportunities linked to the current contact via email/phone
+    // Only apply if no explicit email/phone filters provided
+    if (!config.email && !config.phone && context.lead) {
+      if (context.lead.email) {
+        query = query.eq("lead_email", context.lead.email);
+      } else if (context.lead.phone) {
+        query = query.eq("lead_phone", context.lead.phone);
+      }
+    }
+    if (config.pipelineStage) {
+      query = query.eq("pipeline_stage", config.pipelineStage);
+    }
+    if (config.status) {
+      query = query.eq("status", config.status);
+    }
+
+    // Order by recency (GHL supports earliest/latest)
+    const ascending = (config.searchOrder as string) === "earliest";
+    query = query.order("created_at", { ascending }).limit(1);
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error) {
+      log.status = "error";
+      log.error = `Failed to find opportunity: ${error.message}`;
+      return log;
+    }
+
+    if (data) {
+      // Found - update context so subsequent steps can use it
+      context.deal = data;
+      context.appointment = data;
+      log.output = { found: true, dealId: data.id, deal: data };
+      log.entity = "deal";
+    } else {
+      log.output = { found: false };
+      if (config.failIfNotFound) {
+        log.status = "skipped";
+        log.skipReason = "opportunity_not_found";
+      }
+    }
+  } catch (err) {
+    log.status = "error";
+    log.error = err instanceof Error ? err.message : "Unknown error";
+  }
+
+  return log;
+}
+
+// Remove Opportunity (GHL-style: remove specific or all for contact)
+export async function executeRemoveOpportunity(
+  config: FlexibleConfig,
+  context: AutomationContext,
+  supabase: any,
+): Promise<StepExecutionLog> {
+  const log: StepExecutionLog = { status: "success" };
+
+  try {
+    const teamId = context.teamId;
+    const removeAll = Boolean(config.removeAll);
+    const contactEmail = (config.contactEmail as string) || context.lead?.email;
+    const contactPhone = (config.contactPhone as string) || context.lead?.phone;
+
+    if (removeAll && (contactEmail || contactPhone)) {
+      // Remove all non-closed opportunities for this contact via email/phone match
+      let deleteQuery = supabase
+        .from("appointments")
+        .delete()
+        .eq("team_id", teamId)
+        .neq("status", "CLOSED"); // Don't remove closed deals
+
+      if (contactEmail) {
+        deleteQuery = deleteQuery.eq("lead_email", contactEmail);
+      } else if (contactPhone) {
+        deleteQuery = deleteQuery.eq("lead_phone", contactPhone);
+      }
+
+      const { error } = await deleteQuery;
+
+      if (error) {
+        log.status = "error";
+        log.error = `Failed to remove opportunities: ${error.message}`;
+        return log;
+      }
+
+      log.output = { removed: "all", contactEmail: contactEmail || contactPhone };
+      log.entity = "deal";
+      return log;
+    }
+
+    // Remove specific opportunity
+    const dealId = (config.dealId as string) || context.deal?.id || context.appointment?.id;
+    if (!dealId) {
+      log.status = "skipped";
+      log.skipReason = "no_opportunity_in_context";
+      return log;
+    }
+
+    const { error } = await supabase
+      .from("appointments")
+      .delete()
+      .eq("id", dealId)
+      .eq("team_id", teamId);
+
+    if (error) {
+      log.status = "error";
+      log.error = `Failed to remove opportunity: ${error.message}`;
+      return log;
+    }
+
+    log.output = { removed: "specific", dealId };
+    log.entity = "deal";
+
+    // Clear from context
+    if (context.deal?.id === dealId) context.deal = null;
+    if (context.appointment?.id === dealId) context.appointment = null;
+  } catch (err) {
+    log.status = "error";
+    log.error = err instanceof Error ? err.message : "Unknown error";
+  }
+
+  return log;
+}
+
+// Copy Contact
+export async function executeCopyContact(
+  config: FlexibleConfig,
+  context: AutomationContext,
+  supabase: any,
+): Promise<StepExecutionLog> {
+  const log: StepExecutionLog = { status: "success" };
+
+  const sourceContactId = context.lead?.id;
+  if (!sourceContactId) {
+    log.status = "skipped";
+    log.skipReason = "no_lead_in_context";
+    return log;
+  }
+
+  try {
+    // Get the source contact
+    const { data: source, error: fetchError } = await supabase
+      .from("contacts")
+      .select("*")
+      .eq("id", sourceContactId)
+      .single();
+
+    if (fetchError || !source) {
+      log.status = "error";
+      log.error = fetchError?.message || "Source contact not found";
+      return log;
+    }
+
+    const copyTags = config.copyTags !== false; // default true
+    const copyCustomFields = config.copyCustomFields !== false; // default true
+
+    // Build the new contact data
+    const newEmail = config.newEmail
+      ? renderTemplate(config.newEmail as string, context)
+      : null;
+    const newPhone = config.newPhone
+      ? renderTemplate(config.newPhone as string, context)
+      : null;
+
+    const newContactData: Record<string, unknown> = {
+      team_id: source.team_id,
+      first_name: source.first_name,
+      last_name: source.last_name,
+      name: source.name ? source.name + " (Copy)" : null,
+      email: newEmail,
+      phone: newPhone,
+      tags: copyTags ? (source.tags || []) : [],
+      source: source.source,
+      custom_fields: copyCustomFields
+        ? {
+            ...(source.custom_fields || {}),
+            copied_from_contact_id: sourceContactId,
+          }
+        : { copied_from_contact_id: sourceContactId },
+    };
+
+    const { data: newContact, error: insertError } = await supabase
+      .from("contacts")
+      .insert(newContactData)
+      .select()
+      .single();
+
+    if (insertError) {
+      log.status = "error";
+      log.error = `Failed to copy contact: ${insertError.message}`;
+      return log;
+    }
+
+    log.output = {
+      contactId: newContact.id,
+      sourceContactId,
+      email: newEmail,
+      phone: newPhone,
+      copiedTags: copyTags,
+      copiedCustomFields: copyCustomFields,
+    };
+    log.entity = "lead";
+  } catch (err) {
+    log.status = "error";
+    log.error = err instanceof Error ? err.message : "Unknown error";
+  }
+
+  return log;
+}
+
+// AI Intent (stub - requires OpenAI integration)
+export async function executeAiIntent(
+  _config: FlexibleConfig,
+  _context: AutomationContext,
+  _supabase: any,
+): Promise<StepExecutionLog> {
+  return {
+    status: "error",
+    error:
+      "AI Intent requires an OpenAI API key. Please add your OpenAI API key in Team Settings → Integrations → OpenAI to enable AI-powered automation actions.",
+  };
+}
+
+// AI Decision (stub - requires OpenAI integration)
+export async function executeAiDecision(
+  _config: FlexibleConfig,
+  _context: AutomationContext,
+  _supabase: any,
+): Promise<StepExecutionLog> {
+  return {
+    status: "error",
+    error:
+      "AI Decision requires an OpenAI API key. Please add your OpenAI API key in Team Settings → Integrations → OpenAI to enable AI-powered automation actions.",
+  };
+}
+
+// AI Translate (stub - requires OpenAI integration)
+export async function executeAiTranslate(
+  _config: FlexibleConfig,
+  _context: AutomationContext,
+  _supabase: any,
+): Promise<StepExecutionLog> {
+  return {
+    status: "error",
+    error:
+      "AI Translate requires an OpenAI API key. Please add your OpenAI API key in Team Settings → Integrations → OpenAI to enable AI-powered automation actions.",
+  };
+}
+
+// AI Summarize (stub - requires OpenAI integration)
+export async function executeAiSummarize(
+  _config: FlexibleConfig,
+  _context: AutomationContext,
+  _supabase: any,
+): Promise<StepExecutionLog> {
+  return {
+    status: "error",
+    error:
+      "AI Summarize requires an OpenAI API key. Please add your OpenAI API key in Team Settings → Integrations → OpenAI to enable AI-powered automation actions.",
+  };
+}
+
+// AI Message (stub - requires OpenAI integration)
+export async function executeAiMessage(
+  _config: FlexibleConfig,
+  _context: AutomationContext,
+  _supabase: any,
+): Promise<StepExecutionLog> {
+  return {
+    status: "error",
+    error:
+      "AI Message requires an OpenAI API key. Please add your OpenAI API key in Team Settings → Integrations → OpenAI to enable AI-powered automation actions.",
+  };
+}
+
+// Add Followers (stub - requires followers infrastructure)
+export async function executeAddFollowers(
+  _config: FlexibleConfig,
+  _context: AutomationContext,
+  _supabase: any,
+): Promise<StepExecutionLog> {
+  return {
+    status: "error",
+    error:
+      "Add Followers requires the followers system to be set up. A 'followers' column or table must be created for contacts and opportunities. This feature is planned for a future release.",
+  };
+}
+
+// Remove Followers (stub - requires followers infrastructure)
+export async function executeRemoveFollowers(
+  _config: FlexibleConfig,
+  _context: AutomationContext,
+  _supabase: any,
+): Promise<StepExecutionLog> {
+  return {
+    status: "error",
+    error:
+      "Remove Followers requires the followers system to be set up. A 'followers' column or table must be created for contacts and opportunities. This feature is planned for a future release.",
+  };
+}
+
+// Add to Audience (stub - requires marketing audiences infrastructure)
+export async function executeAddToAudience(
+  _config: FlexibleConfig,
+  _context: AutomationContext,
+  _supabase: any,
+): Promise<StepExecutionLog> {
+  return {
+    status: "error",
+    error:
+      "Add to Audience requires Facebook Marketing API integration. Please set up your Meta Business account and OAuth credentials in Team Settings → Integrations → Facebook to enable audience management.",
+  };
+}
+
+// Remove from Audience (stub - requires marketing audiences infrastructure)
+export async function executeRemoveFromAudience(
+  _config: FlexibleConfig,
+  _context: AutomationContext,
+  _supabase: any,
+): Promise<StepExecutionLog> {
+  return {
+    status: "error",
+    error:
+      "Remove from Audience requires Facebook Marketing API integration. Please set up your Meta Business account and OAuth credentials in Team Settings → Integrations → Facebook to enable audience management.",
+  };
 }

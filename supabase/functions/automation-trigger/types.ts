@@ -307,6 +307,8 @@ export interface TriggerRequest {
   teamId: string;
   eventPayload: Record<string, any>;
   eventId?: string;
+  /** When provided, only this specific automation will be executed (used by manual trigger / "Run Now") */
+  automationId?: string;
 }
 
 export interface TriggerResponse {

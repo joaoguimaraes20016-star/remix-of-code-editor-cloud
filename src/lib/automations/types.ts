@@ -218,12 +218,6 @@ export interface AutomationCondition {
   value: string | number | string[] | boolean | null;
 }
 
-export interface ConditionGroup {
-  id: string;
-  operator: 'AND' | 'OR';
-  conditions: (AutomationCondition | ConditionGroup)[];
-}
-
 // ============================================
 // CONFIG TYPES
 // ============================================
@@ -425,7 +419,7 @@ export interface AutomationStep {
   type: ActionType;
   config: Record<string, any>;
   conditions?: AutomationCondition[];
-  conditionGroups?: ConditionGroup[];
+  conditionLogic?: "AND" | "OR";
   retryConfig?: StepRetryConfig;
   // Enable/disable - disabled steps are skipped during execution (like GHL)
   enabled?: boolean;

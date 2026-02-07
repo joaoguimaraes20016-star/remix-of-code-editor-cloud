@@ -87,7 +87,7 @@ export default function PublicBookingPage() {
           .eq("team_id", team.id)
           .eq("slug", eventSlug)
           .eq("is_active", true)
-          .single();
+          .single() as { data: any; error: any };
 
         if (etError || !et) {
           setError("Event type not found or inactive");

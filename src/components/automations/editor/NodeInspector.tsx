@@ -77,6 +77,7 @@ interface NodeInspectorProps {
   selectedNodeId: string | null;
   trigger: AutomationTrigger;
   step: AutomationStep | undefined;
+  steps: AutomationStep[];
   onTriggerChange: (trigger: AutomationTrigger) => void;
   onStepUpdate: (stepId: string, updates: Partial<AutomationStep>) => void;
   onStepDelete: (stepId: string) => void;
@@ -88,6 +89,7 @@ export function NodeInspector({
   selectedNodeId,
   trigger,
   step,
+  steps,
   onTriggerChange,
   onStepUpdate,
   onStepDelete,
@@ -126,6 +128,7 @@ export function NodeInspector({
       <div className="space-y-4">
         <ActionInspector
           step={step}
+          steps={steps}
           onUpdate={(updates) => onStepUpdate(step.id, updates)}
           teamId={teamId}
         />

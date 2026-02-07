@@ -92,6 +92,90 @@ export async function runAutomationsForEvent(
 /**
  * Convenience helpers for common trigger types
  */
+/**
+ * Manually run a specific automation with optional contact/appointment context.
+ * Used by the "Run Now" button in the automation editor and card menus.
+ *
+ * @param automationId - The automation to run
+ * @param teamId - The team that owns the automation
+ * @param contactId - Optional contact ID to run the automation against
+ * @param appointmentId - Optional appointment ID for appointment-based context
+ */
+export async function runAutomationManually(
+  automationId: string,
+  teamId: string,
+  contactId?: string,
+  appointmentId?: string,
+): Promise<{ success: boolean; automationsRun?: string[]; runId?: string; error?: string }> {
+  try {
+    // Build event payload with contact and/or appointment data
+    const eventPayload: Record<string, any> = {
+      meta: {
+        manualRun: true,
+        triggeredAt: new Date().toISOString(),
+      },
+    };
+
+    // Fetch contact data if provided
+    if (contactId) {
+      const { data: contact, error: contactError } = await supabase
+        .from("contacts")
+        .select("*")
+        .eq("id", contactId)
+        .single();
+
+      if (contactError) {
+        return { success: false, error: `Failed to fetch contact: ${contactError.message}` };
+      }
+
+      eventPayload.lead = contact;
+    }
+
+    // Fetch appointment data if provided
+    if (appointmentId) {
+      const { data: appointment, error: apptError } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("id", appointmentId)
+        .single();
+
+      if (apptError) {
+        return { success: false, error: `Failed to fetch appointment: ${apptError.message}` };
+      }
+
+      eventPayload.appointment = appointment;
+      eventPayload.deal = appointment;
+    }
+
+    // Call automation-trigger with the manual trigger type and specific automation ID
+    const { data, error } = await supabase.functions.invoke("automation-trigger", {
+      body: {
+        triggerType: "manual_trigger" as TriggerType,
+        teamId,
+        eventPayload,
+        automationId, // Target specific automation
+      },
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    const response = data as AutomationTriggerResponse;
+    return {
+      success: response.status === "ok",
+      automationsRun: response.automationsRun,
+      error: response.error,
+    };
+  } catch (err) {
+    console.error("[runAutomationManually] Error:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unknown error",
+    };
+  }
+}
+
 export const AutomationTriggers = {
   /**
    * Trigger automations when a new lead is created

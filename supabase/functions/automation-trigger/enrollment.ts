@@ -75,7 +75,7 @@ export async function checkAndCreateEnrollment(
     
     if (checkError) {
       console.error("[Enrollment] Error checking enrollment:", checkError);
-      return { shouldRun: true }; // Fail open
+      return { shouldRun: false, reason: "enrollment_check_error" }; // Fail closed to prevent duplicates
     }
     
     // If already actively enrolled, always block
@@ -163,6 +163,7 @@ export async function checkAndCreateEnrollment(
         .from("automation_enrollments")
         .select("id", { count: "exact", head: true })
         .eq("automation_id", automationId)
+        .eq("team_id", teamId)
         .eq("status", "active");
 
       if (!countError && count !== null && count >= maxActiveContacts) {
@@ -222,7 +223,7 @@ export async function checkAndCreateEnrollment(
         return { shouldRun: false, reason: "duplicate_enrollment" };
       }
       console.error("[Enrollment] Error creating enrollment:", insertError);
-      return { shouldRun: true }; // Fail open
+      return { shouldRun: false, reason: "enrollment_create_error" }; // Fail closed to prevent duplicates
     }
     
     console.log(`[Enrollment] Created enrollment ${enrollment.id} for automation ${automationId} (reenrollment #${reenrollmentCount})`);
@@ -230,7 +231,7 @@ export async function checkAndCreateEnrollment(
     
   } catch (err) {
     console.error("[Enrollment] Exception:", err);
-    return { shouldRun: true }; // Fail open
+    return { shouldRun: false, reason: "enrollment_exception" }; // Fail closed to prevent duplicates
   }
 }
 

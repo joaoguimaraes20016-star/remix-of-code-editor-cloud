@@ -17,10 +17,20 @@ const DEFAULT_LIMITS: Record<string, RateLimitConfig> = {
   email: { maxPerHour: 500, maxPerDay: 5000 },
   voice: { maxPerHour: 50, maxPerDay: 200 },
   webhook: { maxPerHour: 1000, maxPerDay: 10000 },
+  whatsapp: { maxPerHour: 80, maxPerDay: 1000 },       // WhatsApp Business API Tier 1
+  notification: { maxPerHour: 200, maxPerDay: 2000 },   // Internal notifications
+  slack: { maxPerHour: 100, maxPerDay: 1000 },          // Slack Tier 3 limits
+  discord: { maxPerHour: 100, maxPerDay: 1000 },        // Discord per-channel limits
+  google_ads: { maxPerHour: 50, maxPerDay: 500 },       // Conservative for conversion API
+  tiktok: { maxPerHour: 50, maxPerDay: 500 },           // Conservative for events API
+  meta: { maxPerHour: 50, maxPerDay: 500 },             // Conservative for CAPI
+  google_sheets: { maxPerHour: 100, maxPerDay: 1000 },  // Sheets API quota
 };
 
 /**
- * Check if a message can be sent based on rate limits
+ * Check if a message can be sent based on rate limits.
+ * Uses an atomic PostgreSQL RPC function to prevent race conditions
+ * where concurrent requests could both pass the check before either increments.
  */
 export async function checkRateLimit(
   supabase: any,
@@ -29,125 +39,35 @@ export async function checkRateLimit(
   automationId?: string,
 ): Promise<RateLimitResult> {
   try {
-    const now = new Date();
-    const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-    const dayStart = new Date(now);
-    dayStart.setHours(0, 0, 0, 0);
+    const limits = DEFAULT_LIMITS[channel] || DEFAULT_LIMITS.email;
 
-    // Get or create rate limit record
-    let { data: limitRecord, error } = await supabase
-      .from("automation_rate_limits")
-      .select("*")
-      .eq("team_id", teamId)
-      .eq("channel", channel)
-      .eq("automation_id", automationId ?? null)
-      .single();
+    const { data, error } = await supabase.rpc("check_and_increment_rate_limit", {
+      p_team_id: teamId,
+      p_channel: channel,
+      p_automation_id: automationId ?? null,
+      p_max_per_hour: limits.maxPerHour,
+      p_max_per_day: limits.maxPerDay,
+    });
 
-    if (error && error.code !== "PGRST116") {
-      // PGRST116 = no rows returned
-      console.error("[rate-limiter] Error fetching rate limit:", error);
+    if (error) {
+      console.error("[rate-limiter] RPC error:", error);
+      return { allowed: true }; // Fail open for rate limiter
+    }
+
+    if (!data) {
+      console.error("[rate-limiter] RPC returned null data");
       return { allowed: true }; // Fail open
     }
 
-    const limits = DEFAULT_LIMITS[channel] || DEFAULT_LIMITS.email;
-
-    if (!limitRecord) {
-      // Create new record
-      const { data: newRecord, error: insertError } = await supabase
-        .from("automation_rate_limits")
-        .insert([
-          {
-            team_id: teamId,
-            channel,
-            automation_id: automationId ?? null,
-            max_per_hour: limits.maxPerHour,
-            max_per_day: limits.maxPerDay,
-            current_hour_count: 1,
-            current_day_count: 1,
-            hour_reset_at: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
-            day_reset_at: new Date(dayStart.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-          },
-        ])
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error("[rate-limiter] Error creating rate limit:", insertError);
-        return { allowed: true };
-      }
-
-      return {
-        allowed: true,
-        currentHourCount: 1,
-        currentDayCount: 1,
-      };
-    }
-
-    // Check if counters need reset
-    const hourResetAt = new Date(limitRecord.hour_reset_at);
-    const dayResetAt = new Date(limitRecord.day_reset_at);
-
-    let currentHourCount = limitRecord.current_hour_count || 0;
-    let currentDayCount = limitRecord.current_day_count || 0;
-    let needsUpdate = false;
-
-    if (now >= hourResetAt) {
-      currentHourCount = 0;
-      needsUpdate = true;
-    }
-
-    if (now >= dayResetAt) {
-      currentDayCount = 0;
-      needsUpdate = true;
-    }
-
-    // Check limits
-    const maxPerHour = limitRecord.max_per_hour || limits.maxPerHour;
-    const maxPerDay = limitRecord.max_per_day || limits.maxPerDay;
-
-    if (currentHourCount >= maxPerHour) {
-      return {
-        allowed: false,
-        reason: `Hourly limit exceeded (${currentHourCount}/${maxPerHour})`,
-        currentHourCount,
-        currentDayCount,
-      };
-    }
-
-    if (currentDayCount >= maxPerDay) {
-      return {
-        allowed: false,
-        reason: `Daily limit exceeded (${currentDayCount}/${maxPerDay})`,
-        currentHourCount,
-        currentDayCount,
-      };
-    }
-
-    // Increment counters
-    const updateData: Record<string, any> = {
-      current_hour_count: currentHourCount + 1,
-      current_day_count: currentDayCount + 1,
-      updated_at: now.toISOString(),
-    };
-
-    if (needsUpdate || now >= hourResetAt) {
-      updateData.hour_reset_at = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
-    }
-
-    if (needsUpdate || now >= dayResetAt) {
-      updateData.day_reset_at = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000).toISOString();
-    }
-
-    await supabase.from("automation_rate_limits").update(updateData).eq("id", limitRecord.id);
-
     return {
-      allowed: true,
-      currentHourCount: currentHourCount + 1,
-      currentDayCount: currentDayCount + 1,
+      allowed: data.allowed,
+      reason: data.reason ?? undefined,
+      currentHourCount: data.current_hour_count,
+      currentDayCount: data.current_day_count,
     };
   } catch (err) {
     console.error("[rate-limiter] Exception:", err);
-    return { allowed: true }; // Fail open
+    return { allowed: true }; // Fail open for rate limiter
   }
 }
 

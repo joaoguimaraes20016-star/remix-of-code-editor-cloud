@@ -162,6 +162,12 @@ Deno.serve(async (req) => {
         formData.append("From", fromNumber!);
         formData.append("Body", body);
 
+        // Add status callback URL for delivery tracking
+        const supabaseUrl = Deno.env.get("SUPABASE_URL");
+        if (supabaseUrl) {
+          formData.append("StatusCallback", `${supabaseUrl}/functions/v1/twilio-status-callback`);
+        }
+
         const twilioResponse = await fetch(twilioUrl, {
           method: "POST",
           headers: {

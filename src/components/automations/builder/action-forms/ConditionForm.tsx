@@ -7,7 +7,7 @@ import type { AutomationCondition, ConditionOperator } from "@/lib/automations/t
 
 interface ConditionConfig {
   conditions: AutomationCondition[];
-  logicOperator: 'AND' | 'OR';
+  conditionLogic: 'AND' | 'OR';
 }
 
 interface ConditionFormProps {
@@ -43,7 +43,7 @@ const OPERATOR_OPTIONS: { value: ConditionOperator; label: string }[] = [
 
 export function ConditionForm({ config, onChange }: ConditionFormProps) {
   const conditions = config.conditions || [];
-  const logicOperator = config.logicOperator || 'AND';
+  const conditionLogic = config.conditionLogic || 'AND';
 
   const addCondition = () => {
     onChange({
@@ -88,8 +88,8 @@ export function ConditionForm({ config, onChange }: ConditionFormProps) {
         <div className="flex items-center gap-2">
           <Label className="text-foreground/70">Match</Label>
           <Select
-            value={logicOperator}
-            onValueChange={(value) => onChange({ ...config, logicOperator: value as 'AND' | 'OR' })}
+            value={conditionLogic}
+            onValueChange={(value) => onChange({ ...config, conditionLogic: value as 'AND' | 'OR' })}
           >
             <SelectTrigger className="w-24">
               <SelectValue />
@@ -160,7 +160,7 @@ export function ConditionForm({ config, onChange }: ConditionFormProps) {
 
             {index < conditions.length - 1 && (
               <div className="text-center text-xs text-muted-foreground uppercase">
-                {logicOperator}
+                {conditionLogic}
               </div>
             )}
           </div>

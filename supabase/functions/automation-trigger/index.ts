@@ -29,6 +29,18 @@ import {
   executeRemoveOwner,
   executeToggleDnd,
   executeUpdateDeal,
+  executeFindOpportunity,
+  executeRemoveOpportunity,
+  executeCopyContact,
+  executeAiIntent,
+  executeAiDecision,
+  executeAiTranslate,
+  executeAiSummarize,
+  executeAiMessage,
+  executeAddFollowers,
+  executeRemoveFollowers,
+  executeAddToAudience,
+  executeRemoveFromAudience,
 } from "./actions/crm-actions.ts";
 import {
   executeSetVariable,
@@ -102,20 +114,57 @@ function getSupabaseClient() {
 // differentiated by type/status fields. When refreshing context after mutations (assign_owner,
 // update_stage, close_deal, update_deal), both are queried from `appointments` table.
 // `context.lead` maps to the `contacts` table and is always a separate entity.
+// Normalize appointment/deal fields to consistent snake_case
+// Handles both old camelCase triggers and new snake_case triggers
+function normalizeAppointmentFields(appt: Record<string, any> | null): Record<string, any> | null {
+  if (!appt) return null;
+  return {
+    ...appt,
+    // Ensure snake_case versions exist (prefer existing snake_case, fallback to camelCase)
+    start_at_utc: appt.start_at_utc ?? appt.startAt ?? null,
+    event_type_name: appt.event_type_name ?? appt.eventTypeName ?? null,
+    pipeline_stage: appt.pipeline_stage ?? appt.pipelineStage ?? null,
+    closer_id: appt.closer_id ?? appt.closerId ?? null,
+    closer_name: appt.closer_name ?? appt.closerName ?? null,
+    setter_id: appt.setter_id ?? appt.setterId ?? null,
+    setter_name: appt.setter_name ?? appt.setterName ?? null,
+    duration_minutes: appt.duration_minutes ?? appt.durationMinutes ?? null,
+    meeting_link: appt.meeting_link ?? appt.meetingLink ?? null,
+    appointment_notes: appt.appointment_notes ?? appt.appointmentNotes ?? appt.notes ?? null,
+    // Keep camelCase aliases for backward compatibility with existing templates
+    startAt: appt.startAt ?? appt.start_at_utc ?? null,
+    eventTypeName: appt.eventTypeName ?? appt.event_type_name ?? null,
+    pipelineStage: appt.pipelineStage ?? appt.pipeline_stage ?? null,
+    closerId: appt.closerId ?? appt.closer_id ?? null,
+    closerName: appt.closerName ?? appt.closer_name ?? null,
+    setterId: appt.setterId ?? appt.setter_id ?? null,
+    setterName: appt.setterName ?? appt.setter_name ?? null,
+  };
+}
+
 function buildAutomationContext(triggerType: TriggerType, payload: Record<string, any>, automationId?: string): AutomationContext {
   const { teamId } = payload;
+
+  // Normalize appointment and deal fields for consistent access
+  const appointment = normalizeAppointmentFields(payload.appointment ?? null);
+  const deal = normalizeAppointmentFields(payload.deal ?? null);
+
   return {
     teamId,
     triggerType,
     now: new Date().toISOString(),
     lead: payload.lead ?? null,
-    appointment: payload.appointment ?? null,
+    appointment,
     payment: payload.payment ?? null,
-    deal: payload.deal ?? null,
+    deal,
     meta: payload.meta ?? null,
     stepOutputs: payload.stepOutputs ?? undefined,
     automationId,
     depth: payload.depth ?? 0,
+    addedTags: payload.addedTags ?? payload.meta?.addedTags ?? [],
+    removedTags: payload.removedTags ?? payload.meta?.removedTags ?? [],
+    previousStage: payload.previousStage ?? payload.meta?.previousStage,
+    newStage: payload.newStage ?? payload.meta?.newStage,
   };
 }
 
@@ -547,6 +596,72 @@ async function getAutomationsForTrigger(
 }
 
 /**
+ * Fetch a single automation by ID for targeted execution (e.g. manual trigger "Run Now").
+ * Retrieves the published version if available, otherwise falls back to draft definition.
+ */
+async function getSpecificAutomation(
+  supabase: any,
+  automationId: string,
+): Promise<AutomationDefinition[]> {
+  try {
+    const { data: row, error } = await supabase
+      .from("automations")
+      .select(`
+        id,
+        team_id,
+        name,
+        description,
+        is_active,
+        trigger_type,
+        current_version_id,
+        definition
+      `)
+      .eq("id", automationId)
+      .single();
+
+    if (error || !row) {
+      console.error("[Automation Trigger] Error fetching specific automation:", error);
+      return [];
+    }
+
+    let definitionToUse = row.definition || {};
+
+    // If there's a published version, use that instead
+    if (row.current_version_id) {
+      const { data: version, error: versionError } = await supabase
+        .from("workflow_versions")
+        .select("definition_json")
+        .eq("id", row.current_version_id)
+        .eq("is_active", true)
+        .single();
+
+      if (!versionError && version?.definition_json) {
+        console.log(`[Automation Trigger] Using published version for targeted run of "${row.name}"`);
+        definitionToUse = version.definition_json;
+      } else {
+        console.log(`[Automation Trigger] Falling back to draft for targeted run of "${row.name}"`);
+      }
+    }
+
+    console.log(`[Automation Trigger] Targeted execution: automation "${row.name}" (${automationId})`);
+
+    return [{
+      id: row.id,
+      teamId: row.team_id,
+      name: row.name,
+      description: row.description || "",
+      isActive: row.is_active,
+      trigger: definitionToUse.trigger || { type: row.trigger_type, config: {} },
+      triggerType: row.trigger_type as TriggerType,
+      steps: definitionToUse.steps || [],
+    } as AutomationDefinition];
+  } catch (err) {
+    console.error("[Automation Trigger] Unexpected error fetching specific automation:", err);
+    return [];
+  }
+}
+
+/**
  * Per-automation idempotency check.
  * Composite key: teamId + triggerType + automationKey + eventId
  * This ensures each automation runs EXACTLY ONCE per event, even if trigger is called multiple times.
@@ -565,8 +680,8 @@ async function hasAutomationAlreadyRunForEvent(
       .select("id")
       .eq("team_id", teamId)
       .eq("trigger_type", triggerType)
-      .filter("context_snapshot->>eventId", "eq", eventId)
-      .filter("context_snapshot->>automationKey", "eq", automationKey)
+      .filter("context_snapshot->>'eventId'", "eq", eventId)
+      .filter("context_snapshot->>'automationKey'", "eq", automationKey)
       .limit(1);
 
     if (error) {
@@ -726,6 +841,32 @@ async function runAutomation(
   // spreads context_snapshot directly into eventPayload (not nested)
   if (isScheduledResume) {
     console.log(`[Automation] Resuming from scheduled job, step: ${resumeFromStep}`);
+
+    // Refresh entity data from database (may have changed during delay/wait)
+    if (context.lead?.id) {
+      const { data: freshLead } = await supabase
+        .from("contacts")
+        .select("*")
+        .eq("id", context.lead.id)
+        .maybeSingle();
+      if (freshLead) {
+        console.log(`[Automation] Refreshed lead context for ${context.lead.id}`);
+        context.lead = freshLead;
+      }
+    }
+    if (context.appointment?.id || context.deal?.id) {
+      const apptId = context.appointment?.id || context.deal?.id;
+      const { data: freshAppt } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("id", apptId)
+        .maybeSingle();
+      if (freshAppt) {
+        console.log(`[Automation] Refreshed appointment context for ${apptId}`);
+        context.appointment = freshAppt;
+        context.deal = freshAppt;
+      }
+    }
   }
 
   console.log(`[Automation] Running "${automation.name}" (${automation.id}) with ${steps.length} steps`);
@@ -959,12 +1100,34 @@ async function runAutomation(
         case "add_tag": {
           const result = await executeAddTag(step.config, context, supabase);
           log = { ...log, ...result };
+          // Refresh lead context with updated tags so downstream steps see the change
+          if (result.status === "success" && context.lead?.id) {
+            const { data: refreshedLead } = await supabase
+              .from("contacts")
+              .select("*")
+              .eq("id", context.lead.id)
+              .single();
+            if (refreshedLead) {
+              context.lead = refreshedLead;
+            }
+          }
           break;
         }
 
         case "remove_tag": {
           const result = await executeRemoveTag(step.config, context, supabase);
           log = { ...log, ...result };
+          // Refresh lead context with updated tags so downstream steps see the change
+          if (result.status === "success" && context.lead?.id) {
+            const { data: refreshedLead } = await supabase
+              .from("contacts")
+              .select("*")
+              .eq("id", context.lead.id)
+              .single();
+            if (refreshedLead) {
+              context.lead = refreshedLead;
+            }
+          }
           break;
         }
 
@@ -1549,24 +1712,81 @@ async function runAutomation(
           break;
         }
 
-        // === UNIMPLEMENTED ACTIONS (forms exist, handlers pending) ===
-        case "copy_contact":
-        case "add_followers":
-        case "remove_followers":
-        case "find_opportunity":
-        case "remove_opportunity":
-        case "ai_intent":
-        case "ai_decision":
-        case "ai_translate":
-        case "ai_summarize":
-        case "ai_message":
-        case "add_to_audience":
-        case "remove_from_audience":
-          console.warn(`[Automation] Action "${step.type}" is not yet implemented, skipping`);
-          log.skipped = true;
-          log.skipReason = `action_not_implemented:${step.type}`;
-          log.status = "skipped";
+        // === OPPORTUNITY ACTIONS ===
+        case "find_opportunity": {
+          const result = await executeFindOpportunity(step.config, context, supabase);
+          log = { ...log, ...result };
+          // Update context with found deal for downstream steps
+          if (result.output?.found && result.output?.deal) {
+            context.deal = result.output.deal;
+            context.appointment = result.output.deal;
+          }
           break;
+        }
+
+        case "remove_opportunity": {
+          const result = await executeRemoveOpportunity(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        // === COPY CONTACT ===
+        case "copy_contact": {
+          const result = await executeCopyContact(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        // === FOLLOWER ACTIONS (infrastructure pending) ===
+        case "add_followers": {
+          const result = await executeAddFollowers(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+        case "remove_followers": {
+          const result = await executeRemoveFollowers(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        // === AI ACTIONS (require OpenAI API key) ===
+        case "ai_intent": {
+          const result = await executeAiIntent(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+        case "ai_decision": {
+          const result = await executeAiDecision(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+        case "ai_translate": {
+          const result = await executeAiTranslate(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+        case "ai_summarize": {
+          const result = await executeAiSummarize(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+        case "ai_message": {
+          const result = await executeAiMessage(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        // === AUDIENCE ACTIONS (require Facebook Marketing API) ===
+        case "add_to_audience": {
+          const result = await executeAddToAudience(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+        case "remove_from_audience": {
+          const result = await executeRemoveFromAudience(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
 
         default:
           console.warn(`[Automation] Unknown action type: ${step.type}`);
@@ -1685,11 +1905,12 @@ Deno.serve(async (req) => {
   try {
     const body: TriggerRequest = await req.json();
 
-    const { triggerType, teamId, eventPayload, eventId } = body as any;
+    const { triggerType, teamId, eventPayload, eventId, automationId } = body as any;
     console.log("[automation-trigger] incoming", {
       triggerType,
       teamId,
       eventId,
+      automationId: automationId || null,
       leadId: (eventPayload as any)?.lead?.id,
     });
 
@@ -1718,7 +1939,10 @@ Deno.serve(async (req) => {
     });
 
     // Get matching automations from DB ONLY (no templates - prevents duplicates)
-    const automations = await getAutomationsForTrigger(supabase, teamId, triggerType);
+    // When automationId is provided (e.g. manual trigger "Run Now"), target only that automation
+    const automations = automationId
+      ? await getSpecificAutomation(supabase, automationId)
+      : await getAutomationsForTrigger(supabase, teamId, triggerType);
 
     if (automations.length === 0) {
       console.log(`[Automation Trigger] No matching automations, exiting`);

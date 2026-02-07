@@ -55,6 +55,7 @@ export function ConditionNode({
 }: ConditionNodeProps) {
   const [isOpen, setIsOpen] = useState(false);
   const conditions = step.conditions || [];
+  const conditionLogic = step.conditionLogic || "AND";
 
   const handleAddCondition = () => {
     const newCondition: AutomationCondition = {
@@ -80,7 +81,8 @@ export function ConditionNode({
       const c = conditions[0];
       return `${c.field} ${c.operator} ${c.value}`;
     }
-    return `${conditions.length} conditions`;
+    const logicLabel = conditionLogic === "OR" ? "ANY" : "ALL";
+    return `${logicLabel} of ${conditions.length} conditions`;
   };
 
   return (
@@ -136,6 +138,25 @@ export function ConditionNode({
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
+
+          {conditions.length > 1 && (
+            <div className="flex items-center gap-2">
+              <Label className="text-muted-foreground text-xs">Match</Label>
+              <Select
+                value={conditionLogic}
+                onValueChange={(value) => onUpdate({ conditionLogic: value as "AND" | "OR" })}
+              >
+                <SelectTrigger className="w-20 h-7 bg-background border-border text-foreground text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border">
+                  <SelectItem value="AND" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground text-xs">ALL</SelectItem>
+                  <SelectItem value="OR" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground text-xs">ANY</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground">of these conditions</span>
+            </div>
+          )}
 
           <div className="space-y-3">
             {conditions.map((condition, index) => (
@@ -213,7 +234,9 @@ export function ConditionNode({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            All conditions must be true for the following actions to run.
+            {conditionLogic === "OR"
+              ? "At least one condition must be true for the following actions to run."
+              : "All conditions must be true for the following actions to run."}
           </p>
         </div>
       </PopoverContent>

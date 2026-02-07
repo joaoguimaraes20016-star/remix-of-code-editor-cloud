@@ -18,11 +18,13 @@ export { UpdateContactForm } from "./UpdateContactForm";
 export { DeleteContactForm } from "./DeleteContactForm";
 export { RemoveOwnerForm } from "./RemoveOwnerForm";
 export { ToggleDndForm } from "./ToggleDndForm";
+export { CopyContactForm } from "./CopyContactForm";
 
 // Pipeline Actions
 export { CreateDealForm } from "./CreateDealForm";
 export { UpdateDealForm } from "./UpdateDealForm";
 export { CloseDealForm } from "./CloseDealForm";
+export { FindOpportunityForm } from "./FindOpportunityForm";
 export { RemoveOpportunityForm } from "./RemoveOpportunityForm";
 
 // Flow Control

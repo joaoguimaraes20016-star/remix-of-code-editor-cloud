@@ -18,6 +18,8 @@ function getSupabaseClient() {
 const EVENT_TO_TRIGGER: Record<string, string> = {
   "payment_intent.succeeded": "payment_received",
   "payment_intent.payment_failed": "payment_failed",
+  "invoice.created": "invoice_created",
+  "invoice.sent": "invoice_sent",
   "invoice.paid": "invoice_paid",
   "invoice.payment_failed": "payment_failed",
   "customer.subscription.created": "subscription_created",

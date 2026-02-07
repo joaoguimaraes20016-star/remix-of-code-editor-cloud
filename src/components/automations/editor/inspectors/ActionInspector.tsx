@@ -55,8 +55,10 @@ import {
   DeleteContactForm,
   RemoveOwnerForm,
   ToggleDndForm,
+  CopyContactForm,
   // Pipeline
   UpdateDealForm,
+  FindOpportunityForm,
   RemoveOpportunityForm,
   // Flow Control & Variables
   SetVariableForm,
@@ -83,9 +85,9 @@ const SUPPORTED_ACTION_TYPES = new Set([
   "send_email", "send_sms", "send_whatsapp", "send_voicemail", "make_call",
   "send_review_request", "reply_in_comments",
   // CRM
-  "find_contact", "delete_contact", "remove_owner", "toggle_dnd",
+  "find_contact", "delete_contact", "remove_owner", "toggle_dnd", "copy_contact",
   // Pipeline
-  "update_deal", "remove_opportunity",
+  "update_deal", "find_opportunity", "remove_opportunity",
   // Flow Control & Variables
   "set_variable", "add_to_workflow", "remove_from_workflow", "remove_from_all_workflows",
   // Appointments
@@ -99,13 +101,24 @@ const SUPPORTED_ACTION_TYPES = new Set([
 
 interface ActionInspectorProps {
   step: AutomationStep;
+  steps: AutomationStep[];
   onUpdate: (updates: Partial<AutomationStep>) => void;
   teamId: string;
 }
 
-export function ActionInspector({ step, onUpdate, teamId }: ActionInspectorProps) {
+export function ActionInspector({ step, steps, onUpdate, teamId }: ActionInspectorProps) {
   const handleConfigChange = (config: Record<string, any>) => {
-    onUpdate({ config });
+    if (step.type === 'condition') {
+      // Map config fields to step-level properties for backend compatibility.
+      // The backend reads step.conditions and step.conditionLogic (not step.config.*).
+      onUpdate({
+        conditions: config.conditions,
+        conditionLogic: config.conditionLogic,
+        config,
+      });
+    } else {
+      onUpdate({ config });
+    }
   };
 
   const formProps = { config: step.config as any, onChange: handleConfigChange };
@@ -164,12 +177,14 @@ export function ActionInspector({ step, onUpdate, teamId }: ActionInspectorProps
       {step.type === "delete_contact" && <DeleteContactForm {...formProps} />}
       {step.type === "remove_owner" && <RemoveOwnerForm {...formProps} />}
       {step.type === "toggle_dnd" && <ToggleDndForm {...formProps} />}
+      {step.type === "copy_contact" && <CopyContactForm {...formProps} />}
       
       {/* Pipeline Actions */}
       {step.type === "update_stage" && <UpdateStageForm {...formProps} teamId={teamId} />}
       {step.type === "create_deal" && <CreateDealForm {...formProps} />}
       {step.type === "update_deal" && <UpdateDealForm {...formProps} />}
       {step.type === "close_deal" && <CloseDealForm {...formProps} />}
+      {step.type === "find_opportunity" && <FindOpportunityForm {...formProps} />}
       {step.type === "remove_opportunity" && <RemoveOpportunityForm {...formProps} />}
       
       {/* Appointments */}
@@ -191,7 +206,12 @@ export function ActionInspector({ step, onUpdate, teamId }: ActionInspectorProps
       {step.type === "business_hours" && <BusinessHoursForm {...formProps} />}
       {step.type === "condition" && <ConditionForm {...formProps} />}
       {step.type === "split_test" && <SplitTestForm {...formProps} />}
-      {step.type === "go_to" && <GoToForm {...formProps} />}
+      {step.type === "go_to" && (
+        <GoToForm
+          {...formProps}
+          availableSteps={steps.map(s => ({ id: s.id, label: s.name || `Step ${s.order}` }))}
+        />
+      )}
       {step.type === "set_variable" && <SetVariableForm {...formProps} />}
       {step.type === "run_workflow" && <RunWorkflowForm {...formProps} teamId={teamId} />}
       {step.type === "add_to_workflow" && <AddToWorkflowForm {...formProps} />}

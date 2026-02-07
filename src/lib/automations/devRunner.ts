@@ -80,7 +80,7 @@ async function runAutomationDefinitionDev(
   for (const step of steps) {
     const conditions: AutomationCondition[] | undefined = step.conditions ?? undefined;
 
-    const shouldRun = evaluateConditions(conditions ?? [], context, "AND");
+    const shouldRun = evaluateConditions(conditions ?? [], context, step.conditionLogic || "AND");
 
     if (!shouldRun) {
       console.log(
@@ -120,6 +120,7 @@ function workflowToSimpleAutomation(workflow: WorkflowDefinition): AutomationDef
         type: (node as any).actionType,
         config,
         conditions: (config.conditions as AutomationCondition[]) ?? undefined,
+        conditionLogic: (config.conditionLogic as "AND" | "OR") || "AND",
       };
     });
 

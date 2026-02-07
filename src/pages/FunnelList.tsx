@@ -223,8 +223,8 @@ export default function FunnelList() {
         console.log('[DIAG] contacts count:', { contactCount, contactCountError });
 
         // Quick check: can_access_workspace via RPC (if it exists)
-        const { data: canAccess, error: canAccessError } = await supabase
-          .rpc('can_access_workspace' as any, { _user_id: session.user.id, _team_id: teamId });
+        const { data: canAccess, error: canAccessError } = await (supabase
+          .rpc('can_access_workspace' as any, { _user_id: session.user.id, _team_id: teamId }) as any);
         console.log('[DIAG] can_access_workspace:', { canAccess, canAccessError });
       }
     };

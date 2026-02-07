@@ -129,7 +129,7 @@ export default function FirstCalendarWizard({ onComplete, onCancel }: FirstCalen
           .select("id")
           .eq("booking_slug", bookingSlug)
           .neq("id", teamId)
-          .maybeSingle();
+          .maybeSingle() as { data: any; error: any };
 
         if (existing) {
           bookingSlug = `${bookingSlug}-${Math.random().toString(36).slice(2, 6)}`;

@@ -60,11 +60,11 @@ export default function Calendars() {
   // Fetch team booking slug
   useEffect(() => {
     if (!teamId) return;
-    supabase
+    (supabase
       .from("teams" as any)
       .select("booking_slug")
       .eq("id", teamId)
-      .single()
+      .single() as any)
       .then(({ data }: any) => {
         setBookingSlug(data?.booking_slug || null);
       });
@@ -90,11 +90,11 @@ export default function Calendars() {
   const handleCreated = () => {
     // Refresh booking slug in case it was auto-generated
     if (teamId) {
-      supabase
+      (supabase
         .from("teams" as any)
         .select("booking_slug")
         .eq("id", teamId)
-        .single()
+        .single() as any)
         .then(({ data }: any) => {
           setBookingSlug(data?.booking_slug || null);
         });

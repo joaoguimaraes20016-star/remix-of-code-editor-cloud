@@ -54,6 +54,7 @@ export function workflowToAutomation(
       type: node.actionType,
       config: actionConfig,
       conditions: stepConditions,
+      conditionLogic: (actionConfig.conditionLogic as "AND" | "OR") || "AND",
     };
   });
 
