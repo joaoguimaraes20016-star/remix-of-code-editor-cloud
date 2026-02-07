@@ -6,13 +6,13 @@ import { ActionInspector } from "./inspectors/ActionInspector";
 import { ActionLibraryPanel } from "./ActionLibraryPanel";
 
 // Actions that are fully implemented with UI + backend execution
+// Based on actual case statements in automation-trigger/index.ts
 const SUPPORTED_ACTIONS: ActionType[] = [
   // Messaging (all route through send_message backend)
   "send_message",
   "send_sms",
   "send_email",
   "send_whatsapp",
-  "make_call",
   "enqueue_dialer",
   "notify_team",
   // Flow Control
@@ -36,9 +36,19 @@ const SUPPORTED_ACTIONS: ActionType[] = [
   "update_stage",
   "create_deal",
   "close_deal",
+  // Payments
+  "send_invoice",
+  "charge_payment",
+  "create_subscription",
+  "cancel_subscription",
   // Integrations
   "custom_webhook",
   "slack_message",
+  "discord_message",
+  "google_conversion",
+  "tiktok_event",
+  "meta_conversion",
+  "google_sheets",
 ];
 
 interface NodeInspectorProps {
@@ -64,7 +74,7 @@ export function NodeInspector({
 }: NodeInspectorProps) {
   if (!selectedNodeId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-white/40 text-sm">
+      <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-sm">
         <p>Select a node to edit</p>
       </div>
     );
@@ -99,7 +109,7 @@ export function NodeInspector({
         />
 
         {/* Delete Button */}
-        <div className="pt-4 border-t border-white/10">
+        <div className="pt-4 border-t border-border">
           <Button
             variant="outline"
             size="sm"

@@ -19,10 +19,10 @@ export function GoToForm({ config, onChange, availableSteps = [] }: GoToFormProp
         <div className="flex items-start gap-3">
           <CornerDownRight className="h-5 w-5 text-slate-400 mt-0.5" />
           <div>
-            <p className="text-sm text-white/80">
+            <p className="text-sm text-foreground">
               Jump to another step in this workflow.
             </p>
-            <p className="text-xs text-white/50 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Be careful to avoid infinite loops!
             </p>
           </div>

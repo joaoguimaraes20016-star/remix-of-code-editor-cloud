@@ -177,7 +177,7 @@ export function ActionNode({
       case "custom_webhook":
         return <WebhookForm {...formProps} />;
       default:
-        return <p className="text-sm text-white/50">No configuration available.</p>;
+        return <p className="text-sm text-muted-foreground">No configuration available.</p>;
     }
   };
 
@@ -190,10 +190,10 @@ export function ActionNode({
           whileTap={{ scale: 0.98 }}
           className={cn(
             "relative w-80 rounded-xl border transition-all duration-200",
-            "bg-gradient-to-br from-[#1a1a2e] to-[#16162a]",
+            "bg-background shadow-sm",
             isSelected
               ? "border-primary ring-2 ring-primary/30"
-              : "border-white/10 hover:border-white/20"
+              : "border-border hover:border-border/70"
           )}
         >
           {/* Header */}
@@ -202,11 +202,11 @@ export function ActionNode({
               <span className={meta.color}>{meta.icon}</span>
             </div>
             <div className="flex-1 text-left">
-              <div className="text-white font-medium flex items-center gap-2">
+              <div className="text-foreground font-medium flex items-center gap-2">
                 {meta.label}
-                <ChevronDown className="h-4 w-4 text-white/40" />
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div className="text-sm text-white/50 truncate">
+              <div className="text-sm text-muted-foreground truncate">
                 {meta.getSummary(step.config)}
               </div>
             </div>
@@ -215,14 +215,14 @@ export function ActionNode({
       </PopoverTrigger>
 
       <PopoverContent
-        className="w-96 p-4 bg-[#1a1a2e] border-white/10"
+        className="w-96 p-4 bg-background border-border"
         align="center"
       >
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className={meta.color}>{meta.icon}</span>
-              <span className="font-medium text-white">{meta.label}</span>
+              <span className="font-medium text-foreground">{meta.label}</span>
             </div>
             <Button
               variant="ghost"
@@ -238,8 +238,8 @@ export function ActionNode({
             </Button>
           </div>
 
-          {/* Dark mode styled forms */}
-          <div className="[&_label]:text-white/70 [&_input]:bg-white/5 [&_input]:border-white/10 [&_input]:text-white [&_input]:placeholder:text-white/30 [&_textarea]:bg-white/5 [&_textarea]:border-white/10 [&_textarea]:text-white [&_textarea]:placeholder:text-white/30 [&_button[role=combobox]]:bg-white/5 [&_button[role=combobox]]:border-white/10 [&_button[role=combobox]]:text-white">
+          {/* Light mode styled forms */}
+          <div className="[&_label]:text-foreground/70 [&_input]:bg-background [&_input]:border-border [&_input]:text-foreground [&_input]:placeholder:text-muted-foreground [&_textarea]:bg-background [&_textarea]:border-border [&_textarea]:text-foreground [&_textarea]:placeholder:text-muted-foreground [&_button[role=combobox]]:bg-background [&_button[role=combobox]]:border-border [&_button[role=combobox]]:text-foreground">
             {renderForm()}
           </div>
         </div>

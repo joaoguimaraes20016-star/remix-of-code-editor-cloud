@@ -80,8 +80,8 @@ export function WorkflowAIHelper({ definition, onSuggestionApply }: WorkflowAIHe
           <Bot className="h-4 w-4 text-primary" />
         </div>
         <div>
-          <h3 className="text-sm font-medium text-white">Workflow Assistant</h3>
-          <p className="text-xs text-white/50">Ask me anything about your workflow</p>
+          <h3 className="text-sm font-medium text-foreground">Workflow Assistant</h3>
+          <p className="text-xs text-muted-foreground">Ask me anything about your workflow</p>
         </div>
       </div>
 
@@ -89,13 +89,13 @@ export function WorkflowAIHelper({ definition, onSuggestionApply }: WorkflowAIHe
       <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-0">
         {messages.length === 0 ? (
           <div className="space-y-4">
-            <p className="text-sm text-white/50 text-center py-4">
+            <p className="text-sm text-muted-foreground text-center py-4">
               I can help you build and optimize your automation workflow.
             </p>
 
             {/* Quick Prompts */}
             <div className="space-y-2">
-              <p className="text-xs font-medium text-white/40 uppercase tracking-wider">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Quick Actions
               </p>
               {QUICK_PROMPTS.map((prompt, idx) => {
@@ -106,11 +106,11 @@ export function WorkflowAIHelper({ definition, onSuggestionApply }: WorkflowAIHe
                     onClick={() => handleQuickPrompt(prompt.prompt)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all text-left"
+                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border hover:border-border/70 transition-all text-left"
                   >
                     <Icon className="h-4 w-4 text-primary" />
-                    <span className="text-sm text-white/80">{prompt.label}</span>
-                    <ChevronRight className="h-4 w-4 text-white/30 ml-auto" />
+                    <span className="text-sm text-foreground/80">{prompt.label}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground/50 ml-auto" />
                   </motion.button>
                 );
               })}
@@ -127,7 +127,7 @@ export function WorkflowAIHelper({ definition, onSuggestionApply }: WorkflowAIHe
                   "p-3 rounded-xl",
                   message.role === "user" 
                     ? "bg-primary/20 ml-8" 
-                    : "bg-white/5 mr-4"
+                    : "bg-muted/30 mr-4"
                 )}
               >
                 {message.role === "assistant" && (
@@ -136,7 +136,7 @@ export function WorkflowAIHelper({ definition, onSuggestionApply }: WorkflowAIHe
                     <span className="text-xs text-primary">Assistant</span>
                   </div>
                 )}
-                <p className="text-sm text-white/90 whitespace-pre-wrap">
+                <p className="text-sm text-foreground/90 whitespace-pre-wrap">
                   {message.content}
                 </p>
               </motion.div>
@@ -148,7 +148,7 @@ export function WorkflowAIHelper({ definition, onSuggestionApply }: WorkflowAIHe
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex items-center gap-2 text-white/50 p-3"
+            className="flex items-center gap-2 text-muted-foreground p-3"
           >
             <Loader2 className="h-4 w-4 animate-spin" />
             <span className="text-sm">Thinking...</span>
@@ -159,7 +159,7 @@ export function WorkflowAIHelper({ definition, onSuggestionApply }: WorkflowAIHe
       </div>
 
       {/* Input Area */}
-      <div className="mt-auto border-t border-white/10 pt-4">
+      <div className="mt-auto border-t border-border pt-4">
         <div className="relative">
           <Textarea
             value={input}
@@ -171,7 +171,7 @@ export function WorkflowAIHelper({ definition, onSuggestionApply }: WorkflowAIHe
               }
             }}
             placeholder="Ask about your workflow..."
-            className="min-h-[60px] max-h-[120px] bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-12 resize-none"
+            className="min-h-[60px] max-h-[120px] bg-background border-border text-foreground placeholder:text-muted-foreground pr-12 resize-none"
           />
           <Button
             size="sm"
@@ -182,7 +182,7 @@ export function WorkflowAIHelper({ definition, onSuggestionApply }: WorkflowAIHe
             <Send className="h-4 w-4" />
           </Button>
         </div>
-        <p className="text-xs text-white/30 mt-2 text-center">
+        <p className="text-xs text-muted-foreground/60 mt-2 text-center">
           Press Enter to send
         </p>
       </div>

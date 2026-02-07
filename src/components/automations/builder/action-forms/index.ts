@@ -33,3 +33,4 @@ export { GoogleSheetsForm } from "./GoogleSheetsForm";
 export { DiscordMessageForm } from "./DiscordMessageForm";
 export { GoogleAdsConversionForm } from "./GoogleAdsConversionForm";
 export { TikTokEventForm } from "./TikTokEventForm";
+export { MetaConversionForm } from "./MetaConversionForm";

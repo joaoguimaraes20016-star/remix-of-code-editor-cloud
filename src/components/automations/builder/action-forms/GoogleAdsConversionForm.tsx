@@ -49,7 +49,7 @@ export function GoogleAdsConversionForm({ config, onChange }: GoogleAdsConversio
           value={config.conversion_action || ""}
           onChange={(e) => onChange({ ...config, conversion_action: e.target.value })}
         />
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-muted-foreground">
           The full resource name of the conversion action from Google Ads
         </p>
       </div>
@@ -66,7 +66,7 @@ export function GoogleAdsConversionForm({ config, onChange }: GoogleAdsConversio
           value={config.gclid || ""}
           onChange={(e) => onChange({ ...config, gclid: e.target.value })}
         />
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-muted-foreground">
           The click identifier from the original Google Ads click. Use template variables to pull from contact data.
         </p>
       </div>
@@ -85,7 +85,7 @@ export function GoogleAdsConversionForm({ config, onChange }: GoogleAdsConversio
             })
           }
         />
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-muted-foreground">
           The monetary value of this conversion
         </p>
       </div>
@@ -99,7 +99,7 @@ export function GoogleAdsConversionForm({ config, onChange }: GoogleAdsConversio
             value={config.currency_code || "USD"}
             onChange={(e) => onChange({ ...config, currency_code: e.target.value })}
           />
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-muted-foreground">
             ISO 4217 currency code (e.g., USD, EUR, GBP)
           </p>
         </div>

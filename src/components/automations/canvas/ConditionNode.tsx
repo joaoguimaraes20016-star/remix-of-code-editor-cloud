@@ -106,22 +106,22 @@ export function ConditionNode({
               <GitBranch className="h-4 w-4 text-amber-400" />
             </div>
             <div className="flex-1 text-left">
-              <div className="text-white font-medium">If / Else</div>
-              <div className="text-sm text-white/50 truncate">{getSummary()}</div>
+              <div className="text-foreground font-medium">If / Else</div>
+              <div className="text-sm text-muted-foreground truncate">{getSummary()}</div>
             </div>
           </div>
         </motion.button>
       </PopoverTrigger>
 
       <PopoverContent
-        className="w-[420px] p-4 bg-[#1a1a2e] border-white/10"
+        className="w-[420px] p-4 bg-background border-border"
         align="center"
       >
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <GitBranch className="h-4 w-4 text-amber-400" />
-              <span className="font-medium text-white">Conditions</span>
+              <span className="font-medium text-foreground">Conditions</span>
             </div>
             <Button
               variant="ghost"
@@ -139,22 +139,22 @@ export function ConditionNode({
 
           <div className="space-y-3">
             {conditions.map((condition, index) => (
-              <div key={index} className="flex items-start gap-2 p-3 rounded-lg bg-white/5">
+              <div key={index} className="flex items-start gap-2 p-3 rounded-lg bg-muted/30">
                 <div className="flex-1 space-y-2">
                   <div className="grid grid-cols-3 gap-2">
                     <Select
                       value={condition.field}
                       onValueChange={(v) => handleUpdateCondition(index, { field: v })}
                     >
-                      <SelectTrigger className="bg-white/5 border-white/10 text-white text-xs">
+                      <SelectTrigger className="bg-background border-border text-foreground text-xs">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#1a1a2e] border-white/10">
+                      <SelectContent className="bg-background border-border">
                         {FIELD_OPTIONS.map((opt) => (
                           <SelectItem
                             key={opt.value}
                             value={opt.value}
-                            className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white text-xs"
+                            className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground text-xs"
                           >
                             {opt.label}
                           </SelectItem>
@@ -166,15 +166,15 @@ export function ConditionNode({
                       value={condition.operator}
                       onValueChange={(v) => handleUpdateCondition(index, { operator: v as any })}
                     >
-                      <SelectTrigger className="bg-white/5 border-white/10 text-white text-xs">
+                      <SelectTrigger className="bg-background border-border text-foreground text-xs">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#1a1a2e] border-white/10">
+                      <SelectContent className="bg-background border-border">
                         {OPERATOR_OPTIONS.map((opt) => (
                           <SelectItem
                             key={opt.value}
                             value={opt.value}
-                            className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white text-xs"
+                            className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground text-xs"
                           >
                             {opt.label}
                           </SelectItem>
@@ -186,7 +186,7 @@ export function ConditionNode({
                       value={String(condition.value)}
                       onChange={(e) => handleUpdateCondition(index, { value: e.target.value })}
                       placeholder="Value"
-                      className="bg-white/5 border-white/10 text-white placeholder:text-white/30 text-xs"
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground text-xs"
                     />
                   </div>
                 </div>
@@ -194,7 +194,7 @@ export function ConditionNode({
                   variant="ghost"
                   size="icon"
                   onClick={() => handleRemoveCondition(index)}
-                  className="h-8 w-8 text-white/40 hover:text-red-400 hover:bg-red-500/20"
+                  className="h-8 w-8 text-muted-foreground hover:text-red-400 hover:bg-red-500/20"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -205,14 +205,14 @@ export function ConditionNode({
               variant="outline"
               size="sm"
               onClick={handleAddCondition}
-              className="w-full border-dashed border-white/20 text-white/60 hover:text-white hover:bg-white/10"
+              className="w-full border-dashed border-border text-muted-foreground hover:text-foreground hover:bg-muted/50"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Condition
             </Button>
           </div>
 
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-muted-foreground">
             All conditions must be true for the following actions to run.
           </p>
         </div>

@@ -153,28 +153,28 @@ export function TestPanel({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[500px] sm:max-w-[500px] bg-sidebar border-sidebar-border p-0">
-        <SheetHeader className="p-6 pb-4 border-b border-sidebar-border">
-          <SheetTitle className="text-white flex items-center gap-2">
+      <SheetContent className="w-[500px] sm:max-w-[500px] bg-background border-border p-0">
+        <SheetHeader className="p-6 pb-4 border-b border-border">
+          <SheetTitle className="text-foreground flex items-center gap-2">
             <Play className="h-5 w-5 text-primary" />
             Test Automation
           </SheetTitle>
-          <SheetDescription className="text-white/60">
+          <SheetDescription className="text-muted-foreground">
             Run a dry test with sample data to preview what would happen
           </SheetDescription>
         </SheetHeader>
 
         <Tabs defaultValue="setup" className="flex-1">
-          <TabsList className="w-full justify-start rounded-none border-b border-sidebar-border bg-transparent px-6">
+          <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent px-6">
             <TabsTrigger
               value="setup"
-              className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
+              className="data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
             >
               Setup
             </TabsTrigger>
             <TabsTrigger
               value="results"
-              className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
+              className="data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
               disabled={!testResult}
             >
               Results
@@ -190,50 +190,50 @@ export function TestPanel({
             <div className="space-y-6">
               {/* Mock Contact Data */}
               <div className="space-y-4">
-                <h3 className="text-sm font-medium text-white">Test Contact</h3>
+                <h3 className="text-sm font-medium text-foreground">Test Contact</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-white/60">First Name</Label>
+                    <Label className="text-xs text-muted-foreground">First Name</Label>
                     <Input
                       value={mockContact.first_name}
                       onChange={(e) => setMockContact({ ...mockContact, first_name: e.target.value })}
-                      className="bg-white/5 border-white/10 text-white"
+                      className="bg-background border-border text-foreground"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-white/60">Last Name</Label>
+                    <Label className="text-xs text-muted-foreground">Last Name</Label>
                     <Input
                       value={mockContact.last_name}
                       onChange={(e) => setMockContact({ ...mockContact, last_name: e.target.value })}
-                      className="bg-white/5 border-white/10 text-white"
+                      className="bg-background border-border text-foreground"
                     />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-white/60">Email</Label>
+                  <Label className="text-xs text-muted-foreground">Email</Label>
                   <Input
                     value={mockContact.email}
                     onChange={(e) => setMockContact({ ...mockContact, email: e.target.value })}
-                    className="bg-white/5 border-white/10 text-white"
+                    className="bg-background border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-white/60">Phone</Label>
+                  <Label className="text-xs text-muted-foreground">Phone</Label>
                   <Input
                     value={mockContact.phone}
                     onChange={(e) => setMockContact({ ...mockContact, phone: e.target.value })}
-                    className="bg-white/5 border-white/10 text-white"
+                    className="bg-background border-border text-foreground"
                   />
                 </div>
               </div>
 
               {/* Info Box */}
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                  <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-blue-200 font-medium">Dry Run Mode</p>
-                    <p className="text-xs text-blue-200/70 mt-1">
+                    <p className="text-sm text-blue-700 font-medium">Dry Run Mode</p>
+                    <p className="text-xs text-blue-600/70 mt-1">
                       No messages will be sent. You'll see exactly what would happen with this contact data.
                     </p>
                   </div>
@@ -272,21 +272,21 @@ export function TestPanel({
               <ScrollArea className="h-[calc(100vh-200px)]">
                 <div className="p-6 space-y-4">
                   {/* Summary */}
-                  <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <div className="bg-muted/30 rounded-lg p-4 border border-border">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-white">
+                        <p className="text-sm font-medium text-foreground">
                           {testResult.automationName}
                         </p>
-                        <p className="text-xs text-white/50 mt-0.5">
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           Trigger: {testResult.triggerType}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-white/50">
+                        <p className="text-xs text-muted-foreground">
                           {testResult.stepsTrace.length} steps
                         </p>
-                        <p className="text-xs text-white/40">
+                        <p className="text-xs text-muted-foreground/60">
                           {testResult.totalDurationMs}ms
                         </p>
                       </div>
@@ -295,7 +295,7 @@ export function TestPanel({
 
                   {/* Steps Trace */}
                   <div className="space-y-2">
-                    <h4 className="text-xs font-medium text-white/60 uppercase tracking-wide">
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       Execution Trace
                     </h4>
                     
@@ -307,18 +307,18 @@ export function TestPanel({
                         <div
                           key={step.stepId}
                           className={cn(
-                            "bg-white/5 rounded-lg border border-white/10 overflow-hidden transition-colors",
+                            "bg-muted/30 rounded-lg border border-border overflow-hidden transition-colors",
                             isExpanded && "border-primary/30"
                           )}
                         >
                           <button
                             onClick={() => setExpandedStep(isExpanded ? null : step.stepId)}
-                            className="w-full p-3 flex items-center gap-3 text-left hover:bg-white/5"
+                            className="w-full p-3 flex items-center gap-3 text-left hover:bg-muted/50"
                           >
-                            <span className="text-xs text-white/40 w-6">{index + 1}</span>
+                            <span className="text-xs text-muted-foreground/60 w-6">{index + 1}</span>
                             {getStatusIcon(step.status)}
-                            <Icon className="h-4 w-4 text-white/60" />
-                            <span className="flex-1 text-sm text-white">
+                            <Icon className="h-4 w-4 text-muted-foreground" />
+                            <span className="flex-1 text-sm text-foreground">
                               {getActionLabel(step.stepType)}
                             </span>
                             {step.branchTaken && (
@@ -337,18 +337,18 @@ export function TestPanel({
                               </span>
                             )}
                             <ChevronRight className={cn(
-                              "h-4 w-4 text-white/40 transition-transform",
+                              "h-4 w-4 text-muted-foreground/60 transition-transform",
                               isExpanded && "rotate-90"
                             )} />
                           </button>
                           
                           {isExpanded && (
-                            <div className="px-3 pb-3 border-t border-white/10 pt-3 space-y-3">
+                            <div className="px-3 pb-3 border-t border-border pt-3 space-y-3">
                               {/* Template Preview */}
                               {step.templatePreview && (
                                 <div>
-                                  <p className="text-xs text-white/50 mb-1">Message Preview:</p>
-                                  <div className="bg-black/30 rounded p-2 text-sm text-white/80 font-mono">
+                                  <p className="text-xs text-muted-foreground mb-1">Message Preview:</p>
+                                  <div className="bg-muted/40 rounded p-2 text-sm text-foreground/80 font-mono">
                                     {step.templatePreview}
                                   </div>
                                 </div>
@@ -357,8 +357,8 @@ export function TestPanel({
                               {/* Resolved Config */}
                               {step.resolvedConfig && (
                                 <div>
-                                  <p className="text-xs text-white/50 mb-1">Configuration:</p>
-                                  <pre className="bg-black/30 rounded p-2 text-xs text-white/60 overflow-x-auto">
+                                  <p className="text-xs text-muted-foreground mb-1">Configuration:</p>
+                                  <pre className="bg-muted/40 rounded p-2 text-xs text-foreground/60 overflow-x-auto">
                                     {JSON.stringify(step.resolvedConfig, null, 2)}
                                   </pre>
                                 </div>
@@ -367,14 +367,14 @@ export function TestPanel({
                               {/* Conditions Evaluated */}
                               {step.conditionsEvaluated && step.conditionsEvaluated.length > 0 && (
                                 <div>
-                                  <p className="text-xs text-white/50 mb-1">Conditions:</p>
+                                  <p className="text-xs text-muted-foreground mb-1">Conditions:</p>
                                   <div className="space-y-1">
                                     {step.conditionsEvaluated.map((cond, i) => (
                                       <div
                                         key={i}
                                         className={cn(
                                           "text-xs px-2 py-1 rounded flex items-center gap-2",
-                                          cond.result ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+                                          cond.result ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"
                                         )}
                                       >
                                         {cond.result ? (
@@ -385,7 +385,7 @@ export function TestPanel({
                                         <span>
                                           {cond.field} {cond.operator} {JSON.stringify(cond.expected)}
                                         </span>
-                                        <span className="text-white/40 ml-auto">
+                                        <span className="text-muted-foreground ml-auto">
                                           (actual: {JSON.stringify(cond.actual)})
                                         </span>
                                       </div>

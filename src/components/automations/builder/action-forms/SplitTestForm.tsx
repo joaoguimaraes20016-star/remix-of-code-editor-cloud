@@ -79,7 +79,7 @@ export function SplitTestForm({ config, onChange }: SplitTestFormProps) {
 
       <div className="space-y-3">
         {variants.map((variant, index) => (
-          <div key={variant.id} className="p-3 rounded-lg bg-white/5 border border-white/10 space-y-3">
+          <div key={variant.id} className="p-3 rounded-lg bg-muted/30 border border-border space-y-3">
             <div className="flex items-center gap-2">
               <Input
                 value={variant.name}
@@ -98,7 +98,7 @@ export function SplitTestForm({ config, onChange }: SplitTestFormProps) {
               )}
             </div>
             <div className="space-y-2">
-              <div className="flex justify-between text-xs text-white/60">
+              <div className="flex justify-between text-xs text-foreground/70">
                 <span>Split Percentage</span>
                 <span className="font-mono">{variant.percentage}%</span>
               </div>

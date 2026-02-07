@@ -117,22 +117,22 @@ export function AddNodeButton({ onAdd, className, size = "default" }: AddNodeBut
           whileTap={{ scale: 0.95 }}
           className={cn(
             "flex items-center justify-center rounded-full transition-all",
-            "bg-white/5 border border-dashed border-white/20 hover:border-primary hover:bg-primary/10",
+            "bg-muted/30 border border-dashed border-border hover:border-primary hover:bg-primary/10",
             size === "sm" ? "h-8 w-8" : "h-10 w-10",
             className
           )}
         >
-          <Plus className={cn("text-white/60", size === "sm" ? "h-4 w-4" : "h-5 w-5")} />
+          <Plus className={cn("text-muted-foreground", size === "sm" ? "h-4 w-4" : "h-5 w-5")} />
         </motion.button>
       </PopoverTrigger>
 
       <PopoverContent
-        className="w-80 p-0 bg-[#1a1a2e] border-white/10"
+        className="w-80 p-0 bg-background border-border"
         align="center"
       >
-        <div className="p-3 border-b border-white/10">
-          <h4 className="text-sm font-medium text-white">Add Step</h4>
-          <p className="text-xs text-white/50">Choose an action to add to your workflow</p>
+        <div className="p-3 border-b border-border">
+          <h4 className="text-sm font-medium text-foreground">Add Step</h4>
+          <p className="text-xs text-muted-foreground">Choose an action to add to your workflow</p>
         </div>
 
         <ScrollArea className="h-96">
@@ -143,21 +143,21 @@ export function AddNodeButton({ onAdd, className, size = "default" }: AddNodeBut
               
               return (
                 <div key={category} className="mb-2">
-                  <div className="px-2 py-1 text-xs text-white/40 uppercase tracking-wide">
+                  <div className="px-2 py-1 text-xs text-muted-foreground uppercase tracking-wide">
                     {CATEGORY_LABELS[category]}
                   </div>
                   {actions.map((action) => (
                     <button
                       key={action.type}
                       onClick={() => handleSelect(action.type)}
-                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/10 transition-colors"
+                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
                     >
-                      <div className={cn("p-1.5 rounded-md bg-white/5", action.color)}>
+                      <div className={cn("p-1.5 rounded-md bg-muted/30", action.color)}>
                         {action.icon}
                       </div>
                       <div className="text-left">
-                        <div className="text-sm text-white">{action.label}</div>
-                        <div className="text-xs text-white/50">{action.description}</div>
+                        <div className="text-sm text-foreground">{action.label}</div>
+                        <div className="text-xs text-muted-foreground">{action.description}</div>
                       </div>
                     </button>
                   ))}

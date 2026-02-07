@@ -41,7 +41,7 @@ const mainNavItems = [
   { id: "funnels", label: "Funnels", icon: Layers, path: "/funnels" },
   { id: "workflows", label: "Workflows", icon: Workflow, path: "/workflows" },
   { id: "marketing", label: "Marketing", icon: Megaphone, path: "/marketing" },
-  { id: "schedule", label: "Scheduling", icon: CalendarDays, path: "/schedule" },
+  { id: "schedule", label: "Meetings", icon: CalendarDays, path: "/schedule" },
   { id: "calendars", label: "Scheduling", icon: CalendarCheck, path: "/calendars" },
   { id: "chat", label: "Team Chat", icon: MessageCircle, path: "/chat" },
   { id: "payments", label: "Payments", icon: CreditCard, path: "/payments" },

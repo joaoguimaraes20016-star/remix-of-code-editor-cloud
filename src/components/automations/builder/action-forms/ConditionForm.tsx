@@ -74,10 +74,10 @@ export function ConditionForm({ config, onChange }: ConditionFormProps) {
         <div className="flex items-start gap-3">
           <GitBranch className="h-5 w-5 text-amber-400 mt-0.5" />
           <div>
-            <p className="text-sm text-white/80">
+            <p className="text-sm text-foreground">
               Branch the workflow based on conditions.
             </p>
-            <p className="text-xs text-white/50 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               If conditions are met → True path, otherwise → False path
             </p>
           </div>
@@ -86,7 +86,7 @@ export function ConditionForm({ config, onChange }: ConditionFormProps) {
 
       {conditions.length > 1 && (
         <div className="flex items-center gap-2">
-          <Label className="text-white/70">Match</Label>
+          <Label className="text-foreground/70">Match</Label>
           <Select
             value={logicOperator}
             onValueChange={(value) => onChange({ ...config, logicOperator: value as 'AND' | 'OR' })}
@@ -99,13 +99,13 @@ export function ConditionForm({ config, onChange }: ConditionFormProps) {
               <SelectItem value="OR">ANY</SelectItem>
             </SelectContent>
           </Select>
-          <span className="text-sm text-white/50">of these conditions</span>
+          <span className="text-sm text-muted-foreground">of these conditions</span>
         </div>
       )}
 
       <div className="space-y-3">
         {conditions.map((condition, index) => (
-          <div key={condition.id || index} className="p-3 rounded-lg bg-white/5 border border-white/10 space-y-3">
+          <div key={condition.id || index} className="p-3 rounded-lg bg-muted/30 border border-border space-y-3">
             <div className="flex items-center gap-2">
               <Select
                 value={condition.field}
@@ -159,7 +159,7 @@ export function ConditionForm({ config, onChange }: ConditionFormProps) {
             </div>
 
             {index < conditions.length - 1 && (
-              <div className="text-center text-xs text-white/40 uppercase">
+              <div className="text-center text-xs text-muted-foreground uppercase">
                 {logicOperator}
               </div>
             )}

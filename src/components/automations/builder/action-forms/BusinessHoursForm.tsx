@@ -19,10 +19,10 @@ export function BusinessHoursForm({ config, onChange }: BusinessHoursFormProps) 
         <div className="flex items-start gap-3">
           <Building2 className="h-5 w-5 text-teal-400 mt-0.5" />
           <div>
-            <p className="text-sm text-white/80">
+            <p className="text-sm text-foreground">
               This step will pause the workflow until the next business hours window.
             </p>
-            <p className="text-xs text-white/50 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Configure your team's business hours in Settings → Business Hours
             </p>
           </div>
@@ -42,8 +42,8 @@ export function BusinessHoursForm({ config, onChange }: BusinessHoursFormProps) 
         />
       </div>
 
-      <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-        <p className="text-xs text-white/50">
+      <div className="p-3 rounded-lg bg-muted/30 border border-border">
+        <p className="text-xs text-muted-foreground">
           Default business hours: Mon-Fri, 9:00 AM - 5:00 PM (Team Timezone)
         </p>
       </div>

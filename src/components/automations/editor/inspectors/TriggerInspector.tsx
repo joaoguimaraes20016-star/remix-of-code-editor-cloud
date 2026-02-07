@@ -12,7 +12,7 @@ import {
   ArrowRightLeft, Briefcase, Trophy, XCircle, RefreshCw, Clock,
   DollarSign, AlertCircle, Send, AlertTriangle, Repeat, ShoppingCart, RotateCcw,
   MessageCircle, MailOpen, MailX, AlertOctagon, Star,
-  Webhook, Play, Search, Music
+  Webhook, Play, Search, Music, Mic
 } from "lucide-react";
 
 interface TriggerInspectorProps {
@@ -27,6 +27,40 @@ interface TriggerOption {
   icon: React.ReactNode;
   category: TriggerCategory;
 }
+
+// Functional triggers (have backend firing):
+const FUNCTIONAL_TRIGGERS: Set<TriggerType> = new Set([
+  // Contact triggers
+  "lead_created",
+  "lead_tag_added",
+  "lead_tag_removed",
+  "contact_changed",
+  "birthday_reminder",
+  "custom_date_reminder",
+  // Form triggers
+  "form_submitted",
+  // Appointment triggers
+  "appointment_booked",
+  "appointment_rescheduled",
+  "appointment_canceled",
+  "appointment_no_show",
+  // Note: appointment_completed is not yet implemented (no DB trigger)
+  // Payment triggers
+  "payment_received",
+  "payment_failed",
+  "subscription_created",
+  "subscription_cancelled",
+  "refund_issued",
+  // Integration triggers
+  "webhook_received",
+  "manual_trigger",
+  "scheduled_trigger",
+  "facebook_lead_form",
+  "tiktok_form_submitted",
+  "google_lead_form",
+  "typeform_response",
+  "fathom_summary_received",
+]);
 
 const TRIGGER_OPTIONS: TriggerOption[] = [
   // Contact triggers
@@ -93,6 +127,8 @@ const TRIGGER_OPTIONS: TriggerOption[] = [
   { value: "facebook_lead_form", label: "Facebook Lead Form", description: "When FB form is submitted", icon: <FileText className="h-4 w-4" />, category: "integration" },
   { value: "tiktok_form_submitted", label: "TikTok Form", description: "When TikTok form is submitted", icon: <Music className="h-4 w-4" />, category: "integration" },
   { value: "google_lead_form", label: "Google Lead Form", description: "When Google form is submitted", icon: <Search className="h-4 w-4" />, category: "integration" },
+  { value: "typeform_response", label: "Typeform Response", description: "When a Typeform is submitted", icon: <FileText className="h-4 w-4" />, category: "integration" },
+  { value: "fathom_summary_received", label: "Fathom Summary", description: "When a call summary is received", icon: <Mic className="h-4 w-4" />, category: "integration" },
 ];
 
 const CATEGORY_LABELS: Record<TriggerCategory, string> = {
@@ -130,9 +166,9 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label className="text-white/70">Trigger Type</Label>
+        <Label className="text-foreground/70">Trigger Type</Label>
         <Select value={trigger.type} onValueChange={handleTypeChange}>
-          <SelectTrigger className="bg-white/5 border-white/10 text-white">
+          <SelectTrigger className="bg-background border-border text-foreground">
             <SelectValue>
               {selectedOption && (
                 <div className="flex items-center gap-2">
@@ -142,28 +178,39 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
               )}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="bg-[#1a1a2e] border-white/10">
+          <SelectContent className="bg-background border-border">
             <ScrollArea className="h-80">
               {CATEGORY_ORDER.map((category) => (
                 <div key={category}>
-                  <div className="px-2 py-1.5 text-xs font-semibold text-white/40 uppercase tracking-wide sticky top-0 bg-[#1a1a2e]">
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide sticky top-0 bg-background">
                     {CATEGORY_LABELS[category]}
                   </div>
-                  {TRIGGER_CATEGORIES[category]?.map((opt) => (
-                    <SelectItem 
-                      key={opt.value} 
-                      value={opt.value} 
-                      className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
-                    >
-                      <div className="flex items-center gap-2">
-                        {opt.icon}
-                        <div className="flex flex-col">
-                          <span>{opt.label}</span>
-                          <span className="text-xs text-white/40">{opt.description}</span>
+                  {TRIGGER_CATEGORIES[category]?.map((opt) => {
+                    const isFunctional = FUNCTIONAL_TRIGGERS.has(opt.value);
+                    return (
+                      <SelectItem 
+                        key={opt.value} 
+                        value={opt.value} 
+                        className={isFunctional ? "text-foreground hover:bg-muted focus:bg-muted focus:text-foreground" : "text-muted-foreground hover:bg-muted/50 focus:bg-muted/50 focus:text-muted-foreground cursor-not-allowed"}
+                        disabled={!isFunctional}
+                      >
+                        <div className="flex items-center gap-2 w-full">
+                          {opt.icon}
+                          <div className="flex flex-col flex-1">
+                            <div className="flex items-center gap-2">
+                              <span>{opt.label}</span>
+                              {!isFunctional && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 shrink-0">
+                                  Coming soon
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground">{opt.description}</span>
+                          </div>
                         </div>
-                      </div>
-                    </SelectItem>
-                  ))}
+                      </SelectItem>
+                    );
+                  })}
                 </div>
               ))}
             </ScrollArea>
@@ -171,17 +218,17 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
         </Select>
       </div>
 
-      <Separator className="bg-white/10" />
+      <Separator className="bg-border" />
 
       {/* Tag triggers */}
       {(trigger.type === "lead_tag_added" || trigger.type === "lead_tag_removed") && (
         <div className="space-y-2">
-          <Label className="text-white/70">Tag Name</Label>
+          <Label className="text-foreground/70">Tag Name</Label>
           <Input
             value={trigger.config?.tag || ""}
             onChange={(e) => handleConfigChange("tag", e.target.value)}
             placeholder="e.g., hot-lead"
-            className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+            className="bg-background border-border text-foreground placeholder:text-muted-foreground"
           />
         </div>
       )}
@@ -190,14 +237,14 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
       {trigger.type === "contact_changed" && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-white/70">Field (Optional)</Label>
+            <Label className="text-foreground/70">Field (Optional)</Label>
             <Input
               value={trigger.config?.field || ""}
               onChange={(e) => handleConfigChange("field", e.target.value)}
               placeholder="Any field"
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              className="bg-background border-border text-foreground placeholder:text-muted-foreground"
             />
-            <p className="text-xs text-white/40">Leave empty to trigger on any field change</p>
+            <p className="text-xs text-muted-foreground">Leave empty to trigger on any field change</p>
           </div>
         </div>
       )}
@@ -207,33 +254,33 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
         <div className="space-y-4">
           {trigger.type === "custom_date_reminder" && (
             <div className="space-y-2">
-              <Label className="text-white/70">Date Field</Label>
+              <Label className="text-foreground/70">Date Field</Label>
               <Input
                 value={trigger.config?.field || ""}
                 onChange={(e) => handleConfigChange("field", e.target.value)}
                 placeholder="e.g., anniversary_date"
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+                className="bg-background border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-white/70">Days Before</Label>
+              <Label className="text-foreground/70">Days Before</Label>
               <Input
                 type="number"
                 min={0}
                 value={trigger.config?.daysBefore || 0}
                 onChange={(e) => handleConfigChange("daysBefore", parseInt(e.target.value))}
-                className="bg-white/5 border-white/10 text-white"
+                className="bg-background border-border text-foreground"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-white/70">Time</Label>
+              <Label className="text-foreground/70">Time</Label>
               <Input
                 type="time"
                 value={trigger.config?.time || "09:00"}
                 onChange={(e) => handleConfigChange("time", e.target.value)}
-                className="bg-white/5 border-white/10 text-white"
+                className="bg-background border-border text-foreground"
               />
             </div>
           </div>
@@ -244,14 +291,14 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
       {(trigger.type === "form_submitted" || trigger.type === "survey_submitted" || trigger.type === "quiz_submitted") && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-white/70">Funnel (Optional)</Label>
+            <Label className="text-foreground/70">Funnel (Optional)</Label>
             <Input
               value={trigger.config?.funnelId || ""}
               onChange={(e) => handleConfigChange("funnelId", e.target.value)}
               placeholder="Any funnel"
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              className="bg-background border-border text-foreground placeholder:text-muted-foreground"
             />
-            <p className="text-xs text-white/40">Leave empty to trigger on any submission</p>
+            <p className="text-xs text-muted-foreground">Leave empty to trigger on any submission</p>
           </div>
         </div>
       )}
@@ -260,30 +307,30 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
       {trigger.type === "stage_changed" && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-white/70">Pipeline (Optional)</Label>
+            <Label className="text-foreground/70">Pipeline (Optional)</Label>
             <Input
               value={trigger.config?.pipelineId || ""}
               onChange={(e) => handleConfigChange("pipelineId", e.target.value)}
               placeholder="Any pipeline"
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              className="bg-background border-border text-foreground placeholder:text-muted-foreground"
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-white/70">From Stage (Optional)</Label>
+            <Label className="text-foreground/70">From Stage (Optional)</Label>
             <Input
               value={trigger.config?.fromStage || ""}
               onChange={(e) => handleConfigChange("fromStage", e.target.value)}
               placeholder="Any stage"
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              className="bg-background border-border text-foreground placeholder:text-muted-foreground"
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-white/70">To Stage (Optional)</Label>
+            <Label className="text-foreground/70">To Stage (Optional)</Label>
             <Input
               value={trigger.config?.toStage || ""}
               onChange={(e) => handleConfigChange("toStage", e.target.value)}
               placeholder="Any stage"
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              className="bg-background border-border text-foreground placeholder:text-muted-foreground"
             />
           </div>
         </div>
@@ -297,34 +344,34 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
         trigger.type === "appointment_canceled") && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-white/70">Calendar (Optional)</Label>
+            <Label className="text-foreground/70">Calendar (Optional)</Label>
             <Input
               value={trigger.config?.calendarId || ""}
               onChange={(e) => handleConfigChange("calendarId", e.target.value)}
               placeholder="Any calendar"
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              className="bg-background border-border text-foreground placeholder:text-muted-foreground"
             />
-            <p className="text-xs text-white/40">Leave empty to trigger for any calendar</p>
+            <p className="text-xs text-muted-foreground">Leave empty to trigger for any calendar</p>
           </div>
           <div className="space-y-2">
-            <Label className="text-white/70">Event Type (Optional)</Label>
+            <Label className="text-foreground/70">Event Type (Optional)</Label>
             <Input
               value={trigger.config?.eventTypeName || ""}
               onChange={(e) => handleConfigChange("eventTypeName", e.target.value)}
               placeholder="Any event type"
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              className="bg-background border-border text-foreground placeholder:text-muted-foreground"
             />
-            <p className="text-xs text-white/40">e.g., "Discovery Call", "Strategy Session"</p>
+            <p className="text-xs text-muted-foreground">e.g., "Discovery Call", "Strategy Session"</p>
           </div>
           <div className="space-y-2">
-            <Label className="text-white/70">Closer (Optional)</Label>
+            <Label className="text-foreground/70">Closer (Optional)</Label>
             <Input
               value={trigger.config?.closerId || ""}
               onChange={(e) => handleConfigChange("closerId", e.target.value)}
               placeholder="Any closer"
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+              className="bg-background border-border text-foreground placeholder:text-muted-foreground"
             />
-            <p className="text-xs text-white/40">Filter by assigned closer</p>
+            <p className="text-xs text-muted-foreground">Filter by assigned closer</p>
           </div>
         </div>
       )}
@@ -333,15 +380,15 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
       {trigger.type === "stale_opportunity" && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-white/70">Days Without Activity</Label>
+            <Label className="text-foreground/70">Days Without Activity</Label>
             <Input
               type="number"
               min={1}
               value={trigger.config?.staleDays || 7}
               onChange={(e) => handleConfigChange("staleDays", parseInt(e.target.value))}
-              className="bg-white/5 border-white/10 text-white"
+              className="bg-background border-border text-foreground"
             />
-            <p className="text-xs text-white/40">Trigger when no activity for this many days</p>
+            <p className="text-xs text-muted-foreground">Trigger when no activity for this many days</p>
           </div>
         </div>
       )}
@@ -350,13 +397,13 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
       {trigger.type === "webhook_received" && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-white/70">Webhook URL</Label>
-            <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+            <Label className="text-foreground/70">Webhook URL</Label>
+            <div className="p-3 rounded-lg bg-muted/30 border border-border">
               <code className="text-xs text-primary break-all">
                 {`https://your-project.supabase.co/functions/v1/webhook-trigger/${trigger.config?.webhookId || 'YOUR_WEBHOOK_ID'}`}
               </code>
             </div>
-            <p className="text-xs text-white/40">Send POST requests to this URL to trigger this automation</p>
+            <p className="text-xs text-muted-foreground">Send POST requests to this URL to trigger this automation</p>
           </div>
         </div>
       )}
@@ -365,48 +412,48 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
       {trigger.type === "scheduled_trigger" && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-white/70">Schedule</Label>
+            <Label className="text-foreground/70">Schedule</Label>
             <Select 
               value={trigger.config?.schedule || "daily"} 
               onValueChange={(v) => handleConfigChange("schedule", v)}
             >
-              <SelectTrigger className="bg-white/5 border-white/10 text-white">
+              <SelectTrigger className="bg-background border-border text-foreground">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-[#1a1a2e] border-white/10">
-                <SelectItem value="daily" className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">Daily</SelectItem>
-                <SelectItem value="weekly" className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">Weekly</SelectItem>
-                <SelectItem value="monthly" className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">Monthly</SelectItem>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="daily" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Daily</SelectItem>
+                <SelectItem value="weekly" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Weekly</SelectItem>
+                <SelectItem value="monthly" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Monthly</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label className="text-white/70">Time</Label>
+            <Label className="text-foreground/70">Time</Label>
             <Input
               type="time"
               value={trigger.config?.time || "09:00"}
               onChange={(e) => handleConfigChange("time", e.target.value)}
-              className="bg-white/5 border-white/10 text-white"
+              className="bg-background border-border text-foreground"
             />
           </div>
           {trigger.config?.schedule === "weekly" && (
             <div className="space-y-2">
-              <Label className="text-white/70">Day of Week</Label>
+              <Label className="text-foreground/70">Day of Week</Label>
               <Select 
                 value={String(trigger.config?.dayOfWeek || 1)} 
                 onValueChange={(v) => handleConfigChange("dayOfWeek", parseInt(v))}
               >
-                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                <SelectTrigger className="bg-background border-border text-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1a1a2e] border-white/10">
-                  <SelectItem value="0" className="text-white hover:bg-white/10">Sunday</SelectItem>
-                  <SelectItem value="1" className="text-white hover:bg-white/10">Monday</SelectItem>
-                  <SelectItem value="2" className="text-white hover:bg-white/10">Tuesday</SelectItem>
-                  <SelectItem value="3" className="text-white hover:bg-white/10">Wednesday</SelectItem>
-                  <SelectItem value="4" className="text-white hover:bg-white/10">Thursday</SelectItem>
-                  <SelectItem value="5" className="text-white hover:bg-white/10">Friday</SelectItem>
-                  <SelectItem value="6" className="text-white hover:bg-white/10">Saturday</SelectItem>
+                <SelectContent className="bg-background border-border">
+                  <SelectItem value="0" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Sunday</SelectItem>
+                  <SelectItem value="1" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Monday</SelectItem>
+                  <SelectItem value="2" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Tuesday</SelectItem>
+                  <SelectItem value="3" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Wednesday</SelectItem>
+                  <SelectItem value="4" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Thursday</SelectItem>
+                  <SelectItem value="5" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Friday</SelectItem>
+                  <SelectItem value="6" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Saturday</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -417,18 +464,18 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
       {/* Payment triggers - show payment type filter */}
       {(trigger.type === "payment_received" || trigger.type === "payment_failed") && (
         <div className="space-y-2">
-          <Label className="text-white/70">Payment Type (Optional)</Label>
+          <Label className="text-foreground/70">Payment Type (Optional)</Label>
           <Select 
             value={trigger.config?.paymentType || "any"} 
             onValueChange={(v) => handleConfigChange("paymentType", v === "any" ? undefined : v)}
           >
-            <SelectTrigger className="bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="bg-background border-border text-foreground">
               <SelectValue placeholder="Any payment" />
             </SelectTrigger>
-            <SelectContent className="bg-[#1a1a2e] border-white/10">
-              <SelectItem value="any" className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">Any Payment</SelectItem>
-              <SelectItem value="subscription" className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">Subscription</SelectItem>
-              <SelectItem value="one_time" className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">One-Time</SelectItem>
+            <SelectContent className="bg-background border-border">
+              <SelectItem value="any" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Any Payment</SelectItem>
+              <SelectItem value="subscription" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Subscription</SelectItem>
+              <SelectItem value="one_time" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">One-Time</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -437,19 +484,19 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
       {/* Messaging error trigger */}
       {trigger.type === "messaging_error" && (
         <div className="space-y-2">
-          <Label className="text-white/70">Channel (Optional)</Label>
+          <Label className="text-foreground/70">Channel (Optional)</Label>
           <Select 
             value={trigger.config?.channel || "any"} 
             onValueChange={(v) => handleConfigChange("channel", v === "any" ? undefined : v)}
           >
-            <SelectTrigger className="bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="bg-background border-border text-foreground">
               <SelectValue placeholder="Any channel" />
             </SelectTrigger>
-            <SelectContent className="bg-[#1a1a2e] border-white/10">
-              <SelectItem value="any" className="text-white hover:bg-white/10">Any Channel</SelectItem>
-              <SelectItem value="sms" className="text-white hover:bg-white/10">SMS</SelectItem>
-              <SelectItem value="email" className="text-white hover:bg-white/10">Email</SelectItem>
-              <SelectItem value="whatsapp" className="text-white hover:bg-white/10">WhatsApp</SelectItem>
+            <SelectContent className="bg-background border-border">
+              <SelectItem value="any" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Any Channel</SelectItem>
+              <SelectItem value="sms" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">SMS</SelectItem>
+              <SelectItem value="email" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Email</SelectItem>
+              <SelectItem value="whatsapp" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">WhatsApp</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -458,21 +505,21 @@ export function TriggerInspector({ trigger, onChange }: TriggerInspectorProps) {
       {/* Customer replied trigger */}
       {trigger.type === "customer_replied" && (
         <div className="space-y-2">
-          <Label className="text-white/70">Channel (Optional)</Label>
+          <Label className="text-foreground/70">Channel (Optional)</Label>
           <Select 
             value={trigger.config?.channel || "any"} 
             onValueChange={(v) => handleConfigChange("channel", v === "any" ? undefined : v)}
           >
-            <SelectTrigger className="bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="bg-background border-border text-foreground">
               <SelectValue placeholder="Any channel" />
             </SelectTrigger>
-            <SelectContent className="bg-[#1a1a2e] border-white/10">
-              <SelectItem value="any" className="text-white hover:bg-white/10">Any Channel</SelectItem>
-              <SelectItem value="sms" className="text-white hover:bg-white/10">SMS</SelectItem>
-              <SelectItem value="email" className="text-white hover:bg-white/10">Email</SelectItem>
-              <SelectItem value="whatsapp" className="text-white hover:bg-white/10">WhatsApp</SelectItem>
-              <SelectItem value="facebook" className="text-white hover:bg-white/10">Facebook Messenger</SelectItem>
-              <SelectItem value="instagram" className="text-white hover:bg-white/10">Instagram DM</SelectItem>
+            <SelectContent className="bg-background border-border">
+              <SelectItem value="any" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Any Channel</SelectItem>
+              <SelectItem value="sms" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">SMS</SelectItem>
+              <SelectItem value="email" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Email</SelectItem>
+              <SelectItem value="whatsapp" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">WhatsApp</SelectItem>
+              <SelectItem value="facebook" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Facebook Messenger</SelectItem>
+              <SelectItem value="instagram" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">Instagram DM</SelectItem>
             </SelectContent>
           </Select>
         </div>

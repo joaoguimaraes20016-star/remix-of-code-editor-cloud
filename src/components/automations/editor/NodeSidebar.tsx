@@ -238,12 +238,12 @@ export function NodeSidebar({ onAddNode }: NodeSidebarProps) {
     <div className="flex flex-col h-full">
       {/* Search */}
       <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search actions..."
-          className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-white/40"
+          className="pl-9 bg-muted/30 border-border text-foreground placeholder:text-muted-foreground"
         />
       </div>
 
@@ -256,14 +256,14 @@ export function NodeSidebar({ onAddNode }: NodeSidebarProps) {
               open={expandedCategories.includes(category.id)}
               onOpenChange={() => toggleCategory(category.id)}
             >
-              <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 rounded-md hover:bg-white/5 transition-colors">
-                <span className="text-xs font-medium text-white/60 uppercase tracking-wide">
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   {category.label}
                 </span>
                 {expandedCategories.includes(category.id) ? (
-                  <ChevronDown className="h-3 w-3 text-white/40" />
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
                 ) : (
-                  <ChevronRight className="h-3 w-3 text-white/40" />
+                  <ChevronRight className="h-3 w-3 text-muted-foreground" />
                 )}
               </CollapsibleTrigger>
               <CollapsibleContent>
@@ -272,21 +272,21 @@ export function NodeSidebar({ onAddNode }: NodeSidebarProps) {
                     <button
                       key={node.type}
                       onClick={() => onAddNode(node.type)}
-                      className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.08] border border-transparent hover:border-white/10 transition-all group"
+                      className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-transparent hover:bg-muted/50 border border-transparent hover:border-border transition-all group"
                     >
                       <div
                         className={cn(
-                          "p-2 rounded-md bg-white/5 group-hover:bg-white/10 transition-colors",
+                          "p-2 rounded-md bg-muted/30 group-hover:bg-muted/50 transition-colors",
                           node.color
                         )}
                       >
                         {node.icon}
                       </div>
                       <div className="flex-1 text-left">
-                        <div className="text-sm font-medium text-white">
+                        <div className="text-sm font-medium text-foreground">
                           {node.label}
                         </div>
-                        <div className="text-xs text-white/50 mt-0.5">
+                        <div className="text-xs text-muted-foreground mt-0.5">
                           {node.description}
                         </div>
                       </div>

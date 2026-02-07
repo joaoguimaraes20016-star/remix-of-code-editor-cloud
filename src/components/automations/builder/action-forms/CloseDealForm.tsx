@@ -25,7 +25,7 @@ export function CloseDealForm({ config, onChange }: CloseDealFormProps) {
             className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${
               config.status === 'won' 
                 ? 'border-green-500 bg-green-500/10 text-green-400' 
-                : 'border-white/10 hover:border-white/20'
+                : 'border-border hover:border-border/80'
             }`}
           >
             <Trophy className="h-5 w-5" />
@@ -37,7 +37,7 @@ export function CloseDealForm({ config, onChange }: CloseDealFormProps) {
             className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${
               config.status === 'lost' 
                 ? 'border-red-500 bg-red-500/10 text-red-400' 
-                : 'border-white/10 hover:border-white/20'
+                : 'border-border hover:border-border/80'
             }`}
           >
             <XCircle className="h-5 w-5" />

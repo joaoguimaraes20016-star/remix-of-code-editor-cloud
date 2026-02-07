@@ -141,22 +141,22 @@ export function TriggerNode({ trigger, onChange, isSelected, onSelect }: Trigger
           whileTap={{ scale: 0.98 }}
           className={cn(
             "relative w-80 rounded-xl border transition-all duration-200",
-            "bg-gradient-to-br from-[#1a1a2e] to-[#16162a]",
+            "bg-background shadow-sm",
             isSelected
               ? "border-primary ring-2 ring-primary/30"
-              : "border-white/10 hover:border-white/20"
+              : "border-border hover:border-border/70"
           )}
         >
           {/* Header */}
-          <div className="flex items-center gap-3 p-4 border-b border-white/10">
+          <div className="flex items-center gap-3 p-4 border-b border-border">
             <div className={cn("p-2 rounded-lg", selectedOption?.bgColor || "bg-primary/20")}>
               <Zap className={cn("h-5 w-5", selectedOption?.color || "text-primary")} />
             </div>
             <div className="flex-1 text-left">
-              <div className="text-xs text-white/50 uppercase tracking-wide">Trigger</div>
-              <div className="text-white font-medium flex items-center gap-2">
+              <div className="text-xs text-muted-foreground uppercase tracking-wide">Trigger</div>
+              <div className="text-foreground font-medium flex items-center gap-2">
                 {selectedOption?.label || "Select trigger"}
-                <ChevronDown className="h-4 w-4 text-white/40" />
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </div>
             </div>
           </div>
@@ -165,29 +165,29 @@ export function TriggerNode({ trigger, onChange, isSelected, onSelect }: Trigger
           <div className="p-4">
             <div className="flex items-center gap-2">
               {selectedOption?.icon}
-              <span className="text-sm text-white/60">{selectedOption?.description}</span>
+              <span className="text-sm text-muted-foreground">{selectedOption?.description}</span>
             </div>
           </div>
         </motion.button>
       </PopoverTrigger>
 
       <PopoverContent
-        className="w-80 p-4 bg-[#1a1a2e] border-white/10"
+        className="w-80 p-4 bg-background border-border"
         align="center"
       >
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-white/70">Trigger Type</Label>
+            <Label className="text-foreground/70">Trigger Type</Label>
             <Select value={trigger.type} onValueChange={handleTypeChange}>
-              <SelectTrigger className="bg-white/5 border-white/10 text-white">
+              <SelectTrigger className="bg-background border-border text-foreground">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-[#1a1a2e] border-white/10">
+              <SelectContent className="bg-background border-border">
                 {TRIGGER_OPTIONS.map((option) => (
                   <SelectItem
                     key={option.value}
                     value={option.value}
-                    className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
+                    className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground"
                   >
                     <div className="flex items-center gap-2">
                       <span className={option.color}>{option.icon}</span>
@@ -202,12 +202,12 @@ export function TriggerNode({ trigger, onChange, isSelected, onSelect }: Trigger
           {/* Trigger-specific config */}
           {trigger.type === "lead_tag_added" && (
             <div className="space-y-2">
-              <Label className="text-white/70">Tag Name</Label>
+              <Label className="text-foreground/70">Tag Name</Label>
               <Input
                 placeholder="e.g., hot-lead"
                 value={trigger.config?.tag || ""}
                 onChange={(e) => handleConfigChange("tag", e.target.value)}
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+                className="bg-background border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
           )}
@@ -215,33 +215,33 @@ export function TriggerNode({ trigger, onChange, isSelected, onSelect }: Trigger
           {trigger.type === "time_delay" && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-white/70">Delay</Label>
+                <Label className="text-foreground/70">Delay</Label>
                 <Input
                   type="number"
                   min={1}
                   placeholder="5"
                   value={trigger.config?.delay || ""}
                   onChange={(e) => handleConfigChange("delay", e.target.value)}
-                  className="bg-white/5 border-white/10 text-white"
+                  className="bg-background border-border text-foreground"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/70">Unit</Label>
+                <Label className="text-foreground/70">Unit</Label>
                 <Select
                   value={trigger.config?.unit || "minutes"}
                   onValueChange={(value) => handleConfigChange("unit", value)}
                 >
-                  <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                  <SelectTrigger className="bg-background border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1a1a2e] border-white/10">
-                    <SelectItem value="minutes" className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">
+                  <SelectContent className="bg-background border-border">
+                    <SelectItem value="minutes" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">
                       Minutes
                     </SelectItem>
-                    <SelectItem value="hours" className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">
+                    <SelectItem value="hours" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">
                       Hours
                     </SelectItem>
-                    <SelectItem value="days" className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">
+                    <SelectItem value="days" className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">
                       Days
                     </SelectItem>
                   </SelectContent>

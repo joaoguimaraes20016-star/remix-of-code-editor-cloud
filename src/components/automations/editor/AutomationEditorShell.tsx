@@ -193,7 +193,7 @@ export function AutomationEditorShell({
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="text-white/70 hover:text-white hover:bg-white/10"
+            className="text-muted-foreground hover:text-foreground hover:bg-muted/50"
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
             Back
@@ -213,8 +213,8 @@ export function AutomationEditorShell({
               status={publishStatus} 
               version={currentVersionNumber} 
             />
-            <span className="text-white/30">•</span>
-            <span className="text-white/50 text-xs">
+            <span className="text-muted-foreground/40">•</span>
+            <span className="text-muted-foreground text-xs">
               {definition.steps.length} step{definition.steps.length !== 1 ? "s" : ""}
             </span>
           </div>
@@ -230,7 +230,6 @@ export function AutomationEditorShell({
             variant="outline"
             size="sm"
             onClick={() => setShowTestPanel(true)}
-            className="border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
           >
             <Play className="h-4 w-4 mr-2" />
             Test
@@ -240,7 +239,6 @@ export function AutomationEditorShell({
             size="sm"
             onClick={onSave}
             disabled={isSaving || isPublishing}
-            className="border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
           >
             {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <Save className="h-4 w-4 mr-2" />
@@ -269,7 +267,7 @@ export function AutomationEditorShell({
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -360, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="w-[360px] min-w-[360px] border-r border-sidebar-border flex-shrink-0"
+              className="w-[360px] min-w-[360px] border-r border-border flex-shrink-0"
             >
               <AutomationAIPanel
                 definition={definition}
@@ -277,6 +275,7 @@ export function AutomationEditorShell({
                 onNameChange={onNameChange}
                 onCollapse={() => setLeftCollapsed(true)}
                 isNew={isNew}
+                teamId={teamId}
               />
             </motion.aside>
           )}
@@ -318,7 +317,7 @@ export function AutomationEditorShell({
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 320, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed right-0 top-14 bottom-0 w-80 bg-sidebar border-l border-sidebar-border z-20"
+              className="fixed right-0 top-14 bottom-0 w-80 bg-background border-l border-border z-20"
             >
               <div className="automation-editor-panel-header">
                 <span className="automation-editor-panel-title flex items-center gap-2">

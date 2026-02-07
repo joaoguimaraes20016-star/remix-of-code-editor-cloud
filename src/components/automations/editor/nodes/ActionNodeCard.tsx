@@ -538,15 +538,15 @@ export function ActionNodeCard({ step, isSelected, onSelect }: ActionNodeCardPro
       whileTap={{ scale: 0.98 }}
       className={cn(
         "relative w-96 rounded-2xl border-2 transition-all shadow-lg",
-        "bg-sidebar",
+        "bg-background",
         isSelected 
           ? "border-primary shadow-primary/20" 
-          : "border-sidebar-border hover:border-primary/50 hover:shadow-xl"
+          : "border-border hover:border-primary/50 hover:shadow-xl"
       )}
     >
       {/* Status Indicator */}
       <div className={cn(
-        "absolute -right-1.5 -top-1.5 w-6 h-6 rounded-full flex items-center justify-center border-2 border-sidebar",
+        "absolute -right-1.5 -top-1.5 w-6 h-6 rounded-full flex items-center justify-center border-2 border-background",
         isConfigured ? "bg-green-500" : "bg-yellow-500"
       )}>
         {isConfigured ? (
@@ -564,8 +564,8 @@ export function ActionNodeCard({ step, isSelected, onSelect }: ActionNodeCardPro
 
         {/* Content */}
         <div className="flex-1 text-left min-w-0">
-          <div className="text-white font-semibold text-lg mb-1">{display.label}</div>
-          <div className="text-sm text-white/50 truncate">{preview}</div>
+          <div className="text-foreground font-semibold text-lg mb-1">{display.label}</div>
+          <div className="text-sm text-muted-foreground truncate">{preview}</div>
         </div>
       </div>
     </motion.button>

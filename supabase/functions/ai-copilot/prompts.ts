@@ -18,7 +18,7 @@ import { getAtomicDesignRules } from './componentAtoms.ts';
 import { getPatternGuidanceForPrompt } from './promptPatterns.ts';
 import { getColorContextForPrompt, detectIndustryFromPrompt, getRandomPaletteForIndustry, formatPaletteForPrompt } from './colorPalettes.ts';
 
-export type TaskType = 'suggest' | 'generate' | 'rewrite' | 'analyze';
+export type TaskType = 'suggest' | 'generate' | 'rewrite' | 'analyze' | 'help' | 'optimize' | 'explain';
 export type GenerationMode = 'block' | 'funnel' | 'settings' | 'workflow';
 export type FunnelType = 'vsl' | 'webinar' | 'optin' | 'sales' | 'booking' | 'quiz' | 'application' | 'checkout' | 'thank-you' | 'general';
 
@@ -601,6 +601,78 @@ User: "Notify the team when a deal is won"
 
 Respond with ONLY valid JSON. No markdown, no code blocks, no explanation.`;
 
+// NEW: Workflow help/chat prompt
+const WORKFLOW_HELP_PROMPT = `You are an automation workflow expert assistant.
+
+CURRENT WORKFLOW:
+- Trigger: {{TRIGGER_TYPE}}
+- Steps: {{STEP_COUNT}} actions
+- Has conditionals: {{HAS_CONDITIONALS}}
+- Workflow definition: {{WORKFLOW_JSON}}
+
+AVAILABLE TRIGGERS: {{AVAILABLE_TRIGGERS}}
+AVAILABLE ACTIONS: {{AVAILABLE_ACTIONS}}
+
+USER QUESTION:
+{{USER_PROMPT}}
+
+Provide helpful, actionable advice about this workflow. Consider:
+- Best practices for automation design
+- Potential issues or improvements
+- Next steps to enhance the workflow
+- Integration opportunities
+- Timing and sequencing recommendations
+- Error handling and edge cases
+
+Respond conversationally with specific recommendations. Be practical and actionable.
+
+IMPORTANT: Respond in plain text only. Do not use HTML tags, JSON, code blocks, or markdown formatting. Write naturally as if you're having a conversation.`;
+
+// NEW: Workflow optimization prompt
+const WORKFLOW_OPTIMIZE_PROMPT = `Analyze this automation workflow and suggest improvements.
+
+WORKFLOW:
+{{WORKFLOW_JSON}}
+
+CURRENT STATE:
+- Trigger: {{TRIGGER_TYPE}}
+- Steps: {{STEP_COUNT}}
+- Has conditionals: {{HAS_CONDITIONALS}}
+
+Analyze for:
+1. Efficiency: Are there redundant steps? Can actions be combined?
+2. Timing: Are delays appropriate? Should timing be adjusted?
+3. Error handling: Missing fallbacks? What if steps fail?
+4. User experience: Clear messaging? Appropriate channels?
+5. Conversion optimization: Better CTAs? More engaging content?
+6. Best practices: Following automation best practices?
+
+Respond with specific, actionable improvements. Prioritize the most impactful changes first.
+
+IMPORTANT: Respond in plain text only. Do not use HTML tags, JSON, code blocks, or markdown formatting. Write naturally as if you're having a conversation.`;
+
+// NEW: Workflow explanation prompt
+const WORKFLOW_EXPLAIN_PROMPT = `Explain this automation workflow in simple terms.
+
+WORKFLOW:
+{{WORKFLOW_JSON}}
+
+CURRENT STATE:
+- Trigger: {{TRIGGER_TYPE}}
+- Steps: {{STEP_COUNT}}
+- Has conditionals: {{HAS_CONDITIONALS}}
+
+Explain:
+- What triggers this workflow (in plain language)
+- What actions it performs (step by step)
+- Why each step matters (the purpose)
+- Expected outcomes (what happens when it runs)
+- Who benefits from this workflow
+
+Use clear, non-technical language. Avoid jargon. Make it easy for anyone to understand.
+
+IMPORTANT: Respond in plain text only. Do not use HTML tags, JSON, code blocks, or markdown formatting. Write naturally as if you're having a conversation.`;
+
 // NEW: Settings update prompt
 const SETTINGS_PROMPT = `${BASE_CONTEXT}
 
@@ -826,7 +898,49 @@ export function getSystemPrompt(
   // CRITICAL: Always prepend guardrails to prevent AI from generating builder code
   const guardrailPrefix = AI_OUTPUT_GUARDRAILS + '\n\n';
   
-  // Handle generation modes for 'generate' task
+  // Handle workflow mode for all workflow-related tasks
+  if (mode === 'workflow') {
+    const workflowContext = context as any;
+    const workflowJson = workflowContext?.currentDefinition 
+      ? JSON.stringify(workflowContext.currentDefinition, null, 2)
+      : 'No workflow defined';
+    const triggerType = workflowContext?.triggerType || 'Not set';
+    const stepCount = workflowContext?.stepCount || 0;
+    const hasConditionals = workflowContext?.hasConditionals ? 'Yes' : 'No';
+    const availableTriggers = workflowContext?.availableTriggers?.join(', ') || 'N/A';
+    const availableActions = workflowContext?.availableActions?.join(', ') || 'N/A';
+    
+    // Determine which workflow prompt to use based on task
+    // For workflow help/explain/optimize, skip guardrails (they're for funnel JSON, not chat)
+    if (task === 'help') {
+      return WORKFLOW_HELP_PROMPT
+        .replace('{{TRIGGER_TYPE}}', triggerType)
+        .replace('{{STEP_COUNT}}', String(stepCount))
+        .replace('{{HAS_CONDITIONALS}}', hasConditionals)
+        .replace('{{WORKFLOW_JSON}}', workflowJson)
+        .replace('{{AVAILABLE_TRIGGERS}}', availableTriggers)
+        .replace('{{AVAILABLE_ACTIONS}}', availableActions)
+        .replace('{{USER_PROMPT}}', userPrompt || 'Help me understand this workflow');
+    } else if (task === 'optimize') {
+      return WORKFLOW_OPTIMIZE_PROMPT
+        .replace('{{WORKFLOW_JSON}}', workflowJson)
+        .replace('{{TRIGGER_TYPE}}', triggerType)
+        .replace('{{STEP_COUNT}}', String(stepCount))
+        .replace('{{HAS_CONDITIONALS}}', hasConditionals);
+    } else if (task === 'explain') {
+      return WORKFLOW_EXPLAIN_PROMPT
+        .replace('{{WORKFLOW_JSON}}', workflowJson)
+        .replace('{{TRIGGER_TYPE}}', triggerType)
+        .replace('{{STEP_COUNT}}', String(stepCount))
+        .replace('{{HAS_CONDITIONALS}}', hasConditionals);
+    } else {
+      // Generation still gets guardrails (needs JSON output)
+      return guardrailPrefix + WORKFLOW_GENERATE_PROMPT
+        .replace('{{USER_PROMPT}}', userPrompt || 'Create a simple automation');
+    }
+  }
+  
+  // Handle generation modes for 'generate' task (non-workflow)
   if (task === 'generate' && mode) {
     switch (mode) {
       case 'funnel':
@@ -840,10 +954,6 @@ export function getSystemPrompt(
         return guardrailPrefix + SETTINGS_PROMPT
           .replace('{{CURRENT_SETTINGS}}', currentSettings)
           .replace('{{USER_PROMPT}}', userPrompt || 'Update the theme');
-      
-      case 'workflow':
-        return guardrailPrefix + WORKFLOW_GENERATE_PROMPT
-          .replace('{{USER_PROMPT}}', userPrompt || 'Create a simple automation');
       
       case 'block':
       default:

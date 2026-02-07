@@ -94,16 +94,16 @@ export function AutomationCanvas({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-[#0a0a0f] flex flex-col"
+      className="fixed inset-0 z-50 bg-background flex flex-col"
     >
       {/* Header */}
-      <header className="h-14 border-b border-white/10 bg-[#12121a] flex items-center justify-between px-4 shrink-0">
+      <header className="h-14 border-b border-border bg-background flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="text-white/60 hover:text-white hover:bg-white/10"
+            className="text-muted-foreground hover:text-foreground hover:bg-muted/50"
           >
             <X className="h-5 w-5" />
           </Button>
@@ -111,7 +111,7 @@ export function AutomationCanvas({
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
             placeholder="Automation name..."
-            className="bg-transparent border-none text-white text-lg font-medium w-64 focus-visible:ring-0 placeholder:text-white/30"
+            className="bg-transparent border-none text-foreground text-lg font-medium w-64 focus-visible:ring-0 placeholder:text-muted-foreground"
           />
         </div>
 
@@ -119,7 +119,7 @@ export function AutomationCanvas({
           <Button
             variant="outline"
             onClick={onClose}
-            className="border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
+            className="border-border text-foreground/70 hover:bg-muted/50 hover:text-foreground"
           >
             Cancel
           </Button>
@@ -142,8 +142,8 @@ export function AutomationCanvas({
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)
+              linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px),
+              linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px)
             `,
             backgroundSize: "40px 40px",
           }}
@@ -217,7 +217,7 @@ export function AutomationCanvas({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="mt-4 flex items-center gap-2 text-white/30"
+              className="mt-4 flex items-center gap-2 text-muted-foreground/50"
             >
               <ZapOff className="h-4 w-4" />
               <span className="text-sm">End</span>

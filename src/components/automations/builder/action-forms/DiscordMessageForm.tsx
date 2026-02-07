@@ -50,7 +50,7 @@ export function DiscordMessageForm({ config, onChange }: DiscordMessageFormProps
           value={config.channel_id || ""}
           onChange={(e) => onChange({ ...config, channel_id: e.target.value })}
         />
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-muted-foreground">
           Right-click a channel in Discord &gt; Copy Channel ID (enable Developer Mode in Discord settings)
         </p>
       </div>
@@ -78,7 +78,7 @@ export function DiscordMessageForm({ config, onChange }: DiscordMessageFormProps
           value={config.embed_title || ""}
           onChange={(e) => onChange({ ...config, embed_title: e.target.value })}
         />
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-muted-foreground">
           Add a rich embed card to the message
         </p>
       </div>

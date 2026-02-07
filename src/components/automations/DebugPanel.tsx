@@ -137,9 +137,9 @@ export function DebugPanel() {
           Debug
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[500px] sm:w-[600px] bg-sidebar border-sidebar-border">
+      <SheetContent className="w-[500px] sm:w-[600px] bg-background border-border">
         <SheetHeader className="pb-4">
-          <SheetTitle className="flex items-center gap-2 text-white">
+          <SheetTitle className="flex items-center gap-2 text-foreground">
             <Bug className="h-5 w-5 text-primary" />
             Why Didn't It Run?
           </SheetTitle>
@@ -150,15 +150,15 @@ export function DebugPanel() {
           <div className="flex gap-3">
             <div className="flex-1">
               <Select value={triggerFilter} onValueChange={setTriggerFilter}>
-                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                <SelectTrigger className="bg-muted/30 border-border text-foreground">
                   <SelectValue placeholder="Filter by trigger" />
                 </SelectTrigger>
-                <SelectContent className="bg-sidebar border-white/10">
+                <SelectContent className="bg-background border-border">
                   {triggerTypes.map((t) => (
                     <SelectItem
                       key={t.value}
                       value={t.value}
-                      className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
+                      className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground"
                     >
                       {t.label}
                     </SelectItem>
@@ -171,13 +171,13 @@ export function DebugPanel() {
               size="icon"
               onClick={() => refetch()}
               disabled={isLoading}
-              className="border-white/10"
+              className="border-border"
             >
               <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
             </Button>
           </div>
 
-          <Separator className="bg-white/10" />
+          <Separator className="bg-border" />
 
           {/* Results */}
           <ScrollArea className="h-[calc(100vh-250px)]">
@@ -208,7 +208,7 @@ export function DebugPanel() {
                     key={result.automationId}
                     className={cn(
                       "p-3 rounded-lg border transition-colors",
-                      "bg-white/5 border-white/10 hover:border-white/20"
+                      "bg-muted/30 border-border hover:border-border"
                     )}
                   >
                     <button
@@ -219,7 +219,7 @@ export function DebugPanel() {
                         <div className="flex items-center gap-3">
                           {getStatusIcon(result)}
                           <div>
-                            <div className="text-sm font-medium text-white">
+                            <div className="text-sm font-medium text-foreground">
                               {result.automationName}
                             </div>
                             <div className="text-xs text-muted-foreground">
@@ -242,7 +242,7 @@ export function DebugPanel() {
 
                     {/* Expanded Details */}
                     {expandedId === result.automationId && result.skipReasons.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-white/10">
+                      <div className="mt-3 pt-3 border-t border-border">
                         <div className="text-xs text-muted-foreground mb-2">
                           Potential reasons it didn't run:
                         </div>
@@ -274,7 +274,7 @@ export function DebugPanel() {
             {/* Recent Runs Section */}
             {data?.recentRuns && data.recentRuns.length > 0 && (
               <div className="mt-6">
-                <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+                <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   Recent Runs
                 </h4>
@@ -282,10 +282,10 @@ export function DebugPanel() {
                   {data.recentRuns.slice(0, 10).map((run) => (
                     <div
                       key={run.id}
-                      className="p-2 rounded-lg bg-white/5 border border-white/10 text-xs"
+                      className="p-2 rounded-lg bg-muted/30 border border-border text-xs"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-white font-medium">{run.automationName}</span>
+                        <span className="text-foreground font-medium">{run.automationName}</span>
                         <Badge
                           variant={run.status === "success" ? "default" : "destructive"}
                           className={cn(

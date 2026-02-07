@@ -76,7 +76,7 @@ export function TimeDelayForm({ config, onChange }: TimeDelayFormProps) {
       </div>
 
       {/* Business Hours Option */}
-      <div className="space-y-3 pt-2 border-t border-white/10">
+      <div className="space-y-3 pt-2 border-t border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Building2 className="h-4 w-4 text-muted-foreground" />

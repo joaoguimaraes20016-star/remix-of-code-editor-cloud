@@ -62,17 +62,17 @@ export function VersionHistoryPanel({
           <Button
             variant="ghost"
             size="sm"
-            className="text-white/60 hover:text-white hover:bg-white/10"
+            className="text-muted-foreground hover:text-foreground hover:bg-muted/50"
             disabled={!automationId || automationId === "new"}
           >
             <History className="h-4 w-4 mr-1.5" />
             History
           </Button>
         </SheetTrigger>
-        <SheetContent className="w-[400px] bg-sidebar border-sidebar-border">
+        <SheetContent className="w-[400px] bg-background border-border">
           <SheetHeader>
-            <SheetTitle className="text-white">Version History</SheetTitle>
-            <SheetDescription className="text-white/60">
+            <SheetTitle className="text-foreground">Version History</SheetTitle>
+            <SheetDescription className="text-muted-foreground">
               View and restore previous versions of this workflow
             </SheetDescription>
           </SheetHeader>
@@ -80,13 +80,13 @@ export function VersionHistoryPanel({
           <ScrollArea className="h-[calc(100vh-140px)] mt-4 -mx-6 px-6">
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-white/50" />
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : isEmpty ? (
               <div className="text-center py-12">
-                <History className="h-10 w-10 text-white/20 mx-auto mb-3" />
-                <p className="text-white/50 text-sm">No published versions yet</p>
-                <p className="text-white/30 text-xs mt-1">
+                <History className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-muted-foreground text-sm">No published versions yet</p>
+                <p className="text-muted-foreground/60 text-xs mt-1">
                   Publish this workflow to create your first version
                 </p>
               </div>
@@ -103,13 +103,13 @@ export function VersionHistoryPanel({
                         "p-3 rounded-lg border transition-colors",
                         isCurrent
                           ? "bg-primary/10 border-primary/30"
-                          : "bg-white/5 border-white/10 hover:border-white/20"
+                          : "bg-muted/30 border-border hover:border-border/80"
                       )}
                     >
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-white">
+                            <span className="text-sm font-medium text-foreground">
                               v{version.version_number}
                             </span>
                             {isCurrent && (
@@ -123,10 +123,10 @@ export function VersionHistoryPanel({
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-white/50 mt-1">
+                          <p className="text-xs text-muted-foreground mt-1">
                             {format(new Date(version.published_at), "MMM d, yyyy 'at' h:mm a")}
                           </p>
-                          <p className="text-xs text-white/40 mt-0.5">
+                          <p className="text-xs text-muted-foreground/60 mt-0.5">
                             {(version.definition_json as any)?.steps?.length || 0} steps
                           </p>
                         </div>
@@ -136,7 +136,7 @@ export function VersionHistoryPanel({
                             variant="ghost"
                             size="sm"
                             onClick={() => setRollbackTarget(version)}
-                            className="text-white/60 hover:text-white hover:bg-white/10"
+                            className="text-muted-foreground hover:text-foreground hover:bg-muted/50"
                           >
                             <RotateCcw className="h-3.5 w-3.5 mr-1" />
                             Restore
@@ -154,19 +154,19 @@ export function VersionHistoryPanel({
 
       {/* Rollback Confirmation Dialog */}
       <AlertDialog open={!!rollbackTarget} onOpenChange={() => setRollbackTarget(null)}>
-        <AlertDialogContent className="bg-sidebar border-sidebar-border">
+        <AlertDialogContent className="bg-background border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">
+            <AlertDialogTitle className="text-foreground">
               Restore to v{rollbackTarget?.version_number}?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-white/60">
+            <AlertDialogDescription className="text-muted-foreground">
               This will create a new version with the same configuration as v
               {rollbackTarget?.version_number}. The current published version will remain in 
               history.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+            <AlertDialogCancel className="bg-muted/50 border-border text-foreground hover:bg-muted">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction

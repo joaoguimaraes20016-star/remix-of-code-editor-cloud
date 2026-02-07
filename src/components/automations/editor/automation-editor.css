@@ -4,16 +4,18 @@
   width: 100vw;
   display: flex;
   flex-direction: column;
-  /* Dark charcoal theme matching sidebar (HSL 220 13% 10%) */
-  --background: 220 13% 8%;
-  --foreground: 210 20% 96%;
-  --muted: 220 13% 14%;
-  --muted-foreground: 215 12% 55%;
-  --card: 220 13% 10%;
-  --card-foreground: 210 20% 96%;
-  --border: 220 13% 16%;
-  --input: 220 13% 16%;
+  /* Light theme - clean white mode */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
   --ring: 217 91% 60%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 210 40% 98%;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
   overflow: hidden;
@@ -27,8 +29,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  background: hsl(220 13% 10%);
-  border-bottom: 1px solid hsl(220 13% 16%);
+  background: hsl(var(--background));
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .automation-editor-header-left,
@@ -47,7 +49,7 @@
 .automation-editor-divider {
   width: 1px;
   height: 24px;
-  background: hsl(220 13% 20%);
+  background: hsl(var(--border));
   margin: 0 8px;
 }
 
@@ -78,20 +80,20 @@
   position: relative;
 }
 
-/* Panels - Solid dark charcoal matching sidebar */
+/* Panels - Clean white */
 .automation-editor-panel {
   width: 320px;
   min-width: 320px;
   display: flex;
   flex-direction: column;
-  background: hsl(220 13% 10%);
-  border-right: 1px solid hsl(220 13% 16%);
+  background: hsl(var(--background));
+  border-right: 1px solid hsl(var(--border));
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .automation-editor-panel--right {
   border-right: none;
-  border-left: 1px solid hsl(220 13% 16%);
+  border-left: 1px solid hsl(var(--border));
 }
 
 .automation-editor-panel--collapsed {
@@ -108,13 +110,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  border-bottom: 1px solid hsl(220 13% 16%);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .automation-editor-panel-title {
   font-size: 0.875rem;
   font-weight: 600;
-  color: hsl(210 20% 96%);
+  color: hsl(var(--foreground));
   display: flex;
   align-items: center;
   gap: 8px;
@@ -129,14 +131,14 @@
   border-radius: 8px;
   background: transparent;
   border: none;
-  color: hsl(215 12% 55%);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .automation-editor-panel-collapse:hover {
-  background: hsl(217 91% 60% / 0.12);
-  color: hsl(210 20% 96%);
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
 }
 
 .automation-editor-panel-content {
@@ -155,12 +157,12 @@
 }
 
 .automation-editor-panel-content::-webkit-scrollbar-thumb {
-  background: hsl(220 13% 20%);
+  background: hsl(var(--border));
   border-radius: 3px;
 }
 
 .automation-editor-panel-content::-webkit-scrollbar-thumb:hover {
-  background: hsl(220 13% 25%);
+  background: hsl(var(--muted-foreground) / 0.4);
 }
 
 /* Expand Buttons */
@@ -174,16 +176,16 @@
   justify-content: center;
   width: 28px;
   height: 56px;
-  background: hsl(220 13% 10%);
-  border: 1px solid hsl(220 13% 16%);
-  color: hsl(215 12% 55%);
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .automation-editor-expand-btn:hover {
-  background: hsl(220 13% 14%);
-  color: hsl(210 20% 96%);
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
 }
 
 .automation-editor-expand-btn--left {
@@ -198,16 +200,16 @@
   border-right: none;
 }
 
-/* Canvas - Dark charcoal with subtle grid */
+/* Canvas - Light with subtle grid */
 .automation-editor-canvas {
   flex: 1;
   overflow: auto;
   position: relative;
   background: 
     radial-gradient(circle at 50% 0%, hsl(217 91% 60% / 0.03) 0%, transparent 50%),
-    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-  background-color: hsl(220 13% 8%);
+    linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px);
+  background-color: hsl(var(--muted));
   background-size: 100% 100%, 40px 40px, 40px 40px;
 }
 
@@ -222,12 +224,12 @@
 }
 
 .automation-editor-canvas::-webkit-scrollbar-thumb {
-  background: hsl(220 13% 18%);
+  background: hsl(var(--border));
   border-radius: 4px;
 }
 
 .automation-editor-canvas::-webkit-scrollbar-thumb:hover {
-  background: hsl(220 13% 24%);
+  background: hsl(var(--muted-foreground) / 0.4);
 }
 
 .automation-editor-canvas::-webkit-scrollbar-corner {

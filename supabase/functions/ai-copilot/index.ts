@@ -43,8 +43,8 @@ serve(async (req) => {
     // Get the appropriate system prompt based on task type and mode
     const systemPrompt = getSystemPrompt(task, context, mode, prompt);
 
-    // Increase max tokens for funnel generation
-    const maxTokens = mode === 'funnel' ? 4096 : 2048;
+    // Increase max tokens for funnel and workflow generation
+    const maxTokens = (mode === 'funnel' || mode === 'workflow') ? 4096 : 2048;
 
     console.log(`[ai-copilot] Task: ${task}, Mode: ${mode || 'block'}, Stream: ${stream}`);
 
@@ -55,7 +55,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "anthropic/claude-sonnet-4-20250514",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: prompt },

@@ -60,7 +60,7 @@ export default function AutomationRunsList({ teamId }: { teamId: string }) {
   const displayRows = useMemo(() => rows ?? [], [rows]);
 
   return (
-    <Card className="border-white/10 bg-white/5">
+    <Card className="border-border bg-muted/30">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Automation History</CardTitle>
         <Button variant="secondary" onClick={load} disabled={loading}>
@@ -70,9 +70,9 @@ export default function AutomationRunsList({ teamId }: { teamId: string }) {
 
       <CardContent>
         {displayRows.length === 0 ? (
-          <div className="text-sm text-white/60">
+          <div className="text-sm text-foreground/70">
             No runs found for this team.
-            <div className="mt-2 text-xs text-white/40">
+            <div className="mt-2 text-xs text-muted-foreground">
               If Messages is logging but this is empty, your edge function is not inserting into{" "}
               <code>public.automation_runs</code> (next step).
             </div>
@@ -82,12 +82,12 @@ export default function AutomationRunsList({ teamId }: { teamId: string }) {
             {displayRows.map((r) => {
               const open = !!expanded[r.id];
               return (
-                <div key={r.id} className="rounded-lg border border-white/10 bg-black/20 p-3">
+                <div key={r.id} className="rounded-lg border border-border bg-muted/40 p-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs text-white/70">
+                    <span className="text-xs text-foreground/70">
                       {r.automation_id ? r.automation_id.slice(0, 8) : "Template Automation"}
                     </span>
-                    <span className="text-xs rounded-full bg-white/10 px-2 py-1">{r.trigger_type}</span>
+                    <span className="text-xs rounded-full bg-muted/50 px-2 py-1">{r.trigger_type}</span>
                     <span
                       className={`text-xs rounded-full px-2 py-1 ${
                         r.status === "success"
@@ -96,13 +96,13 @@ export default function AutomationRunsList({ teamId }: { teamId: string }) {
                             ? "bg-red-500/20 text-red-200"
                             : r.status === "running"
                               ? "bg-yellow-500/20 text-yellow-200"
-                              : "bg-white/10 text-white/80"
+                              : "bg-muted/50 text-foreground"
                       }`}
                     >
                       {r.status}
                     </span>
 
-                    <span className="text-xs text-white/50">{new Date(r.created_at).toLocaleString()}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString()}</span>
 
                     <div className="ml-auto flex items-center gap-2">
                       <Button
@@ -120,14 +120,14 @@ export default function AutomationRunsList({ teamId }: { teamId: string }) {
                   {open ? (
                     <div className="mt-3 grid gap-3 md:grid-cols-2">
                       <div>
-                        <div className="mb-1 text-xs text-white/50">steps_executed</div>
-                        <pre className="max-h-64 overflow-auto rounded-md bg-black/40 p-2 text-xs text-white/80">
+                        <div className="mb-1 text-xs text-muted-foreground">steps_executed</div>
+                        <pre className="max-h-64 overflow-auto rounded-md bg-muted/40 p-2 text-xs text-foreground">
                           {safeJson(r.steps_executed)}
                         </pre>
                       </div>
                       <div>
-                        <div className="mb-1 text-xs text-white/50">context_snapshot</div>
-                        <pre className="max-h-64 overflow-auto rounded-md bg-black/40 p-2 text-xs text-white/80">
+                        <div className="mb-1 text-xs text-muted-foreground">context_snapshot</div>
+                        <pre className="max-h-64 overflow-auto rounded-md bg-muted/40 p-2 text-xs text-foreground">
                           {safeJson(r.context_snapshot)}
                         </pre>
                       </div>

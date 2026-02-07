@@ -18,10 +18,10 @@ export function StopWorkflowForm({ config, onChange }: StopWorkflowFormProps) {
         <div className="flex items-start gap-3">
           <StopCircle className="h-5 w-5 text-red-400 mt-0.5" />
           <div>
-            <p className="text-sm text-white/80">
+            <p className="text-sm text-foreground">
               This action will immediately stop the workflow.
             </p>
-            <p className="text-xs text-white/50 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               No further steps will be executed after this point.
             </p>
           </div>

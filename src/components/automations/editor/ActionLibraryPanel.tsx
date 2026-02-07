@@ -190,14 +190,14 @@ export function ActionLibraryPanel({ onSelect, supportedActions }: ActionLibrary
   return (
     <div className="flex flex-col h-full">
       {/* Search */}
-      <div className="p-3 border-b border-sidebar-border">
+      <div className="p-3 border-b border-border">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search actions..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 bg-sidebar-accent/50 border-sidebar-border h-9"
+            className="pl-9 bg-muted/50 border-border h-9"
           />
         </div>
       </div>
@@ -211,7 +211,7 @@ export function ActionLibraryPanel({ onSelect, supportedActions }: ActionLibrary
               open={search.length > 0 || expandedCategories.includes(category.id)}
               onOpenChange={() => toggleCategory(category.id)}
             >
-              <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-white/70 hover:text-white rounded-lg hover:bg-sidebar-accent/50 transition-colors">
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors">
                 <span>{category.label}</span>
                 <ChevronDown
                   className={cn(
@@ -235,23 +235,23 @@ export function ActionLibraryPanel({ onSelect, supportedActions }: ActionLibrary
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left",
                           isSupported 
-                            ? "hover:bg-sidebar-accent/70 cursor-pointer" 
+                            ? "hover:bg-muted/70 cursor-pointer" 
                             : "opacity-50 cursor-not-allowed"
                         )}
                       >
-                        <div className={cn("p-2 rounded-lg bg-sidebar-accent", action.color)}>
+                        <div className={cn("p-2 rounded-lg bg-muted", action.color)}>
                           {action.icon}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-white">{action.label}</span>
+                            <span className="text-sm font-medium text-foreground">{action.label}</span>
                             {!isSupported && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 shrink-0">
                                 Coming soon
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-white/50 truncate">{action.description}</div>
+                          <div className="text-xs text-muted-foreground truncate">{action.description}</div>
                         </div>
                       </motion.button>
                     );

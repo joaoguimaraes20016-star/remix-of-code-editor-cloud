@@ -51,7 +51,7 @@ export function SlackMessageForm({ config, onChange }: SlackMessageFormProps) {
           value={config.channel || ""}
           onChange={(e) => onChange({ ...config, channel: e.target.value })}
         />
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-muted-foreground">
           Enter a channel name (with #) or channel ID
         </p>
       </div>
@@ -79,7 +79,7 @@ export function SlackMessageForm({ config, onChange }: SlackMessageFormProps) {
           value={config.username || ""}
           onChange={(e) => onChange({ ...config, username: e.target.value })}
         />
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-muted-foreground">
           Override the default bot display name
         </p>
       </div>
@@ -92,7 +92,7 @@ export function SlackMessageForm({ config, onChange }: SlackMessageFormProps) {
           value={config.icon_emoji || ""}
           onChange={(e) => onChange({ ...config, icon_emoji: e.target.value })}
         />
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-muted-foreground">
           Use a Slack emoji as the bot icon (e.g., :bell:)
         </p>
       </div>

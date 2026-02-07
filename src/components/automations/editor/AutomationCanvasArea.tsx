@@ -73,7 +73,7 @@ export function AutomationCanvasArea({
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center gap-6"
         >
-          <div className="text-white/40 text-sm font-medium">Then do this...</div>
+          <div className="text-muted-foreground text-sm font-medium">Then do this...</div>
           
           {/* PRIMARY: Large Add Step Button - Opens Action Library */}
           <motion.button
@@ -85,7 +85,7 @@ export function AutomationCanvasArea({
             <Plus className="h-10 w-10" />
           </motion.button>
           
-          <div className="text-white/30 text-xs">or choose a quick action</div>
+          <div className="text-muted-foreground/60 text-xs">or choose a quick action</div>
           
           {/* SECONDARY: Smart Suggestions Grid */}
           <div className="grid grid-cols-2 gap-3 max-w-md">
@@ -97,7 +97,7 @@ export function AutomationCanvasArea({
                   onClick={() => onAddStep(suggestion.type)}
                   whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-sidebar border border-sidebar-border hover:border-primary/50 text-white/70 hover:text-white transition-all group"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-background border border-border hover:border-primary/50 text-foreground/70 hover:text-foreground transition-all group shadow-sm"
                 >
                   <div className="p-2 rounded-lg bg-primary/15 text-primary group-hover:bg-primary/20">
                     {config?.icon || <Plus className="h-4 w-4" />}
@@ -158,10 +158,10 @@ export function AutomationCanvasArea({
           animate={{ opacity: 1 }}
           className="mt-8 flex flex-col items-center gap-2"
         >
-          <div className="w-14 h-14 rounded-full bg-sidebar border border-sidebar-border flex items-center justify-center">
-            <ZapOff className="h-6 w-6 text-white/30" />
+          <div className="w-14 h-14 rounded-full bg-background border border-border flex items-center justify-center">
+            <ZapOff className="h-6 w-6 text-muted-foreground/40" />
           </div>
-          <span className="text-sm text-white/30 font-medium">End</span>
+          <span className="text-sm text-muted-foreground/60 font-medium">End</span>
         </motion.div>
       )}
     </div>
@@ -188,7 +188,7 @@ function AddStepButton({ suggestions, onAddStep, onOpenLibrary }: AddStepButtonP
       
       {/* Hover tooltip with quick actions */}
       <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-10">
-        <div className="flex gap-1.5 p-2 bg-sidebar rounded-xl border border-sidebar-border shadow-xl">
+        <div className="flex gap-1.5 p-2 bg-background rounded-xl border border-border shadow-xl">
           {suggestions.map((suggestion) => {
             const config = QUICK_ACTION_CONFIG[suggestion.type];
             return (
@@ -198,7 +198,7 @@ function AddStepButton({ suggestions, onAddStep, onOpenLibrary }: AddStepButtonP
                   e.stopPropagation();
                   onAddStep(suggestion.type);
                 }}
-                className="p-3 rounded-lg hover:bg-primary/20 text-white/60 hover:text-primary transition-colors"
+                className="p-3 rounded-lg hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors"
                 title={config?.label || suggestion.label}
               >
                 {config?.icon || <Plus className="h-4 w-4" />}
@@ -221,7 +221,7 @@ function AddTriggerPlaceholder({ onSelect }: AddTriggerPlaceholderProps) {
       onClick={onSelect}
       whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}
-      className="w-96 rounded-2xl border-2 border-dashed border-primary/40 hover:border-primary bg-sidebar/50 hover:bg-sidebar transition-all shadow-lg group"
+      className="w-96 rounded-2xl border-2 border-dashed border-primary/40 hover:border-primary bg-background/50 hover:bg-background transition-all shadow-lg group"
     >
       <div className="flex items-center gap-5 p-6">
         {/* Icon */}
@@ -234,7 +234,7 @@ function AddTriggerPlaceholder({ onSelect }: AddTriggerPlaceholderProps) {
           <div className="text-xs text-primary/70 uppercase tracking-wider font-medium mb-1">
             Start your workflow
           </div>
-          <div className="text-white/70 group-hover:text-white font-semibold text-lg transition-colors">
+          <div className="text-foreground/70 group-hover:text-foreground font-semibold text-lg transition-colors">
             Add a Trigger
           </div>
         </div>

@@ -54,7 +54,7 @@ export function StartingOptionsModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-[540px] bg-[#0a0a0f] border-white/10 p-0 overflow-hidden"
+        className="sm:max-w-[540px] bg-background border-border p-0 overflow-hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
@@ -75,7 +75,7 @@ export function StartingOptionsModal({
               className="inline-flex items-center gap-2 mb-2"
             >
               <Sparkles className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-semibold text-white">
+              <h2 className="text-lg font-semibold text-foreground">
                 What would you like to automate?
               </h2>
             </motion.div>
@@ -95,7 +95,7 @@ export function StartingOptionsModal({
               onKeyDown={handleKeyDown}
               placeholder="Describe your automation..."
               disabled={isGenerating}
-              className="w-full px-4 py-3 pr-12 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-all disabled:opacity-50"
+              className="w-full px-4 py-3 pr-12 bg-muted/30 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/25 transition-all disabled:opacity-50"
             />
             <button
               onClick={handleSubmit}
@@ -122,7 +122,7 @@ export function StartingOptionsModal({
                 key={example}
                 onClick={() => handleExampleClick(example)}
                 disabled={isGenerating}
-                className="text-xs px-3 py-1.5 rounded-full bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70 transition-all disabled:opacity-50"
+                className="text-xs px-3 py-1.5 rounded-full bg-muted/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground/70 transition-all disabled:opacity-50"
               >
                 {example}
               </button>
@@ -131,9 +131,9 @@ export function StartingOptionsModal({
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-xs text-white/30 uppercase tracking-wider">or</span>
-            <div className="flex-1 h-px bg-white/10" />
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground/50 uppercase tracking-wider">or</span>
+            <div className="flex-1 h-px bg-border" />
           </div>
 
           {/* Option Cards */}
@@ -170,7 +170,7 @@ export function StartingOptionsModal({
             <button
               onClick={onStartScratch}
               disabled={isGenerating}
-              className="text-xs text-white/40 hover:text-white/60 hover:underline transition-all disabled:opacity-50"
+              className="text-xs text-muted-foreground hover:text-foreground/60 hover:underline transition-all disabled:opacity-50"
             >
               Skip for now
             </button>
@@ -206,21 +206,21 @@ function OptionCard({
       disabled={disabled}
       className={cn(
         "flex flex-col items-start text-left p-4 rounded-xl border transition-all duration-200",
-        "bg-white/[0.03] hover:bg-white/[0.06]",
+        "bg-muted/20 hover:bg-muted/40",
         variant === "primary"
           ? "border-primary/20 hover:border-primary/40"
-          : "border-white/10 hover:border-white/20",
+          : "border-border hover:border-border/70",
         disabled && "opacity-50 cursor-not-allowed"
       )}
     >
       <Icon
         className={cn(
           "w-6 h-6 mb-2",
-          variant === "primary" ? "text-primary" : "text-white/70"
+          variant === "primary" ? "text-primary" : "text-foreground/70"
         )}
       />
-      <h3 className="text-sm font-medium text-white mb-0.5">{title}</h3>
-      <p className="text-xs text-white/40">{description}</p>
+      <h3 className="text-sm font-medium text-foreground mb-0.5">{title}</h3>
+      <p className="text-xs text-muted-foreground">{description}</p>
     </motion.button>
   );
 }

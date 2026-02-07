@@ -54,10 +54,10 @@ export function SmartStartPanel({
     <div className="flex flex-col h-full">
       {/* Header Section */}
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-white/90 mb-1">
+        <h3 className="text-sm font-medium text-foreground/90 mb-1">
           {steps.length === 0 ? "Get Started" : "Add Next Step"}
         </h3>
-        <p className="text-xs text-white/50">
+        <p className="text-xs text-muted-foreground">
           {steps.length === 0 
             ? "What should happen when this triggers?" 
             : "Continue building your workflow"}
@@ -66,7 +66,7 @@ export function SmartStartPanel({
 
       {/* Quick Actions */}
       <div className="space-y-2 mb-6">
-        <p className="text-xs font-medium text-white/40 uppercase tracking-wider mb-3">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
           Suggested
         </p>
         {topSuggestions.map((suggestion) => (
@@ -75,16 +75,16 @@ export function SmartStartPanel({
             onClick={() => onAddStep(suggestion.type)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all text-left group"
+            className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border hover:border-border/70 transition-all text-left group"
           >
             <div className="p-2 rounded-lg bg-primary/20 text-primary">
               {ACTION_ICONS[suggestion.type] || <Plus className="h-4 w-4" />}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-white group-hover:text-white">
+              <div className="text-sm font-medium text-foreground group-hover:text-foreground">
                 {suggestion.label}
               </div>
-              <div className="text-xs text-white/40 truncate">
+              <div className="text-xs text-muted-foreground truncate">
                 {suggestion.description}
               </div>
             </div>
@@ -96,7 +96,7 @@ export function SmartStartPanel({
       <Button
         variant="outline"
         onClick={onOpenTemplates}
-        className="w-full mb-4 border-white/20 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white"
+        className="w-full mb-4 border-border bg-muted/30 hover:bg-muted/50 text-foreground/80 hover:text-foreground"
       >
         <LayoutTemplate className="h-4 w-4 mr-2" />
         Use a Template
@@ -106,7 +106,7 @@ export function SmartStartPanel({
       <div className="flex-1 flex flex-col">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-xs font-medium text-white/60">Ask AI</span>
+          <span className="text-xs font-medium text-muted-foreground">Ask AI</span>
         </div>
         <div className="relative">
           <Input
@@ -114,7 +114,7 @@ export function SmartStartPanel({
             onChange={(e) => setAiPrompt(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAskAI()}
             placeholder="What should happen next?"
-            className="bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-10"
+            className="bg-background border-border text-foreground placeholder:text-muted-foreground pr-10"
           />
           <button
             onClick={handleAskAI}
@@ -123,16 +123,16 @@ export function SmartStartPanel({
             <Sparkles className="h-4 w-4" />
           </button>
         </div>
-        <p className="text-xs text-white/30 mt-2">
+        <p className="text-xs text-muted-foreground/60 mt-2">
           Try: "Send a reminder 1 hour before"
         </p>
       </div>
 
       {/* Show All Actions Toggle */}
-      <div className="mt-auto pt-4 border-t border-white/10">
+      <div className="mt-auto pt-4 border-t border-border">
         <button
           onClick={() => setShowAllActions(!showAllActions)}
-          className="flex items-center gap-2 text-xs text-white/50 hover:text-white/70 transition-colors"
+          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground/70 transition-colors"
         >
           {showAllActions ? (
             <>
@@ -159,7 +159,7 @@ export function SmartStartPanel({
                 <button
                   key={action.type}
                   onClick={() => onAddStep(action.type)}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/5 transition-all"
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
                 >
                   {ACTION_ICONS[action.type] || <Plus className="h-4 w-4" />}
                   <span>{action.label}</span>

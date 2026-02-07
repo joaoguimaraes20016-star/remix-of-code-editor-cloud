@@ -14,6 +14,7 @@ import {
   DiscordMessageForm,
   GoogleAdsConversionForm,
   TikTokEventForm,
+  MetaConversionForm,
   CreateContactForm,
   UpdateContactForm,
   CreateDealForm,
@@ -42,7 +43,7 @@ export function ActionInspector({ step, onUpdate, teamId }: ActionInspectorProps
   const formProps = { config: step.config as any, onChange: handleConfigChange };
 
   return (
-    <div className="[&_label]:text-white/70 [&_input]:bg-white/5 [&_input]:border-white/10 [&_input]:text-white [&_input]:placeholder:text-white/30 [&_textarea]:bg-white/5 [&_textarea]:border-white/10 [&_textarea]:text-white [&_textarea]:placeholder:text-white/30 [&_button[role=combobox]]:bg-white/5 [&_button[role=combobox]]:border-white/10 [&_button[role=combobox]]:text-white">
+    <div className="space-y-4">
       {/* Messaging */}
       {step.type === "send_message" && <SendMessageForm {...formProps} teamId={teamId} />}
       {step.type === "notify_team" && <NotifyTeamForm {...formProps} />}
@@ -77,9 +78,10 @@ export function ActionInspector({ step, onUpdate, teamId }: ActionInspectorProps
       {step.type === "discord_message" && <DiscordMessageForm {...formProps} />}
       {step.type === "google_conversion" && <GoogleAdsConversionForm {...formProps} />}
       {step.type === "tiktok_event" && <TikTokEventForm {...formProps} />}
+      {step.type === "meta_conversion" && <MetaConversionForm {...formProps} />}
       {step.type === "google_sheets" && <GoogleSheetsForm {...formProps} />}
       {step.type === "enqueue_dialer" && (
-        <p className="text-white/50 text-sm">Power dialer configuration coming soon</p>
+        <p className="text-muted-foreground text-sm">Power dialer configuration coming soon</p>
       )}
     </div>
   );

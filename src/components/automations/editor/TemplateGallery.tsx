@@ -77,9 +77,9 @@ export function TemplateGallery({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden bg-[#0a0a0f] border-white/10">
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden bg-background border-border">
         <DialogHeader>
-          <DialogTitle className="text-xl text-white flex items-center gap-2">
+          <DialogTitle className="text-xl text-foreground flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
             Start with a Template
           </DialogTitle>
@@ -95,7 +95,7 @@ export function TemplateGallery({
               className={cn(
                 selectedCategory === "all" 
                   ? "bg-primary" 
-                  : "border-white/20 bg-white/5 text-white/70 hover:bg-white/10"
+                  : "border-border bg-muted/30 text-foreground/70 hover:bg-muted/50"
               )}
             >
               All Templates
@@ -112,7 +112,7 @@ export function TemplateGallery({
                   className={cn(
                     selectedCategory === cat 
                       ? "bg-primary" 
-                      : "border-white/20 bg-white/5 text-white/70 hover:bg-white/10"
+                      : "border-border bg-muted/30 text-foreground/70 hover:bg-muted/50"
                   )}
                 >
                   <Icon className="h-4 w-4 mr-1" />
@@ -137,24 +137,24 @@ export function TemplateGallery({
                     whileHover={{ scale: 1.02 }}
                     className="relative group"
                   >
-                    <div className="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all">
+                    <div className="p-4 rounded-xl border border-border bg-muted/20 hover:bg-muted/40 hover:border-border/70 transition-all">
                       {/* Header */}
                       <div className="flex items-start gap-3 mb-3">
                         <div className={cn("p-2 rounded-lg", catConfig.bgColor)}>
                           <CatIcon className={cn("h-5 w-5", catConfig.color)} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-white truncate">
+                          <h3 className="font-medium text-foreground truncate">
                             {template.name}
                           </h3>
-                          <p className="text-xs text-white/50 line-clamp-2">
+                          <p className="text-xs text-muted-foreground line-clamp-2">
                             {template.description}
                           </p>
                         </div>
                       </div>
 
                       {/* Stats */}
-                      <div className="flex items-center gap-4 mb-4 text-xs text-white/40">
+                      <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Check className="h-3 w-3" />
                           <span>{template.stepCount} steps</span>
@@ -178,7 +178,7 @@ export function TemplateGallery({
                           variant="outline"
                           size="sm"
                           onClick={() => setPreviewTemplate(template)}
-                          className="border-white/20 bg-white/5 hover:bg-white/10 text-white/70"
+                          className="border-border bg-muted/30 hover:bg-muted/50 text-foreground/70"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -194,28 +194,28 @@ export function TemplateGallery({
         {/* Preview Modal */}
         {previewTemplate && (
           <Dialog open={!!previewTemplate} onOpenChange={() => setPreviewTemplate(null)}>
-            <DialogContent className="max-w-md bg-[#0a0a0f] border-white/10">
+            <DialogContent className="max-w-md bg-background border-border">
               <DialogHeader>
-                <DialogTitle className="text-white">{previewTemplate.name}</DialogTitle>
+                <DialogTitle className="text-foreground">{previewTemplate.name}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <p className="text-sm text-white/60">{previewTemplate.description}</p>
+                <p className="text-sm text-muted-foreground">{previewTemplate.description}</p>
                 
                 {/* Steps Preview */}
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-white/40 uppercase">Steps</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase">Steps</p>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/20">
                       <Badge variant="outline" className="text-xs">Trigger</Badge>
-                      <span className="text-sm text-white">{previewTemplate.trigger.replace(/_/g, " ")}</span>
+                      <span className="text-sm text-foreground">{previewTemplate.trigger.replace(/_/g, " ")}</span>
                     </div>
                     {previewTemplate.steps.map((step, idx) => (
                       <div 
                         key={idx} 
-                        className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10"
+                        className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border"
                       >
                         <Badge variant="outline" className="text-xs">{idx + 1}</Badge>
-                        <span className="text-sm text-white/80">{step.type.replace(/_/g, " ")}</span>
+                        <span className="text-sm text-foreground/80">{step.type.replace(/_/g, " ")}</span>
                       </div>
                     ))}
                   </div>

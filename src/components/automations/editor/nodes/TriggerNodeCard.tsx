@@ -375,10 +375,10 @@ export function TriggerNodeCard({ trigger, isSelected, onSelect, onDelete }: Tri
       whileHover={{ scale: 1.02, y: -2 }}
       className={cn(
         "relative w-96 rounded-2xl border-2 transition-all shadow-lg group",
-        "bg-sidebar",
+        "bg-background",
         isSelected 
           ? "border-primary shadow-primary/20" 
-          : "border-sidebar-border hover:border-primary/50 hover:shadow-xl"
+          : "border-border hover:border-primary/50 hover:shadow-xl"
       )}
     >
       {/* Delete Button - Always visible */}
@@ -391,7 +391,7 @@ export function TriggerNodeCard({ trigger, isSelected, onSelect, onDelete }: Tri
             e.stopPropagation();
             onDelete();
           }}
-          className="absolute -right-2 -top-2 w-7 h-7 rounded-full bg-red-500/80 hover:bg-red-500 flex items-center justify-center transition-all z-10 shadow-lg border-2 border-sidebar"
+          className="absolute -right-2 -top-2 w-7 h-7 rounded-full bg-red-500/80 hover:bg-red-500 flex items-center justify-center transition-all z-10 shadow-lg border-2 border-background"
           title="Remove trigger"
         >
           <X className="h-4 w-4 text-white" />
@@ -400,7 +400,7 @@ export function TriggerNodeCard({ trigger, isSelected, onSelect, onDelete }: Tri
 
       {/* Status Indicator */}
       <div className={cn(
-        "absolute -right-1.5 -top-1.5 w-6 h-6 rounded-full flex items-center justify-center border-2 border-sidebar",
+        "absolute -right-1.5 -top-1.5 w-6 h-6 rounded-full flex items-center justify-center border-2 border-background",
         isConfigured ? "bg-green-500" : "bg-yellow-500"
       )}>
         {isConfigured ? (
@@ -424,7 +424,7 @@ export function TriggerNodeCard({ trigger, isSelected, onSelect, onDelete }: Tri
           <div className="text-xs text-primary/70 uppercase tracking-wider font-medium mb-1">
             When this happens
           </div>
-          <div className="text-white font-semibold text-lg">
+          <div className="text-foreground font-semibold text-lg">
             {display.label}
           </div>
         </div>

@@ -38,6 +38,7 @@ import { executeSlackMessage } from "./actions/slack-message.ts";
 import { executeDiscordMessage } from "./actions/discord-message.ts";
 import { executeGoogleAdsConversion } from "./actions/google-ads-conversion.ts";
 import { executeTikTokEvent } from "./actions/tiktok-event.ts";
+import { executeMetaConversion } from "./actions/meta-conversion.ts";
 import { executeGoogleSheets } from "./actions/google-sheets.ts";
 import { executeVoiceCall } from "./actions/voice-ai.ts";
 import {
@@ -947,6 +948,18 @@ async function runAutomation(
             break;
           }
           const result = await executeTikTokEvent(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "meta_conversion": {
+          const rateCheck = await checkRateLimit(supabase, context.teamId, "meta", automation.id);
+          if (!rateCheck.allowed) {
+            log.skipped = true;
+            log.skipReason = rateCheck.reason || "rate_limit_exceeded";
+            break;
+          }
+          const result = await executeMetaConversion(step.config, context, supabase);
           log = { ...log, ...result };
           break;
         }

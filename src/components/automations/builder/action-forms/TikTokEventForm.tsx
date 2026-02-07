@@ -56,7 +56,7 @@ export function TikTokEventForm({ config, onChange }: TikTokEventFormProps) {
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-muted-foreground">
           The conversion event type to send to TikTok
         </p>
       </div>
@@ -69,7 +69,7 @@ export function TikTokEventForm({ config, onChange }: TikTokEventFormProps) {
           value={config.pixel_code || ""}
           onChange={(e) => onChange({ ...config, pixel_code: e.target.value })}
         />
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-muted-foreground">
           Your TikTok pixel ID (found in TikTok Ads Manager &gt; Events)
         </p>
       </div>
@@ -92,7 +92,7 @@ export function TikTokEventForm({ config, onChange }: TikTokEventFormProps) {
             })
           }
         />
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-muted-foreground">
           Optional monetary value of the conversion event
         </p>
       </div>
@@ -133,7 +133,7 @@ export function TikTokEventForm({ config, onChange }: TikTokEventFormProps) {
             })
           }
         />
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-muted-foreground">
           Optional product or content identifier
         </p>
       </div>
