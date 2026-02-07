@@ -1,6 +1,7 @@
 // supabase/functions/automation-trigger/actions/send-message.ts
 
 import type { AutomationContext, StepExecutionLog } from "../types.ts";
+import { renderTemplate, extractTemplateVariables, getFieldValue } from "../template-engine.ts";
 
 interface SendMessageConfig {
   channel?: "sms" | "email" | "voice" | "whatsapp";
@@ -9,7 +10,9 @@ interface SendMessageConfig {
   subject?: string;
   to?: string;
   fromName?: string;
+  fromEmail?: string;
   replyTo?: string;
+  mediaUrl?: string;
   [key: string]: unknown;
 }
 
@@ -80,6 +83,7 @@ export async function executeSendMessage(
           subject: renderedSubject || "Notification",
           body: renderedBody,
           fromName: config.fromName,
+          fromEmail: config.fromEmail,
           replyTo: config.replyTo,
           teamId: context.teamId,
           automationId,
@@ -108,6 +112,7 @@ export async function executeSendMessage(
         payload = {
           to: toAddress,
           body: renderedBody,
+          mediaUrl: config.mediaUrl,
           teamId: context.teamId,
           automationId,
           runId,
@@ -150,29 +155,4 @@ export async function executeSendMessage(
   return log;
 }
 
-function renderTemplate(template: string, context: AutomationContext): string {
-  return template.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
-    const value = getFieldValue(context, path.trim());
-    return value !== undefined ? String(value) : match;
-  });
-}
-
-function extractTemplateVariables(template: string, context: AutomationContext): Record<string, any> {
-  const matches = template.match(/\{\{([^}]+)\}\}/g) || [];
-  const variables: Record<string, any> = {};
-  for (const match of matches) {
-    const path = match.replace(/\{\{|\}\}/g, "").trim();
-    variables[path] = getFieldValue(context, path);
-  }
-  return variables;
-}
-
-function getFieldValue(context: Record<string, any>, path: string): any {
-  const keys = path.split(".");
-  let value: any = context;
-  for (const key of keys) {
-    if (value == null) return undefined;
-    value = value[key];
-  }
-  return value;
-}
+// renderTemplate, extractTemplateVariables, getFieldValue imported from ../template-engine.ts

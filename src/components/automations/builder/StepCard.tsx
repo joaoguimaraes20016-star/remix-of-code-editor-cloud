@@ -70,7 +70,7 @@ const ACTION_META: Partial<Record<ActionType, ActionMeta>> = {
   add_tag: {
     label: "Add Tag",
     icon: <Tag className="h-4 w-4" />,
-    color: "border-l-green-500",
+    color: "border-l-primary",
     getSummary: (config) => config?.tag ? `Tag: "${config.tag}"` : "No tag set",
   },
   add_task: {

@@ -2,6 +2,7 @@
 // Stripe automation actions for connected user accounts
 
 import type { AutomationContext, StepExecutionLog } from "../types.ts";
+import { renderTemplate } from "../template-engine.ts";
 
 type FlexibleConfig = Record<string, unknown>;
 
@@ -32,20 +33,6 @@ async function getStripeCredentials(
     accessToken: config.access_token,
     accountId: config.stripe_account_id,
   };
-}
-
-// Helper to render template variables in text
-function renderTemplate(text: string, context: AutomationContext): string {
-  if (!text) return text;
-  
-  return text.replace(/\{\{([^}]+)\}\}/g, (_, path) => {
-    const value = getNestedValue(context, path.trim());
-    return value !== undefined ? String(value) : "";
-  });
-}
-
-function getNestedValue(obj: any, path: string): any {
-  return path.split(".").reduce((acc, key) => acc?.[key], obj);
 }
 
 // Send Invoice

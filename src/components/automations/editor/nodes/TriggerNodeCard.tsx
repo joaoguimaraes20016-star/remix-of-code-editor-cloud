@@ -32,8 +32,8 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
   lead_created: { 
     label: "Lead Created", 
     icon: <UserPlus className="h-5 w-5" />, 
-    color: "text-emerald-400", 
-    bgColor: "bg-emerald-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/20" 
   },
   lead_tag_added: { 
     label: "Tag Added", 
@@ -126,8 +126,8 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
   task_completed: {
     label: "Task Completed",
     icon: <CheckSquare className="h-5 w-5" />,
-    color: "text-green-400",
-    bgColor: "bg-green-500/20"
+    color: "text-primary",
+    bgColor: "bg-primary/20"
   },
 
   // Appointment Events
@@ -152,8 +152,8 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
   appointment_completed: { 
     label: "Completed", 
     icon: <CalendarCheck className="h-5 w-5" />, 
-    color: "text-green-400", 
-    bgColor: "bg-green-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/20" 
   },
   appointment_canceled: { 
     label: "Canceled", 
@@ -204,8 +204,8 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
   payment_received: { 
     label: "Payment Received", 
     icon: <DollarSign className="h-5 w-5" />, 
-    color: "text-green-400", 
-    bgColor: "bg-green-500/20" 
+    color: "text-primary", 
+    bgColor: "bg-primary/20" 
   },
   payment_failed: { 
     label: "Payment Failed", 
@@ -228,8 +228,8 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
   invoice_paid: {
     label: "Invoice Paid",
     icon: <Receipt className="h-5 w-5" />,
-    color: "text-green-400",
-    bgColor: "bg-green-500/20"
+    color: "text-primary",
+    bgColor: "bg-primary/20"
   },
   invoice_overdue: {
     label: "Invoice Overdue",
@@ -264,8 +264,8 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
   order_submitted: {
     label: "Order Submitted",
     icon: <ShoppingCart className="h-5 w-5" />,
-    color: "text-emerald-400",
-    bgColor: "bg-emerald-500/20"
+    color: "text-primary",
+    bgColor: "bg-primary/20"
   },
 
   // Messaging Events

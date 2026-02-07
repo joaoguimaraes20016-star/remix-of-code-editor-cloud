@@ -20,7 +20,12 @@ interface GoalCheckResult {
 }
 
 /**
- * Check if contact is already enrolled in automation and create enrollment if not
+ * Check if contact is already enrolled in automation and create enrollment if not.
+ * Supports GHL-compatible re-enrollment rules:
+ * - 'never': Only enroll once (default)
+ * - 'after_exit': Re-enroll after contact has exited the automation
+ * - 'after_complete': Re-enroll after contact has completed the automation
+ * - 'always': Always allow re-enrollment (with cooldown)
  */
 export async function checkAndCreateEnrollment(
   supabase: any,
@@ -39,8 +44,20 @@ export async function checkAndCreateEnrollment(
   }
   
   try {
+    // Fetch automation settings for re-enrollment rules
+    const { data: automation } = await supabase
+      .from("automations")
+      .select("allow_reenrollment, reenrollment_condition, reenrollment_wait_days, max_active_contacts")
+      .eq("id", automationId)
+      .single();
+
+    const reenrollmentCondition = automation?.reenrollment_condition || "never";
+    const allowReenrollment = automation?.allow_reenrollment || false;
+    const waitDays = automation?.reenrollment_wait_days || 0;
+    const maxActiveContacts = automation?.max_active_contacts || null;
+
     // Check for existing active enrollment
-    let query = supabase
+    let activeQuery = supabase
       .from("automation_enrollments")
       .select("id, status")
       .eq("automation_id", automationId)
@@ -48,29 +65,140 @@ export async function checkAndCreateEnrollment(
       .eq("status", "active");
     
     if (contactId) {
-      query = query.eq("contact_id", contactId);
+      activeQuery = activeQuery.eq("contact_id", contactId);
     }
     if (appointmentId) {
-      query = query.eq("appointment_id", appointmentId);
+      activeQuery = activeQuery.eq("appointment_id", appointmentId);
     }
     
-    const { data: existing, error: checkError } = await query.maybeSingle();
+    const { data: existing, error: checkError } = await activeQuery.maybeSingle();
     
     if (checkError) {
       console.error("[Enrollment] Error checking enrollment:", checkError);
-      // Fail open - allow run if check fails
-      return { shouldRun: true };
+      return { shouldRun: true }; // Fail open
     }
     
+    // If already actively enrolled, always block
     if (existing) {
-      console.log(`[Enrollment] Contact already enrolled in automation ${automationId}`);
+      console.log(`[Enrollment] Contact already actively enrolled in automation ${automationId}`);
       return {
         shouldRun: false,
         reason: "already_enrolled",
         existingEnrollmentId: existing.id,
       };
     }
+
+    // Check re-enrollment rules for contacts that previously completed/exited
+    if (allowReenrollment && reenrollmentCondition !== "never") {
+      // Look for the most recent past enrollment
+      // Query by both completed_at and exited_at, using created_at as fallback ordering
+      // since either completed_at or exited_at could be set depending on how it ended
+      let pastQuery = supabase
+        .from("automation_enrollments")
+        .select("id, status, completed_at, exited_at, reenrollment_count, created_at")
+        .eq("automation_id", automationId)
+        .eq("team_id", teamId)
+        .in("status", ["completed", "exited"])
+        .order("created_at", { ascending: false });
+
+      if (contactId) {
+        pastQuery = pastQuery.eq("contact_id", contactId);
+      }
+      if (appointmentId) {
+        pastQuery = pastQuery.eq("appointment_id", appointmentId);
+      }
+
+      const { data: pastEnrollment } = await pastQuery.limit(1).maybeSingle();
+
+      if (pastEnrollment) {
+        // Check condition — 'always' allows any past status
+        if (reenrollmentCondition === "after_complete" && pastEnrollment.status !== "completed") {
+          console.log("[Enrollment] Re-enrollment requires completion, but last enrollment was exited");
+          return { shouldRun: false, reason: "reenrollment_requires_completion" };
+        }
+
+        if (reenrollmentCondition === "after_exit" && pastEnrollment.status !== "exited") {
+          console.log("[Enrollment] Re-enrollment requires exit, but last enrollment was completed");
+          return { shouldRun: false, reason: "reenrollment_requires_exit" };
+        }
+
+        // Check cooldown period using the most recent finish timestamp
+        if (waitDays > 0) {
+          const lastFinished = pastEnrollment.completed_at || pastEnrollment.exited_at || pastEnrollment.created_at;
+          if (lastFinished) {
+            const daysSince = (Date.now() - new Date(lastFinished).getTime()) / (1000 * 60 * 60 * 24);
+            if (daysSince < waitDays) {
+              console.log(`[Enrollment] Re-enrollment cooldown: ${daysSince.toFixed(1)} of ${waitDays} days elapsed`);
+              return { shouldRun: false, reason: "reenrollment_cooldown" };
+            }
+          }
+        }
+      }
+    } else {
+      // Re-enrollment not allowed - check for any past enrollment
+      let anyPastQuery = supabase
+        .from("automation_enrollments")
+        .select("id")
+        .eq("automation_id", automationId)
+        .eq("team_id", teamId);
+
+      if (contactId) {
+        anyPastQuery = anyPastQuery.eq("contact_id", contactId);
+      }
+      if (appointmentId) {
+        anyPastQuery = anyPastQuery.eq("appointment_id", appointmentId);
+      }
+
+      const { data: anyPast } = await anyPastQuery.limit(1).maybeSingle();
+
+      if (anyPast) {
+        console.log(`[Enrollment] Contact already enrolled previously, re-enrollment not allowed`);
+        return { shouldRun: false, reason: "reenrollment_not_allowed" };
+      }
+    }
+
+    // Check max active contacts limit
+    if (maxActiveContacts) {
+      const { count, error: countError } = await supabase
+        .from("automation_enrollments")
+        .select("id", { count: "exact", head: true })
+        .eq("automation_id", automationId)
+        .eq("status", "active");
+
+      if (!countError && count !== null && count >= maxActiveContacts) {
+        console.log(`[Enrollment] Max active contacts (${maxActiveContacts}) reached`);
+        return { shouldRun: false, reason: "enrollment_limit_reached" };
+      }
+    }
     
+    // Count previous enrollments for this contact (used for tracking and safety guard)
+    let reenrollmentCount = 0;
+    if (allowReenrollment) {
+      let countQuery = supabase
+        .from("automation_enrollments")
+        .select("id", { count: "exact", head: true })
+        .eq("automation_id", automationId)
+        .eq("team_id", teamId)
+        .in("status", ["completed", "exited"]);
+
+      // Apply both filters when both identifiers exist
+      if (contactId) {
+        countQuery = countQuery.eq("contact_id", contactId);
+      }
+      if (appointmentId) {
+        countQuery = countQuery.eq("appointment_id", appointmentId);
+      }
+
+      const { count } = await countQuery;
+      reenrollmentCount = count || 0;
+
+      // Safety guard: max 100 re-enrollments per contact per automation
+      if (reenrollmentCount >= 100) {
+        console.log(`[Enrollment] Max re-enrollment count (100) reached for automation ${automationId}`);
+        return { shouldRun: false, reason: "max_reenrollments_reached" };
+      }
+    }
+
     // Create new enrollment
     const { data: enrollment, error: insertError } = await supabase
       .from("automation_enrollments")
@@ -82,6 +210,7 @@ export async function checkAndCreateEnrollment(
         status: "active",
         enrolled_at: new Date().toISOString(),
         context_snapshot: context,
+        reenrollment_count: reenrollmentCount,
       })
       .select("id")
       .single();
@@ -93,11 +222,10 @@ export async function checkAndCreateEnrollment(
         return { shouldRun: false, reason: "duplicate_enrollment" };
       }
       console.error("[Enrollment] Error creating enrollment:", insertError);
-      // Fail open
-      return { shouldRun: true };
+      return { shouldRun: true }; // Fail open
     }
     
-    console.log(`[Enrollment] Created enrollment ${enrollment.id} for automation ${automationId}`);
+    console.log(`[Enrollment] Created enrollment ${enrollment.id} for automation ${automationId} (reenrollment #${reenrollmentCount})`);
     return { shouldRun: true };
     
   } catch (err) {

@@ -96,7 +96,8 @@ function getNextBusinessHoursStart(from: Date, businessHours = DEFAULT_BUSINESS_
 function calculateResumeTime(
   duration: number,
   unit: string,
-  options: { onlyDuringBusinessHours?: boolean; skipWeekends?: boolean } = {}
+  options: { onlyDuringBusinessHours?: boolean; skipWeekends?: boolean } = {},
+  businessHours = DEFAULT_BUSINESS_HOURS,
 ): Date {
   const now = new Date();
   let resumeAt: Date;
@@ -129,12 +130,53 @@ function calculateResumeTime(
       resumeAt = new Date(now.getTime() + duration * 60 * 1000);
   }
 
-  // Adjust to next business hours if required
-  if (options.onlyDuringBusinessHours && !isWithinBusinessHours(resumeAt)) {
-    resumeAt = getNextBusinessHoursStart(resumeAt);
+  // Adjust to next business hours if required (uses team settings)
+  if (options.onlyDuringBusinessHours && !isWithinBusinessHours(resumeAt, businessHours)) {
+    resumeAt = getNextBusinessHoursStart(resumeAt, businessHours);
   }
 
   return resumeAt;
+}
+
+/**
+ * Fetch team business hours from database, fall back to defaults
+ */
+async function getTeamBusinessHours(
+  supabase: any,
+  teamId: string,
+): Promise<{ start: number; end: number; days: number[] }> {
+  try {
+    const { data: hours, error } = await supabase
+      .from("team_business_hours")
+      .select("day_of_week, open_time, close_time, is_closed")
+      .eq("team_id", teamId);
+
+    if (error || !hours || hours.length === 0) {
+      return DEFAULT_BUSINESS_HOURS;
+    }
+
+    // Build active business days and extract hours from first active day
+    const activeDays = hours
+      .filter((h: any) => !h.is_closed)
+      .map((h: any) => h.day_of_week);
+
+    if (activeDays.length === 0) {
+      return DEFAULT_BUSINESS_HOURS;
+    }
+
+    // Use the first active day's hours as the standard (most teams have consistent hours)
+    const firstActive = hours.find((h: any) => !h.is_closed);
+    const startHour = firstActive?.open_time
+      ? parseInt(firstActive.open_time.split(":")[0], 10)
+      : DEFAULT_BUSINESS_HOURS.start;
+    const endHour = firstActive?.close_time
+      ? parseInt(firstActive.close_time.split(":")[0], 10)
+      : DEFAULT_BUSINESS_HOURS.end;
+
+    return { start: startHour, end: endHour, days: activeDays };
+  } catch {
+    return DEFAULT_BUSINESS_HOURS;
+  }
 }
 
 /**
@@ -153,11 +195,17 @@ export async function executeTimeDelay(
   const duration = config.duration || 5;
   const unit = config.unit || "minutes";
 
+  // Fetch team business hours from database if needed
+  let businessHours = DEFAULT_BUSINESS_HOURS;
+  if (config.onlyDuringBusinessHours) {
+    businessHours = await getTeamBusinessHours(supabase, context.teamId);
+  }
+
   // Calculate resume time with business hours support
   const resumeAt = calculateResumeTime(duration, unit, {
     onlyDuringBusinessHours: config.onlyDuringBusinessHours,
     skipWeekends: config.skipWeekends,
-  });
+  }, businessHours);
 
   try {
     // Insert scheduled job
@@ -251,6 +299,9 @@ export async function executeWaitUntil(
       }
       
       resumeAt = new Date(fieldValue);
+      if (isNaN(resumeAt.getTime())) {
+        return { scheduled: false, resumeAt: now.toISOString(), error: `Invalid date value: ${fieldValue}` };
+      }
       
       // Apply offset
       const offsetDays = config.offsetDays || 0;
@@ -327,6 +378,7 @@ export async function executeWaitUntil(
 
 /**
  * Execute business_hours action - pauses until business hours
+ * Uses team business hours from database, falls back to defaults
  */
 export async function executeBusinessHours(
   config: BusinessHoursConfig,
@@ -339,14 +391,17 @@ export async function executeBusinessHours(
 ): Promise<{ scheduled: boolean; resumeAt: string; jobId?: string; error?: string }> {
   const now = new Date();
   
-  // Check if currently within business hours
-  if (isWithinBusinessHours(now)) {
+  // Fetch team business hours from database
+  const businessHours = await getTeamBusinessHours(supabase, context.teamId);
+  
+  // Check if currently within business hours (using team settings)
+  if (isWithinBusinessHours(now, businessHours)) {
     // Already in business hours, no need to schedule
     return { scheduled: false, resumeAt: now.toISOString() };
   }
 
-  // Get next business hours start
-  const resumeAt = getNextBusinessHoursStart(now);
+  // Get next business hours start (using team settings)
+  const resumeAt = getNextBusinessHoursStart(now, businessHours);
 
   try {
     const { data, error } = await supabase

@@ -2,11 +2,12 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Sparkles, Loader2, Lightbulb, Wand2, 
-  HelpCircle, ChevronRight, ChevronUp, Wrench, MessageCircle, X
+  HelpCircle, ChevronRight, ChevronUp, Wrench, MessageCircle, X, Settings, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
 import { streamWorkflowGeneration, streamWorkflowHelp, streamWorkflowOptimization, streamWorkflowExplain, type AutomationContext } from "@/lib/ai/automationAIService";
 import type { AutomationDefinition, AutomationStep, ActionType, TriggerType } from "@/lib/automations/types";
 import { TRIGGER_META, ACTION_META } from "@/lib/automations/types";
@@ -70,6 +71,8 @@ export function AutomationAIPanel({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [userGuidance, setUserGuidance] = useState<string>('');
+  const [showGuidance, setShowGuidance] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -93,8 +96,9 @@ export function AutomationAIPanel({
       stepCount: definition.steps.length,
       hasConditionals: definition.steps.some(s => s.type === 'condition'),
       teamId,
+      userGuidance: userGuidance.trim() || undefined,
     };
-  }, [definition, teamId]);
+  }, [definition, teamId, userGuidance]);
 
   // Detect intent type from user message
   const detectIntentType = useCallback((message: string): 'generate' | 'help' | 'optimize' | 'explain' => {
@@ -355,6 +359,29 @@ export function AutomationAIPanel({
     }
   }, [isLoading, isNew, definition, onDefinitionChange, onNameChange, buildWorkflowContext, detectIntentType, mode]);
 
+  // Render markdown formatting (bold, italic, code)
+  const renderMarkdown = (text: string): React.ReactNode => {
+    if (!text) return null;
+    
+    // First strip HTML tags and normalize whitespace
+    let cleanText = text.replace(/<[^>]*>/g, ' ').trim();
+    
+    // Convert markdown to HTML - process bold first, then italic
+    let html = cleanText
+      // Bold: **text** (process first to avoid conflicts with italic)
+      .replace(/\*\*([^*]+?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>')
+      .replace(/__([^_]+?)__/g, '<strong class="font-semibold text-foreground">$1</strong>')
+      // Italic: *text* (only single asterisks that aren't part of **)
+      .replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, '<em class="italic text-foreground/90">$1</em>')
+      // Code: `code`
+      .replace(/`([^`]+?)`/g, '<code class="bg-muted/50 px-1.5 py-0.5 rounded text-xs font-mono text-foreground">$1</code>')
+      // Line breaks (preserve double newlines for paragraphs)
+      .replace(/\n\n+/g, '</p><p class="mt-2">')
+      .replace(/\n/g, '<br />');
+    
+    return <div className="prose prose-sm max-w-none [&_strong]:font-semibold [&_strong]:text-foreground [&_em]:italic" dangerouslySetInnerHTML={{ __html: `<p>${html}</p>` }} />;
+  };
+
   const handleQuickPrompt = (prompt: string, intent?: 'generate' | 'help' | 'optimize' | 'explain') => {
     // If intent is specified (from CHAT_PROMPTS), temporarily set mode
     if (intent === 'optimize' || intent === 'explain') {
@@ -372,13 +399,48 @@ export function AutomationAIPanel({
       {/* Header - Matches AICopilot */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
         <span className="text-base font-semibold text-foreground">Assistant</span>
-        <button
-          onClick={onCollapse}
-          className="p-1.5 hover:bg-muted/50 rounded transition-colors"
-        >
-          <X className="w-4 h-4 text-muted-foreground" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowGuidance(!showGuidance)}
+            className="p-1.5 hover:bg-muted/50 rounded transition-colors"
+            title="AI Response Preferences"
+          >
+            <Settings className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <button
+            onClick={onCollapse}
+            className="p-1.5 hover:bg-muted/50 rounded transition-colors"
+          >
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
       </div>
+
+      {/* User Guidance Input */}
+      {showGuidance && (
+        <div className="px-6 py-3 border-b border-border/50 bg-muted/20">
+          <div className="flex items-center justify-between mb-2">
+            <Label className="text-xs font-medium text-foreground">
+              AI Response Preferences
+            </Label>
+            <button
+              onClick={() => setShowGuidance(false)}
+              className="p-0.5 hover:bg-muted/50 rounded"
+            >
+              <ChevronDown className="w-3 h-3 text-muted-foreground" />
+            </button>
+          </div>
+          <Textarea
+            value={userGuidance}
+            onChange={(e) => setUserGuidance(e.target.value)}
+            placeholder="e.g., 'Always focus on conversion optimization' or 'Keep responses under 100 words' or 'Use technical terminology'"
+            className="text-xs min-h-[60px] resize-none bg-background"
+          />
+          <p className="text-xs text-muted-foreground mt-1.5">
+            These preferences will guide how the AI responds to your questions.
+          </p>
+        </div>
+      )}
 
       {/* Messages Area */}
       <ScrollArea className="flex-1">
@@ -461,15 +523,12 @@ export function AutomationAIPanel({
                       )}
                     </div>
                   )}
-                  <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                  <div className="text-sm text-foreground/90 leading-relaxed">
                     {message.role === "assistant"
-                      ? (message.content || (message.isGenerating ? "Thinking..." : ""))
-                          .replace(/<[^>]*>/g, ' ')
-                          .replace(/\s+/g, ' ')
-                          .trim()
-                      : message.content
+                      ? renderMarkdown(message.content || (message.isGenerating ? "Thinking..." : ""))
+                      : <p className="whitespace-pre-wrap">{message.content}</p>
                     }
-                  </p>
+                  </div>
                 </motion.div>
               ))}
             </AnimatePresence>

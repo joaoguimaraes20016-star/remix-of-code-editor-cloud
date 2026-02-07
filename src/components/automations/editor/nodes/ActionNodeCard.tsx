@@ -43,14 +43,14 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
   send_sms: {
     label: "Send SMS",
     icon: <MessageSquare className="h-4 w-4" />,
-    color: "text-green-400",
-    bgColor: "bg-green-500/15"
+    color: "text-primary",
+    bgColor: "bg-primary/15"
   },
   send_whatsapp: {
     label: "Send WhatsApp",
     icon: <MessageCircleMore className="h-4 w-4" />,
-    color: "text-emerald-400",
-    bgColor: "bg-emerald-500/15"
+    color: "text-primary",
+    bgColor: "bg-primary/15"
   },
   send_voicemail: {
     label: "Send Voicemail",
@@ -197,8 +197,8 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
   log_call: {
     label: "Log Call",
     icon: <PhoneIncoming className="h-4 w-4" />,
-    color: "text-green-400",
-    bgColor: "bg-green-500/15"
+    color: "text-primary",
+    bgColor: "bg-primary/15"
   },
 
   // Pipeline Actions
@@ -237,14 +237,14 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
   send_invoice: {
     label: "Send Invoice",
     icon: <Receipt className="h-4 w-4" />,
-    color: "text-green-400",
-    bgColor: "bg-green-500/15"
+    color: "text-primary",
+    bgColor: "bg-primary/15"
   },
   charge_payment: {
     label: "Charge Payment",
     icon: <CreditCard className="h-4 w-4" />,
-    color: "text-emerald-400",
-    bgColor: "bg-emerald-500/15"
+    color: "text-primary",
+    bgColor: "bg-primary/15"
   },
   create_subscription: {
     label: "Create Subscription",
@@ -427,8 +427,8 @@ const ACTION_DISPLAY: Record<ActionType, ActionDisplay> = {
   google_sheets: {
     label: "Google Sheets",
     icon: <Table className="h-4 w-4" />,
-    color: "text-green-400",
-    bgColor: "bg-green-500/15"
+    color: "text-primary",
+    bgColor: "bg-primary/15"
   },
   slack_message: {
     label: "Slack Message",

@@ -16,6 +16,7 @@ export interface AutomationContext {
   stepCount: number;
   hasConditionals: boolean;
   teamId?: string;
+  userGuidance?: string;
 }
 
 interface StreamOptions {
@@ -55,6 +56,7 @@ export async function streamWorkflowGeneration(
           triggerType: context.triggerType,
           stepCount: context.stepCount,
           hasConditionals: context.hasConditionals,
+          userGuidance: context.userGuidance,
         },
         mode: 'workflow',
         stream: true 
@@ -149,6 +151,7 @@ export async function streamWorkflowHelp(
           hasConditionals: context.hasConditionals,
           availableTriggers: context.availableTriggers,
           availableActions: context.availableActions,
+          userGuidance: context.userGuidance,
         },
         mode: 'workflow',
         stream: true 
@@ -240,6 +243,7 @@ export async function streamWorkflowOptimization(
           triggerType: context.triggerType,
           stepCount: context.stepCount,
           hasConditionals: context.hasConditionals,
+          userGuidance: context.userGuidance,
         },
         mode: 'workflow',
         stream: true 
@@ -331,6 +335,7 @@ export async function streamWorkflowExplain(
           triggerType: context.triggerType,
           stepCount: context.stepCount,
           hasConditionals: context.hasConditionals,
+          userGuidance: context.userGuidance,
         },
         mode: 'workflow',
         stream: true 

@@ -248,7 +248,7 @@ export function AutomationEditorShell({
             size="sm"
             onClick={onPublish}
             disabled={isPublishing || isSaving || isNew || definition.steps.length === 0}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-primary hover:bg-primary/90 text-white"
           >
             {isPublishing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <Rocket className="h-4 w-4 mr-2" />
@@ -317,7 +317,7 @@ export function AutomationEditorShell({
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 320, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed right-0 top-14 bottom-0 w-80 bg-background border-l border-border z-20"
+              className="fixed right-0 top-[60px] bottom-0 w-80 bg-background border-l border-border z-20 flex flex-col"
             >
               <div className="automation-editor-panel-header">
                 <span className="automation-editor-panel-title flex items-center gap-2">
@@ -342,7 +342,10 @@ export function AutomationEditorShell({
                   <PanelRightClose className="h-4 w-4" />
                 </button>
               </div>
-              <div className="automation-editor-panel-content">
+              <div className={cn(
+                "automation-editor-panel-content",
+                isAddStepMode(selectedNodeId) && "!p-0 !overflow-hidden"
+              )}>
                 <NodeInspector
                   selectedNodeId={selectedNodeId}
                   trigger={definition.trigger}

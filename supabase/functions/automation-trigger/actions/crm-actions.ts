@@ -1,6 +1,7 @@
 // supabase/functions/automation-trigger/actions/crm-actions.ts
 
 import type { AutomationContext, StepExecutionLog } from "../types.ts";
+import { renderTemplate } from "../template-engine.ts";
 
 // Flexible config types to allow Record<string, any> from step.config
 type FlexibleConfig = Record<string, unknown>;
@@ -12,13 +13,16 @@ export async function executeAddTag(
   supabase: any,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
-  const tag = (config.tag as string)?.trim();
+  const rawTag = (config.tag as string)?.trim();
 
-  if (!tag) {
+  if (!rawTag) {
     log.status = "skipped";
     log.skipReason = "no_tag_specified";
     return log;
   }
+
+  // Render template variables in tag name (e.g., "{{lead.source}}-customer")
+  const tag = renderTemplate(rawTag, context);
 
   const leadId = context.lead?.id;
   if (!leadId) {
@@ -68,13 +72,16 @@ export async function executeRemoveTag(
   supabase: any,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
-  const tag = (config.tag as string)?.trim();
+  const rawTag = (config.tag as string)?.trim();
 
-  if (!tag) {
+  if (!rawTag) {
     log.status = "skipped";
     log.skipReason = "no_tag_specified";
     return log;
   }
+
+  // Render template variables in tag name
+  const tag = renderTemplate(rawTag, context);
 
   const leadId = context.lead?.id;
   if (!leadId) {
@@ -127,15 +134,21 @@ export async function executeCreateContact(
   const log: StepExecutionLog = { status: "success" };
 
   try {
+    // Render template variables in contact fields
+    const name = renderTemplate((config.name as string) || "", context) || (context.meta as any)?.name || null;
+    const email = renderTemplate((config.email as string) || "", context) || (context.meta as any)?.email || null;
+    const phone = renderTemplate((config.phone as string) || "", context) || (context.meta as any)?.phone || null;
+    const source = renderTemplate((config.source as string) || "", context) || "automation";
+
     const { data, error } = await supabase
       .from("contacts")
       .insert([
         {
           team_id: context.teamId,
-          name: (config.name as string) || (context.meta as any)?.name || null,
-          email: (config.email as string) || (context.meta as any)?.email || null,
-          phone: (config.phone as string) || (context.meta as any)?.phone || null,
-          source: (config.source as string) || "automation",
+          name,
+          email,
+          phone,
+          source,
         },
       ])
       .select("id")
@@ -163,7 +176,8 @@ export async function executeUpdateContact(
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
   const field = config.field as string;
-  const value = config.value as string;
+  // Render template variables in the value (e.g., "{{appointment.event_type_name}}")
+  const value = renderTemplate((config.value as string) || "", context);
 
   const leadId = context.lead?.id;
   if (!leadId) {
@@ -233,7 +247,7 @@ export async function executeAddNote(
   supabase: any,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
-  const note = config.note as string | undefined;
+  const rawNote = config.note as string | undefined;
   const entityType = (config.entity as string) || "lead";
   const entityId = entityType === "lead" ? context.lead?.id : context.appointment?.id;
 
@@ -243,11 +257,14 @@ export async function executeAddNote(
     return log;
   }
 
-  if (!note) {
+  if (!rawNote) {
     log.status = "skipped";
     log.skipReason = "no_note_content";
     return log;
   }
+
+  // Render template variables in note content
+  const note = renderTemplate(rawNote, context);
 
   try {
     // For appointments, update notes field
@@ -423,8 +440,9 @@ export async function executeCreateDeal(
     const lead = context.lead;
     const appointment = context.appointment;
 
-    // Determine deal name - use config or fall back to lead name
-    const dealName = (config.name as string) || 
+    // Determine deal name - render template or fall back to lead name
+    const rawDealName = (config.name as string) || "";
+    const dealName = renderTemplate(rawDealName, context) || 
                      lead?.name || 
                      appointment?.lead_name || 
                      "New Deal";
@@ -434,6 +452,10 @@ export async function executeCreateDeal(
 
     // Determine stage - use config or default to 'booked'
     const stageId = (config.stageId as string) || "booked";
+
+    // Render template variables in notes and event type
+    const eventType = renderTemplate((config.eventType as string) || "", context) || "Deal from Automation";
+    const notes = renderTemplate((config.notes as string) || "", context) || `Created by automation at ${new Date().toISOString()}`;
 
     // Create deal as an appointment record (deals are appointments in this system)
     const { data, error } = await supabase
@@ -448,9 +470,9 @@ export async function executeCreateDeal(
           revenue: dealValue,
           status: "NEW",
           start_at_utc: new Date().toISOString(),
-          event_type_name: (config.eventType as string) || "Deal from Automation",
+          event_type_name: eventType,
           setter_id: lead?.owner_user_id || null,
-          appointment_notes: (config.notes as string) || `Created by automation at ${new Date().toISOString()}`,
+          appointment_notes: notes,
         },
       ])
       .select("id")
@@ -503,14 +525,16 @@ export async function executeCloseDeal(
     }
 
     const closeStatus = (config.status as string) || "won";
-    const reason = (config.reason as string) || "";
+    // Render template variables in reason
+    const reason = renderTemplate((config.reason as string) || "", context);
 
     if (closeStatus === "won") {
       // For won deals, we need more info - use RPC if available, else direct update
       const ccAmount = Number(config.ccAmount) || 0;
       const mrrAmount = Number(config.mrrAmount) || 0;
       const mrrMonths = Number(config.mrrMonths) || 0;
-      const productName = (config.productName as string) || "Product";
+      // Render template variables in product name
+      const productName = renderTemplate((config.productName as string) || "", context) || "Product";
 
       // Try using the close_deal_transaction RPC for full processing
       if (ccAmount > 0 || mrrAmount > 0) {
@@ -604,6 +628,244 @@ export async function executeCloseDeal(
       },
     ]);
 
+  } catch (err) {
+    log.status = "error";
+    log.error = err instanceof Error ? err.message : "Unknown error";
+  }
+
+  return log;
+}
+
+// Find Contact (lookup by email, phone, or custom field)
+export async function executeFindContact(
+  config: FlexibleConfig,
+  context: AutomationContext,
+  supabase: any,
+): Promise<StepExecutionLog> {
+  const log: StepExecutionLog = { status: "success" };
+
+  try {
+    const searchField = (config.searchField as string) || "email";
+    const rawSearchValue = (config.searchValue as string) || "";
+    const searchValue = renderTemplate(rawSearchValue, context);
+
+    if (!searchValue) {
+      log.status = "skipped";
+      log.skipReason = "no_search_value";
+      return log;
+    }
+
+    let query = supabase
+      .from("contacts")
+      .select("*")
+      .eq("team_id", context.teamId);
+
+    if (searchField === "email") {
+      query = query.eq("email", searchValue);
+    } else if (searchField === "phone") {
+      query = query.eq("phone", searchValue);
+    } else if (searchField === "name") {
+      query = query.ilike("name", `%${searchValue}%`);
+    } else if (searchField.startsWith("custom_fields.")) {
+      const cfKey = searchField.replace("custom_fields.", "");
+      query = query.contains("custom_fields", { [cfKey]: searchValue });
+    } else {
+      query = query.eq(searchField, searchValue);
+    }
+
+    const { data, error } = await query.limit(1).maybeSingle();
+
+    if (error) {
+      log.status = "error";
+      log.error = error.message;
+      return log;
+    }
+
+    if (data) {
+      log.output = { found: true, contactId: data.id, contact: data };
+    } else {
+      log.output = { found: false };
+      if (config.failIfNotFound) {
+        log.status = "skipped";
+        log.skipReason = "contact_not_found";
+      }
+    }
+  } catch (err) {
+    log.status = "error";
+    log.error = err instanceof Error ? err.message : "Unknown error";
+  }
+
+  return log;
+}
+
+// Delete Contact
+export async function executeDeleteContact(
+  config: FlexibleConfig,
+  context: AutomationContext,
+  supabase: any,
+): Promise<StepExecutionLog> {
+  const log: StepExecutionLog = { status: "success" };
+
+  const leadId = context.lead?.id;
+  if (!leadId) {
+    log.status = "skipped";
+    log.skipReason = "no_lead_in_context";
+    return log;
+  }
+
+  try {
+    const { error } = await supabase
+      .from("contacts")
+      .delete()
+      .eq("id", leadId)
+      .eq("team_id", context.teamId);
+
+    if (error) {
+      log.status = "error";
+      log.error = error.message;
+    } else {
+      log.output = { deletedContactId: leadId };
+    }
+  } catch (err) {
+    log.status = "error";
+    log.error = err instanceof Error ? err.message : "Unknown error";
+  }
+
+  return log;
+}
+
+// Remove Owner
+export async function executeRemoveOwner(
+  config: FlexibleConfig,
+  context: AutomationContext,
+  supabase: any,
+): Promise<StepExecutionLog> {
+  const log: StepExecutionLog = { status: "success" };
+
+  const entity = (config.entity as string) || "lead";
+
+  try {
+    if (entity === "lead") {
+      const leadId = context.lead?.id;
+      if (!leadId) {
+        log.status = "skipped";
+        log.skipReason = "no_lead_in_context";
+        return log;
+      }
+      const { error } = await supabase.from("contacts").update({ owner_id: null }).eq("id", leadId);
+      if (error) { log.status = "error"; log.error = error.message; }
+    } else if (entity === "deal" || entity === "appointment") {
+      const dealId = context.deal?.id || context.appointment?.id;
+      if (!dealId) {
+        log.status = "skipped";
+        log.skipReason = "no_deal_in_context";
+        return log;
+      }
+      const { error } = await supabase.from("appointments").update({ closer_id: null }).eq("id", dealId);
+      if (error) { log.status = "error"; log.error = error.message; }
+    }
+  } catch (err) {
+    log.status = "error";
+    log.error = err instanceof Error ? err.message : "Unknown error";
+  }
+
+  return log;
+}
+
+// Toggle Do Not Disturb
+export async function executeToggleDnd(
+  config: FlexibleConfig,
+  context: AutomationContext,
+  supabase: any,
+): Promise<StepExecutionLog> {
+  const log: StepExecutionLog = { status: "success" };
+
+  const leadId = context.lead?.id;
+  if (!leadId) {
+    log.status = "skipped";
+    log.skipReason = "no_lead_in_context";
+    return log;
+  }
+
+  try {
+    const enableDnd = config.enable !== false; // Default to enabling DND
+    const channels = (config.channels as string[]) || ["all"];
+
+    // Get current DND settings
+    const { data: contact, error: fetchError } = await supabase
+      .from("contacts")
+      .select("custom_fields")
+      .eq("id", leadId)
+      .single();
+
+    if (fetchError) {
+      log.status = "error";
+      log.error = fetchError.message;
+      return log;
+    }
+
+    const customFields = contact?.custom_fields || {};
+    customFields.dnd_enabled = enableDnd;
+    customFields.dnd_channels = channels;
+    customFields.dnd_updated_at = new Date().toISOString();
+
+    const { error: updateError } = await supabase
+      .from("contacts")
+      .update({ custom_fields: customFields })
+      .eq("id", leadId);
+
+    if (updateError) {
+      log.status = "error";
+      log.error = updateError.message;
+    } else {
+      log.output = { dndEnabled: enableDnd, channels };
+    }
+  } catch (err) {
+    log.status = "error";
+    log.error = err instanceof Error ? err.message : "Unknown error";
+  }
+
+  return log;
+}
+
+// Update Deal
+export async function executeUpdateDeal(
+  config: FlexibleConfig,
+  context: AutomationContext,
+  supabase: any,
+): Promise<StepExecutionLog> {
+  const log: StepExecutionLog = { status: "success" };
+
+  const dealId = context.deal?.id || context.appointment?.id;
+  if (!dealId) {
+    log.status = "skipped";
+    log.skipReason = "no_deal_in_context";
+    return log;
+  }
+
+  const field = config.field as string;
+  const rawValue = (config.value as string) || "";
+  const value = renderTemplate(rawValue, context);
+
+  if (!field) {
+    log.status = "skipped";
+    log.skipReason = "no_field_specified";
+    return log;
+  }
+
+  try {
+    const { error } = await supabase
+      .from("appointments")
+      .update({ [field]: value })
+      .eq("id", dealId);
+
+    if (error) {
+      log.status = "error";
+      log.error = error.message;
+    } else {
+      log.output = { dealId, field, value };
+      log.entity = "deal";
+    }
   } catch (err) {
     log.status = "error";
     log.error = err instanceof Error ? err.message : "Unknown error";

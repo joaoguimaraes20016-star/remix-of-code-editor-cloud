@@ -624,9 +624,14 @@ Provide helpful, actionable advice about this workflow. Consider:
 - Timing and sequencing recommendations
 - Error handling and edge cases
 
-Respond conversationally with specific recommendations. Be practical and actionable.
+**RESPONSE GUIDELINES:**
+- Keep responses concise (2-3 paragraphs maximum)
+- Use **bold** for key points and important terms
+- Use *italic* for emphasis on specific recommendations
+- Structure with clear sections if needed
+- Be practical and actionable
 
-IMPORTANT: Respond in plain text only. Do not use HTML tags, JSON, code blocks, or markdown formatting. Write naturally as if you're having a conversation.`;
+IMPORTANT: Respond in markdown format. Use **bold** for emphasis. Do not use HTML tags, JSON, or code blocks. Write naturally as if you're having a conversation.`;
 
 // NEW: Workflow optimization prompt
 const WORKFLOW_OPTIMIZE_PROMPT = `Analyze this automation workflow and suggest improvements.
@@ -647,9 +652,14 @@ Analyze for:
 5. Conversion optimization: Better CTAs? More engaging content?
 6. Best practices: Following automation best practices?
 
-Respond with specific, actionable improvements. Prioritize the most impactful changes first.
+**RESPONSE GUIDELINES:**
+- Keep responses concise (2-3 paragraphs maximum)
+- Use **bold** for key improvements and priority items
+- Use *italic* for specific recommendations
+- Prioritize the most impactful changes first
+- Structure with clear sections if needed
 
-IMPORTANT: Respond in plain text only. Do not use HTML tags, JSON, code blocks, or markdown formatting. Write naturally as if you're having a conversation.`;
+IMPORTANT: Respond in markdown format. Use **bold** for emphasis. Do not use HTML tags, JSON, or code blocks. Write naturally as if you're having a conversation.`;
 
 // NEW: Workflow explanation prompt
 const WORKFLOW_EXPLAIN_PROMPT = `Explain this automation workflow in simple terms.
@@ -669,9 +679,14 @@ Explain:
 - Expected outcomes (what happens when it runs)
 - Who benefits from this workflow
 
-Use clear, non-technical language. Avoid jargon. Make it easy for anyone to understand.
+**RESPONSE GUIDELINES:**
+- Keep responses concise (2-3 paragraphs maximum)
+- Use **bold** for key concepts and important points
+- Use *italic* for emphasis
+- Use clear, non-technical language
+- Avoid jargon - make it easy for anyone to understand
 
-IMPORTANT: Respond in plain text only. Do not use HTML tags, JSON, code blocks, or markdown formatting. Write naturally as if you're having a conversation.`;
+IMPORTANT: Respond in markdown format. Use **bold** for emphasis. Do not use HTML tags, JSON, or code blocks. Write naturally as if you're having a conversation.`;
 
 // NEW: Settings update prompt
 const SETTINGS_PROMPT = `${BASE_CONTEXT}
@@ -910,6 +925,12 @@ export function getSystemPrompt(
     const availableTriggers = workflowContext?.availableTriggers?.join(', ') || 'N/A';
     const availableActions = workflowContext?.availableActions?.join(', ') || 'N/A';
     
+    // Get user guidance if provided
+    const userGuidance = workflowContext?.userGuidance;
+    const guidanceSuffix = userGuidance 
+      ? `\n\nUSER PREFERENCES:\n${userGuidance}\n\nFollow these preferences when responding.`
+      : '';
+    
     // Determine which workflow prompt to use based on task
     // For workflow help/explain/optimize, skip guardrails (they're for funnel JSON, not chat)
     if (task === 'help') {
@@ -920,19 +941,22 @@ export function getSystemPrompt(
         .replace('{{WORKFLOW_JSON}}', workflowJson)
         .replace('{{AVAILABLE_TRIGGERS}}', availableTriggers)
         .replace('{{AVAILABLE_ACTIONS}}', availableActions)
-        .replace('{{USER_PROMPT}}', userPrompt || 'Help me understand this workflow');
+        .replace('{{USER_PROMPT}}', userPrompt || 'Help me understand this workflow')
+        + guidanceSuffix;
     } else if (task === 'optimize') {
       return WORKFLOW_OPTIMIZE_PROMPT
         .replace('{{WORKFLOW_JSON}}', workflowJson)
         .replace('{{TRIGGER_TYPE}}', triggerType)
         .replace('{{STEP_COUNT}}', String(stepCount))
-        .replace('{{HAS_CONDITIONALS}}', hasConditionals);
+        .replace('{{HAS_CONDITIONALS}}', hasConditionals)
+        + guidanceSuffix;
     } else if (task === 'explain') {
       return WORKFLOW_EXPLAIN_PROMPT
         .replace('{{WORKFLOW_JSON}}', workflowJson)
         .replace('{{TRIGGER_TYPE}}', triggerType)
         .replace('{{STEP_COUNT}}', String(stepCount))
-        .replace('{{HAS_CONDITIONALS}}', hasConditionals);
+        .replace('{{HAS_CONDITIONALS}}', hasConditionals)
+        + guidanceSuffix;
     } else {
       // Generation still gets guardrails (needs JSON output)
       return guardrailPrefix + WORKFLOW_GENERATE_PROMPT

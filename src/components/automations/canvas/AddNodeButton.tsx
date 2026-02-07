@@ -50,11 +50,11 @@ const ACTION_OPTIONS: ActionOption[] = [
   // Messaging
   { type: "send_message", label: "Send Message", description: "SMS, Email, or Voice", icon: <MessageSquare className="h-4 w-4" />, color: "text-blue-400", category: "messaging" },
   { type: "send_email", label: "Send Email", description: "Send an email", icon: <Mail className="h-4 w-4" />, color: "text-sky-400", category: "messaging" },
-  { type: "send_whatsapp", label: "Send WhatsApp", description: "WhatsApp message", icon: <MessageCircle className="h-4 w-4" />, color: "text-emerald-400", category: "messaging" },
+  { type: "send_whatsapp", label: "Send WhatsApp", description: "WhatsApp message", icon: <MessageCircle className="h-4 w-4" />, color: "text-primary", category: "messaging" },
   { type: "notify_team", label: "Notify Team", description: "Alert team members", icon: <Bell className="h-4 w-4" />, color: "text-yellow-400", category: "messaging" },
   
   // CRM
-  { type: "create_contact", label: "Create Contact", description: "Add a new contact", icon: <UserPlus className="h-4 w-4" />, color: "text-emerald-400", category: "crm" },
+  { type: "create_contact", label: "Create Contact", description: "Add a new contact", icon: <UserPlus className="h-4 w-4" />, color: "text-primary", category: "crm" },
   { type: "find_contact", label: "Find Contact", description: "Lookup contact", icon: <Search className="h-4 w-4" />, color: "text-sky-400", category: "crm" },
   { type: "add_tag", label: "Add Tag", description: "Tag the contact", icon: <Tag className="h-4 w-4" />, color: "text-green-400", category: "crm" },
   { type: "add_task", label: "Create Task", description: "Assign a task", icon: <ClipboardList className="h-4 w-4" />, color: "text-purple-400", category: "crm" },
@@ -74,7 +74,7 @@ const ACTION_OPTIONS: ActionOption[] = [
   { type: "time_delay", label: "Wait", description: "Pause before next step", icon: <Clock className="h-4 w-4" />, color: "text-orange-400", category: "flow" },
   { type: "condition", label: "If / Else", description: "Branch based on conditions", icon: <GitBranch className="h-4 w-4" />, color: "text-amber-400", category: "flow" },
   { type: "split_test", label: "A/B Split", description: "Random split testing", icon: <Split className="h-4 w-4" />, color: "text-indigo-400", category: "flow" },
-  { type: "goal_achieved", label: "Goal Event", description: "Mark goal achieved", icon: <Target className="h-4 w-4" />, color: "text-green-400", category: "flow" },
+  { type: "goal_achieved", label: "Goal Event", description: "Mark goal achieved", icon: <Target className="h-4 w-4" />, color: "text-primary", category: "flow" },
   
   // AI
   { type: "ai_decision", label: "AI Decision", description: "Smart branching", icon: <Brain className="h-4 w-4" />, color: "text-purple-400", category: "ai" },

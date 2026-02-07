@@ -24,7 +24,7 @@ export function CloseDealForm({ config, onChange }: CloseDealFormProps) {
             onClick={() => onChange({ ...config, status: 'won' })}
             className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${
               config.status === 'won' 
-                ? 'border-green-500 bg-green-500/10 text-green-400' 
+                ? 'border-primary bg-primary/10 text-primary' 
                 : 'border-border hover:border-border/80'
             }`}
           >

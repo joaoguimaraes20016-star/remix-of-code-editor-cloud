@@ -136,6 +136,8 @@ export type ActionType =
   | "custom_webhook"
   | "google_sheets"
   | "slack_message"
+  | "discord_message"
+  | "tiktok_event"
   | "enqueue_dialer";
 
 export type CrmEntity = "lead" | "deal" | "appointment";
@@ -221,15 +223,31 @@ export interface AutomationDefinition {
   triggerType?: TriggerType;
 }
 
+/**
+ * Runtime context passed through all steps of an automation.
+ * 
+ * NOTE on deal vs appointment:
+ * Both `deal` and `appointment` reference the same `appointments` table in the database.
+ * Pipeline opportunities ("deals") are stored as appointment records differentiated by
+ * type/status fields. When both are set, they typically point to the same row.
+ * `lead` references the `contacts` table.
+ */
 export interface AutomationContext {
   teamId: string;
   triggerType: TriggerType;
   now: string;
+  /** Contact from `contacts` table */
   lead?: Record<string, any> | null;
+  /** Appointment/deal from `appointments` table */
   appointment?: Record<string, any> | null;
+  /** Payment context (from Stripe events) */
   payment?: Record<string, any> | null;
+  /** Deal view of `appointments` table row — may reference same row as appointment */
   deal?: Record<string, any> | null;
+  /** Extra metadata from trigger payload */
   meta?: Record<string, any> | null;
+  /** Outputs from completed steps, keyed by step ID. Also contains a "variables" sub-key for set_variable actions. */
+  stepOutputs?: Record<string, any>;
 }
 
 export interface StepExecutionLog {

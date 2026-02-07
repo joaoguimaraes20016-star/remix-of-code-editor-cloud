@@ -37,8 +37,8 @@ const CATEGORY_CONFIG = {
   lead: {
     label: "Lead Nurturing",
     icon: UserPlus,
-    color: "text-emerald-400",
-    bgColor: "bg-emerald-500/20",
+    color: "text-primary",
+    bgColor: "bg-primary/20",
   },
   recovery: {
     label: "Recovery & Re-engagement",

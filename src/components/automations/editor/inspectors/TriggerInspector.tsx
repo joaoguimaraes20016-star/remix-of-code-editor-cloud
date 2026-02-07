@@ -44,7 +44,7 @@ const FUNCTIONAL_TRIGGERS: Set<TriggerType> = new Set([
   "appointment_rescheduled",
   "appointment_canceled",
   "appointment_no_show",
-  // Note: appointment_completed is not yet implemented (no DB trigger)
+  "appointment_completed",
   // Payment triggers
   "payment_received",
   "payment_failed",

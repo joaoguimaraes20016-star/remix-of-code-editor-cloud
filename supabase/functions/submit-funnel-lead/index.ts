@@ -987,6 +987,7 @@ serve(async (req) => {
       const eventId = `lead_created:${lead.id}`;
       console.log("[submit-funnel-lead] Invoking automation-trigger with eventId:", eventId);
 
+      // Fire lead_created trigger
       supabase.functions
         .invoke("automation-trigger", {
           body: {
@@ -997,7 +998,36 @@ serve(async (req) => {
           },
         })
         .catch((err: any) => {
-          console.error("Failed to invoke automation-trigger:", err);
+          console.error("Failed to invoke automation-trigger (lead_created):", err);
+        });
+
+      // Fire form_submitted trigger with full form context
+      // This enables automations triggered by form submissions specifically,
+      // including funnel ID, step info, and all form answers
+      const formEventId = `form_submitted:${funnel_id}:${lead.id}`;
+      supabase.functions
+        .invoke("automation-trigger", {
+          body: {
+            triggerType: "form_submitted",
+            teamId: funnel.team_id,
+            eventId: formEventId,
+            eventPayload: {
+              lead,
+              meta: {
+                funnelId: funnel_id,
+                funnelName: funnel.name,
+                stepId: step_id,
+                stepType: step_type,
+                stepIntent: step_intent,
+                formData: answers,
+                contactId: contactId,
+                submittedAt: new Date().toISOString(),
+              },
+            },
+          },
+        })
+        .catch((err: any) => {
+          console.error("Failed to invoke automation-trigger (form_submitted):", err);
         });
     } else {
       console.log(

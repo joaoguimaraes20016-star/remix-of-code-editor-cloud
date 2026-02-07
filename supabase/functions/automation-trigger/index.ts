@@ -2,7 +2,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type {
   TriggerType,
-  ActionType,
   AutomationCondition,
   AutomationStep,
   AutomationDefinition,
@@ -11,10 +10,10 @@ import type {
   TriggerRequest,
   TriggerResponse,
 } from "./types.ts";
-import { logStepExecution, executeWithRetry } from "./step-logger.ts";
+import { logStepExecution } from "./step-logger.ts";
 import { checkRateLimit, isWithinBusinessHours } from "./rate-limiter.ts";
 import { executeSendMessage } from "./actions/send-message.ts";
-import { executeTimeDelay, executeWaitUntil, executeBusinessHours, calculateWaitUntilTime } from "./actions/time-delay.ts";
+import { executeTimeDelay, executeWaitUntil } from "./actions/time-delay.ts";
 import {
   executeAddTag,
   executeRemoveTag,
@@ -25,7 +24,23 @@ import {
   executeUpdateStage,
   executeCreateDeal,
   executeCloseDeal,
+  executeFindContact,
+  executeDeleteContact,
+  executeRemoveOwner,
+  executeToggleDnd,
+  executeUpdateDeal,
 } from "./actions/crm-actions.ts";
+import {
+  executeSetVariable,
+  executeAddToWorkflow,
+  executeRemoveFromWorkflow,
+} from "./actions/variable-actions.ts";
+import {
+  executeFormatDate,
+  executeFormatNumber,
+  executeFormatText,
+  executeMathOperation,
+} from "./actions/data-transform.ts";
 import {
   executeAddTask,
   executeNotifyTeam,
@@ -40,13 +55,27 @@ import { executeGoogleAdsConversion } from "./actions/google-ads-conversion.ts";
 import { executeTikTokEvent } from "./actions/tiktok-event.ts";
 import { executeMetaConversion } from "./actions/meta-conversion.ts";
 import { executeGoogleSheets } from "./actions/google-sheets.ts";
-import { executeVoiceCall } from "./actions/voice-ai.ts";
 import {
   executeSendInvoice,
   executeChargePayment,
   executeCreateSubscription,
   executeCancelSubscription,
 } from "./actions/stripe-actions.ts";
+import {
+  executeBookAppointment,
+  executeUpdateAppointment,
+  executeCancelAppointment,
+  executeCreateBookingLink,
+  executeLogCall,
+} from "./actions/appointment-actions.ts";
+import {
+  executeSendVoicemail,
+  executeMakeCall,
+} from "./actions/voice-actions.ts";
+import {
+  executeSendReviewRequest,
+  executeReplyInComments,
+} from "./actions/marketing-actions.ts";
 import {
   checkAndCreateEnrollment,
   completeEnrollment,
@@ -59,8 +88,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type CrmEntity = "lead" | "deal" | "appointment";
-
 // --- Supabase Client ---
 function getSupabaseClient() {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -69,6 +96,11 @@ function getSupabaseClient() {
 }
 
 // --- Context Builder ---
+// ARCHITECTURE NOTE: Deals and appointments share the `appointments` database table.
+// `context.deal` and `context.appointment` are separate views of the same underlying row,
+// differentiated by type/status fields. When refreshing context after mutations (assign_owner,
+// update_stage, close_deal, update_deal), both are queried from `appointments` table.
+// `context.lead` maps to the `contacts` table and is always a separate entity.
 function buildAutomationContext(triggerType: TriggerType, payload: Record<string, any>): AutomationContext {
   const { teamId } = payload;
   return {
@@ -80,15 +112,13 @@ function buildAutomationContext(triggerType: TriggerType, payload: Record<string
     payment: payload.payment ?? null,
     deal: payload.deal ?? null,
     meta: payload.meta ?? null,
+    stepOutputs: payload.stepOutputs ?? undefined,
   };
 }
 
 // --- Import Enhanced Template Engine ---
 import { 
-  renderTemplate as renderTemplateEnhanced, 
   getFieldValue as getFieldValueEnhanced,
-  enrichContext,
-  extractTemplateVariables as extractVarsEnhanced,
 } from "./template-engine.ts";
 
 // --- Condition Evaluator (GHL-grade operators) ---
@@ -619,33 +649,36 @@ async function logMessage(
   }
 }
 
-// --- Template Variable Extraction (for logging) ---
-function extractTemplateVariables(template: string, context: AutomationContext): Record<string, any> {
-  return extractVarsEnhanced(template, context);
-}
-
-// --- Render Template (GHL-grade with pipes and aliases) ---
-function renderTemplate(template: string, context: AutomationContext): string {
-  return renderTemplateEnhanced(template, context);
-}
-
 // --- Run Automation with Branching Support ---
 async function runAutomation(
   automation: AutomationDefinition,
   context: AutomationContext,
   supabase: any,
   runId: string | null,
+  eventPayload?: Record<string, any>,
 ): Promise<StepExecutionLog[]> {
   const logs: StepExecutionLog[] = [];
   const steps = automation.steps.sort((a, b) => a.order - b.order);
   const stepMap = new Map(steps.map((s) => [s.id, s]));
   const visitedSteps = new Set<string>();
+  const triggeredGoalIds = new Set<string>(); // Prevent goal redirect infinite loops
   const maxSteps = 100; // Prevent infinite loops
+
+  // Check if this is a scheduled resume (from process-scheduled-jobs)
+  const isScheduledResume = eventPayload?.isScheduledResume === true;
+  const resumeFromStep = eventPayload?.resumeFromStep as string | undefined;
+
+  // Log if resuming from scheduled job
+  // Note: Context is already restored via buildAutomationContext since process-scheduled-jobs
+  // spreads context_snapshot directly into eventPayload (not nested)
+  if (isScheduledResume) {
+    console.log(`[Automation] Resuming from scheduled job, step: ${resumeFromStep}`);
+  }
 
   console.log(`[Automation] Running "${automation.name}" (${automation.id}) with ${steps.length} steps`);
 
-  // Start with the first step
-  let currentStepId: string | null = steps[0]?.id || null;
+  // Start from resume step (scheduled resume) or first step
+  let currentStepId: string | null = resumeFromStep || steps[0]?.id || null;
 
   while (currentStepId && logs.length < maxSteps) {
     // Prevent infinite loops
@@ -797,7 +830,7 @@ async function runAutomation(
             log.output = { resumeAt: result.resumeAt, jobId: result.jobId };
             shouldStop = true;
           } else if (result.error) {
-            log.status = "failed";
+            log.status = "error";
             log.error = result.error;
           } else {
             // Already past the wait time, continue immediately
@@ -808,24 +841,45 @@ async function runAutomation(
         }
 
         case "business_hours": {
-          const timezone = step.config.timezone || "America/New_York";
+          const timezone = (step.config.timezone as string) || "America/New_York";
           const { withinHours, nextOpenTime } = await isWithinBusinessHours(supabase, context.teamId, timezone);
           
           if (!withinHours && nextOpenTime) {
-            // Schedule to resume at next open time
-            const result = await executeTimeDelay(
-              { duration: 0, unit: "minutes" },
-              context,
-              supabase,
-              automation.id,
-              runId,
-              step.id,
-              steps.filter((s) => s.order > step.order),
-            );
-            log.status = "success";
-            log.output = { withinHours, resumeAt: nextOpenTime };
+            // Schedule to resume at next business hours open time
+            // Uses nextOpenTime from the DB-aware rate-limiter (team_business_hours table)
+            try {
+              const { data: scheduledJob, error: scheduleError } = await supabase
+                .from("scheduled_automation_jobs")
+                .insert([{
+                  team_id: context.teamId,
+                  automation_id: automation.id,
+                  run_id: runId,
+                  step_id: step.id,
+                  resume_at: nextOpenTime,
+                  status: "pending",
+                  context_snapshot: {
+                    ...context,
+                    remainingSteps: steps.filter((s) => s.order > step.order).map((s) => s.id),
+                  },
+                }])
+                .select("id")
+                .single();
+
+              log.status = "success";
+              log.output = {
+                withinHours,
+                resumeAt: nextOpenTime,
+                scheduled: !scheduleError,
+                jobId: scheduledJob?.id,
+              };
+            } catch (schedErr) {
+              log.status = "error";
+              log.error = schedErr instanceof Error ? schedErr.message : "Failed to schedule business hours resume";
+              log.output = { withinHours, resumeAt: nextOpenTime };
+            }
             shouldStop = true;
           } else {
+            // Within business hours or no next open time — continue immediately
             log.status = "success";
             log.output = { withinHours };
           }
@@ -858,6 +912,18 @@ async function runAutomation(
         case "update_contact": {
           const result = await executeUpdateContact(step.config, context, supabase);
           log = { ...log, ...result };
+
+          // Refresh context after update so downstream steps use fresh data
+          if (result.status === "success" && context.lead?.id) {
+            const { data: updatedLead } = await supabase
+              .from("contacts")
+              .select("*")
+              .eq("id", context.lead.id)
+              .single();
+            if (updatedLead) {
+              context.lead = updatedLead;
+            }
+          }
           break;
         }
 
@@ -870,12 +936,68 @@ async function runAutomation(
         case "assign_owner": {
           const result = await executeAssignOwner(step.config, context, supabase);
           log = { ...log, ...result };
+
+          // Refresh context after owner assignment so downstream steps use fresh data
+          if (result.status === "success") {
+            const entity = (step.config.entity as string) || "lead";
+            if (entity === "lead" && context.lead?.id) {
+              const { data: updatedLead } = await supabase
+                .from("contacts")
+                .select("*")
+                .eq("id", context.lead.id)
+                .single();
+              if (updatedLead) {
+                context.lead = updatedLead;
+              }
+            } else if ((entity === "deal" || entity === "appointment") && (context.deal?.id || context.appointment?.id)) {
+              // NOTE: Deals and appointments share the `appointments` table in this schema.
+              // context.deal and context.appointment are separate views of the same underlying row,
+              // differentiated by type/status fields. Both are refreshed from the same table.
+              const dealId = context.deal?.id || context.appointment?.id;
+              const { data: updatedDeal } = await supabase
+                .from("appointments")
+                .select("*")
+                .eq("id", dealId)
+                .single();
+              if (updatedDeal) {
+                if (context.deal) context.deal = updatedDeal;
+                if (context.appointment) context.appointment = updatedDeal;
+              }
+            }
+          }
           break;
         }
 
         case "update_stage": {
           const result = await executeUpdateStage(step.config, context, supabase);
           log = { ...log, ...result };
+
+          // Refresh context after stage update so downstream steps use fresh data
+          if (result.status === "success") {
+            const entity = (step.config.entity as string) || "lead";
+            if (entity === "lead" && context.lead?.id) {
+              const { data: updatedLead } = await supabase
+                .from("contacts")
+                .select("*")
+                .eq("id", context.lead.id)
+                .single();
+              if (updatedLead) {
+                context.lead = updatedLead;
+              }
+            } else if ((entity === "deal" || entity === "appointment") && (context.deal?.id || context.appointment?.id)) {
+              // NOTE: Deals share the `appointments` table — see assign_owner case above.
+              const dealId = context.deal?.id || context.appointment?.id;
+              const { data: updatedDeal } = await supabase
+                .from("appointments")
+                .select("*")
+                .eq("id", dealId)
+                .single();
+              if (updatedDeal) {
+                if (context.deal) context.deal = updatedDeal;
+                if (context.appointment) context.appointment = updatedDeal;
+              }
+            }
+          }
           break;
         }
 
@@ -983,7 +1105,7 @@ async function runAutomation(
         }
 
         case "stop_workflow": {
-          const result = executeStopWorkflow(step.config);
+          const result = executeStopWorkflow(step.config, context);
           log.status = "success";
           log.output = { reason: result.reason };
           shouldStop = true;
@@ -1057,6 +1179,9 @@ async function runAutomation(
         }
 
         // === DEAL ACTIONS ===
+        // Architecture note: Deals and appointments share the `appointments` table.
+        // context.deal and context.appointment may reference the same row.
+        // When refreshing deal context after mutations, we query `appointments`.
         case "create_deal": {
           const result = await executeCreateDeal(step.config, context, supabase);
           log = { ...log, ...result };
@@ -1070,6 +1195,23 @@ async function runAutomation(
         case "close_deal": {
           const result = await executeCloseDeal(step.config, context, supabase);
           log = { ...log, ...result };
+
+          // Refresh deal/appointment context after closing
+          // NOTE: Deals share the `appointments` table — see assign_owner case.
+          if (result.status === "success") {
+            const dealId = context.deal?.id || context.appointment?.id;
+            if (dealId) {
+              const { data: updatedDeal } = await supabase
+                .from("appointments")
+                .select("*")
+                .eq("id", dealId)
+                .single();
+              if (updatedDeal) {
+                if (context.deal) context.deal = updatedDeal;
+                if (context.appointment) context.appointment = updatedDeal;
+              }
+            }
+          }
           break;
         }
 
@@ -1098,6 +1240,239 @@ async function runAutomation(
           break;
         }
 
+        // === VOICE ACTIONS ===
+        case "send_voicemail": {
+          const vmRateCheck = await checkRateLimit(supabase, context.teamId, "voice", automation.id);
+          if (!vmRateCheck.allowed) {
+            log.skipped = true;
+            log.skipReason = vmRateCheck.reason || "rate_limit_exceeded";
+            break;
+          }
+          const vmResult = await executeSendVoicemail(step.config, context, supabase);
+          log = { ...log, ...vmResult };
+          break;
+        }
+
+        case "make_call": {
+          const callRateCheck = await checkRateLimit(supabase, context.teamId, "voice", automation.id);
+          if (!callRateCheck.allowed) {
+            log.skipped = true;
+            log.skipReason = callRateCheck.reason || "rate_limit_exceeded";
+            break;
+          }
+          const callResult = await executeMakeCall(step.config, context, supabase);
+          log = { ...log, ...callResult };
+          break;
+        }
+
+        // === APPOINTMENT ACTIONS ===
+        case "book_appointment": {
+          const bookResult = await executeBookAppointment(step.config, context, supabase);
+          log = { ...log, ...bookResult };
+          // Update context with new appointment for downstream steps
+          if (bookResult.output?.appointmentId) {
+            context.appointment = { id: bookResult.output.appointmentId, ...bookResult.output };
+          }
+          break;
+        }
+
+        case "update_appointment": {
+          const updateApptResult = await executeUpdateAppointment(step.config, context, supabase);
+          log = { ...log, ...updateApptResult };
+
+          // Refresh context after update so downstream steps use fresh data
+          if (updateApptResult.status === "success" && context.appointment?.id) {
+            const { data: updatedAppointment } = await supabase
+              .from("appointments")
+              .select("*")
+              .eq("id", context.appointment.id)
+              .single();
+            if (updatedAppointment) {
+              context.appointment = updatedAppointment;
+            }
+          }
+          break;
+        }
+
+        case "cancel_appointment": {
+          const cancelApptResult = await executeCancelAppointment(step.config, context, supabase);
+          log = { ...log, ...cancelApptResult };
+          break;
+        }
+
+        case "create_booking_link": {
+          const linkResult = await executeCreateBookingLink(step.config, context, supabase);
+          log = { ...log, ...linkResult };
+          break;
+        }
+
+        case "log_call": {
+          const logCallResult = await executeLogCall(step.config, context, supabase);
+          log = { ...log, ...logCallResult };
+          break;
+        }
+
+        // === MARKETING ACTIONS ===
+        case "send_review_request": {
+          const reviewRateCheck = await checkRateLimit(supabase, context.teamId, "sms", automation.id);
+          if (!reviewRateCheck.allowed) {
+            log.skipped = true;
+            log.skipReason = reviewRateCheck.reason || "rate_limit_exceeded";
+            break;
+          }
+          const reviewResult = await executeSendReviewRequest(step.config, context, supabase, runId || undefined, automation.id);
+          log = { ...log, ...reviewResult };
+          break;
+        }
+
+        case "reply_in_comments": {
+          const replyResult = await executeReplyInComments(step.config, context, supabase);
+          log = { ...log, ...replyResult };
+          break;
+        }
+
+        // === CRM LOOKUP & MANAGEMENT ACTIONS ===
+        case "find_contact": {
+          const result = await executeFindContact(step.config, context, supabase);
+          log = { ...log, ...result };
+          // Only update the trigger contact if the config explicitly opts in.
+          // GHL requires a "Update trigger contact" flag — without it, downstream
+          // steps would silently operate on the wrong contact.
+          if (result.output?.found && result.output?.contact && step.config.updateTriggerContact) {
+            context.lead = result.output.contact;
+          }
+          break;
+        }
+
+        case "delete_contact": {
+          const result = await executeDeleteContact(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "remove_owner": {
+          const result = await executeRemoveOwner(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "toggle_dnd": {
+          const result = await executeToggleDnd(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "update_deal": {
+          const result = await executeUpdateDeal(step.config, context, supabase);
+          log = { ...log, ...result };
+          // Refresh deal context after update
+          // NOTE: Deals share the `appointments` table — see assign_owner case.
+          if (result.status === "success") {
+            const dealId = context.deal?.id || context.appointment?.id;
+            if (dealId) {
+              const { data: updatedDeal } = await supabase
+                .from("appointments")
+                .select("*")
+                .eq("id", dealId)
+                .single();
+              if (updatedDeal) {
+                if (context.deal) context.deal = updatedDeal;
+                if (context.appointment) context.appointment = updatedDeal;
+              }
+            }
+          }
+          break;
+        }
+
+        // === VARIABLE & WORKFLOW MANAGEMENT ACTIONS ===
+        case "set_variable": {
+          const result = await executeSetVariable(step.config, context);
+          log = { ...log, ...result };
+          // Store in a unified "variables" namespace so downstream steps can use
+          // {{stepOutputs.variables.myVarName}} for clean named access
+          if (result.output?.name && result.status === "success") {
+            context.stepOutputs = context.stepOutputs || {};
+            context.stepOutputs["variables"] = context.stepOutputs["variables"] || {};
+            context.stepOutputs["variables"][result.output.name] = result.output.value;
+          }
+          break;
+        }
+
+        case "add_to_workflow": {
+          const result = await executeAddToWorkflow(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "remove_from_workflow": {
+          const result = await executeRemoveFromWorkflow(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        // === DATA TRANSFORM ACTIONS ===
+        case "format_date": {
+          const result = await executeFormatDate(step.config, context);
+          log = { ...log, ...result };
+          if (result.output?.variableName && result.status === "success") {
+            context.stepOutputs = context.stepOutputs || {};
+            context.stepOutputs["variables"] = context.stepOutputs["variables"] || {};
+            context.stepOutputs["variables"][result.output.variableName] = result.output.formatted;
+          }
+          break;
+        }
+
+        case "format_number": {
+          const result = await executeFormatNumber(step.config, context);
+          log = { ...log, ...result };
+          if (result.output?.variableName && result.status === "success") {
+            context.stepOutputs = context.stepOutputs || {};
+            context.stepOutputs["variables"] = context.stepOutputs["variables"] || {};
+            context.stepOutputs["variables"][result.output.variableName] = result.output.formatted;
+          }
+          break;
+        }
+
+        case "format_text": {
+          const result = await executeFormatText(step.config, context);
+          log = { ...log, ...result };
+          if (result.output?.variableName && result.status === "success") {
+            context.stepOutputs = context.stepOutputs || {};
+            context.stepOutputs["variables"] = context.stepOutputs["variables"] || {};
+            context.stepOutputs["variables"][result.output.variableName] = result.output.result;
+          }
+          break;
+        }
+
+        case "math_operation": {
+          const result = await executeMathOperation(step.config, context);
+          log = { ...log, ...result };
+          if (result.output?.variableName && result.status === "success") {
+            context.stepOutputs = context.stepOutputs || {};
+            context.stepOutputs["variables"] = context.stepOutputs["variables"] || {};
+            context.stepOutputs["variables"][result.output.variableName] = result.output.result;
+          }
+          break;
+        }
+
+        // === UNIMPLEMENTED ACTIONS (forms exist, handlers pending) ===
+        case "copy_contact":
+        case "add_followers":
+        case "remove_followers":
+        case "find_opportunity":
+        case "ai_intent":
+        case "ai_decision":
+        case "ai_translate":
+        case "ai_summarize":
+        case "ai_message":
+        case "add_to_audience":
+        case "remove_from_audience":
+          console.warn(`[Automation] Action "${step.type}" is not yet implemented, skipping`);
+          log.skipped = true;
+          log.skipReason = `action_not_implemented:${step.type}`;
+          log.status = "skipped";
+          break;
+
         default:
           console.warn(`[Automation] Unknown action type: ${step.type}`);
           log.skipped = true;
@@ -1111,6 +1486,13 @@ async function runAutomation(
 
     log.durationMs = Date.now() - startTime;
     logs.push(log);
+
+    // Store step outputs in context for downstream template access
+    // Enables: {{stepOutputs.step_id.fieldName}} in templates
+    if (log.output && typeof log.output === "object") {
+      context.stepOutputs = context.stepOutputs || {};
+      context.stepOutputs[step.id] = log.output;
+    }
 
     // Log step execution to database
     if (runId) {
@@ -1131,6 +1513,50 @@ async function runAutomation(
     if (shouldStop) {
       console.log(`[Automation] Stopping at step ${step.id}`);
       break;
+    }
+
+    // Real-time goal checking between steps
+    // GHL checks goals after each step, not just at the end.
+    // Track which goals have already fired to prevent infinite redirect loops
+    // when goToStepId is used (the goal condition may remain true after jumping).
+    if (!triggeredGoalIds.has("*")) {
+      const midRunGoalCheck = await checkGoals(supabase, automation.id, context);
+      if (midRunGoalCheck.goalMet && midRunGoalCheck.goal && !triggeredGoalIds.has(midRunGoalCheck.goal.id)) {
+        console.log(`[Automation] Goal "${midRunGoalCheck.goal.name}" met after step ${step.id}`);
+        triggeredGoalIds.add(midRunGoalCheck.goal.id);
+
+        if (midRunGoalCheck.goal.goToStepId) {
+          // Jump to the specified step instead of exiting.
+          // Allow the target step to execute even if it was already visited,
+          // since goal redirects are intentional jumps (not accidental loops).
+          console.log(`[Automation] Goal redirecting to step ${midRunGoalCheck.goal.goToStepId}`);
+          visitedSteps.delete(midRunGoalCheck.goal.goToStepId);
+          nextStepId = midRunGoalCheck.goal.goToStepId;
+        } else if (midRunGoalCheck.goal.exitOnGoal) {
+          // Exit the automation and handle enrollment exit here
+          // so the post-run check doesn't double-fire
+          console.log(`[Automation] Goal exit triggered, stopping automation`);
+          triggeredGoalIds.add("*"); // Mark all goals as handled
+          await exitEnrollment(
+            supabase,
+            automation.id,
+            context.lead?.id || null,
+            context.appointment?.id || null,
+            `Goal met mid-run: ${midRunGoalCheck.goal.name}`,
+          );
+          logs.push({
+            stepId: "goal_exit",
+            actionType: "goal_achieved",
+            status: "success",
+            output: {
+              goalId: midRunGoalCheck.goal.id,
+              goalName: midRunGoalCheck.goal.name,
+              exitedMidRun: true,
+            },
+          });
+          break;
+        }
+      }
     }
 
     // Determine next step
@@ -1295,20 +1721,30 @@ Deno.serve(async (req) => {
       let exitedByGoal = false;
 
       try {
-        stepLogs = await runAutomation(automation, context, supabase, runId);
+        stepLogs = await runAutomation(automation, context, supabase, runId, eventPayload as Record<string, any>);
         allStepsExecuted.push(...stepLogs);
         
-        // Check for goal completion after run
-        const goalCheck = await checkGoals(supabase, automation.id, context);
-        if (goalCheck.goalMet && goalCheck.goal?.exitOnGoal) {
+        // Check if a mid-run goal exit already handled enrollment
+        const midRunGoalExit = stepLogs.some(
+          (l) => l.actionType === "goal_achieved" && l.output?.exitedMidRun === true,
+        );
+
+        if (midRunGoalExit) {
+          // Mid-run goal check already called exitEnrollment, skip post-run check
           exitedByGoal = true;
-          await exitEnrollment(
-            supabase,
-            automation.id,
-            context.lead?.id || null,
-            context.appointment?.id || null,
-            `Goal met: ${goalCheck.goal.name}`,
-          );
+        } else {
+          // Check for goal completion after run (handles goals met on the final step)
+          const goalCheck = await checkGoals(supabase, automation.id, context);
+          if (goalCheck.goalMet && goalCheck.goal?.exitOnGoal) {
+            exitedByGoal = true;
+            await exitEnrollment(
+              supabase,
+              automation.id,
+              context.lead?.id || null,
+              context.appointment?.id || null,
+              `Goal met: ${goalCheck.goal.name}`,
+            );
+          }
         }
       } catch (err) {
         status = "error";

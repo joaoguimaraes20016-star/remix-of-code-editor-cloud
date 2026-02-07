@@ -144,7 +144,16 @@
 .automation-editor-panel-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px;
+  min-height: 0; /* Critical: allows flex child to shrink below content height */
+}
+
+/* When showing the action library panel, remove padding and overflow 
+   so the library's own ScrollArea handles scrolling correctly */
+.automation-editor-panel-content:has(> .flex.flex-col.h-full) {
+  padding: 0;
+  overflow: hidden;
 }
 
 /* Custom scrollbar for panels */

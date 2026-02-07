@@ -40,7 +40,7 @@ const TRIGGER_OPTIONS: TriggerOption[] = [
     label: "Lead Created",
     description: "When a new lead is added",
     icon: <UserPlus className="h-4 w-4" />,
-    color: "border-l-green-500",
+    color: "border-l-primary",
   },
   {
     value: "lead_tag_added",
@@ -75,7 +75,7 @@ const TRIGGER_OPTIONS: TriggerOption[] = [
     label: "Appointment Completed",
     description: "When an appointment finishes",
     icon: <CalendarCheck className="h-4 w-4" />,
-    color: "border-l-emerald-500",
+    color: "border-l-primary",
   },
   {
     value: "payment_received",

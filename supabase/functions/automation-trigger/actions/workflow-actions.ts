@@ -1,6 +1,7 @@
 // supabase/functions/automation-trigger/actions/workflow-actions.ts
 
 import type { AutomationContext, StepExecutionLog } from "../types.ts";
+import { renderTemplate, getFieldValue } from "../template-engine.ts";
 
 // Flexible config type to allow Record<string, any> from step.config
 type FlexibleConfig = Record<string, unknown>;
@@ -12,13 +13,16 @@ export async function executeAddTask(
   supabase: any,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
-  const title = config.title as string | undefined;
+  const rawTitle = config.title as string | undefined;
 
-  if (!title) {
+  if (!rawTitle) {
     log.status = "skipped";
     log.skipReason = "no_task_title";
     return log;
   }
+
+  // Render template variables in task title
+  const title = renderTemplate(rawTitle, context);
 
   try {
     // Calculate due date
@@ -89,20 +93,17 @@ export async function executeNotifyTeam(
   runId: string | null,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
-  const message = config.message as string | undefined;
+  const rawMessage = config.message as string | undefined;
 
-  if (!message) {
+  if (!rawMessage) {
     log.status = "skipped";
     log.skipReason = "no_message_content";
     return log;
   }
 
   try {
-    // Render message with context
-    const renderedMessage = message.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
-      const value = getFieldValue(context, path.trim());
-      return value !== undefined ? String(value) : match;
-    });
+    // Render message with template engine (supports pipes like {{lead.name | uppercase}})
+    const renderedMessage = renderTemplate(rawMessage, context);
 
     // Log as in-app notification in message_logs
     const notifyAdmin = config.notifyAdmin as boolean | undefined;
@@ -144,20 +145,23 @@ export async function executeCustomWebhook(
   context: AutomationContext,
 ): Promise<StepExecutionLog> {
   const log: StepExecutionLog = { status: "success" };
-  const url = config.url as string | undefined;
+  const rawUrl = config.url as string | undefined;
 
-  if (!url) {
+  if (!rawUrl) {
     log.status = "skipped";
     log.skipReason = "no_webhook_url";
     return log;
   }
+
+  // Render template variables in URL (e.g., https://api.example.com/{{lead.id}})
+  const url = renderTemplate(rawUrl, context);
 
   try {
     // Parse and render payload
     const configPayload = config.payload as string | undefined;
     let body: string | undefined;
     if (configPayload) {
-      // Replace template variables in payload
+      // Replace template variables in payload - use getFieldValue for JSON values
       body = configPayload.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
         const value = getFieldValue(context, path.trim());
         return value !== undefined ? JSON.stringify(value) : match;
@@ -171,6 +175,7 @@ export async function executeCustomWebhook(
         lead: context.lead,
         appointment: context.appointment,
         deal: context.deal,
+        stepOutputs: context.stepOutputs,
       });
     }
 
@@ -269,8 +274,11 @@ export async function executeRunWorkflow(
 // Stop Workflow
 export function executeStopWorkflow(
   config: FlexibleConfig,
+  context: AutomationContext,
 ): { shouldStop: true; reason: string } {
-  const reason = (config.reason as string) || "stop_workflow action";
+  const rawReason = (config.reason as string) || "stop_workflow action";
+  // Render template variables in reason
+  const reason = renderTemplate(rawReason, context);
   return {
     shouldStop: true,
     reason,
@@ -288,13 +296,4 @@ export function executeGoTo(
   return { jumpTo: targetStepId };
 }
 
-// Helper function
-function getFieldValue(context: Record<string, any>, path: string): any {
-  const keys = path.split(".");
-  let value: any = context;
-  for (const key of keys) {
-    if (value == null) return undefined;
-    value = value[key];
-  }
-  return value;
-}
+// getFieldValue imported from ../template-engine.ts
