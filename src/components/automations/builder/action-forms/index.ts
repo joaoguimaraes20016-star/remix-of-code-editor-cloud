@@ -30,3 +30,6 @@ export { StopWorkflowForm } from "./StopWorkflowForm";
 
 // Integrations
 export { GoogleSheetsForm } from "./GoogleSheetsForm";
+export { DiscordMessageForm } from "./DiscordMessageForm";
+export { GoogleAdsConversionForm } from "./GoogleAdsConversionForm";
+export { TikTokEventForm } from "./TikTokEventForm";

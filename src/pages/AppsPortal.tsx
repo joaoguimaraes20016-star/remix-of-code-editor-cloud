@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CalendlyConfig } from "@/components/CalendlyConfig";
 import { SlackConfig } from "@/components/SlackConfig";
 import { ZoomConfig } from "@/components/ZoomConfig";
@@ -17,7 +18,7 @@ import { GoogleAdsConfig } from "@/components/GoogleAdsConfig";
 import { TikTokConfig } from "@/components/TikTokConfig";
 import { GoogleFeatureCard, GoogleFeature } from "@/components/GoogleFeatureCard";
 import { GoogleAccountBanner } from "@/components/GoogleAccountBanner";
-import { Check, ExternalLink, Lock } from "lucide-react";
+import { Check, ExternalLink, Lock, Calendar, ArrowRight } from "lucide-react";
 
 // Import logos
 import calendlyLogo from "@/assets/integrations/calendly.svg";
@@ -93,6 +94,8 @@ interface App {
   category: "scheduling" | "communication" | "analytics" | "ads";
   status: "connected" | "available" | "coming_soon";
   configurable?: boolean;
+  scope?: "personal" | "team";
+  schedulingNote?: string;
 }
 
 const categoryLabels: Record<string, string> = {
@@ -112,6 +115,7 @@ const apps: App[] = [
     category: "scheduling",
     status: "available",
     configurable: true,
+    scope: "team",
   },
   {
     id: "zapier",
@@ -133,7 +137,7 @@ const apps: App[] = [
   {
     id: "discord",
     name: "Discord",
-    description: "Server notifications and messages",
+    description: "Send messages to Discord channels via automations",
     logo: discordLogo,
     category: "communication",
     status: "available",
@@ -142,7 +146,7 @@ const apps: App[] = [
   {
     id: "typeform",
     name: "Typeform",
-    description: "Form responses and lead capture",
+    description: "Sync form responses as contacts and trigger automations",
     logo: typeformLogo,
     category: "analytics",
     status: "available",
@@ -156,15 +160,19 @@ const apps: App[] = [
     category: "scheduling",
     status: "available",
     configurable: true,
+    scope: "team",
+    schedulingNote: "Also configurable in Scheduling > Connections",
   },
   {
     id: "fathom",
     name: "Fathom",
-    description: "Meeting recordings and transcriptions",
+    description: "Pull AI call summaries into appointments",
     logo: fathomLogo,
     category: "scheduling",
     status: "available",
     configurable: true,
+    scope: "team",
+    schedulingNote: "Also configurable in Scheduling > Connections",
   },
   {
     id: "meta",
@@ -178,7 +186,7 @@ const apps: App[] = [
   {
     id: "google_ads",
     name: "Google Ads",
-    description: "Conversion tracking and lead forms",
+    description: "Track conversions and sync lead forms",
     logo: googleAdsLogo,
     category: "ads",
     status: "available",
@@ -187,7 +195,7 @@ const apps: App[] = [
   {
     id: "tiktok",
     name: "TikTok",
-    description: "Social media content and analytics",
+    description: "Sync lead forms and send conversion events",
     logo: tiktokLogo,
     category: "ads",
     status: "available",
@@ -197,6 +205,7 @@ const apps: App[] = [
 
 export default function AppsPortal() {
   const { teamId } = useParams();
+  const navigate = useNavigate();
   const [calendlyDialogOpen, setCalendlyDialogOpen] = useState(false);
   const [slackDialogOpen, setSlackDialogOpen] = useState(false);
   const [zoomDialogOpen, setZoomDialogOpen] = useState(false);
@@ -380,6 +389,26 @@ export default function AppsPortal() {
             </div>
           </div>
 
+          {/* Scheduling Setup Banner */}
+          <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+            <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertTitle className="text-blue-900 dark:text-blue-200">Setting up booking calendars?</AlertTitle>
+            <AlertDescription className="text-blue-700 dark:text-blue-300 flex items-center justify-between">
+              <span>
+                Google Calendar, Zoom, and Fathom are also available in Scheduling &gt; Connections for streamlined calendar setup.
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-4 shrink-0 border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900/30"
+                onClick={() => navigate(`/team/${teamId}/calendars?tab=connections`)}
+              >
+                Go to Connections
+                <ArrowRight className="h-3 w-3 ml-1" />
+              </Button>
+            </AlertDescription>
+          </Alert>
+
           {/* Other App Categories */}
           {Object.entries(groupedApps).map(([category, categoryApps]) => (
             <div key={category}>
@@ -412,7 +441,7 @@ export default function AppsPortal() {
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="font-semibold text-foreground truncate">
                                 {app.name}
                               </h3>
@@ -427,10 +456,20 @@ export default function AppsPortal() {
                                   Soon
                                 </Badge>
                               )}
+                              {app.scope && (
+                                <Badge variant="outline" className="text-xs">
+                                  {app.scope === "personal" ? "Personal" : "Team-wide"}
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">
                               {app.description}
                             </p>
+                            {app.schedulingNote && (
+                              <p className="text-xs text-muted-foreground/70 mt-1 italic">
+                                {app.schedulingNote}
+                              </p>
+                            )}
                           </div>
                         </div>
                         {!isComingSoon && (

@@ -35,6 +35,9 @@ import {
   executeGoTo,
 } from "./actions/workflow-actions.ts";
 import { executeSlackMessage } from "./actions/slack-message.ts";
+import { executeDiscordMessage } from "./actions/discord-message.ts";
+import { executeGoogleAdsConversion } from "./actions/google-ads-conversion.ts";
+import { executeTikTokEvent } from "./actions/tiktok-event.ts";
 import { executeGoogleSheets } from "./actions/google-sheets.ts";
 import { executeVoiceCall } from "./actions/voice-ai.ts";
 import {
@@ -908,6 +911,42 @@ async function runAutomation(
             break;
           }
           const result = await executeSlackMessage(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "discord_message": {
+          const rateCheck = await checkRateLimit(supabase, context.teamId, "discord", automation.id);
+          if (!rateCheck.allowed) {
+            log.skipped = true;
+            log.skipReason = rateCheck.reason || "rate_limit_exceeded";
+            break;
+          }
+          const result = await executeDiscordMessage(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "google_conversion": {
+          const rateCheck = await checkRateLimit(supabase, context.teamId, "google_ads", automation.id);
+          if (!rateCheck.allowed) {
+            log.skipped = true;
+            log.skipReason = rateCheck.reason || "rate_limit_exceeded";
+            break;
+          }
+          const result = await executeGoogleAdsConversion(step.config, context, supabase);
+          log = { ...log, ...result };
+          break;
+        }
+
+        case "tiktok_event": {
+          const rateCheck = await checkRateLimit(supabase, context.teamId, "tiktok", automation.id);
+          if (!rateCheck.allowed) {
+            log.skipped = true;
+            log.skipReason = rateCheck.reason || "rate_limit_exceeded";
+            break;
+          }
+          const result = await executeTikTokEvent(step.config, context, supabase);
           log = { ...log, ...result };
           break;
         }

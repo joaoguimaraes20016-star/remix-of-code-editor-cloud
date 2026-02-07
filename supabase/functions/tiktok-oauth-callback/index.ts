@@ -179,6 +179,7 @@ Deno.serve(async (req) => {
         config: {
           advertiser_ids: advertiserIds,
           advertisers: advertiserInfo,
+          app_secret: Deno.env.get("TIKTOK_APP_SECRET") || null,
           connected_at: new Date().toISOString(),
         },
         updated_at: new Date().toISOString(),

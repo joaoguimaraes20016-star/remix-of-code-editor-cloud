@@ -2,10 +2,11 @@
 // Connections tab for scheduling integrations (GoHighLevel style)
 
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CheckCircle2, AlertCircle, Loader2, ArrowRight, Blocks } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -13,14 +14,17 @@ import { ZoomConfig } from "@/components/ZoomConfig";
 import { FathomConfig } from "@/components/FathomConfig";
 
 // Brand logos
-import googleCalendarLogo from "@/assets/integrations/google-calendar.svg";
 import zoomLogo from "@/assets/integrations/zoom.svg";
-import googleMeetLogo from "@/assets/integrations/google-meet.svg";
 import fathomLogo from "@/assets/integrations/fathom.svg";
+
+// Google logos from official CDN (matching AppsPortal approach)
+const googleCalendarLogo = "https://www.gstatic.com/images/branding/product/1x/calendar_2020q4_48dp.png";
+const googleMeetLogo = "https://www.gstatic.com/images/branding/product/1x/meet_2020q4_48dp.png";
 
 export default function ConnectionsSettings() {
   const { teamId } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [gcalConnected, setGcalConnected] = useState<boolean>(false);
   const [gcalConnecting, setGcalConnecting] = useState(false);
   const [zoomConnected, setZoomConnected] = useState<boolean>(false);
@@ -137,6 +141,26 @@ export default function ConnectionsSettings() {
 
   return (
     <div className="space-y-6">
+      {/* Cross-navigation to Apps Portal */}
+      <Alert className="border-muted-foreground/20 bg-muted/30">
+        <Blocks className="h-4 w-4" />
+        <AlertTitle>Looking for more integrations?</AlertTitle>
+        <AlertDescription className="flex items-center justify-between">
+          <span>
+            Browse all available apps including Slack, Discord, Meta, and more in the Apps Portal.
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-4 shrink-0"
+            onClick={() => navigate(`/team/${teamId}/apps`)}
+          >
+            Apps Portal
+            <ArrowRight className="h-3 w-3 ml-1" />
+          </Button>
+        </AlertDescription>
+      </Alert>
+
       {/* Your Connections Section */}
       <div>
         <h2 className="text-lg font-semibold mb-2">Your Connections</h2>
@@ -193,45 +217,6 @@ export default function ConnectionsSettings() {
             </CardContent>
           </Card>
 
-          {/* Zoom */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-white dark:bg-gray-800 border">
-                    <img src={zoomLogo} alt="Zoom" className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium">Zoom</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Generate unique meeting links automatically
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {zoomConnected ? (
-                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span className="text-sm font-medium">Connected</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <AlertCircle className="h-4 w-4" />
-                      <span className="text-sm">Not Connected</span>
-                    </div>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowZoomConfig(true)}
-                  >
-                    {zoomConnected ? "Configure" : "Connect"}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Google Meet */}
           <Card>
             <CardContent className="p-4">
@@ -267,6 +252,45 @@ export default function ConnectionsSettings() {
         </p>
 
         <div className="space-y-3">
+          {/* Zoom */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-white dark:bg-gray-800 border">
+                    <img src={zoomLogo} alt="Zoom" className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Zoom</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Auto-generate meeting links for your team
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {zoomConnected ? (
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="text-sm font-medium">Connected</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-sm">Not Connected</span>
+                    </div>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowZoomConfig(true)}
+                  >
+                    {zoomConnected ? "Configure" : "Connect"}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Fathom */}
           <Card>
             <CardContent className="p-4">
@@ -284,7 +308,7 @@ export default function ConnectionsSettings() {
                 </div>
                 <div className="flex items-center gap-3">
                   {fathomConnected ? (
-                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                    <div className="flex items-center gap-2 text-green-600">
                       <CheckCircle2 className="h-4 w-4" />
                       <span className="text-sm font-medium">Connected</span>
                     </div>
@@ -295,8 +319,8 @@ export default function ConnectionsSettings() {
                     </div>
                   )}
                   <Button
-                    size="sm"
                     variant="outline"
+                    size="sm"
                     onClick={() => setShowFathomConfig(true)}
                   >
                     {fathomConnected ? "Configure" : "Connect"}

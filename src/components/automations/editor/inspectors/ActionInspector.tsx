@@ -11,6 +11,9 @@ import {
   NotifyTeamForm,
   WebhookForm,
   SlackMessageForm,
+  DiscordMessageForm,
+  GoogleAdsConversionForm,
+  TikTokEventForm,
   CreateContactForm,
   UpdateContactForm,
   CreateDealForm,
@@ -71,6 +74,9 @@ export function ActionInspector({ step, onUpdate, teamId }: ActionInspectorProps
       {/* Integrations */}
       {step.type === "custom_webhook" && <WebhookForm {...formProps} />}
       {step.type === "slack_message" && <SlackMessageForm {...formProps} />}
+      {step.type === "discord_message" && <DiscordMessageForm {...formProps} />}
+      {step.type === "google_conversion" && <GoogleAdsConversionForm {...formProps} />}
+      {step.type === "tiktok_event" && <TikTokEventForm {...formProps} />}
       {step.type === "google_sheets" && <GoogleSheetsForm {...formProps} />}
       {step.type === "enqueue_dialer" && (
         <p className="text-white/50 text-sm">Power dialer configuration coming soon</p>

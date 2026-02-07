@@ -63,6 +63,8 @@ export type TriggerType =
   | 'facebook_lead_form'
   | 'tiktok_form_submitted'
   | 'google_lead_form'
+  | 'typeform_response'
+  | 'fathom_summary_received'
   // Legacy
   | 'time_delay';
 
@@ -139,13 +141,15 @@ export type ActionType =
   | 'ai_message'          // AI-generated message
   // Marketing
   | 'meta_conversion'     // Facebook CAPI
-  | 'google_conversion'   // Google Ads
+  | 'google_conversion'   // Google Ads offline conversion
   | 'add_to_audience'     // Add to custom audience
   | 'remove_from_audience'
   // Integrations
   | 'custom_webhook'
   | 'google_sheets'
   | 'slack_message'
+  | 'discord_message'
+  | 'tiktok_event'         // TikTok Events API
   | 'enqueue_dialer';
 
 // ============================================
@@ -559,6 +563,8 @@ export const TRIGGER_META: Record<TriggerType, TriggerMeta> = {
   facebook_lead_form: { type: 'facebook_lead_form', label: 'Facebook Lead Form', description: 'When FB lead form is submitted', icon: 'Facebook', category: 'integration' },
   tiktok_form_submitted: { type: 'tiktok_form_submitted', label: 'TikTok Form', description: 'When TikTok form is submitted', icon: 'Music', category: 'integration' },
   google_lead_form: { type: 'google_lead_form', label: 'Google Lead Form', description: 'When Google lead form is submitted', icon: 'Search', category: 'integration' },
+  typeform_response: { type: 'typeform_response', label: 'Typeform Response', description: 'When a Typeform is submitted', icon: 'FileText', category: 'integration' },
+  fathom_summary_received: { type: 'fathom_summary_received', label: 'Fathom Summary', description: 'When a call summary is received', icon: 'Mic', category: 'integration' },
   time_delay: { type: 'time_delay', label: 'Time Delay', description: 'Legacy time-based trigger', icon: 'Timer', category: 'integration' },
 };
 
@@ -640,7 +646,7 @@ export const ACTION_META: Record<ActionType, ActionMeta> = {
   
   // Marketing
   meta_conversion: { type: 'meta_conversion', label: 'Meta Conversion', description: 'Send to Facebook CAPI', icon: 'Facebook', color: 'text-blue-500', bgColor: 'bg-blue-500/20', category: 'marketing' },
-  google_conversion: { type: 'google_conversion', label: 'Google Conversion', description: 'Send to Google Ads', icon: 'BarChart', color: 'text-yellow-500', bgColor: 'bg-yellow-500/20', category: 'marketing' },
+  google_conversion: { type: 'google_conversion', label: 'Google Conversion', description: 'Upload offline conversion to Google Ads', icon: 'BarChart', color: 'text-yellow-500', bgColor: 'bg-yellow-500/20', category: 'marketing' },
   add_to_audience: { type: 'add_to_audience', label: 'Add to Audience', description: 'Add to custom audience', icon: 'Users', color: 'text-blue-400', bgColor: 'bg-blue-500/20', category: 'marketing' },
   remove_from_audience: { type: 'remove_from_audience', label: 'Remove from Audience', description: 'Remove from audience', icon: 'UserMinus', color: 'text-slate-400', bgColor: 'bg-slate-500/20', category: 'marketing' },
   
@@ -648,5 +654,7 @@ export const ACTION_META: Record<ActionType, ActionMeta> = {
   custom_webhook: { type: 'custom_webhook', label: 'Webhook', description: 'Call external API', icon: 'Webhook', color: 'text-gray-400', bgColor: 'bg-gray-500/20', category: 'integration' },
   google_sheets: { type: 'google_sheets', label: 'Google Sheets', description: 'Add row to sheet', icon: 'Table', color: 'text-green-500', bgColor: 'bg-green-500/20', category: 'integration' },
   slack_message: { type: 'slack_message', label: 'Slack Message', description: 'Send to Slack', icon: 'Hash', color: 'text-purple-400', bgColor: 'bg-purple-500/20', category: 'integration' },
+  discord_message: { type: 'discord_message', label: 'Discord Message', description: 'Send to Discord', icon: 'MessageCircle', color: 'text-indigo-400', bgColor: 'bg-indigo-500/20', category: 'integration' },
+  tiktok_event: { type: 'tiktok_event', label: 'TikTok Event', description: 'Send conversion event', icon: 'Music', color: 'text-pink-400', bgColor: 'bg-pink-500/20', category: 'integration' },
   enqueue_dialer: { type: 'enqueue_dialer', label: 'Power Dialer', description: 'Add to dialer queue', icon: 'Phone', color: 'text-blue-400', bgColor: 'bg-blue-500/20', category: 'integration' },
 };

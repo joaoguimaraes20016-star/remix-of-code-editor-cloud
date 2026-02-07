@@ -3,7 +3,7 @@
 // First calendar: guided wizard. Additional calendars: simple dialog.
 
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,7 +45,13 @@ export default function Calendars() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bookingSlug, setBookingSlug] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("calendars");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => {
+    const tabParam = searchParams.get("tab");
+    return tabParam && ["calendars", "availability", "connections"].includes(tabParam)
+      ? tabParam
+      : "calendars";
+  });
 
   const { data: calendars, isLoading } = useEventTypes(teamId);
 
@@ -214,7 +220,14 @@ export default function Calendars() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={(tab) => {
+        setActiveTab(tab);
+        if (tab === "calendars") {
+          setSearchParams({});
+        } else {
+          setSearchParams({ tab });
+        }
+      }} className="w-full">
         <TabsList>
           <TabsTrigger value="calendars">Event</TabsTrigger>
           <TabsTrigger value="availability">Availability</TabsTrigger>

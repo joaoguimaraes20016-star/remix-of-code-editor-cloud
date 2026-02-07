@@ -352,23 +352,55 @@ export function TypeformConfig({ teamId, onUpdate }: TypeformConfigProps) {
       {isConnected && (
         <Card>
           <CardHeader>
-            <CardTitle>How to Use</CardTitle>
+            <CardTitle>Webhook Setup</CardTitle>
+            <CardDescription>
+              Configure Typeform to send form responses to your workspace
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <span className="font-semibold text-foreground">1.</span>
-                <span>Form responses will automatically create leads in your CRM</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="font-semibold text-foreground">2.</span>
-                <span>Set up automations to trigger when new responses arrive</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="font-semibold text-foreground">3.</span>
-                <span>Map form fields to contact properties in your funnel settings</span>
-              </li>
-            </ul>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Add this URL as a webhook in your Typeform form settings:
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs bg-muted p-3 rounded-lg border overflow-x-auto">
+                  {`${import.meta.env.VITE_SUPABASE_URL || "https://your-project.supabase.co"}/functions/v1/typeform-webhook?team_id=${teamId}`}
+                </code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const url = `${import.meta.env.VITE_SUPABASE_URL || "https://your-project.supabase.co"}/functions/v1/typeform-webhook?team_id=${teamId}`;
+                    navigator.clipboard.writeText(url);
+                    toast.success("Webhook URL copied to clipboard");
+                  }}
+                >
+                  Copy
+                </Button>
+              </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <p className="font-medium text-sm mb-2">How it works</p>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="font-semibold text-foreground">1.</span>
+                  <span>Copy the webhook URL above</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-semibold text-foreground">2.</span>
+                  <span>In Typeform, go to your form &gt; Connect &gt; Webhooks &gt; Add Webhook</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-semibold text-foreground">3.</span>
+                  <span>Paste the URL and enable the webhook</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-semibold text-foreground">4.</span>
+                  <span>Form responses will automatically create contacts and trigger automations</span>
+                </li>
+              </ul>
+            </div>
           </CardContent>
         </Card>
       )}
