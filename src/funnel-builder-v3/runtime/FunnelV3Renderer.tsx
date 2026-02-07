@@ -64,8 +64,8 @@ function extractIdentityFromFormBlocks(
   
   for (const step of steps) {
     for (const block of step.blocks || []) {
-      if (block.type === 'form' && block.content?.fields) {
-        for (const field of block.content.fields) {
+      if (block.type === 'form' && (block.content as any)?.fields) {
+        for (const field of (block.content as any).fields) {
           if (field.id && field.type) {
             fieldTypeMap[field.id] = field.type;
           }

@@ -103,6 +103,19 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
     }
   }, [runtime]);
 
+  // Helper function to map country ID to ISO country code for validation
+  const getCountryCodeForValidation = useCallback((countryId: string): string => {
+    if (countryId === '1' || selectedCountry?.code === '+1') {
+      return 'US';
+    } else if (countryId.length === 2) {
+      // Assume it's already an ISO code like 'us', 'uk', etc.
+      return countryId.toUpperCase();
+    } else {
+      // Fallback to US if we can't determine
+      return 'US';
+    }
+  }, [selectedCountry]);
+
   // Report validation state to runtime
   useEffect(() => {
     if (!runtime?.setBlockValidation || !blockId || !stepId) return;
@@ -116,19 +129,6 @@ export function PhoneCaptureBlock({ content, blockId, stepId, isPreview }: Phone
       result.valid ? [] : [result.error || 'Please enter a valid phone number']
     );
   }, [runtime, phone, blockId, stepId, selectedCountryId, getCountryCodeForValidation]);
-
-  // Helper function to map country ID to ISO country code for validation
-  const getCountryCodeForValidation = useCallback((countryId: string): string => {
-    if (countryId === '1' || selectedCountry?.code === '+1') {
-      return 'US';
-    } else if (countryId.length === 2) {
-      // Assume it's already an ISO code like 'us', 'uk', etc.
-      return countryId.toUpperCase();
-    } else {
-      // Fallback to US if we can't determine
-      return 'US';
-    }
-  }, [selectedCountry]);
 
   // Shared submission logic - called by both button click (direct) and Enter key (form submit)
   const doSubmit = () => {

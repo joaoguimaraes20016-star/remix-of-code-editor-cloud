@@ -367,12 +367,6 @@ const TRIGGER_DISPLAY: Record<TriggerType, TriggerDisplay> = {
     color: "text-violet-400",
     bgColor: "bg-violet-500/20"
   },
-  time_delay: {
-    label: "Time Delay (Legacy)",
-    icon: <Clock className="h-5 w-5" />,
-    color: "text-slate-400",
-    bgColor: "bg-slate-500/20"
-  },
 };
 
 // Check if trigger has required configuration

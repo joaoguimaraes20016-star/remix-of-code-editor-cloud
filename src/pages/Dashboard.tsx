@@ -278,7 +278,7 @@ const Dashboard = () => {
 
       // Check uniqueness and append suffix if needed
       const { data: existing } = await supabase
-        .from('teams')
+        .from('teams' as any)
         .select('id')
         .eq('booking_slug', bookingSlug)
         .maybeSingle();
@@ -289,7 +289,7 @@ const Dashboard = () => {
       }
 
       const { data: team, error: teamError } = await supabase
-        .from('teams')
+        .from('teams' as any)
         .insert({ 
           name: defaultTeamName, 
           created_by: currentUser.id,
@@ -363,7 +363,7 @@ const Dashboard = () => {
 
       // Check uniqueness and append suffix if needed
       const { data: existing } = await supabase
-        .from('teams')
+        .from('teams' as any)
         .select('id')
         .eq('booking_slug', bookingSlug)
         .maybeSingle();

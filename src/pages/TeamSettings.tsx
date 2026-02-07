@@ -79,7 +79,7 @@ export default function TeamSettings() {
   const loadTeamData = async () => {
     try {
       const { data, error } = await supabase
-        .from("teams")
+        .from("teams" as any)
         .select("name, logo_url, booking_slug")
         .eq("id", teamId)
         .single();
@@ -122,7 +122,7 @@ export default function TeamSettings() {
     try {
       // Check uniqueness
       const { data: existing } = await supabase
-        .from("teams")
+        .from("teams" as any)
         .select("id")
         .eq("booking_slug", slug)
         .neq("id", teamId!)
@@ -134,7 +134,7 @@ export default function TeamSettings() {
       }
 
       const { error } = await supabase
-        .from("teams")
+        .from("teams" as any)
         .update({ booking_slug: slug })
         .eq("id", teamId);
 

@@ -58,7 +58,7 @@ export default function PublicBookingPage() {
         setLoading(true);
 
         // Look up team by booking_slug or id
-        let teamQuery = supabase.from("teams").select("id, name, booking_slug");
+        let teamQuery = supabase.from("teams" as any).select("id, name, booking_slug");
 
         // Try booking_slug first, fall back to id
         const { data: teamBySlug } = await teamQuery.eq("booking_slug", teamSlug).single();
@@ -66,7 +66,7 @@ export default function PublicBookingPage() {
         let team = teamBySlug;
         if (!team) {
           const { data: teamById } = await supabase
-            .from("teams")
+            .from("teams" as any)
             .select("id, name, booking_slug")
             .eq("id", teamSlug)
             .single();
@@ -82,7 +82,7 @@ export default function PublicBookingPage() {
 
         // Look up event type
         const { data: et, error: etError } = await supabase
-          .from("event_types")
+          .from("event_types" as any)
           .select("*")
           .eq("team_id", team.id)
           .eq("slug", eventSlug)

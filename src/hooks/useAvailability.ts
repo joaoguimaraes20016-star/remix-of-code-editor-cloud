@@ -66,20 +66,20 @@ export function useAvailabilitySchedules(teamId?: string, teamWide: boolean = tr
         if (!isAdmin) {
           // Non-admins can view but not manage team-wide schedules
           const { data, error } = await supabase
-            .from("availability_schedules")
+            .from("availability_schedules" as any)
             .select("*")
             .eq("team_id", teamId)
             .is("user_id", null)
             .order("day_of_week");
           
           if (error) throw error;
-          return (data || []) as AvailabilitySchedule[];
+          return (data || []) as unknown as AvailabilitySchedule[];
         }
       }
 
       // Query team-wide schedules (user_id IS NULL)
       const { data, error } = await supabase
-        .from("availability_schedules")
+        .from("availability_schedules" as any)
         .select("*")
         .eq("team_id", teamId)
         .is("user_id", null)
@@ -98,16 +98,16 @@ export function useAvailabilitySchedules(teamId?: string, teamWide: boolean = tr
           }));
 
           const { data: seeded, error: seedError } = await supabase
-            .from("availability_schedules")
+            .from("availability_schedules" as any)
             .insert(defaults)
             .select();
 
           if (seedError) throw seedError;
-          return (seeded || []) as AvailabilitySchedule[];
+          return (seeded || []) as unknown as AvailabilitySchedule[];
         }
       }
 
-      return (data || []) as AvailabilitySchedule[];
+      return (data || []) as unknown as AvailabilitySchedule[];
     },
     enabled: !!teamId,
   });
@@ -127,7 +127,7 @@ export function useUpdateAvailability(teamId?: string, teamWide: boolean = true)
       }
       
       const { error } = await supabase
-        .from("availability_schedules")
+        .from("availability_schedules" as any)
         .update(updates)
         .eq("id", id);
 
@@ -151,7 +151,7 @@ export function useAvailabilityOverrides(teamId?: string, teamWide: boolean = tr
       if (!teamId) return [];
 
       const { data, error } = await supabase
-        .from("availability_overrides")
+        .from("availability_overrides" as any)
         .select("*")
         .eq("team_id", teamId)
         .is("user_id", teamWide ? null : undefined)
@@ -160,7 +160,7 @@ export function useAvailabilityOverrides(teamId?: string, teamWide: boolean = tr
         .order("date");
 
       if (error) throw error;
-      return (data || []) as AvailabilityOverride[];
+      return (data || []) as unknown as AvailabilityOverride[];
     },
     enabled: !!teamId && (teamWide || !!user?.id),
   });
@@ -182,7 +182,7 @@ export function useCreateOverride(teamId?: string, teamWide: boolean = true) {
         : "team_id,user_id,date";
       
       const { data, error } = await supabase
-        .from("availability_overrides")
+        .from("availability_overrides" as any)
         .upsert(overrideData, { onConflict: conflictColumns })
         .select()
         .single();
@@ -207,7 +207,7 @@ export function useDeleteOverride(teamId?: string) {
   return useMutation({
     mutationFn: async (overrideId: string) => {
       const { error } = await supabase
-        .from("availability_overrides")
+        .from("availability_overrides" as any)
         .delete()
         .eq("id", overrideId);
 

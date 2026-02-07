@@ -82,7 +82,7 @@ export default function TimeSlotPicker({
             )}
             style={
               isSelected
-                ? { backgroundColor: accentColor, borderColor: accentColor, ringColor: accentColor }
+                ? { backgroundColor: accentColor, borderColor: accentColor, '--tw-ring-color': accentColor } as React.CSSProperties
                 : undefined
             }
             onClick={() => onTimeSelect(slot)}

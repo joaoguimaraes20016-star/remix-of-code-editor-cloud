@@ -28,7 +28,7 @@ export async function generateUniqueBookingSlug(
 
   // Check uniqueness
   let query = supabase
-    .from("teams")
+    .from("teams" as any)
     .select("id")
     .eq("booking_slug", baseSlug);
 
@@ -45,7 +45,7 @@ export async function generateUniqueBookingSlug(
     
     // Double-check uniqueness with suffix
     let checkQuery = supabase
-      .from("teams")
+      .from("teams" as any)
       .select("id")
       .eq("booking_slug", baseSlug);
     

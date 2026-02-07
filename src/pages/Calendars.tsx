@@ -61,11 +61,11 @@ export default function Calendars() {
   useEffect(() => {
     if (!teamId) return;
     supabase
-      .from("teams")
+      .from("teams" as any)
       .select("booking_slug")
       .eq("id", teamId)
       .single()
-      .then(({ data }) => {
+      .then(({ data }: any) => {
         setBookingSlug(data?.booking_slug || null);
       });
   }, [teamId]);
@@ -91,11 +91,11 @@ export default function Calendars() {
     // Refresh booking slug in case it was auto-generated
     if (teamId) {
       supabase
-        .from("teams")
+        .from("teams" as any)
         .select("booking_slug")
         .eq("id", teamId)
         .single()
-        .then(({ data }) => {
+        .then(({ data }: any) => {
           setBookingSlug(data?.booking_slug || null);
         });
     }
@@ -122,7 +122,7 @@ export default function Calendars() {
             if (newSlug.length < 3) newSlug = `${newSlug}-team`;
 
             const { data: existing } = await supabase
-              .from("teams")
+              .from("teams" as any)
               .select("id")
               .eq("booking_slug", newSlug)
               .neq("id", teamId)
@@ -133,7 +133,7 @@ export default function Calendars() {
             }
 
             await supabase
-              .from("teams")
+              .from("teams" as any)
               .update({ booking_slug: newSlug })
               .eq("id", teamId);
 
@@ -148,14 +148,14 @@ export default function Calendars() {
       const hostIds = calendar.round_robin_members || [];
       if (hostIds.length === 0 && user?.id) {
         await supabase
-          .from("event_types")
+          .from("event_types" as any)
           .update({ round_robin_members: [user.id] })
           .eq("id", calendar.id);
       }
 
       // 3. Seed default availability if none exists
       const { data: avail } = await supabase
-        .from("availability_schedules")
+        .from("availability_schedules" as any)
         .select("id")
         .eq("team_id", teamId)
         .is("user_id", null)
@@ -174,7 +174,7 @@ export default function Calendars() {
           { day: 6, enabled: false },
         ];
 
-        await supabase.from("availability_schedules").insert(
+        await supabase.from("availability_schedules" as any).insert(
           defaultDays.map((d) => ({
             team_id: teamId,
             user_id: null,

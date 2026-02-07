@@ -57,6 +57,7 @@ import {
   ToggleDndForm,
   // Pipeline
   UpdateDealForm,
+  RemoveOpportunityForm,
   // Flow Control & Variables
   SetVariableForm,
   AddToWorkflowForm,

@@ -736,13 +736,12 @@ export function FormBlock({ content, blockId, stepId, isPreview }: FormBlockProp
                 className={cn(
                   "h-12",
                   (fieldErrors[field.id] || (touchedFields[field.id] && localValues[field.id]?.trim() && (
-                    (field.type === 'email' && !validateEmail(localValues[field.id]).valid) ||
-                    (field.type === 'phone' && !validatePhone(localValues[field.id], getCountryCodeForValidation(phoneCountryIds[field.id] || defaultCountryId || countryCodes[0]?.id || '1')).valid)
+                    (field.type === 'email' && !validateEmail(localValues[field.id]).valid)
                   ))) && "border-destructive focus-visible:ring-destructive"
                 )}
                 value={localValues[field.id] || ''}
                 onChange={(e) => handleFieldChange(field.id, e.target.value, field)}
-                onBlur={!canEdit && (field.type === 'email' || field.type === 'phone') ? () => handleFieldBlur(field, localValues[field.id] || '') : undefined}
+                onBlur={!canEdit && field.type === 'email' ? () => handleFieldBlur(field, localValues[field.id] || '') : undefined}
                 onFocus={(e) => {
                   if (canEdit) {
                     e.preventDefault();

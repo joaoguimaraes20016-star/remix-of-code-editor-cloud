@@ -53,7 +53,7 @@ export function useEventTypes(teamId?: string) {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return (data || []) as EventType[];
+      return (data || []) as unknown as EventType[];
     },
     enabled: !!teamId,
   });
@@ -79,7 +79,7 @@ export function useCreateEventType(teamId?: string) {
         .single();
 
       if (error) throw error;
-      return data as EventType;
+      return data as unknown as EventType;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event-types", teamId] });
@@ -109,7 +109,7 @@ export function useUpdateEventType(teamId?: string) {
         .single();
 
       if (error) throw error;
-      return data as EventType;
+      return data as unknown as EventType;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["event-types", teamId] });
