@@ -48,10 +48,10 @@ export default function ManageBookingPage() {
   useEffect(() => {
     async function load() {
       try {
-        const { data, error: fetchError } = await supabase
+        const { data, error: fetchError } = await (supabase
           .from("appointments")
-          .select("*")
-          .eq("booking_token" as any, token)
+          .select("*") as any)
+          .eq("booking_token", token)
           .single() as { data: any; error: any };
 
         if (fetchError || !data) {

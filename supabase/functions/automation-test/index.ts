@@ -21,6 +21,7 @@ interface AutomationStep {
   type: string;
   config: Record<string, any>;
   conditions?: AutomationCondition[];
+  conditionLogic?: "AND" | "OR";
   trueBranchStepId?: string;
   falseBranchStepId?: string;
 }

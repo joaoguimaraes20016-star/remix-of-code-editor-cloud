@@ -232,7 +232,8 @@ describe("Idempotency Check Retry Logic", () => {
 describe("Rate Limiter Fail-Closed Behavior", () => {
   it("should fail closed by default when RPC errors occur", () => {
     // Default behavior: RATE_LIMITER_FAIL_CLOSED is not set or set to "true"
-    const failClosed = "true" !== "false"; // Deno.env.get("RATE_LIMITER_FAIL_CLOSED") !== "false"
+    const envValue: string = "true";
+    const failClosed = envValue !== "false"; // Deno.env.get("RATE_LIMITER_FAIL_CLOSED") !== "false"
     expect(failClosed).toBe(true);
   });
 

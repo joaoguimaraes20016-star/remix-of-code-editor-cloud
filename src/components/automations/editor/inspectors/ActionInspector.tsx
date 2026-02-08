@@ -209,7 +209,7 @@ export function ActionInspector({ step, steps, onUpdate, teamId }: ActionInspect
       {step.type === "go_to" && (
         <GoToForm
           {...formProps}
-          availableSteps={steps.map(s => ({ id: s.id, label: s.name || `Step ${s.order}` }))}
+          availableSteps={steps.map(s => ({ id: s.id, label: s.config?.label || `Step ${s.order}` }))}
         />
       )}
       {step.type === "set_variable" && <SetVariableForm {...formProps} />}

@@ -487,7 +487,7 @@ function isStepConfigured(step: AutomationStep): boolean {
     case 'notify_team':
       return !!step.config?.message;
     case 'condition':
-      return (step.conditions?.length || 0) > 0 || (step.conditionGroups?.length || 0) > 0;
+      return (step.conditions?.length || 0) > 0;
     case 'custom_webhook':
       return !!step.config?.url;
     case 'find_contact':
@@ -529,7 +529,7 @@ function getStepPreview(step: AutomationStep): string {
     case 'notify_team':
       return step.config?.message ? `"${step.config.message.substring(0, 30)}..."` : 'Set notification';
     case 'condition':
-      const count = step.conditions?.length || step.conditionGroups?.length || 0;
+      const count = step.conditions?.length || 0;
       return count > 0 ? `${count} condition${count !== 1 ? 's' : ''}` : 'Add conditions';
     case 'custom_webhook':
       return step.config?.url ? step.config.url.substring(0, 30) + '...' : 'Configure webhook';

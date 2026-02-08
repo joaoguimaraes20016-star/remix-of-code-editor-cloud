@@ -696,7 +696,7 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
                 }}
               />
               <button
-                onClick={handleSubmitPrompt}
+                onClick={() => handleSubmitPrompt()}
                 disabled={!prompt.trim() || isProcessing}
                 className={cn(
                   'absolute right-2 bottom-2 p-2 rounded-lg transition-all',
