@@ -193,10 +193,12 @@ serve(async (req: Request) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
+    const CLAUDE_MODEL = "claude-sonnet-4-20250514";
+    const CLAUDE_VERSION = "2023-06-01";
 
-    if (!LOVABLE_API_KEY) {
+    if (!ANTHROPIC_API_KEY) {
       return new Response(JSON.stringify({ error: "AI service not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -300,23 +302,26 @@ URL: ${url}
 
 Respond with JSON only using the schema above. Leave all media fields empty.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    console.log(`[clone-style] Analyzing with Claude (${CLAUDE_MODEL})`);
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": CLAUDE_VERSION,
+        "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [{ role: "user", content: analysisPrompt }],
-        temperature: 0.2,
+        model: CLAUDE_MODEL,
         max_tokens: 4000,
+        temperature: 0.2,
+        messages: [{ role: "user", content: analysisPrompt }],
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('[clone-style] AI API error:', error);
+      console.error('[clone-style] Claude API error:', error);
       return new Response(JSON.stringify({ error: "Failed to analyze URL" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -324,7 +329,8 @@ Respond with JSON only using the schema above. Leave all media fields empty.`;
     }
 
     const aiResponse = await response.json();
-    const content = aiResponse.choices?.[0]?.message?.content;
+    // Anthropic response format: { content: [{ text: "..." }] }
+    const content = aiResponse.content?.[0]?.text;
 
     if (!content) {
       return new Response(JSON.stringify({ error: "No response from AI" }), {

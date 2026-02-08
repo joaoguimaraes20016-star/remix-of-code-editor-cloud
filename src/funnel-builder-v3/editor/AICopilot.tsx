@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { 
   ChevronUp,
+  ChevronRight,
   Loader2,
   X,
   Wand2,
@@ -12,6 +13,11 @@ import {
   Copy,
   Zap,
   Check,
+  Lightbulb,
+  Layout,
+  Wrench,
+  HelpCircle,
+  Link,
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -28,6 +34,31 @@ import { applyBrandingToStep, applyBrandingToFunnel } from '@/funnel-builder-v3/
 import { Block, FunnelStep } from '@/funnel-builder-v3/types/funnel';
 import { blockDefinitions } from '@/funnel-builder-v3/lib/block-definitions';
 import { v4 as uuid } from 'uuid';
+
+// Preset prompts for each mode - matching automation builder design
+const COPY_PRESETS = [
+  { icon: Wand2, label: "Write high-converting headline copy", prompt: "Write a high-converting headline and subheadline for this block" },
+  { icon: Lightbulb, label: "Generate testimonial content", prompt: "Generate 3 realistic customer testimonials with names and results" },
+  { icon: Layout, label: "Write a compelling CTA section", prompt: "Write compelling call-to-action copy with urgency and benefits" },
+];
+
+const GENERATE_PRESETS = [
+  { icon: Wand2, label: "Build a VSL funnel for my course", prompt: "Build a VSL funnel for my online course with a hero section, video player, testimonials, pricing, and checkout button" },
+  { icon: Lightbulb, label: "Create a lead magnet opt-in page", prompt: "Create a lead magnet opt-in page with attention-grabbing headline, 3-5 bullet points of benefits, email capture form, and privacy note" },
+  { icon: Layout, label: "Design a booking page with calendar", prompt: "Design a booking page for high-ticket sales calls with headline, qualification bullets, calendar booking widget, and confirmation message" },
+];
+
+const HELP_PRESETS = [
+  { icon: HelpCircle, label: "How do I increase conversions?", prompt: "What are the best practices to increase funnel conversion rates?" },
+  { icon: Lightbulb, label: "What sections should I add?", prompt: "Based on my current funnel, what sections should I add to improve it?" },
+  { icon: Wand2, label: "Optimize my funnel copy", prompt: "Review my funnel and suggest copy improvements for better conversions" },
+];
+
+const CLONE_PRESETS = [
+  { icon: Link, label: "Clone a competitor's landing page", prompt: "https://" },
+  { icon: Lightbulb, label: "Clone a high-converting VSL page", prompt: "https://" },
+  { icon: Layout, label: "Clone a webinar registration page", prompt: "https://" },
+];
 
 interface AICopilotProps {
   isOpen: boolean;
@@ -1180,9 +1211,93 @@ ${userInstructions}`;
             </div>
           )}
           
-          {mode === 'copy' && !selectedBlockId && (
-            <div className="text-sm text-muted-foreground py-2">
-              Select a block to generate copy for it
+          {/* Welcome Presets - show when no content generated yet */}
+          {!streamedResponse && !isProcessing && !error && !generationComplete && !isPlanningClone && !clonePlan && !isGeneratingFromReference && (
+            <div className="space-y-4">
+              {/* Welcome Header */}
+              <div className="text-center py-4">
+                <div className="inline-flex p-4 rounded-2xl bg-primary/10 mb-4">
+                  {mode === 'copy' ? (
+                    <Wand2 className="h-8 w-8 text-primary" />
+                  ) : mode === 'help' ? (
+                    <MessageSquare className="h-8 w-8 text-primary" />
+                  ) : mode === 'clone' ? (
+                    <Copy className="h-8 w-8 text-primary" />
+                  ) : (
+                    <Wrench className="h-8 w-8 text-primary" />
+                  )}
+                </div>
+                <h2 className="text-lg font-semibold text-foreground mb-2">
+                  {mode === 'copy' 
+                    ? "What copy do you need?" 
+                    : mode === 'help'
+                    ? "How can I help?"
+                    : mode === 'clone'
+                    ? "Clone any website"
+                    : "What would you like to build?"
+                  }
+                </h2>
+                <p className="text-sm text-muted-foreground max-w-[280px] mx-auto">
+                  {mode === 'copy'
+                    ? "Select a block and describe the copy you want, or try a preset below."
+                    : mode === 'help'
+                    ? "Ask me anything about building high-converting funnels."
+                    : mode === 'clone'
+                    ? "Paste a URL and I'll clone the design, branding, and content."
+                    : "Describe your funnel in plain language and I'll build it for you."
+                  }
+                </p>
+              </div>
+
+              {/* TRY ASKING section */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground/60 uppercase tracking-wider px-1">
+                  Try asking
+                </p>
+                {(mode === 'copy' ? COPY_PRESETS : mode === 'help' ? HELP_PRESETS : mode === 'clone' ? CLONE_PRESETS : GENERATE_PRESETS).map((preset, idx) => {
+                  const Icon = preset.icon;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        if (mode === 'clone') {
+                          setCloneUrl(preset.prompt);
+                        } else {
+                          setPrompt(preset.prompt);
+                          // Auto-submit for non-clone modes if not in copy mode without a block
+                          if (mode !== 'copy' || selectedBlockId) {
+                            setTimeout(() => {
+                              if (mode === 'copy') handleGenerateCopy();
+                              else if (mode === 'help') handleAskQuestion();
+                              else if (mode === 'generate') handleGenerateFunnel();
+                            }, 100);
+                          }
+                        }
+                      }}
+                      disabled={isProcessing || (mode === 'copy' && !selectedBlockId)}
+                      className={cn(
+                        "w-full flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/50 hover:border-primary/30 transition-all text-left group",
+                        (isProcessing || (mode === 'copy' && !selectedBlockId)) && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                        <Icon className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="text-sm text-foreground/70 group-hover:text-foreground transition-colors flex-1">
+                        {preset.label}
+                      </span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Copy mode hint */}
+              {mode === 'copy' && !selectedBlockId && (
+                <p className="text-xs text-muted-foreground/60 text-center pt-2">
+                  Select a block on the canvas to get started
+                </p>
+              )}
             </div>
           )}
 

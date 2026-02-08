@@ -9,12 +9,14 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Zap,
   FileText,
   Layout,
   AlertCircle,
   RefreshCw,
   Link2,
+  Lightbulb,
   X,
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
@@ -48,6 +50,24 @@ const suggestionIcons: Record<string, React.ReactNode> = {
   layout: <Zap className="w-4 h-4" />,
   'next-action': <ArrowRight className="w-4 h-4" />,
 };
+
+const FUNNEL_BUILD_PROMPTS = [
+  { 
+    icon: Wand2, 
+    label: "Build a VSL funnel for my course", 
+    prompt: "Build a VSL funnel for my online course with a hero section, video player, testimonials, pricing, and checkout button" 
+  },
+  { 
+    icon: Lightbulb, 
+    label: "Create a lead magnet opt-in page", 
+    prompt: "Create a lead magnet opt-in page with attention-grabbing headline, 3-5 bullet points of benefits, email capture form, and privacy note" 
+  },
+  { 
+    icon: Layout, 
+    label: "Design a booking page with calendar", 
+    prompt: "Design a booking page for high-ticket sales calls with headline, qualification bullets, calendar booking widget, and confirmation message" 
+  },
+];
 
 /**
  * Detect generation mode from user prompt
@@ -361,15 +381,21 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
     }
   };
 
-  const handleSubmitPrompt = async () => {
-    if (!prompt.trim()) return;
+  const handleSubmitPrompt = async (presetPrompt?: string) => {
+    const promptToUse = presetPrompt || prompt.trim();
+    if (!promptToUse) return;
+    
+    // If using a preset, show it in the textarea
+    if (presetPrompt) {
+      setPrompt(presetPrompt);
+    }
     
     // Detect generation mode from prompt
-    const mode = detectGenerationMode(prompt);
+    const mode = detectGenerationMode(promptToUse);
     setDetectedMode(mode);
     detectedModeRef.current = mode;
     
-    console.log('[AIBuilderCopilot] Detected mode:', mode, 'for prompt:', prompt);
+    console.log('[AIBuilderCopilot] Detected mode:', mode, 'for prompt:', promptToUse);
     
     setIsProcessing(true);
     setIsThinking(true);
@@ -389,7 +415,7 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
     
     await streamAICopilot(
       'generate',
-      prompt,
+      promptToUse,
       context,
       {
         onDelta: (chunk) => {
@@ -760,62 +786,109 @@ export const AIBuilderCopilot: React.FC<AIBuilderCopilotPanelProps> = ({
             </div>
           )}
 
-          {/* Suggestions - Only show when idle */}
+          {/* Suggestions & Presets - Only show when idle */}
           {!isThinking && !parseError && !isProcessing && (
             <div className="px-3 pb-3">
-              <div className="text-xs text-builder-text-dim mb-2 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <MessageSquare className="w-3 h-3" />
-                  Suggestions
-                </div>
-                {!isLoadingSuggestions && (
-                  <button
-                    onClick={fetchSuggestions}
-                    className="p-1 hover:bg-builder-surface-hover rounded transition-colors"
-                    title="Refresh suggestions"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-              
-              {isLoadingSuggestions ? (
-                <div className="flex items-center justify-center py-6 text-builder-text-muted">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                </div>
-              ) : suggestions.length > 0 ? (
-                <div className="space-y-2">
-                  {suggestions.slice(0, 3).map((suggestion) => (
-                    <button
-                      key={suggestion.id}
-                      onClick={() => handleApplySuggestion(suggestion)}
-                      disabled={isProcessing}
-                      className={cn(
-                        'w-full text-left p-3 rounded-xl bg-builder-surface border border-builder-border-subtle hover:border-builder-accent/40 hover:bg-builder-surface-hover transition-all group',
-                        isProcessing && 'opacity-50 cursor-not-allowed'
-                      )}
-                    >
-                      <div className="flex items-start gap-2.5">
-                        <div className="p-1.5 rounded-lg bg-builder-surface-hover text-builder-accent group-hover:bg-builder-accent/10">
-                          {suggestionIcons[suggestion.type] || <Sparkles className="w-4 h-4" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-builder-text">
-                            {suggestion.title}
+              {/* Show presets when no suggestions yet (first-time experience) */}
+              {suggestions.length === 0 && !isLoadingSuggestions ? (
+                <div className="space-y-3">
+                  {/* Welcome Message */}
+                  <div className="text-center py-4">
+                    <div className="inline-flex p-3 rounded-2xl bg-builder-accent/10 mb-3">
+                      <Wand2 className="h-6 w-6 text-builder-accent" />
+                    </div>
+                    <h3 className="text-base font-semibold text-builder-text mb-2">
+                      What would you like to build?
+                    </h3>
+                    <p className="text-xs text-builder-text-muted max-w-[240px] mx-auto">
+                      Describe your funnel in plain language and I'll build it for you.
+                    </p>
+                  </div>
+
+                  {/* TRY ASKING section - matches automation builder */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-builder-text-dim/60 uppercase tracking-wider px-1">
+                      Try asking
+                    </p>
+                    {FUNNEL_BUILD_PROMPTS.map((preset, idx) => {
+                      const Icon = preset.icon;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => handleSubmitPrompt(preset.prompt)}
+                          disabled={isProcessing}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl bg-builder-surface border border-builder-border-subtle hover:border-builder-accent/40 hover:bg-builder-surface-hover transition-all text-left group"
+                        >
+                          <div className="p-2 rounded-lg bg-builder-accent/10 group-hover:bg-builder-accent/20 transition-colors">
+                            <Icon className="h-4 w-4 text-builder-accent" />
                           </div>
-                          <div className="text-xs text-builder-text-muted mt-0.5 line-clamp-2">
-                            {suggestion.description}
+                          <span className="text-sm text-builder-text/70 group-hover:text-builder-text transition-colors flex-1">
+                            {preset.label}
+                          </span>
+                          <ChevronRight className="h-4 w-4 text-builder-text-muted/40 group-hover:text-builder-accent transition-colors" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                /* Dynamic suggestions after first interaction */
+                <>
+                  <div className="text-xs text-builder-text-dim mb-2 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <MessageSquare className="w-3 h-3" />
+                      Suggestions
+                    </div>
+                    {!isLoadingSuggestions && (
+                      <button
+                        onClick={fetchSuggestions}
+                        className="p-1 hover:bg-builder-surface-hover rounded transition-colors"
+                        title="Refresh suggestions"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+
+                  {isLoadingSuggestions ? (
+                    <div className="flex items-center justify-center py-6 text-builder-text-muted">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    </div>
+                  ) : suggestions.length > 0 ? (
+                    <div className="space-y-2">
+                      {suggestions.slice(0, 3).map((suggestion) => (
+                        <button
+                          key={suggestion.id}
+                          onClick={() => handleApplySuggestion(suggestion)}
+                          disabled={isProcessing}
+                          className={cn(
+                            'w-full text-left p-3 rounded-xl bg-builder-surface border border-builder-border-subtle hover:border-builder-accent/40 hover:bg-builder-surface-hover transition-all group',
+                            isProcessing && 'opacity-50 cursor-not-allowed'
+                          )}
+                        >
+                          <div className="flex items-start gap-2.5">
+                            <div className="p-1.5 rounded-lg bg-builder-surface-hover text-builder-accent group-hover:bg-builder-accent/10">
+                              {suggestionIcons[suggestion.type] || <Sparkles className="w-4 h-4" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-builder-text">
+                                {suggestion.title}
+                              </div>
+                              <div className="text-xs text-builder-text-muted mt-0.5 line-clamp-2">
+                                {suggestion.description}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : !error ? (
-                <div className="text-xs text-builder-text-muted text-center py-4">
-                  Type a prompt to get started
-                </div>
-              ) : null}
+                        </button>
+                      ))}
+                    </div>
+                  ) : !error ? (
+                    <div className="text-xs text-builder-text-muted text-center py-4">
+                      Type a prompt to get started
+                    </div>
+                  ) : null}
+                </>
+              )}
             </div>
           )}
 

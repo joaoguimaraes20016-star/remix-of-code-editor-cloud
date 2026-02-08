@@ -22,6 +22,9 @@ AS $$
 $$;
 
 -- Team members can view their funnel events
+DROP POLICY IF EXISTS "Team members can view funnel events" ON public.events;
+DROP POLICY IF EXISTS "Service role can insert events" ON public.events;
+
 CREATE POLICY "Team members can view funnel events"
 ON public.events FOR SELECT
 USING (
@@ -37,6 +40,9 @@ WITH CHECK (true);
 -- PART 2: Add policies to automations table
 -- ===========================================
 
+DROP POLICY IF EXISTS "Team members can view automations" ON public.automations;
+DROP POLICY IF EXISTS "Team admins can manage automations" ON public.automations;
+
 CREATE POLICY "Team members can view automations"
 ON public.automations FOR SELECT
 USING (is_team_member(auth.uid(), team_id));
@@ -49,6 +55,10 @@ WITH CHECK (is_team_admin(auth.uid(), team_id));
 -- ===========================================
 -- PART 3: Add policies to asset_field_templates
 -- ===========================================
+
+DROP POLICY IF EXISTS "Anyone can view system templates" ON public.asset_field_templates;
+DROP POLICY IF EXISTS "Team members can view their templates" ON public.asset_field_templates;
+DROP POLICY IF EXISTS "Team admins can manage templates" ON public.asset_field_templates;
 
 CREATE POLICY "Anyone can view system templates"
 ON public.asset_field_templates FOR SELECT
@@ -67,6 +77,9 @@ WITH CHECK (team_id IS NOT NULL AND is_team_admin(auth.uid(), team_id));
 -- PART 4: Add policies to message_logs
 -- ===========================================
 
+DROP POLICY IF EXISTS "Team members can view message logs" ON public.message_logs;
+DROP POLICY IF EXISTS "Service role can insert message logs" ON public.message_logs;
+
 CREATE POLICY "Team members can view message logs"
 ON public.message_logs FOR SELECT
 USING (is_team_member(auth.uid(), team_id));
@@ -78,6 +91,9 @@ WITH CHECK (true);
 -- ===========================================
 -- PART 5: Add policies to payments table
 -- ===========================================
+
+DROP POLICY IF EXISTS "Team members can view payments" ON public.payments;
+DROP POLICY IF EXISTS "Service role can manage payments" ON public.payments;
 
 CREATE POLICY "Team members can view payments"
 ON public.payments FOR SELECT
@@ -92,6 +108,8 @@ WITH CHECK (true);
 -- PART 6: Add policies to team_automation_rules
 -- ===========================================
 
+DROP POLICY IF EXISTS "Team admins can manage automation rules" ON public.team_automation_rules;
+
 CREATE POLICY "Team admins can manage automation rules"
 ON public.team_automation_rules FOR ALL
 USING (is_team_admin(auth.uid(), team_id))
@@ -101,6 +119,8 @@ WITH CHECK (is_team_admin(auth.uid(), team_id));
 -- PART 7: Add policies to team_follow_up_flow_config
 -- ===========================================
 
+DROP POLICY IF EXISTS "Team admins can manage follow-up config" ON public.team_follow_up_flow_config;
+
 CREATE POLICY "Team admins can manage follow-up config"
 ON public.team_follow_up_flow_config FOR ALL
 USING (is_team_admin(auth.uid(), team_id))
@@ -109,6 +129,9 @@ WITH CHECK (is_team_admin(auth.uid(), team_id));
 -- ===========================================
 -- PART 8: Add policies to team_follow_up_settings
 -- ===========================================
+
+DROP POLICY IF EXISTS "Team members can view follow-up settings" ON public.team_follow_up_settings;
+DROP POLICY IF EXISTS "Team admins can manage follow-up settings" ON public.team_follow_up_settings;
 
 CREATE POLICY "Team members can view follow-up settings"
 ON public.team_follow_up_settings FOR SELECT

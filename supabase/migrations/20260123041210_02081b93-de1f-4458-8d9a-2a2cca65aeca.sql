@@ -18,7 +18,7 @@ CREATE POLICY "Team admins can manage credits"
 ON public.team_credits
 FOR ALL
 USING (
-  public.is_team_admin(auth.uid(), team_id) OR public.is_team_owner(auth.uid(), team_id)
+  public.is_team_admin(auth.uid(), team_id)
 );
 
 -- 5. Tighten contacts table RLS if needed

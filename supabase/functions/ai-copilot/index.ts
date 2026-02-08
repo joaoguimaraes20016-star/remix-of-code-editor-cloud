@@ -7,19 +7,12 @@ const corsHeaders = {
 };
 
 // ============================================================
-// PROVIDER CONFIGURATION - Change these 2 lines to swap providers
+// PROVIDER CONFIGURATION - Claude (Anthropic)
 // ============================================================
-// Current: Lovable AI Gateway (auto-configured, no setup needed)
-const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const getApiKey = () => Deno.env.get("LOVABLE_API_KEY");
-
-// To use OpenAI directly, uncomment these and add OPENAI_API_KEY secret:
-// const AI_URL = "https://api.openai.com/v1/chat/completions";
-// const getApiKey = () => Deno.env.get("OPENAI_API_KEY");
-
-// To use Anthropic (requires different payload format):
-// const AI_URL = "https://api.anthropic.com/v1/messages";
-// const getApiKey = () => Deno.env.get("ANTHROPIC_API_KEY");
+const AI_URL = "https://api.anthropic.com/v1/messages";
+const API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+const CLAUDE_MODEL = "claude-sonnet-4-20250514";
+const CLAUDE_VERSION = "2023-06-01";
 // ============================================================
 
 serve(async (req) => {
@@ -31,9 +24,8 @@ serve(async (req) => {
   try {
     const { task, context, prompt, mode, stream = true } = await req.json();
     
-    const API_KEY = getApiKey();
     if (!API_KEY) {
-      console.error("API key not configured");
+      console.error("ANTHROPIC_API_KEY not configured");
       return new Response(
         JSON.stringify({ error: "AI provider not configured. Please check your API key settings." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -46,29 +38,30 @@ serve(async (req) => {
     // Increase max tokens for funnel and workflow generation
     const maxTokens = (mode === 'funnel' || mode === 'workflow') ? 4096 : 2048;
 
-    console.log(`[ai-copilot] Task: ${task}, Mode: ${mode || 'block'}, Stream: ${stream}`);
+    console.log(`[ai-copilot] Task: ${task}, Mode: ${mode || 'block'}, Stream: ${stream}, Model: ${CLAUDE_MODEL}`);
 
     const response = await fetch(AI_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${API_KEY}`,
-        "Content-Type": "application/json",
+        "x-api-key": API_KEY,
+        "anthropic-version": CLAUDE_VERSION,
+        "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: CLAUDE_MODEL,
+        max_tokens: maxTokens,
+        temperature: 0.7,
+        system: systemPrompt,
         messages: [
-          { role: "system", content: systemPrompt },
           { role: "user", content: prompt },
         ],
         stream,
-        max_tokens: maxTokens,
-        temperature: 0.7,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`AI gateway error: ${response.status}`, errorText);
+      console.error(`Claude API error: ${response.status}`, errorText);
 
       if (response.status === 429) {
         return new Response(
@@ -77,10 +70,10 @@ serve(async (req) => {
         );
       }
 
-      if (response.status === 402) {
+      if (response.status === 401) {
         return new Response(
-          JSON.stringify({ error: "AI credits depleted. Please add credits to continue using AI features." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Invalid API key. Please check your Anthropic API key." }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
@@ -90,9 +83,66 @@ serve(async (req) => {
       );
     }
 
-    // For streaming, pass through the response body
+    // For streaming, transform Anthropic SSE format to OpenAI format (keeps client code unchanged)
     if (stream) {
-      return new Response(response.body, {
+      const transformedStream = new ReadableStream({
+        async start(controller) {
+          const reader = response.body!.getReader();
+          const decoder = new TextDecoder();
+          const encoder = new TextEncoder();
+          let buffer = '';
+
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const data = line.slice(6).trim();
+                  if (data === '[DONE]') {
+                    controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                    continue;
+                  }
+
+                  try {
+                    const parsed = JSON.parse(data);
+
+                    // Anthropic: { type: "content_block_delta", delta: { type: "text_delta", text: "..." } }
+                    // Transform to OpenAI: { choices: [{ delta: { content: "..." } }] }
+                    if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                      const openAIFormat = {
+                        choices: [{ delta: { content: parsed.delta.text } }]
+                      };
+                      controller.enqueue(
+                        encoder.encode(`data: ${JSON.stringify(openAIFormat)}\n\n`)
+                      );
+                    }
+
+                    // Handle message_stop - send [DONE] signal
+                    if (parsed.type === 'message_stop') {
+                      controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                    }
+                  } catch (parseErr) {
+                    // Skip unparseable lines (event: lines, empty lines, etc.)
+                  }
+                }
+              }
+            }
+
+            controller.close();
+          } catch (err) {
+            console.error('[ai-copilot] Stream error:', err);
+            controller.error(err);
+          }
+        }
+      });
+
+      return new Response(transformedStream, {
         headers: { 
           ...corsHeaders, 
           "Content-Type": "text/event-stream",
@@ -101,9 +151,16 @@ serve(async (req) => {
       });
     }
 
-    // For non-streaming, parse and return
+    // For non-streaming, transform Anthropic response to OpenAI format
     const data = await response.json();
-    return new Response(JSON.stringify(data), {
+    const transformed = {
+      choices: [{
+        message: {
+          content: data.content?.[0]?.text || ''
+        }
+      }]
+    };
+    return new Response(JSON.stringify(transformed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 

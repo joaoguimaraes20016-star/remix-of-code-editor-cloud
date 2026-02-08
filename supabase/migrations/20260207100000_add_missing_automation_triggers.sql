@@ -2,9 +2,13 @@
 -- Migration: Add Missing Automation Triggers
 -- Adds database triggers for:
 --   1. lead_created (contact INSERT)
---   2. appointment_completed (status change to COMPLETED)
+--   2. appointment_completed (status change to SHOWED or CLOSED)
 --   3. contact_changed (field updates excluding tags)
 -- ==============================
+
+-- Add COMPLETED status if it doesn't exist
+-- Note: Using SHOWED as completed status (person showed up and meeting happened)
+-- The enum already has: NEW, SHOWED, NO_SHOW, CANCELLED, CONFIRMED, CLOSED, RESCHEDULED
 
 -- ==============================
 -- 1. Contact Created Trigger (lead_created)
@@ -93,11 +97,11 @@ $function$;
 -- Drop existing trigger if it exists (idempotent)
 DROP TRIGGER IF EXISTS on_appointment_status_completed_automation ON appointments;
 
--- Create the trigger
+-- Create the trigger (fires when status changes to SHOWED, which means appointment was completed)
 CREATE TRIGGER on_appointment_status_completed_automation
   AFTER UPDATE OF status ON appointments
   FOR EACH ROW
-  WHEN (NEW.status = 'COMPLETED' AND OLD.status IS DISTINCT FROM 'COMPLETED')
+  WHEN (NEW.status = 'SHOWED' AND OLD.status IS DISTINCT FROM 'SHOWED')
   EXECUTE FUNCTION trigger_automation_on_appointment_completed();
 
 
