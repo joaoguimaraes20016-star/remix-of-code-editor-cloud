@@ -598,6 +598,11 @@ serve(async (req) => {
 
     const clientRequestId: string | null = body.clientRequestId ?? null;
 
+    // UTM attribution tracking - extract from request body
+    const utm_source: string | null = body.utm_source ?? null;
+    const utm_medium: string | null = body.utm_medium ?? null;
+    const utm_campaign: string | null = body.utm_campaign ?? null;
+
     let step_intent: StepIntent | null = step_intent_raw as StepIntent | null;
     if (!step_intent && step_type) {
       step_intent = getDefaultIntent(step_type);
@@ -861,6 +866,10 @@ serve(async (req) => {
         opt_in_timestamp: optInTimestamp || undefined,
         status: leadStatus,
         last_step_index: last_step_index ?? undefined,
+        // UTM attribution - only update if provided (don't overwrite existing UTM with null)
+        ...(utm_source && { utm_source }),
+        ...(utm_medium && { utm_medium }),
+        ...(utm_campaign && { utm_campaign }),
       };
 
       const { data: updatedLead, error: updateError } = await supabase
@@ -925,6 +934,10 @@ serve(async (req) => {
             opt_in_timestamp: optInTimestamp,
             status: leadStatus,
             last_step_index,
+            // UTM attribution tracking
+            utm_source: utm_source || null,
+            utm_medium: utm_medium || null,
+            utm_campaign: utm_campaign || null,
           })
           .select()
           .single();
@@ -984,22 +997,10 @@ serve(async (req) => {
 
     // Fire automations ONLY on explicit submit
     if (effectiveSubmitMode === "submit") {
-      const eventId = `lead_created:${lead.id}`;
-      console.log("[submit-funnel-lead] Invoking automation-trigger with eventId:", eventId);
-
-      // Fire lead_created trigger
-      supabase.functions
-        .invoke("automation-trigger", {
-          body: {
-            triggerType: "lead_created",
-            teamId: funnel.team_id,
-            eventId,
-            eventPayload: { lead },
-          },
-        })
-        .catch((err: any) => {
-          console.error("Failed to invoke automation-trigger (lead_created):", err);
-        });
+      // NOTE: lead_created trigger is handled by the database trigger
+      // (on_contact_insert_automation) so we do NOT fire it here to avoid
+      // double-triggering. We only fire form_submitted which carries funnel-specific
+      // context that the database trigger doesn't have.
 
       // Fire form_submitted trigger with full form context
       // This enables automations triggered by form submissions specifically,

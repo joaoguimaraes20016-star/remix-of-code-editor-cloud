@@ -798,6 +798,37 @@ serve(async (req) => {
         console.log(`[PIPELINE] Rebook detected - using pipeline stage: ${determinedPipelineStage}`);
       }
 
+      // Revenue attribution: lookup funnel_lead_id by matching email/phone
+      let funnelLeadId: string | null = null;
+      try {
+        if (appointmentData.lead_email || appointmentData.lead_phone) {
+          const lookupConditions: string[] = [];
+          if (appointmentData.lead_email) {
+            lookupConditions.push(`email.ilike.${appointmentData.lead_email}`);
+          }
+          if (appointmentData.lead_phone) {
+            lookupConditions.push(`phone.eq.${appointmentData.lead_phone}`);
+          }
+          
+          const { data: funnelLead } = await adminClient
+            .from('funnel_leads')
+            .select('id')
+            .eq('team_id', appointmentData.team_id)
+            .or(lookupConditions.join(','))
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          funnelLeadId = funnelLead?.id || null;
+          if (funnelLeadId) {
+            console.log(`[ATTRIBUTION] Linked Calendly booking to funnel_lead: ${funnelLeadId}`);
+          }
+        }
+      } catch (lookupErr) {
+        console.warn('[ATTRIBUTION] Error looking up funnel_lead_id for Calendly booking:', lookupErr);
+        // Non-fatal: continue without attribution rather than blocking the booking
+      }
+
       // Create new appointment using direct REST API to bypass auth context
       const appointmentToInsert = {
         team_id: appointmentData.team_id,
@@ -819,6 +850,8 @@ serve(async (req) => {
         calendly_invitee_uri: calendlyInviteeUri,
         meeting_link: meetingLink,
         assignment_source: appointmentData.setter_id ? 'booking_link' : null,
+        // Revenue attribution: link to most recent funnel lead
+        funnel_lead_id: funnelLeadId,
         // Rebooking context fields
         original_appointment_id: (appointmentData as any).original_appointment_id || null,
         original_booking_date: (appointmentData as any).original_booking_date || null,

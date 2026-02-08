@@ -31,6 +31,9 @@ const DEFAULT_LIMITS: Record<string, RateLimitConfig> = {
  * Check if a message can be sent based on rate limits.
  * Uses an atomic PostgreSQL RPC function to prevent race conditions
  * where concurrent requests could both pass the check before either increments.
+ *
+ * Fail-closed by default: denies execution when DB is unavailable.
+ * Set RATE_LIMITER_FAIL_CLOSED=false env var to revert to fail-open behavior.
  */
 export async function checkRateLimit(
   supabase: any,
@@ -38,6 +41,9 @@ export async function checkRateLimit(
   channel: string,
   automationId?: string,
 ): Promise<RateLimitResult> {
+  // Allow runtime override via environment variable for emergency rollback
+  const failClosed = Deno.env.get("RATE_LIMITER_FAIL_CLOSED") !== "false";
+
   try {
     const limits = DEFAULT_LIMITS[channel] || DEFAULT_LIMITS.email;
 
@@ -50,13 +56,20 @@ export async function checkRateLimit(
     });
 
     if (error) {
-      console.error("[rate-limiter] RPC error:", error);
-      return { allowed: true }; // Fail open for rate limiter
+      console.error("[rate-limiter] RPC error:", error, { teamId, channel });
+      if (failClosed) {
+        return { allowed: false, reason: "Rate limiting unavailable - denying for safety" };
+      }
+      console.warn("[rate-limiter] Failing OPEN due to RATE_LIMITER_FAIL_CLOSED=false override");
+      return { allowed: true, reason: "Rate limiter unavailable - fail-open override" };
     }
 
     if (!data) {
-      console.error("[rate-limiter] RPC returned null data");
-      return { allowed: true }; // Fail open
+      console.error("[rate-limiter] RPC returned null data", { teamId, channel });
+      if (failClosed) {
+        return { allowed: false, reason: "Rate limit check returned no data" };
+      }
+      return { allowed: true, reason: "Rate limiter null data - fail-open override" };
     }
 
     return {
@@ -66,8 +79,12 @@ export async function checkRateLimit(
       currentDayCount: data.current_day_count,
     };
   } catch (err) {
-    console.error("[rate-limiter] Exception:", err);
-    return { allowed: true }; // Fail open for rate limiter
+    console.error("[rate-limiter] Exception:", err, { teamId, channel });
+    if (failClosed) {
+      return { allowed: false, reason: "Rate limiter exception - denying for safety" };
+    }
+    console.warn("[rate-limiter] Failing OPEN due to RATE_LIMITER_FAIL_CLOSED=false override");
+    return { allowed: true, reason: "Rate limiter exception - fail-open override" };
   }
 }
 

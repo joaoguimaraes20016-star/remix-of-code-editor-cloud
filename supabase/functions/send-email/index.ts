@@ -185,6 +185,30 @@ Deno.serve(async (req) => {
       );
     }
 
+    // DND enforcement: check if contact has opted out of email
+    if (teamId) {
+      try {
+        const { data: dndContact } = await supabase
+          .from("contacts")
+          .select("dnd_email")
+          .eq("team_id", teamId)
+          .ilike("email", to)
+          .limit(1)
+          .maybeSingle();
+
+        if (dndContact?.dnd_email === true) {
+          console.log(`[send-email] DND: Contact ${to} has opted out of email communications`);
+          return new Response(
+            JSON.stringify({ success: false, error: "Contact has opted out of email (DND)", code: "DND_EMAIL" }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      } catch (dndErr) {
+        // Non-fatal: if DND check fails, allow the message through (fail-open for DND)
+        console.warn("[send-email] DND check failed, proceeding:", dndErr);
+      }
+    }
+
     // Get email pricing
     const pricing = await getChannelPrice(supabase, "email");
     const costCents = pricing?.unitPriceCents || 0.0675; // Default to 0.0675 cents if not found

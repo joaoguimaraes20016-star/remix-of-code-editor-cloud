@@ -24,6 +24,8 @@ export async function executeBookAppointment(
     const leadEmail = context.lead?.email || context.appointment?.lead_email;
     const leadName = context.lead?.name || context.lead?.first_name || context.appointment?.lead_name;
     const leadPhone = context.lead?.phone || context.appointment?.lead_phone;
+    // Revenue attribution: extract funnel_lead_id from context for campaign tracking
+    const funnelLeadId = context.lead?.funnel_lead_id || context.lead?.id || null;
 
     if (!leadEmail && !leadPhone) {
       log.status = "skipped";
@@ -68,6 +70,8 @@ export async function executeBookAppointment(
         timezone,
         duration,
         notes,
+        // Revenue attribution: pass funnel_lead_id for campaign tracking
+        funnel_lead_id: funnelLeadId,
       }),
     });
 

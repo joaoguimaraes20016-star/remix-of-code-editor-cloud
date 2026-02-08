@@ -43,15 +43,21 @@ const SUPPORTED_ACTIONS: ActionType[] = [
   "update_contact",
   "delete_contact",
   "toggle_dnd",
+  "copy_contact",
   // Pipeline
   "update_stage",
   "create_deal",
   "update_deal",
   "close_deal",
+  "find_opportunity",
+  "remove_opportunity",
+  // Flow Control (continued)
+  "goal_achieved",
   // Appointments
   "book_appointment",
   "update_appointment",
   "cancel_appointment",
+  "create_booking_link",
   "log_call",
   // Payments
   "send_invoice",

@@ -213,7 +213,8 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
   // Use unified lead submission hook
   // Note: submit() is called on every step transition for real-time data capture
   // This ensures leads appear in analytics immediately and data isn't lost on abandonment
-  const { submit } = useUnifiedLeadSubmit({
+  // leadId is extracted so CalendarBlock can pass it for native booking attribution
+  const { submit, leadId } = useUnifiedLeadSubmit({
     funnelId,
     teamId,
     onError: handleSubmitError,
@@ -467,6 +468,7 @@ export function FunnelV3Renderer({ document, settings, funnelId, teamId }: Funne
   return (
     <FunnelRuntimeProvider 
       funnel={funnel}
+      leadId={leadId}
       onFormSubmit={handleFormSubmit}
       onStepChange={handleStepChange}
     >

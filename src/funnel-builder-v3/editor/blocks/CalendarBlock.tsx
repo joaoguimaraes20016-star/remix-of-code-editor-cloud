@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { CalendarDays, Clock, Loader2, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFunnelOptional } from '@/funnel-builder-v3/context/FunnelContext';
+import { useFunnelRuntimeOptional } from '@/funnel-builder-v3/context/FunnelRuntimeContext';
 import { EditableText } from '@/funnel-builder-v3/editor/EditableText';
 import { useBlockOverlay } from '@/funnel-builder-v3/hooks/useBlockOverlay';
 import { format } from 'date-fns';
@@ -25,6 +26,7 @@ interface TimeSlot {
 
 export function CalendarBlock({ content, blockId, stepId, isPreview }: CalendarBlockProps) {
   const funnelContext = useFunnelOptional();
+  const runtime = useFunnelRuntimeOptional();
   const updateBlockContent = funnelContext?.updateBlockContent ?? (() => {});
   const [date, setDate] = useState<Date | undefined>(undefined);
   const accentColor = content.accentColor || '#6366f1';
@@ -115,6 +117,8 @@ export function CalendarBlock({ content, blockId, stepId, isPreview }: CalendarB
           name: bookingName,
           email: bookingEmail,
           phone: bookingPhone || undefined,
+          // Revenue attribution: link this booking to the funnel lead for campaign tracking
+          funnel_lead_id: runtime?.leadId || undefined,
         }),
       });
 

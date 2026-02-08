@@ -115,7 +115,7 @@ export async function executeGoogleSheets(
   actionConfig: GoogleSheetsConfig,
   context: AutomationContext,
   supabase: SupabaseClient
-): Promise<Partial<StepExecutionLog>> {
+): Promise<StepExecutionLog> {
   const startTime = Date.now();
 
   try {

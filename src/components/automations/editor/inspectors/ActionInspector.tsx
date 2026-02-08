@@ -78,7 +78,7 @@ const SUPPORTED_ACTION_TYPES = new Set([
   "send_message", "notify_team", "add_tag", "remove_tag", "create_contact",
   "update_contact", "add_task", "add_note", "assign_owner", "update_stage",
   "create_deal", "close_deal", "time_delay", "wait_until", "business_hours",
-  "condition", "split_test", "go_to", "run_workflow", "stop_workflow",
+  "condition", "split_test", "go_to", "run_workflow", "stop_workflow", "goal_achieved",
   "custom_webhook", "slack_message", "discord_message", "google_conversion",
   "tiktok_event", "meta_conversion", "google_sheets", "enqueue_dialer",
   // Messaging

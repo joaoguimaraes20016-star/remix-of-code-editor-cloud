@@ -10,8 +10,9 @@ import type {
   TriggerRequest,
   TriggerResponse,
 } from "./types.ts";
-import { logStepExecution } from "./step-logger.ts";
+import { logStepExecution, executeWithRetry } from "./step-logger.ts";
 import { checkRateLimit, isWithinBusinessHours } from "./rate-limiter.ts";
+import { RETRY_POLICIES } from "./retry-policy.ts";
 import { executeSendMessage } from "./actions/send-message.ts";
 import { executeTimeDelay, executeWaitUntil } from "./actions/time-delay.ts";
 import {
@@ -672,32 +673,50 @@ async function hasAutomationAlreadyRunForEvent(
   triggerType: TriggerType,
   automationKey: string,
   eventId: string,
-): Promise<{ alreadyRan: boolean; existingRunId?: string }> {
-  try {
-    // Query for existing run with matching automationKey AND eventId in context_snapshot
-    const { data, error } = await supabase
-      .from("automation_runs")
-      .select("id")
-      .eq("team_id", teamId)
-      .eq("trigger_type", triggerType)
-      .filter("context_snapshot->>'eventId'", "eq", eventId)
-      .filter("context_snapshot->>'automationKey'", "eq", automationKey)
-      .limit(1);
+): Promise<{ alreadyRan: boolean; existingRunId?: string; error?: string }> {
+  const MAX_RETRIES = 3;
 
-    if (error) {
-      console.error("[Automation Trigger] Idempotency check failed:", error);
-      return { alreadyRan: false }; // On error, allow run (fail open)
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      // Query for existing run with matching automationKey AND eventId in context_snapshot
+      const { data, error } = await supabase
+        .from("automation_runs")
+        .select("id")
+        .eq("team_id", teamId)
+        .eq("trigger_type", triggerType)
+        .filter("context_snapshot->>'eventId'", "eq", eventId)
+        .filter("context_snapshot->>'automationKey'", "eq", automationKey)
+        .limit(1);
+
+      if (error) {
+        console.error(`[Automation Trigger] Idempotency check failed (attempt ${attempt + 1}/${MAX_RETRIES}):`, error);
+        // Retry with exponential backoff: 100ms, 200ms, 400ms
+        if (attempt < MAX_RETRIES - 1) {
+          await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 100));
+          continue;
+        }
+        // Final attempt failed — fail CLOSED to prevent duplicates
+        return { alreadyRan: true, error: "Idempotency check failed after retries" };
+      }
+
+      if (data && data.length > 0) {
+        return { alreadyRan: true, existingRunId: data[0].id };
+      }
+
+      return { alreadyRan: false };
+    } catch (err) {
+      console.error(`[Automation Trigger] Idempotency check exception (attempt ${attempt + 1}/${MAX_RETRIES}):`, err);
+      if (attempt < MAX_RETRIES - 1) {
+        await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 100));
+        continue;
+      }
+      // Final attempt failed — fail CLOSED on exception as well
+      return { alreadyRan: true, error: "Idempotency check exception after retries" };
     }
-
-    if (data && data.length > 0) {
-      return { alreadyRan: true, existingRunId: data[0].id };
-    }
-
-    return { alreadyRan: false };
-  } catch (err) {
-    console.error("[Automation Trigger] Idempotency check exception:", err);
-    return { alreadyRan: false };
   }
+
+  // Should never reach here, but fail closed as safety net
+  return { alreadyRan: true, error: "Idempotency check exhausted retries" };
 }
 
 // --- Create Automation Run (returns run_id) ---
@@ -720,6 +739,9 @@ async function createAutomationRun(
       automationKey: params.automationKey,
     };
 
+    // Use upsert with ignoreDuplicates to handle the unique constraint on
+    // (team_id, trigger_type, automationKey, eventId). If a duplicate exists,
+    // the insert is silently skipped, preventing race condition duplicates.
     const { data, error } = await supabase
       .from("automation_runs")
       .insert([
@@ -736,6 +758,11 @@ async function createAutomationRun(
       .single();
 
     if (error) {
+      // Check if this is a unique constraint violation (duplicate run)
+      if (error.code === "23505" || error.message?.includes("duplicate") || error.message?.includes("unique")) {
+        console.log(`[Automation Trigger] Duplicate run prevented by DB constraint for event ${params.eventId}`);
+        return null; // Return null to signal duplicate, caller should skip
+      }
       console.error("[Automation Trigger] Error creating run:", error);
       return null;
     }
@@ -822,7 +849,7 @@ async function runAutomation(
   automation: AutomationDefinition,
   context: AutomationContext,
   supabase: any,
-  runId: string | null,
+  runId: string,
   eventPayload?: Record<string, any>,
 ): Promise<StepExecutionLog[]> {
   const logs: StepExecutionLog[] = [];
@@ -831,6 +858,11 @@ async function runAutomation(
   const visitedSteps = new Set<string>();
   const triggeredGoalIds = new Set<string>(); // Prevent goal redirect infinite loops
   const maxSteps = 100; // Prevent infinite loops
+  const goalRedirectCounts = new Map<string, number>(); // Per-goal redirect counters
+  const MAX_GOAL_REDIRECTS = 5; // Max redirects per individual goal
+
+  // Abort controller for cancelling in-flight retries when automation is deactivated
+  const abortController = new AbortController();
 
   // Check if this is a scheduled resume (from process-scheduled-jobs)
   const isScheduledResume = eventPayload?.isScheduledResume === true;
@@ -875,6 +907,29 @@ async function runAutomation(
   let currentStepId: string | null = resumeFromStep || steps[0]?.id || null;
 
   while (currentStepId && logs.length < maxSteps) {
+    // Check if automation was deactivated (abort in-flight retries)
+    if (abortController.signal.aborted) {
+      console.log(`[Automation] Workflow ${automation.id} aborted, stopping execution`);
+      break;
+    }
+
+    // Check automation status periodically (every step) to detect deactivation
+    try {
+      const { data: automationStatus } = await supabase
+        .from("automations")
+        .select("is_active")
+        .eq("id", automation.id)
+        .maybeSingle();
+
+      if (automationStatus && !automationStatus.is_active) {
+        console.log(`[Automation] Workflow ${automation.id} deactivated mid-execution, aborting`);
+        abortController.abort();
+        break;
+      }
+    } catch {
+      // If status check fails, continue execution (fail-open)
+    }
+
     // Prevent infinite loops
     if (visitedSteps.has(currentStepId)) {
       console.warn(`[Automation] Loop detected at step ${currentStepId}, breaking`);
@@ -946,8 +1001,13 @@ async function runAutomation(
           }
 
           const smsConfig = { ...step.config, channel: step.config.channel || "sms" };
-          const smsResult = await executeSendMessage(smsConfig, context, supabase, runId, automation.id);
-          log = { ...log, ...smsResult };
+          const { log: smsRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, step.type as any, step.config,
+            () => executeSendMessage(smsConfig, context, supabase, runId, automation.id),
+            RETRY_POLICIES.send_sms,
+            abortController.signal,
+          );
+          log = { ...log, ...smsRetryLog };
           break;
         }
 
@@ -961,8 +1021,13 @@ async function runAutomation(
           }
 
           const emailConfig = { ...step.config, channel: "email" as const };
-          const emailResult = await executeSendMessage(emailConfig, context, supabase, runId, automation.id);
-          log = { ...log, ...emailResult };
+          const { log: emailRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "send_email", step.config,
+            () => executeSendMessage(emailConfig, context, supabase, runId, automation.id),
+            RETRY_POLICIES.send_email,
+            abortController.signal,
+          );
+          log = { ...log, ...emailRetryLog };
           break;
         }
 
@@ -976,8 +1041,13 @@ async function runAutomation(
           }
 
           const waConfig = { ...step.config, channel: "whatsapp" as const };
-          const waResult = await executeSendMessage(waConfig, context, supabase, runId, automation.id);
-          log = { ...log, ...waResult };
+          const { log: waRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "send_whatsapp", step.config,
+            () => executeSendMessage(waConfig, context, supabase, runId, automation.id),
+            RETRY_POLICIES.send_whatsapp,
+            abortController.signal,
+          );
+          log = { ...log, ...waRetryLog };
           break;
         }
 
@@ -994,8 +1064,13 @@ async function runAutomation(
             ...step.config,
             channel: "voice" as const,
           };
-          const dialerResult = await executeSendMessage(dialerConfig, context, supabase, runId, automation.id);
-          log = { ...log, ...dialerResult, channel: "voice", provider: "power_dialer" };
+          const { log: dialerRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "enqueue_dialer" as any, step.config,
+            () => executeSendMessage(dialerConfig, context, supabase, runId, automation.id),
+            RETRY_POLICIES.make_call,
+            abortController.signal,
+          );
+          log = { ...log, ...dialerRetryLog, channel: "voice", provider: "power_dialer" };
           break;
         }
 
@@ -1102,13 +1177,18 @@ async function runAutomation(
           log = { ...log, ...result };
           // Refresh lead context with updated tags so downstream steps see the change
           if (result.status === "success" && context.lead?.id) {
-            const { data: refreshedLead } = await supabase
+            const { data: refreshedLead, error: refreshError } = await supabase
               .from("contacts")
               .select("*")
               .eq("id", context.lead.id)
-              .single();
+              .maybeSingle();
+            if (refreshError) {
+              console.warn("[Automation] Context refresh failed after add_tag:", refreshError);
+            }
             if (refreshedLead) {
               context.lead = refreshedLead;
+            } else if (!refreshError) {
+              console.warn("[Automation] Contact deleted during workflow (add_tag), continuing with stale data");
             }
           }
           break;
@@ -1119,13 +1199,18 @@ async function runAutomation(
           log = { ...log, ...result };
           // Refresh lead context with updated tags so downstream steps see the change
           if (result.status === "success" && context.lead?.id) {
-            const { data: refreshedLead } = await supabase
+            const { data: refreshedLead, error: refreshError } = await supabase
               .from("contacts")
               .select("*")
               .eq("id", context.lead.id)
-              .single();
+              .maybeSingle();
+            if (refreshError) {
+              console.warn("[Automation] Context refresh failed after remove_tag:", refreshError);
+            }
             if (refreshedLead) {
               context.lead = refreshedLead;
+            } else if (!refreshError) {
+              console.warn("[Automation] Contact deleted during workflow (remove_tag), continuing with stale data");
             }
           }
           break;
@@ -1134,9 +1219,22 @@ async function runAutomation(
         case "create_contact": {
           const result = await executeCreateContact(step.config, context, supabase);
           log = { ...log, ...result };
-          // Update context with new contact if created
-          if (result.output?.contactId) {
-            context.lead = { ...context.lead, id: result.output.contactId };
+          // Fetch full contact data so downstream steps have complete context
+          // (tags, custom_fields, name, etc.) instead of just the ID
+          if (result.status === "success" && result.output?.contactId) {
+            const { data: fullContact, error: fetchError } = await supabase
+              .from("contacts")
+              .select("*")
+              .eq("id", result.output.contactId)
+              .maybeSingle();
+            if (fetchError) {
+              console.warn("[Automation] Failed to fetch created contact for context refresh:", fetchError);
+            }
+            if (fullContact) {
+              context.lead = fullContact;
+            } else {
+              context.lead = { ...context.lead, id: result.output.contactId };
+            }
           }
           break;
         }
@@ -1147,13 +1245,18 @@ async function runAutomation(
 
           // Refresh context after update so downstream steps use fresh data
           if (result.status === "success" && context.lead?.id) {
-            const { data: updatedLead } = await supabase
+            const { data: updatedLead, error: refreshError } = await supabase
               .from("contacts")
               .select("*")
               .eq("id", context.lead.id)
-              .single();
+              .maybeSingle();
+            if (refreshError) {
+              console.warn("[Automation] Context refresh failed after update_contact:", refreshError);
+            }
             if (updatedLead) {
               context.lead = updatedLead;
+            } else if (!refreshError) {
+              console.warn("[Automation] Contact deleted during workflow (update_contact), continuing with stale data");
             }
           }
           break;
@@ -1173,27 +1276,37 @@ async function runAutomation(
           if (result.status === "success") {
             const entity = (step.config.entity as string) || "lead";
             if (entity === "lead" && context.lead?.id) {
-              const { data: updatedLead } = await supabase
+              const { data: updatedLead, error: refreshError } = await supabase
                 .from("contacts")
                 .select("*")
                 .eq("id", context.lead.id)
-                .single();
+                .maybeSingle();
+              if (refreshError) {
+                console.warn("[Automation] Context refresh failed after assign_owner (lead):", refreshError);
+              }
               if (updatedLead) {
                 context.lead = updatedLead;
+              } else if (!refreshError) {
+                console.warn("[Automation] Contact deleted during workflow (assign_owner), continuing with stale data");
               }
             } else if ((entity === "deal" || entity === "appointment") && (context.deal?.id || context.appointment?.id)) {
               // NOTE: Deals and appointments share the `appointments` table in this schema.
               // context.deal and context.appointment are separate views of the same underlying row,
               // differentiated by type/status fields. Both are refreshed from the same table.
               const dealId = context.deal?.id || context.appointment?.id;
-              const { data: updatedDeal } = await supabase
+              const { data: updatedDeal, error: refreshError } = await supabase
                 .from("appointments")
                 .select("*")
                 .eq("id", dealId)
-                .single();
+                .maybeSingle();
+              if (refreshError) {
+                console.warn("[Automation] Context refresh failed after assign_owner (deal):", refreshError);
+              }
               if (updatedDeal) {
                 if (context.deal) context.deal = updatedDeal;
                 if (context.appointment) context.appointment = updatedDeal;
+              } else if (!refreshError) {
+                console.warn("[Automation] Deal/appointment deleted during workflow (assign_owner), continuing with stale data");
               }
             }
           }
@@ -1208,25 +1321,35 @@ async function runAutomation(
           if (result.status === "success") {
             const entity = (step.config.entity as string) || "lead";
             if (entity === "lead" && context.lead?.id) {
-              const { data: updatedLead } = await supabase
+              const { data: updatedLead, error: refreshError } = await supabase
                 .from("contacts")
                 .select("*")
                 .eq("id", context.lead.id)
-                .single();
+                .maybeSingle();
+              if (refreshError) {
+                console.warn("[Automation] Context refresh failed after update_stage (lead):", refreshError);
+              }
               if (updatedLead) {
                 context.lead = updatedLead;
+              } else if (!refreshError) {
+                console.warn("[Automation] Contact deleted during workflow (update_stage), continuing with stale data");
               }
             } else if ((entity === "deal" || entity === "appointment") && (context.deal?.id || context.appointment?.id)) {
               // NOTE: Deals share the `appointments` table — see assign_owner case above.
               const dealId = context.deal?.id || context.appointment?.id;
-              const { data: updatedDeal } = await supabase
+              const { data: updatedDeal, error: refreshError } = await supabase
                 .from("appointments")
                 .select("*")
                 .eq("id", dealId)
-                .single();
+                .maybeSingle();
+              if (refreshError) {
+                console.warn("[Automation] Context refresh failed after update_stage (deal):", refreshError);
+              }
               if (updatedDeal) {
                 if (context.deal) context.deal = updatedDeal;
                 if (context.appointment) context.appointment = updatedDeal;
+              } else if (!refreshError) {
+                console.warn("[Automation] Deal/appointment deleted during workflow (update_stage), continuing with stale data");
               }
             }
           }
@@ -1259,8 +1382,13 @@ async function runAutomation(
             log.skipReason = rateCheck.reason || "rate_limit_exceeded";
             break;
           }
-          const result = await executeCustomWebhook(step.config, context);
-          log = { ...log, ...result };
+          const { log: webhookRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "custom_webhook", step.config,
+            () => executeCustomWebhook(step.config, context),
+            RETRY_POLICIES.custom_webhook,
+            abortController.signal,
+          );
+          log = { ...log, ...webhookRetryLog };
           break;
         }
 
@@ -1271,8 +1399,13 @@ async function runAutomation(
             log.skipReason = rateCheck.reason || "rate_limit_exceeded";
             break;
           }
-          const result = await executeSlackMessage(step.config, context, supabase);
-          log = { ...log, ...result };
+          const { log: slackRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "slack_message", step.config,
+            () => executeSlackMessage(step.config, context, supabase),
+            RETRY_POLICIES.slack_message,
+            abortController.signal,
+          );
+          log = { ...log, ...slackRetryLog };
           break;
         }
 
@@ -1283,8 +1416,13 @@ async function runAutomation(
             log.skipReason = rateCheck.reason || "rate_limit_exceeded";
             break;
           }
-          const result = await executeDiscordMessage(step.config, context, supabase);
-          log = { ...log, ...result };
+          const { log: discordRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "discord_message", step.config,
+            () => executeDiscordMessage(step.config, context, supabase),
+            RETRY_POLICIES.discord_message,
+            abortController.signal,
+          );
+          log = { ...log, ...discordRetryLog };
           break;
         }
 
@@ -1295,8 +1433,13 @@ async function runAutomation(
             log.skipReason = rateCheck.reason || "rate_limit_exceeded";
             break;
           }
-          const result = await executeGoogleAdsConversion(step.config, context, supabase);
-          log = { ...log, ...result };
+          const { log: gadsRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "google_conversion", step.config,
+            () => executeGoogleAdsConversion(step.config, context, supabase),
+            RETRY_POLICIES.google_conversion,
+            abortController.signal,
+          );
+          log = { ...log, ...gadsRetryLog };
           break;
         }
 
@@ -1307,8 +1450,13 @@ async function runAutomation(
             log.skipReason = rateCheck.reason || "rate_limit_exceeded";
             break;
           }
-          const result = await executeTikTokEvent(step.config, context, supabase);
-          log = { ...log, ...result };
+          const { log: tiktokRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "tiktok_event", step.config,
+            () => executeTikTokEvent(step.config, context, supabase),
+            RETRY_POLICIES.tiktok_event,
+            abortController.signal,
+          );
+          log = { ...log, ...tiktokRetryLog };
           break;
         }
 
@@ -1319,8 +1467,13 @@ async function runAutomation(
             log.skipReason = rateCheck.reason || "rate_limit_exceeded";
             break;
           }
-          const result = await executeMetaConversion(step.config, context, supabase);
-          log = { ...log, ...result };
+          const { log: metaRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "meta_conversion", step.config,
+            () => executeMetaConversion(step.config, context, supabase),
+            RETRY_POLICIES.meta_conversion,
+            abortController.signal,
+          );
+          log = { ...log, ...metaRetryLog };
           break;
         }
 
@@ -1331,8 +1484,13 @@ async function runAutomation(
             log.skipReason = rateCheck.reason || "rate_limit_exceeded";
             break;
           }
-          const result = await executeGoogleSheets(step.config as any, context, supabase);
-          log = { ...log, ...result };
+          const { log: gsheetsRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "google_sheets", step.config,
+            () => executeGoogleSheets(step.config as any, context, supabase),
+            RETRY_POLICIES.google_sheets,
+            abortController.signal,
+          );
+          log = { ...log, ...gsheetsRetryLog };
           break;
         }
 
@@ -1355,6 +1513,59 @@ async function runAutomation(
           break;
         }
 
+        case "goal_achieved": {
+          // Mark a goal/conversion as achieved for analytics and tracking.
+          // Logs the goal event in activity_logs and can optionally stop the workflow.
+          const goalName = (step.config?.goalName as string) || (step.config?.name as string) || "Unnamed Goal";
+          const goalValue = step.config?.goalValue ?? step.config?.value ?? null;
+          const stopOnGoal = step.config?.stopWorkflow ?? step.config?.stopOnGoal ?? step.config?.exitOnGoal ?? false;
+
+          try {
+            const leadId = context.lead?.id || null;
+            const teamId = context.teamId;
+            const appointmentId = context.appointment?.id || context.deal?.id || null;
+
+            // Log goal achievement in activity_logs
+            // Schema requires: team_id, action_type, actor_name, appointment_id
+            // Optional: note, actor_id
+            if (appointmentId) {
+              const { error: logError } = await supabase.from("activity_logs").insert({
+                team_id: teamId,
+                appointment_id: appointmentId,
+                action_type: "goal_achieved",
+                actor_name: "Automation",
+                note: `Goal achieved: ${goalName}${goalValue != null ? ` (value: ${goalValue})` : ""}`,
+              });
+
+              if (logError) {
+                console.warn("[Automation] Failed to log goal achievement to activity_logs:", logError);
+                // Don't fail the step — goal tracking in step output still works
+              }
+            } else {
+              console.log(`[Automation] Goal "${goalName}" achieved but no appointment_id — skipping activity_log (no FK target)`);
+            }
+
+            log.status = "success";
+            log.output = {
+              goalName,
+              goalValue,
+              contactId: leadId,
+              achievedAt: new Date().toISOString(),
+            };
+
+            // Optionally stop the workflow after goal is achieved
+            if (stopOnGoal) {
+              shouldStop = true;
+              log.output.stoppedWorkflow = true;
+            }
+          } catch (goalError) {
+            console.error("[Automation] Error recording goal:", goalError);
+            log.status = "error";
+            log.error = goalError instanceof Error ? goalError.message : "Failed to record goal";
+          }
+          break;
+        }
+
         case "stop_workflow": {
           const result = executeStopWorkflow(step.config, context);
           log.status = "success";
@@ -1366,9 +1577,17 @@ async function runAutomation(
         case "go_to": {
           const result = executeGoTo(step.config);
           if (result) {
-            nextStepId = result.jumpTo;
-            log.status = "success";
-            log.output = { jumpTo: result.jumpTo };
+            // Validate that the target step exists before jumping
+            const targetExists = automation.steps.some((s: any) => s.id === result.jumpTo);
+            if (!targetExists) {
+              log.status = "error";
+              log.error = `go_to target step "${result.jumpTo}" not found in automation`;
+              console.warn(`[Automation] go_to target step "${result.jumpTo}" does not exist`);
+            } else {
+              nextStepId = result.jumpTo;
+              log.status = "success";
+              log.output = { jumpTo: result.jumpTo };
+            }
           } else {
             log.skipped = true;
             log.skipReason = "no_target_step";
@@ -1436,9 +1655,22 @@ async function runAutomation(
         case "create_deal": {
           const result = await executeCreateDeal(step.config, context, supabase);
           log = { ...log, ...result };
-          // Update context with new deal for downstream steps
-          if (result.output?.dealId) {
-            context.deal = { id: result.output.dealId, ...result.output };
+          // Fetch full deal/appointment data so downstream steps have complete context
+          if (result.status === "success" && result.output?.dealId) {
+            const { data: fullDeal, error: fetchError } = await supabase
+              .from("appointments")
+              .select("*")
+              .eq("id", result.output.dealId)
+              .maybeSingle();
+            if (fetchError) {
+              console.warn("[Automation] Failed to fetch created deal for context refresh:", fetchError);
+            }
+            if (fullDeal) {
+              context.deal = fullDeal;
+              context.appointment = fullDeal;
+            } else {
+              context.deal = { id: result.output.dealId, ...result.output };
+            }
           }
           break;
         }
@@ -1452,14 +1684,19 @@ async function runAutomation(
           if (result.status === "success") {
             const dealId = context.deal?.id || context.appointment?.id;
             if (dealId) {
-              const { data: updatedDeal } = await supabase
+              const { data: updatedDeal, error: refreshError } = await supabase
                 .from("appointments")
                 .select("*")
                 .eq("id", dealId)
-                .single();
+                .maybeSingle();
+              if (refreshError) {
+                console.warn("[Automation] Context refresh failed after close_deal:", refreshError);
+              }
               if (updatedDeal) {
                 if (context.deal) context.deal = updatedDeal;
                 if (context.appointment) context.appointment = updatedDeal;
+              } else if (!refreshError) {
+                console.warn("[Automation] Deal deleted during workflow (close_deal), continuing with stale data");
               }
             }
           }
@@ -1468,26 +1705,46 @@ async function runAutomation(
 
         // === STRIPE PAYMENT ACTIONS ===
         case "send_invoice": {
-          const result = await executeSendInvoice(step.config, context, supabase);
-          log = { ...log, ...result };
+          const { log: invoiceRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "send_invoice", step.config,
+            () => executeSendInvoice(step.config, context, supabase),
+            RETRY_POLICIES.send_invoice,
+            abortController.signal,
+          );
+          log = { ...log, ...invoiceRetryLog };
           break;
         }
 
         case "charge_payment": {
-          const result = await executeChargePayment(step.config, context, supabase);
-          log = { ...log, ...result };
+          const { log: paymentRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "charge_payment", step.config,
+            () => executeChargePayment(step.config, context, supabase),
+            RETRY_POLICIES.charge_payment,
+            abortController.signal,
+          );
+          log = { ...log, ...paymentRetryLog };
           break;
         }
 
         case "create_subscription": {
-          const result = await executeCreateSubscription(step.config, context, supabase);
-          log = { ...log, ...result };
+          const { log: subRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "create_subscription", step.config,
+            () => executeCreateSubscription(step.config, context, supabase),
+            RETRY_POLICIES.create_subscription,
+            abortController.signal,
+          );
+          log = { ...log, ...subRetryLog };
           break;
         }
 
         case "cancel_subscription": {
-          const result = await executeCancelSubscription(step.config, context, supabase);
-          log = { ...log, ...result };
+          const { log: cancelSubRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "cancel_subscription", step.config,
+            () => executeCancelSubscription(step.config, context, supabase),
+            RETRY_POLICIES.cancel_subscription,
+            abortController.signal,
+          );
+          log = { ...log, ...cancelSubRetryLog };
           break;
         }
 
@@ -1499,8 +1756,13 @@ async function runAutomation(
             log.skipReason = vmRateCheck.reason || "rate_limit_exceeded";
             break;
           }
-          const vmResult = await executeSendVoicemail(step.config, context, supabase);
-          log = { ...log, ...vmResult };
+          const { log: vmRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "send_voicemail", step.config,
+            () => executeSendVoicemail(step.config, context, supabase),
+            RETRY_POLICIES.send_voicemail,
+            abortController.signal,
+          );
+          log = { ...log, ...vmRetryLog };
           break;
         }
 
@@ -1511,8 +1773,13 @@ async function runAutomation(
             log.skipReason = callRateCheck.reason || "rate_limit_exceeded";
             break;
           }
-          const callResult = await executeMakeCall(step.config, context, supabase);
-          log = { ...log, ...callResult };
+          const { log: callRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "make_call", step.config,
+            () => executeMakeCall(step.config, context, supabase),
+            RETRY_POLICIES.make_call,
+            abortController.signal,
+          );
+          log = { ...log, ...callRetryLog };
           break;
         }
 
@@ -1520,9 +1787,22 @@ async function runAutomation(
         case "book_appointment": {
           const bookResult = await executeBookAppointment(step.config, context, supabase);
           log = { ...log, ...bookResult };
-          // Update context with new appointment for downstream steps
-          if (bookResult.output?.appointmentId) {
-            context.appointment = { id: bookResult.output.appointmentId, ...bookResult.output };
+          // Fetch full appointment data so downstream steps have complete context
+          if (bookResult.status === "success" && bookResult.output?.appointmentId) {
+            const { data: fullAppointment, error: fetchError } = await supabase
+              .from("appointments")
+              .select("*")
+              .eq("id", bookResult.output.appointmentId)
+              .maybeSingle();
+            if (fetchError) {
+              console.warn("[Automation] Failed to fetch created appointment for context refresh:", fetchError);
+            }
+            if (fullAppointment) {
+              context.appointment = fullAppointment;
+              context.deal = fullAppointment;
+            } else {
+              context.appointment = { id: bookResult.output.appointmentId, ...bookResult.output };
+            }
           }
           break;
         }
@@ -1533,13 +1813,18 @@ async function runAutomation(
 
           // Refresh context after update so downstream steps use fresh data
           if (updateApptResult.status === "success" && context.appointment?.id) {
-            const { data: updatedAppointment } = await supabase
+            const { data: updatedAppointment, error: refreshError } = await supabase
               .from("appointments")
               .select("*")
               .eq("id", context.appointment.id)
-              .single();
+              .maybeSingle();
+            if (refreshError) {
+              console.warn("[Automation] Context refresh failed after update_appointment:", refreshError);
+            }
             if (updatedAppointment) {
               context.appointment = updatedAppointment;
+            } else if (!refreshError) {
+              console.warn("[Automation] Appointment deleted during workflow (update_appointment), continuing with stale data");
             }
           }
           break;
@@ -1571,14 +1856,24 @@ async function runAutomation(
             log.skipReason = reviewRateCheck.reason || "rate_limit_exceeded";
             break;
           }
-          const reviewResult = await executeSendReviewRequest(step.config, context, supabase, runId || undefined, automation.id);
-          log = { ...log, ...reviewResult };
+          const { log: reviewRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "send_review_request" as any, step.config,
+            () => executeSendReviewRequest(step.config, context, supabase, runId || undefined, automation.id),
+            RETRY_POLICIES.send_review_request,
+            abortController.signal,
+          );
+          log = { ...log, ...reviewRetryLog };
           break;
         }
 
         case "reply_in_comments": {
-          const replyResult = await executeReplyInComments(step.config, context, supabase);
-          log = { ...log, ...replyResult };
+          const { log: replyRetryLog } = await executeWithRetry(
+            supabase, runId, step.id, "reply_in_comments" as any, step.config,
+            () => executeReplyInComments(step.config, context, supabase),
+            RETRY_POLICIES.reply_in_comments,
+            abortController.signal,
+          );
+          log = { ...log, ...replyRetryLog };
           break;
         }
 
@@ -1621,14 +1916,19 @@ async function runAutomation(
           if (result.status === "success") {
             const dealId = context.deal?.id || context.appointment?.id;
             if (dealId) {
-              const { data: updatedDeal } = await supabase
+              const { data: updatedDeal, error: refreshError } = await supabase
                 .from("appointments")
                 .select("*")
                 .eq("id", dealId)
-                .single();
+                .maybeSingle();
+              if (refreshError) {
+                console.warn("[Automation] Context refresh failed after update_deal:", refreshError);
+              }
               if (updatedDeal) {
                 if (context.deal) context.deal = updatedDeal;
                 if (context.appointment) context.appointment = updatedDeal;
+              } else if (!refreshError) {
+                console.warn("[Automation] Deal deleted during workflow (update_deal), continuing with stale data");
               }
             }
           }
@@ -1841,10 +2141,27 @@ async function runAutomation(
         triggeredGoalIds.add(midRunGoalCheck.goal.id);
 
         if (midRunGoalCheck.goal.goToStepId) {
+          // Check per-goal redirect counter to prevent infinite loops
+          const goalId = midRunGoalCheck.goal.id;
+          const currentGoalRedirects = (goalRedirectCounts.get(goalId) || 0) + 1;
+          goalRedirectCounts.set(goalId, currentGoalRedirects);
+
+          if (currentGoalRedirects > MAX_GOAL_REDIRECTS) {
+            console.warn(`[Automation] Max redirects (${MAX_GOAL_REDIRECTS}) reached for goal "${midRunGoalCheck.goal.name}", stopping automation`);
+            triggeredGoalIds.add("*");
+            logs.push({
+              stepId: "goal_redirect_limit",
+              actionType: "goal_achieved",
+              status: "error",
+              error: `Maximum redirects (${MAX_GOAL_REDIRECTS}) exceeded for goal "${midRunGoalCheck.goal.name}"`,
+              output: { goalId, goalName: midRunGoalCheck.goal.name, redirectCount: currentGoalRedirects },
+            });
+            break;
+          }
           // Jump to the specified step instead of exiting.
           // Allow the target step to execute even if it was already visited,
           // since goal redirects are intentional jumps (not accidental loops).
-          console.log(`[Automation] Goal redirecting to step ${midRunGoalCheck.goal.goToStepId}`);
+          console.log(`[Automation] Goal "${midRunGoalCheck.goal.name}" redirecting to step ${midRunGoalCheck.goal.goToStepId} (redirect ${currentGoalRedirects}/${MAX_GOAL_REDIRECTS})`);
           visitedSteps.delete(midRunGoalCheck.goal.goToStepId);
           nextStepId = midRunGoalCheck.goal.goToStepId;
         } else if (midRunGoalCheck.goal.exitOnGoal) {
@@ -1967,7 +2284,7 @@ Deno.serve(async (req) => {
       // PER-AUTOMATION IDEMPOTENCY CHECK
       // Prevents duplicate runs when trigger is called multiple times for same event
       // Composite key: teamId + triggerType + automationKey + eventId
-      const { alreadyRan, existingRunId } = await hasAutomationAlreadyRunForEvent(
+      const idempotencyResult = await hasAutomationAlreadyRunForEvent(
         supabase,
         teamId,
         triggerType,
@@ -1975,10 +2292,17 @@ Deno.serve(async (req) => {
         stableEventId,
       );
 
-      if (alreadyRan) {
-        console.log(
-          `[Automation Trigger] SKIPPED automation ${automation.id} - already ran for event ${stableEventId} (run ${existingRunId})`,
-        );
+      if (idempotencyResult.alreadyRan) {
+        if (idempotencyResult.error) {
+          // Fail-closed: idempotency check itself failed (DB issue), blocking to prevent duplicates
+          console.error(
+            `[Automation Trigger] BLOCKED automation ${automation.id} - idempotency check failed: ${idempotencyResult.error}`,
+          );
+        } else {
+          console.log(
+            `[Automation Trigger] SKIPPED automation ${automation.id} - already ran for event ${stableEventId} (run ${idempotencyResult.existingRunId})`,
+          );
+        }
         automationsSkipped.push(automation.id);
         continue;
       }

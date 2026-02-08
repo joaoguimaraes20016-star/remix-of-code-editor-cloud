@@ -333,6 +333,8 @@ serve(async (req) => {
             .map(([k, v]) => `${k}: ${v}`)
             .join("\n")
         : null,
+      // Revenue attribution: link appointment back to funnel lead (and thus UTM source)
+      funnel_lead_id: funnel_lead_id || null,
     };
 
     const { data: appointment, error: insertError } = await supabase

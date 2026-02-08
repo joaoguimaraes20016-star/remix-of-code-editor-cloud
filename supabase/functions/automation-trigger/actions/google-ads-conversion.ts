@@ -65,7 +65,7 @@ export async function executeGoogleAdsConversion(
   config: Record<string, any>,
   context: AutomationContext,
   supabase: SupabaseClient
-): Promise<Partial<StepExecutionLog>> {
+): Promise<StepExecutionLog> {
   const adsConfig = config as GoogleAdsConversionConfig;
 
   if (!adsConfig.conversion_action) {

@@ -28,6 +28,7 @@ interface ActionOption {
   description: string;
   icon: React.ReactNode;
   color: string;
+  comingSoon?: boolean;
 }
 
 interface ActionCategory {
@@ -68,8 +69,8 @@ const ACTION_CATEGORIES: ActionCategory[] = [
       { type: "remove_owner", label: "Remove Owner", description: "Unassign owner", icon: <UserMinus className="h-4 w-4" />, color: "text-orange-400" },
       { type: "toggle_dnd", label: "Toggle DND", description: "Enable/disable Do Not Disturb", icon: <BellOff className="h-4 w-4" />, color: "text-amber-400" },
       { type: "copy_contact", label: "Copy Contact", description: "Duplicate contact", icon: <Copy className="h-4 w-4" />, color: "text-indigo-400" },
-      { type: "add_followers", label: "Add Followers", description: "Add team followers", icon: <Users className="h-4 w-4" />, color: "text-blue-400" },
-      { type: "remove_followers", label: "Remove Followers", description: "Remove followers", icon: <Users className="h-4 w-4" />, color: "text-red-400" },
+      { type: "add_followers", label: "Add Followers", description: "Add team followers", icon: <Users className="h-4 w-4" />, color: "text-blue-400", comingSoon: true },
+      { type: "remove_followers", label: "Remove Followers", description: "Remove followers", icon: <Users className="h-4 w-4" />, color: "text-red-400", comingSoon: true },
     ],
   },
   {
@@ -136,11 +137,11 @@ const ACTION_CATEGORIES: ActionCategory[] = [
     id: "ai",
     label: "AI Actions",
     actions: [
-      { type: "ai_intent", label: "AI Intent Detection", description: "Detect message intent", icon: <Brain className="h-4 w-4" />, color: "text-purple-400" },
-      { type: "ai_decision", label: "AI Decision", description: "Smart branching with AI", icon: <Sparkles className="h-4 w-4" />, color: "text-violet-400" },
-      { type: "ai_translate", label: "AI Translate", description: "Translate content", icon: <Languages className="h-4 w-4" />, color: "text-sky-400" },
-      { type: "ai_summarize", label: "AI Summarize", description: "Summarize text", icon: <FileText className="h-4 w-4" />, color: "text-teal-400" },
-      { type: "ai_message", label: "AI Message", description: "AI-generated response", icon: <Bot className="h-4 w-4" />, color: "text-pink-400" },
+      { type: "ai_intent", label: "AI Intent Detection", description: "Detect message intent", icon: <Brain className="h-4 w-4" />, color: "text-purple-400", comingSoon: true },
+      { type: "ai_decision", label: "AI Decision", description: "Smart branching with AI", icon: <Sparkles className="h-4 w-4" />, color: "text-violet-400", comingSoon: true },
+      { type: "ai_translate", label: "AI Translate", description: "Translate content", icon: <Languages className="h-4 w-4" />, color: "text-sky-400", comingSoon: true },
+      { type: "ai_summarize", label: "AI Summarize", description: "Summarize text", icon: <FileText className="h-4 w-4" />, color: "text-teal-400", comingSoon: true },
+      { type: "ai_message", label: "AI Message", description: "AI-generated response", icon: <Bot className="h-4 w-4" />, color: "text-pink-400", comingSoon: true },
     ],
   },
   {
@@ -223,7 +224,7 @@ export function ActionLibraryPanel({ onSelect, supportedActions }: ActionLibrary
               <CollapsibleContent>
                 <div className="space-y-1 py-1">
                   {category.actions.map((action) => {
-                    const isSupported = !supportedActions || supportedActions.includes(action.type);
+                    const isSupported = (!supportedActions || supportedActions.includes(action.type)) && !action.comingSoon;
                     
                     return (
                       <motion.button

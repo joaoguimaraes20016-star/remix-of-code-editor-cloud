@@ -14,7 +14,7 @@ export async function executeSlackMessage(
   config: Record<string, any>,
   context: AutomationContext,
   supabase: SupabaseClient
-): Promise<Partial<StepExecutionLog>> {
+): Promise<StepExecutionLog> {
   const slackConfig = config as SlackMessageConfig;
 
   if (!slackConfig.channel) {

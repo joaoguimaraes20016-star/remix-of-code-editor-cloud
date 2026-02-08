@@ -86,6 +86,28 @@ Deno.serve(async (req) => {
       );
     }
 
+    // DND enforcement: check if contact has opted out of SMS
+    try {
+      const { data: dndContact } = await supabase
+        .from("contacts")
+        .select("dnd_sms")
+        .eq("team_id", teamId)
+        .eq("phone", to)
+        .limit(1)
+        .maybeSingle();
+
+      if (dndContact?.dnd_sms === true) {
+        console.log(`[send-sms] DND: Contact ${to} has opted out of SMS communications`);
+        return new Response(
+          JSON.stringify({ success: false, error: "Contact has opted out of SMS (DND)", code: "DND_SMS" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    } catch (dndErr) {
+      // Non-fatal: if DND check fails, allow the message through (fail-open for DND)
+      console.warn("[send-sms] DND check failed, proceeding:", dndErr);
+    }
+
     // Get team's phone number or use provided 'from'
     let fromNumber = from;
     if (!fromNumber) {

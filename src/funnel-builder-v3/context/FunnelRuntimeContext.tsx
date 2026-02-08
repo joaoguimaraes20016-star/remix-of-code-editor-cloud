@@ -35,6 +35,9 @@ interface FunnelRuntimeContextType {
   selections: FunnelSelections;
   isSubmitting: boolean;
   
+  // Lead tracking (for attribution - e.g. CalendarBlock needs this to link bookings to funnel leads)
+  leadId: string | null;
+  
   // Navigation
   goToStep: (stepId: string) => void;
   goToNextStep: () => void;
@@ -77,6 +80,8 @@ interface FunnelRuntimeProviderProps {
   funnel: Funnel;
   initialStepId?: string;
   children: ReactNode;
+  /** Current lead ID from useUnifiedLeadSubmit - used for booking attribution */
+  leadId?: string | null;
   onStepChange?: (stepId: string, formData: FunnelFormData, selections: FunnelSelections) => void;
   onFormSubmit?: (
     data: FunnelFormData, 
@@ -90,6 +95,7 @@ export function FunnelRuntimeProvider({
   funnel, 
   initialStepId,
   children,
+  leadId = null,
   onStepChange,
   onFormSubmit,
   onComplete,
@@ -380,6 +386,7 @@ export function FunnelRuntimeProvider({
     formData,
     selections,
     isSubmitting,
+    leadId,
     goToStep,
     goToNextStep,
     goToPrevStep,
@@ -409,6 +416,7 @@ export function FunnelRuntimeProvider({
     formData,
     selections,
     isSubmitting,
+    leadId,
     goToStep,
     goToNextStep,
     goToPrevStep,

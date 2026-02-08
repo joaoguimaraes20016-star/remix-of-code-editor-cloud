@@ -1202,28 +1202,32 @@ export async function executeRemoveFollowers(
   };
 }
 
-// Add to Audience (stub - requires marketing audiences infrastructure)
+// Add to Audience (Coming Soon - requires Facebook Marketing API)
 export async function executeAddToAudience(
   _config: FlexibleConfig,
   _context: AutomationContext,
   _supabase: any,
 ): Promise<StepExecutionLog> {
+  console.warn("[Automation] add_to_audience action is not yet implemented (Coming Soon)");
   return {
-    status: "error",
+    status: "skipped",
+    skipReason: "coming_soon",
     error:
-      "Add to Audience requires Facebook Marketing API integration. Please set up your Meta Business account and OAuth credentials in Team Settings → Integrations → Facebook to enable audience management.",
+      "Add to Audience is coming soon. Facebook Custom Audience management will be available in a future update. Your automation will continue with the next step.",
   };
 }
 
-// Remove from Audience (stub - requires marketing audiences infrastructure)
+// Remove from Audience (Coming Soon - requires Facebook Marketing API)
 export async function executeRemoveFromAudience(
   _config: FlexibleConfig,
   _context: AutomationContext,
   _supabase: any,
 ): Promise<StepExecutionLog> {
+  console.warn("[Automation] remove_from_audience action is not yet implemented (Coming Soon)");
   return {
-    status: "error",
+    status: "skipped",
+    skipReason: "coming_soon",
     error:
-      "Remove from Audience requires Facebook Marketing API integration. Please set up your Meta Business account and OAuth credentials in Team Settings → Integrations → Facebook to enable audience management.",
+      "Remove from Audience is coming soon. Facebook Custom Audience management will be available in a future update. Your automation will continue with the next step.",
   };
 }

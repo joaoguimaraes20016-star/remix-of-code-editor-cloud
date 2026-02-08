@@ -15,7 +15,7 @@ export async function executeDiscordMessage(
   config: Record<string, any>,
   context: AutomationContext,
   supabase: SupabaseClient
-): Promise<Partial<StepExecutionLog>> {
+): Promise<StepExecutionLog> {
   const discordConfig = config as DiscordMessageConfig;
 
   if (!discordConfig.channel_id) {

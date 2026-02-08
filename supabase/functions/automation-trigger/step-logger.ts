@@ -16,7 +16,11 @@ interface StepLogParams {
 }
 
 /**
- * Logs individual step execution to automation_step_logs table
+ * Logs individual step execution to automation_step_logs table.
+ *
+ * Handles 23505 unique constraint violations gracefully for idempotency:
+ * if a 'success' log already exists for the same (run_id, step_id), the
+ * duplicate is silently ignored (concurrent retry already succeeded).
  */
 export async function logStepExecution(supabase: any, params: StepLogParams): Promise<string | null> {
   try {
@@ -45,7 +49,36 @@ export async function logStepExecution(supabase: any, params: StepLogParams): Pr
       .single();
 
     if (error) {
+      // Handle step-level idempotency constraint violation (23505)
+      // This means a concurrent retry already logged this step as 'success'
+      if (error.code === "23505" && params.status === "success") {
+        console.log(
+          `[step-logger] Step ${params.stepId} already logged as success (concurrent execution), skipping duplicate`,
+        );
+        return null; // Not an error - another retry already succeeded
+      }
+
+      // Fallback: log the logging failure to error_logs table
       console.error("[step-logger] Failed to log step:", error);
+      try {
+        await supabase.from("error_logs").insert([
+          {
+            error_type: "step_log_failure",
+            error_message: error.message || String(error),
+            context: {
+              run_id: params.runId,
+              step_id: params.stepId,
+              action_type: params.actionType,
+              status: params.status,
+              retry_count: params.retryCount || 0,
+              error_code: error.code,
+            },
+          },
+        ]);
+      } catch {
+        // If even fallback logging fails, just console.error
+        console.error("[step-logger] Fallback error_logs insert also failed");
+      }
       return null;
     }
 
@@ -160,7 +193,23 @@ export async function executeWithLogging<T>(
 }
 
 /**
- * Execute with retry logic
+ * Execute with retry logic, error classification, and cancellation support.
+ *
+ * Accepts an optional RetryPolicy to control:
+ * - maxRetries: number of retry attempts (default 2)
+ * - initialDelayMs: base delay before first retry (default 1500ms)
+ * - shouldRetry: function that classifies errors as transient vs permanent
+ *
+ * Accepts an optional AbortSignal for cancellation:
+ * - Checked before each retry attempt
+ * - Aborts the backoff delay when triggered
+ * - Returns immediately with error status
+ *
+ * Uses exponential backoff: delay = initialDelayMs * 2^(attempt-1)
+ * Example with initialDelayMs=1000, maxRetries=3: waits 1s, 2s, 4s (~7s total)
+ *
+ * Permanent errors (4xx, auth failures) are NOT retried.
+ * Transient errors (timeouts, 5xx, rate limits) ARE retried.
  */
 export async function executeWithRetry<T>(
   supabase: any,
@@ -169,19 +218,42 @@ export async function executeWithRetry<T>(
   actionType: ActionType,
   inputSnapshot: Record<string, any>,
   executeFn: () => Promise<T>,
-  maxRetries: number = 3,
-  retryDelayMs: number = 1000,
+  policy?: { maxRetries: number; initialDelayMs: number; shouldRetry: (error: Error) => boolean },
+  abortSignal?: AbortSignal,
 ): Promise<{ result: T | null; log: StepExecutionLog }> {
+  const maxRetries = policy?.maxRetries ?? 2;
+  const initialDelayMs = policy?.initialDelayMs ?? 1500;
+  const shouldRetry = policy?.shouldRetry ?? (() => true);
+
   let lastError: Error | null = null;
   let retryCount = 0;
 
   while (retryCount <= maxRetries) {
+    // Check for cancellation before each attempt
+    if (abortSignal?.aborted) {
+      console.log(`[Retry] Step ${stepId} aborted before attempt ${retryCount}`);
+      return {
+        result: null,
+        log: {
+          stepId,
+          actionType,
+          status: "error",
+          error: "Workflow cancelled",
+          retryCount,
+        },
+      };
+    }
+
     try {
       const startTime = Date.now();
       const result = await executeFn();
       const durationMs = Date.now() - startTime;
 
-      // Log successful execution
+      // Log successful execution (only on final success, not every attempt)
+      if (retryCount > 0) {
+        console.log(`[Retry] Step ${stepId} succeeded after ${retryCount} retries`);
+      }
+
       await logStepExecution(supabase, {
         runId,
         stepId,
@@ -205,17 +277,44 @@ export async function executeWithRetry<T>(
       };
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
+
+      // Check if error is retryable
+      if (!shouldRetry(lastError)) {
+        console.log(`[Retry] Permanent error for step ${stepId}, not retrying: ${lastError.message}`);
+        break; // Exit retry loop immediately
+      }
+
       retryCount++;
 
       if (retryCount <= maxRetries) {
-        console.log(`[step-logger] Retry ${retryCount}/${maxRetries} for step ${stepId}`);
-        await new Promise((resolve) => setTimeout(resolve, retryDelayMs * retryCount));
+        const delay = initialDelayMs * Math.pow(2, retryCount - 1); // Exponential backoff
+        console.log(`[Retry] Transient error for step ${stepId}, attempt ${retryCount}/${maxRetries}, waiting ${delay}ms: ${lastError.message}`);
+
+        // Abortable delay - clears timeout if signal fires during backoff
+        await new Promise<void>((resolve) => {
+          const timeout = setTimeout(resolve, delay);
+          if (abortSignal) {
+            const onAbort = () => {
+              clearTimeout(timeout);
+              resolve();
+            };
+            abortSignal.addEventListener("abort", onAbort, { once: true });
+          }
+        });
+
+        // Check again after delay in case signal fired during wait
+        if (abortSignal?.aborted) {
+          console.log(`[Retry] Step ${stepId} aborted during backoff delay`);
+          break;
+        }
       }
     }
   }
 
-  // All retries exhausted
-  const errorMessage = lastError?.message || "Unknown error";
+  // All retries exhausted, permanent error, or aborted
+  const errorMessage = abortSignal?.aborted
+    ? "Workflow cancelled"
+    : lastError?.message || "Unknown error";
 
   await logStepExecution(supabase, {
     runId,
@@ -224,7 +323,7 @@ export async function executeWithRetry<T>(
     status: "error",
     inputSnapshot,
     errorMessage,
-    retryCount: retryCount - 1,
+    retryCount: Math.max(retryCount - 1, 0),
   });
 
   return {
@@ -234,7 +333,7 @@ export async function executeWithRetry<T>(
       actionType,
       status: "error",
       error: errorMessage,
-      retryCount: retryCount - 1,
+      retryCount: Math.max(retryCount - 1, 0),
     },
   };
 }

@@ -45,7 +45,7 @@ export async function executeMetaConversion(
   config: Record<string, any>,
   context: AutomationContext,
   supabase: SupabaseClient
-): Promise<Partial<StepExecutionLog>> {
+): Promise<StepExecutionLog> {
   const metaConfig = config as MetaConversionConfig;
 
   if (!metaConfig.pixel_id) {

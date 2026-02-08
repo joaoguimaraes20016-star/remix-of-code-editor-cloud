@@ -44,6 +44,7 @@ interface ActionOption {
   icon: React.ReactNode;
   color: string;
   category: "messaging" | "crm" | "appointment" | "pipeline" | "payment" | "flow" | "ai" | "integration";
+  comingSoon?: boolean;
 }
 
 const ACTION_OPTIONS: ActionOption[] = [
@@ -77,7 +78,7 @@ const ACTION_OPTIONS: ActionOption[] = [
   { type: "goal_achieved", label: "Goal Event", description: "Mark goal achieved", icon: <Target className="h-4 w-4" />, color: "text-primary", category: "flow" },
   
   // AI
-  { type: "ai_decision", label: "AI Decision", description: "Smart branching", icon: <Brain className="h-4 w-4" />, color: "text-purple-400", category: "ai" },
+  { type: "ai_decision", label: "AI Decision", description: "Smart branching", icon: <Brain className="h-4 w-4" />, color: "text-purple-400", category: "ai", comingSoon: true },
   
   // Integrations
   { type: "custom_webhook", label: "Webhook", description: "Call external API", icon: <Webhook className="h-4 w-4" />, color: "text-gray-400", category: "integration" },
@@ -149,14 +150,27 @@ export function AddNodeButton({ onAdd, className, size = "default" }: AddNodeBut
                   {actions.map((action) => (
                     <button
                       key={action.type}
-                      onClick={() => handleSelect(action.type)}
-                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                      onClick={() => !action.comingSoon && handleSelect(action.type)}
+                      disabled={action.comingSoon}
+                      className={cn(
+                        "w-full flex items-center gap-3 p-2 rounded-lg transition-colors",
+                        action.comingSoon
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-muted/50 cursor-pointer"
+                      )}
                     >
                       <div className={cn("p-1.5 rounded-md bg-muted/30", action.color)}>
                         {action.icon}
                       </div>
                       <div className="text-left">
-                        <div className="text-sm text-foreground">{action.label}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-foreground">{action.label}</span>
+                          {action.comingSoon && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 shrink-0">
+                              Coming soon
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs text-muted-foreground">{action.description}</div>
                       </div>
                     </button>

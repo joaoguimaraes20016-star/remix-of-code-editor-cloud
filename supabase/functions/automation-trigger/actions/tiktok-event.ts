@@ -31,7 +31,7 @@ export async function executeTikTokEvent(
   config: Record<string, any>,
   context: AutomationContext,
   supabase: SupabaseClient
-): Promise<Partial<StepExecutionLog>> {
+): Promise<StepExecutionLog> {
   const tiktokConfig = config as TikTokEventConfig;
 
   if (!tiktokConfig.event_type) {

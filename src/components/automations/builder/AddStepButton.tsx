@@ -47,6 +47,7 @@ interface ActionOption {
   description: string;
   icon: React.ReactNode;
   category: "messaging" | "crm" | "appointment" | "pipeline" | "payment" | "flow" | "ai" | "marketing" | "integration";
+  comingSoon?: boolean;
 }
 
 const ACTION_OPTIONS: ActionOption[] = [
@@ -82,8 +83,8 @@ const ACTION_OPTIONS: ActionOption[] = [
   { type: "goal_achieved", label: "Goal Event", description: "Track conversion", icon: <Target className="h-4 w-4" />, category: "flow" },
   
   // AI
-  { type: "ai_decision", label: "AI Decision", description: "Smart branching", icon: <Brain className="h-4 w-4" />, category: "ai" },
-  { type: "ai_message", label: "AI Message", description: "Generate response", icon: <Sparkles className="h-4 w-4" />, category: "ai" },
+  { type: "ai_decision", label: "AI Decision", description: "Smart branching", icon: <Brain className="h-4 w-4" />, category: "ai", comingSoon: true },
+  { type: "ai_message", label: "AI Message", description: "Generate response", icon: <Sparkles className="h-4 w-4" />, category: "ai", comingSoon: true },
   
   // Marketing
   { type: "meta_conversion", label: "Meta Conversion", description: "Facebook CAPI", icon: <BarChart className="h-4 w-4" />, category: "marketing" },
@@ -138,12 +139,20 @@ export function AddStepButton({ onAddStep }: AddStepButtonProps) {
                     {items.map((option) => (
                       <DropdownMenuItem
                         key={option.type}
-                        onClick={() => onAddStep(option.type)}
-                        className="flex items-start gap-3 cursor-pointer py-2"
+                        onClick={() => !option.comingSoon && onAddStep(option.type)}
+                        disabled={option.comingSoon}
+                        className={`flex items-start gap-3 py-2 ${option.comingSoon ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                       >
                         <div className="mt-0.5">{option.icon}</div>
                         <div className="flex flex-col">
-                          <span className="font-medium">{option.label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{option.label}</span>
+                            {option.comingSoon && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 shrink-0">
+                                Coming soon
+                              </span>
+                            )}
+                          </div>
                           <span className="text-xs text-muted-foreground">
                             {option.description}
                           </span>
